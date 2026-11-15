@@ -18,6 +18,9 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Game actions tab: explanations moved into "?" tips, the scan range moved here from Advanced, and the launch wording no longer says EXE since SWF and other files can be launched (R-382, R-383, R-401).
+- Game detection: Liar-soft games (an EXE with several .xfl archives) are recognised (R-396).
+- File overview: the scope switch's selection mark no longer sits off its item the first time it opens (R-402).
 - Folder type: choosing "Game" now also marks the folder as a game main folder, so the game page appears at once instead of after a second step under Advanced (R-380).
 - Manga reader: a toolbar switch (A) turns the page-turn slide off so the new page just appears; the choice is kept for this computer and every book (R-378).
 - Novel reader: in immersive reading Tab on the text no longer brings the bars out and keeps them there (R-377).

@@ -1,6 +1,6 @@
 # 遊戲引擎辨識
 
-> 本頁只寫現行的辨識規則與邊界策略，不承擔畫面或工作進度。導覽能否進入依 [現行工作區](WORKSPACE_REVISION.md)，內容／動作見 [遊戲](GAME_VIEWER_DESIGN.md)；取捨與歷次診斷見 [DECISIONS](DECISIONS.md)（C-80 起）。程式：`electron/game-detection.ts`；測試：`tests/game-detection.test.ts`；唯讀試跑：`pnpm detect <資料夾> [--children]`。最後確認：2026-11-14（R-380）。
+> 本頁只寫現行的辨識規則與邊界策略，不承擔畫面或工作進度。導覽能否進入依 [現行工作區](WORKSPACE_REVISION.md)，內容／動作見 [遊戲](GAME_VIEWER_DESIGN.md)；取捨與歷次診斷見 [DECISIONS](DECISIONS.md)（C-80 起）。程式：`electron/game-detection.ts`；測試：`tests/game-detection.test.ts`；唯讀試跑：`pnpm detect <資料夾> [--children]`。最後確認：2026-11-16（R-383 R-396）。
 
 ## 目的與原則
 
@@ -50,6 +50,7 @@
 | SiglusEngine | `Scene.pck`＋`Gameexe.dat`＋EXE | — |
 | YU-RIS | `.ypf`＋EXE（候選） | — |
 | Nitroplus NPA／NPK | 至少兩個 `.npa`＋EXE；至少三個 `.npk`＋EXE | 單一 `.npa` |
+| Liar-soft | EXE＋至少三個 `.xfl`，且含 `scr.xfl`、`grps.xfl` 或 `grpe.xfl` 之一 | 單一 `.xfl`；多個 `.xfl` 但無上述核心封包 |
 | CatSystem2 | 至少兩個 `.int`＋`cs2conf.dll` 或 `config/startup.xml`＋EXE | 單獨 `.int` |
 | SoftPal | 至少兩個 `.pac`＋`Pal.dll`（根目錄或 `dll/`）＋EXE | 單獨 `.pac` |
 | Circus | `AdvData` 內 `GRP` 有 `.crx` 或 `MES` 有 `.mes`＋EXE | — |

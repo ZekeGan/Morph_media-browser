@@ -130,7 +130,7 @@ try {
       return { canceled: true, filePaths: [] }
     }) as typeof dialog.showOpenDialog
   })
-  await drawer.getByRole('button', { name: '選擇 EXE 並保存參數', exact: true }).click()
+  await drawer.getByRole('button', { name: '選擇啟動檔並保存參數', exact: true }).click()
   await idle()
   const pickers = await app.evaluate(
     () => (globalThis as unknown as { gamePicker: { defaultPath?: string }[] }).gamePicker

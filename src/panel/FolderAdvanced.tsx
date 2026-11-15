@@ -11,6 +11,98 @@ import type {
 } from '../../shared/model'
 import { isNewerFormat } from '../../shared/upgrade'
 
+// The scan boundary section: shown in the game tab for games, and in Advanced when a game was detected but the folder is not one by type.
+export function FolderBoundary({
+  row,
+  disabled,
+  boundary,
+}: {
+  row: FolderRow
+  disabled: boolean
+  boundary: (state: 'root' | 'not-game' | 'candidate', traverse?: boolean) => void
+}) {
+  return (
+    <section className="settings-section">
+      <Group gap={4} wrap="nowrap">
+        <Text fw={600}>{tr('掃描範圍')}</Text>
+        <HelpTip
+          text={tr(
+            '遊戲資料夾裡的檔案很多，也不該被改動。所以只把「遊戲主資料夾」這一層當成一筆資料夾資訊，裡面的子資料夾受保護，不會被掃描或寫入。'
+          )}
+        />
+      </Group>
+      {row.boundary ? (
+        <>
+          <Text size="sm" mt={4}>
+            {row.boundary.engines.length
+              ? tr('這個資料夾看起來是 {0} 遊戲。', row.boundary.engines.join('／'))
+              : tr('這個資料夾看起來像遊戲或封裝程式，但無法確定是哪種引擎。')}
+          </Text>
+          <Text size="xs" c="dimmed">
+            {tr('請確認它是不是遊戲：')}
+          </Text>
+          <Group mt="sm">
+            <Tooltip
+              multiline
+              maw={240}
+              withArrow
+              label={tr('把這個資料夾當成遊戲主資料夾：資訊放在這一層，裡面的檔案受保護。')}
+            >
+              <Button size="xs" disabled={disabled} onClick={() => boundary('root')}>
+                {tr('確認為遊戲主資料夾')}
+              </Button>
+            </Tooltip>
+            <Tooltip
+              multiline
+              maw={240}
+              withArrow
+              label={tr('只查看裡面的檔案，不會在內部寫入任何東西。')}
+            >
+              <Button
+                size="xs"
+                variant="default"
+                disabled={disabled}
+                onClick={() => boundary('root', true)}
+              >
+                {tr('唯讀查看內部')}
+              </Button>
+            </Tooltip>
+            <Tooltip
+              multiline
+              maw={240}
+              withArrow
+              label={tr('取消遊戲判定，當成一般資料夾；之後不再提示。')}
+            >
+              <Button
+                size="xs"
+                variant="subtle"
+                disabled={disabled}
+                onClick={() => boundary('not-game')}
+              >
+                {tr('這不是遊戲目錄')}
+              </Button>
+            </Tooltip>
+          </Group>
+          {!!row.boundary.evidence.length && (
+            <details className="boundary-evidence">
+              <summary>{tr('判斷依據')}</summary>
+              <ul>
+                {row.boundary.evidence.map((item, index) => (
+                  <li key={index}>{item}</li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </>
+      ) : (
+        <Button size="xs" mt="sm" disabled={disabled} onClick={() => boundary('root')}>
+          {tr('標記為遊戲主資料夾')}
+        </Button>
+      )}
+    </section>
+  )
+}
+
 // The folder settings "Advanced" tab: scan boundary, record recovery, stored attributes and the dangerous actions.
 export function FolderAdvanced({
   row,
@@ -45,86 +137,7 @@ export function FolderAdvanced({
   return (
     <Tabs.Panel value="advanced" pt="md">
       <Stack>
-        {showBoundary && (
-          <section className="settings-section">
-            <Group gap={4} wrap="nowrap">
-              <Text fw={600}>{tr('掃描範圍')}</Text>
-              <HelpTip
-                text={tr(
-                  '遊戲資料夾裡的檔案很多，也不該被改動。所以只把「遊戲主資料夾」這一層當成一筆資料夾資訊，裡面的子資料夾受保護，不會被掃描或寫入。'
-                )}
-              />
-            </Group>
-            {row.boundary ? (
-              <>
-                <Text size="sm" mt={4}>
-                  {row.boundary.engines.length
-                    ? tr('這個資料夾看起來是 {0} 遊戲。', row.boundary.engines.join('／'))
-                    : tr('這個資料夾看起來像遊戲或封裝程式，但無法確定是哪種引擎。')}
-                </Text>
-                <Text size="xs" c="dimmed">
-                  {tr('請確認它是不是遊戲：')}
-                </Text>
-                <Group mt="sm">
-                  <Tooltip
-                    multiline
-                    maw={240}
-                    withArrow
-                    label={tr('把這個資料夾當成遊戲主資料夾：資訊放在這一層，裡面的檔案受保護。')}
-                  >
-                    <Button size="xs" disabled={disabled} onClick={() => boundary('root')}>
-                      {tr('確認為遊戲主資料夾')}
-                    </Button>
-                  </Tooltip>
-                  <Tooltip
-                    multiline
-                    maw={240}
-                    withArrow
-                    label={tr('只查看裡面的檔案，不會在內部寫入任何東西。')}
-                  >
-                    <Button
-                      size="xs"
-                      variant="default"
-                      disabled={disabled}
-                      onClick={() => boundary('root', true)}
-                    >
-                      {tr('唯讀查看內部')}
-                    </Button>
-                  </Tooltip>
-                  <Tooltip
-                    multiline
-                    maw={240}
-                    withArrow
-                    label={tr('取消遊戲判定，當成一般資料夾；之後不再提示。')}
-                  >
-                    <Button
-                      size="xs"
-                      variant="subtle"
-                      disabled={disabled}
-                      onClick={() => boundary('not-game')}
-                    >
-                      {tr('這不是遊戲目錄')}
-                    </Button>
-                  </Tooltip>
-                </Group>
-                {!!row.boundary.evidence.length && (
-                  <details className="boundary-evidence">
-                    <summary>{tr('判斷依據')}</summary>
-                    <ul>
-                      {row.boundary.evidence.map((item, index) => (
-                        <li key={index}>{item}</li>
-                      ))}
-                    </ul>
-                  </details>
-                )}
-              </>
-            ) : (
-              <Button size="xs" mt="sm" disabled={disabled} onClick={() => boundary('root')}>
-                {tr('標記為遊戲主資料夾')}
-              </Button>
-            )}
-          </section>
-        )}
+        {showBoundary && <FolderBoundary row={row} disabled={disabled} boundary={boundary} />}
         {(row.stopped || row.duplicate || row.error) && (
           <section className="settings-section">
             <Text fw={600} mb="sm">

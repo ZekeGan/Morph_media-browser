@@ -905,6 +905,13 @@ test('Japanese visual-novel engines are recognised from their runtime and archiv
       engines: ['Nitroplus NPK'],
     },
     {
+      name: 'LiarSoft',
+      names: ['game.exe', 'scr.xfl', 'grps.xfl', 'voice.xfl', 'bgm.xfl'],
+      engines: ['Liar-soft'],
+    },
+    { name: 'LiarSoftStray', names: ['game.exe', 'scr.xfl', 'readme.txt'] },
+    { name: 'LiarSoftNoCore', names: ['game.exe', 'a.xfl', 'b.xfl', 'c.xfl'] },
+    {
       name: 'LucaGame',
       names: [
         'AIR.exe',

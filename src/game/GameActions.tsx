@@ -23,6 +23,7 @@ import {
 import type { FolderRow, Project } from '../../shared/model'
 import { t as tr } from '../i18n'
 import { Icon } from '../common/icons'
+import { HelpLabel } from '../common/HelpTip'
 import { describeError } from '../notices/errors'
 import { parseLaunchArgs } from '../../shared/launchArgs'
 import { useGameExtras } from './useGameExtras'
@@ -30,7 +31,7 @@ import './game-actions.css'
 
 const kindLabel = (kind: ActionKind) =>
   ({
-    exe: tr('啟動 EXE'),
+    exe: tr('啟動程式或啟動檔'),
     folder: tr('開啟資料夾'),
     'file-app': tr('以指定應用程式開啟檔案'),
     url: tr('開啟網址'),
@@ -249,11 +250,16 @@ export function GameActionTargets({
             {template.kind === 'exe' && bound && (
               // R-319: Locale Emulator's default (Japanese) or one of the profiles made in it.
               <Select
-                label={tr('用 Locale Emulator 啟動')}
+                label={
+                  <HelpLabel
+                    label={tr('用 Locale Emulator 啟動')}
+                    help={tr('在 Locale Emulator 裡建立的設定檔（例如簡體中文）會列在這裡')}
+                  />
+                }
                 description={
                   localeReady === false
                     ? tr('先到「應用程式設定」指定 LEProc.exe 才能使用')
-                    : tr('在 Locale Emulator 裡建立的設定檔（例如簡體中文）會列在這裡')
+                    : undefined
                 }
                 allowDeselect={false}
                 value={
@@ -311,7 +317,7 @@ export function GameActionTargets({
                       : template.kind === 'file-app'
                         ? tr('選擇應用程式與檔案')
                         : template.kind === 'exe'
-                          ? tr('選擇 EXE 並保存參數')
+                          ? tr('選擇啟動檔並保存參數')
                           : tr('選擇資料夾')}
               </Button>
               {changed && (

@@ -296,6 +296,9 @@ export async function detectGame(dir: string): Promise<GameDetection | undefined
       add('RPG Developer Bakin', 'data/bakinplayer.exe 或 data/data.rbpack + EXE')
     if ((await file('data.sgbpack')) || hasExe(/^sgb_rpgplayer/i))
       add('SMILE GAME BUILDER', 'data.sgbpack 或 sgb_rpgplayer.exe')
+    // Liar-soft keeps its data in many .xfl archives; a stray .xfl is not enough, so several plus the script or graphics pack.
+    if (countFiles(/\.xfl$/i) >= 3 && hasFile(/^(scr|grps|grpe)\.xfl$/i))
+      add('Liar-soft', 'EXE + 多個 .xfl 封包（含 scr／grps／grpe.xfl）')
     if (countFiles(/\.npk$/i) >= 3)
       add('Nitroplus NPK', 'EXE + 多個 .npk 封包（Nitroplus／Nitro Origin 的封包格式）')
     // LucaSystem (Prototype; the Steam releases of Key titles) keeps SCRIPT.PAK and other .PAK packs in files/.

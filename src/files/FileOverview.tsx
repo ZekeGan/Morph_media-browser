@@ -59,7 +59,8 @@ export function FileOverview({
     [notices, setNotices] = useState<string[]>([]),
     [loading, setLoading] = useState(false),
     reload = useRefreshNonce(),
-    [filter, setFilter] = useState('all')
+    [filter, setFilter] = useState('all'),
+    [scopeShown, setScopeShown] = useState(0)
   const [view, setView] = useState({ top: 0, height: 500, width: 600 }),
     viewport = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -242,7 +243,15 @@ export function FileOverview({
         )}
       {scopeTarget &&
         createPortal(
-          <Popover position="bottom-end" withArrow shadow="md" width={240}>
+          // R-402: the SegmentedControl measures its indicator once, while the dropdown is still appearing, so it
+          // landed off its item. It is drawn again once the dropdown has fully appeared and measures where it ends up.
+          <Popover
+            position="bottom-end"
+            withArrow
+            shadow="md"
+            width={240}
+            transitionProps={{ onEntered: () => setScopeShown((value) => value + 1) }}
+          >
             <Popover.Target>
               <Button
                 className="scope-button"
@@ -259,6 +268,7 @@ export function FileOverview({
                 {tr('列出哪些資料夾的檔案')}
               </Text>
               <SegmentedControl
+                key={scopeShown}
                 size="xs"
                 fullWidth
                 aria-label={tr('檔案總覽範圍')}

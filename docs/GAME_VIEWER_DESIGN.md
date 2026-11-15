@@ -1,6 +1,6 @@
 # 遊戲內容頁、動作與掃描邊界
 
-> 最後確認：2026-11-13。遊戲內容頁與啟動按鈕的現行規則；辨識規則見 [GAME_ENGINE_DETECTION](GAME_ENGINE_DETECTION.md)，有效記錄與導覽邊界見 [工作區](WORKSPACE_REVISION.md)。程式：`src/game/GameActions.tsx`、`src/panel/FolderContent.tsx`、`shared/launchArgs.ts`、`electron/explorer.ts`；契約在 `shared/explorer.ts`；取捨見 [決策索引](DECISIONS.md)（C-78～C-80、C-85、C-92）。
+> 最後確認：2026-11-16（R-383 R-396）。遊戲內容頁與啟動按鈕的現行規則；辨識規則見 [GAME_ENGINE_DETECTION](GAME_ENGINE_DETECTION.md)，有效記錄與導覽邊界見 [工作區](WORKSPACE_REVISION.md)。程式：`src/game/GameActions.tsx`、`src/panel/FolderContent.tsx`、`shared/launchArgs.ts`、`electron/explorer.ts`；契約在 `shared/explorer.ts`；取捨見 [決策索引](DECISIONS.md)（C-78～C-80、C-85、C-92）。
 
 ## 遊戲內容頁
 
@@ -77,7 +77,7 @@ C-80 採特徵候選＋人工修正與集中處理；純手動仍作無法辨識
 - 取消、下載／解碼失敗、保存衝突或保存失敗時，原封面與引用保留；回收本次未成功納管的暫存資料。驗收常見圖片格式、錯誤連結、非圖片、超限、重新導向、快速換網址、取消及重開／離線顯示，不寫入原始遊戲媒體。
 - 大圖預設保留完整比例；封面組件另可選填滿裁切或模糊填滿（見 [CELL 目錄](CELL_CATALOG.md)）。
 - C-80 採推薦按鈕設定：樣式與排列共用專案版型；每個遊戲資料夾各自綁定實際 EXE 與存檔資料夾目標，避免改版型就讓所有遊戲指向同一個程式。
-- 任務先用明確型別「啟動 EXE」「開啟資料夾」，預留擴充接點；不實作成任意系統指令字串。
+- 任務先用明確型別「啟動程式或啟動檔」「開啟資料夾」，預留擴充接點；不實作成任意系統指令字串。
 - 編輯欄位包含按鈕文字、圖示／樣式、任務類型與目標選擇；可帶參數，工作目錄固定為 EXE 所在處；不支援自訂工作目錄或專用啟動器。
 - 按鈕可顯示目標提示；缺少或搬移失效時呈現未綁定／重新指定入口。掃描、讀取或恢復記錄本身不啟動程式。
 

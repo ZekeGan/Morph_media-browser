@@ -3,6 +3,7 @@ import type { ExplorerRequest, ExplorerResponse, GameExtra } from '../../shared/
 import type { FolderRow } from '../../shared/model'
 import { t as tr } from '../i18n'
 import { Icon } from '../common/icons'
+import { HelpTip } from '../common/HelpTip'
 import { useGameExtras } from './useGameExtras'
 import { formatLastPlayed, formatPlayTime, usePlaytime } from './playtime'
 
@@ -93,10 +94,10 @@ export function GameExtraSettings({
     <Stack gap="sm">
       {offered.length > 0 && (
         <section className="settings-section">
-          <Text fw={600}>{tr('其他按鈕')}</Text>
-          <Text size="sm" c="dimmed" mb="xs">
-            {tr('預設不顯示在遊戲的按鈕列；按眼睛顯示。')}
-          </Text>
+          <Group gap={4} wrap="nowrap" mb="xs">
+            <Text fw={600}>{tr('其他按鈕')}</Text>
+            <HelpTip text={tr('預設不顯示在遊戲的按鈕列；按眼睛顯示。')} />
+          </Group>
           <Stack gap={4}>
             {offered.map(({ extra, label }) => {
               const visible = !!row.record?.details?.shownExtras?.includes(extra)
@@ -183,10 +184,14 @@ export function GameExtraSettings({
       </section>
       {extras.suggestions.length > 0 && (
         <section className="settings-section">
-          <Text fw={600}>{tr('附帶的程式與說明書')}</Text>
-          <Text size="sm" c="dimmed" mb="xs">
-            {tr('在遊戲資料夾找到的設定程式與說明書；按「加入」才會變成操作按鈕，不會自動執行。')}
-          </Text>
+          <Group gap={4} wrap="nowrap" mb="xs">
+            <Text fw={600}>{tr('附帶的程式與說明書')}</Text>
+            <HelpTip
+              text={tr(
+                '在遊戲資料夾找到的設定程式與說明書；按「加入」才會變成操作按鈕，不會自動執行。'
+              )}
+            />
+          </Group>
           <Stack gap={6}>
             {extras.suggestions.map((item) => (
               <Group key={item.name} justify="space-between" wrap="nowrap">

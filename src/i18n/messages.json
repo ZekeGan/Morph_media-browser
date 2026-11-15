@@ -1865,12 +1865,6 @@
     "en": "Action type",
     "es": "Tipo de acción"
   },
-  "啟動 EXE": {
-    "ja": "EXEを起動",
-    "zh-CN": "启动 EXE",
-    "en": "Launch EXE",
-    "es": "Iniciar EXE"
-  },
   "顏色": {
     "ja": "色",
     "zh-CN": "颜色",
@@ -3430,12 +3424,6 @@
     "ja": "アプリとファイルを選択",
     "zh-CN": "选择应用和文件",
     "es": "Elegir aplicación y archivo"
-  },
-  "選擇 EXE 並保存參數": {
-    "en": "Choose EXE and save arguments",
-    "ja": "EXE を選択して引数を保存",
-    "zh-CN": "选择 EXE 并保存参数",
-    "es": "Elegir EXE y guardar argumentos"
   },
   "取消變更": {
     "en": "Discard changes",
@@ -12022,5 +12010,23 @@
     "en": "Page-turn transition",
     "ja": "ページ送りのアニメーション",
     "es": "Transición al pasar página"
+  },
+  "選擇啟動檔並保存參數": {
+    "zh-CN": "选择启动文件并保存参数",
+    "en": "Choose launch file and save arguments",
+    "ja": "起動ファイルを選択して引数を保存",
+    "es": "Elegir archivo de inicio y guardar argumentos"
+  },
+  "啟動程式或啟動檔": {
+    "zh-CN": "启动程序或启动文件",
+    "en": "Launch program or launch file",
+    "ja": "プログラムまたは起動ファイルを起動",
+    "es": "Iniciar programa o archivo de inicio"
+  },
+  "EXE + 多個 .xfl 封包（含 scr／grps／grpe.xfl）": {
+    "zh-CN": "EXE + 多个 .xfl 封包（含 scr／grps／grpe.xfl）",
+    "en": "EXE + several .xfl archives (including scr / grps / grpe.xfl)",
+    "ja": "EXE + 複数の .xfl アーカイブ（scr／grps／grpe.xfl を含む）",
+    "es": "EXE + varios archivos .xfl (incluidos scr / grps / grpe.xfl)"
   }
 }

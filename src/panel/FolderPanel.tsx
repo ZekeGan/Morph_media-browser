@@ -35,7 +35,7 @@ import {
   Tabs,
   Text,
 } from '@mantine/core'
-import { FolderAdvanced } from './FolderAdvanced'
+import { FolderAdvanced, FolderBoundary } from './FolderAdvanced'
 import { FolderFieldInput } from './FolderFieldInput'
 import { FolderImages } from './FolderImages'
 import { FolderSourceImport, useSourceImport } from '../metadata/FolderSourceImport'
@@ -516,7 +516,8 @@ export function FolderPanel({
   }
   // Boundaries belong to games; other projects only see them when a game was actually detected in this folder.
   const gameDetected = !!row.boundary || !!row.record?.details?.boundary?.state
-  const showBoundary = isGame || gameDetected
+  // For a game the scan range sits in the game tab; Advanced keeps it for a detected game that is not one by type.
+  const showBoundary = !isGame && gameDetected
   // What this folder still lacks, each with a button that goes straight to the place that fixes it.
   const empty = (value: unknown) =>
     value == null || value === '' || (Array.isArray(value) && value.length === 0)
@@ -908,12 +909,10 @@ export function FolderPanel({
         <Tabs.Panel value="game" pt="md" keepMounted>
           <Stack>
             <Group justify="space-between">
-              <div>
+              <Group gap={4} wrap="nowrap">
                 <Text fw={600}>{tr('遊戲操作')}</Text>
-                <Text size="sm" c="dimmed">
-                  {tr('工具列套用到整個專案；目標與參數只屬於目前資料夾。')}
-                </Text>
-              </div>
+                <HelpTip text={tr('工具列套用到整個專案；目標與參數只屬於目前資料夾。')} />
+              </Group>
               <Button
                 size="xs"
                 variant="default"
@@ -936,6 +935,7 @@ export function FolderPanel({
               disabled={disabled || fieldDirty || targetDirty}
               run={run}
             />
+            <FolderBoundary row={row} disabled={disabled} boundary={boundary} />
           </Stack>
         </Tabs.Panel>
         <FolderAdvanced
