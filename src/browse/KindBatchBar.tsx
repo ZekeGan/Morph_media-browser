@@ -22,7 +22,8 @@ export function KindBatchBar({
     labels: Record<FolderKind, string> = {
       game: tr('遊戲'),
       book: tr('書籍／漫畫'),
-      media: tr('影音'),
+      music: tr('音樂'),
+      video: tr('影片'),
       general: tr('一般'),
     }
   return (

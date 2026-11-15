@@ -21,9 +21,23 @@ import {
   UPGRADE_STEPS,
   isNewerFormat,
   upgradeFormat,
+  upgradeStored,
   type FormatKind,
 } from '../shared/upgrade'
 import { classifyError, errorMessage } from '../shared/notifications'
+import { migrateRecord } from '../shared/project-export'
+import { detectFolderKind } from '../shared/kind'
+import type { FolderRow } from '../shared/model'
+
+// A folder record as version 1 wrote it (R-387): shared values, a project's private values, fields this version does
+// not know, and the combined audio/video kind set by hand.
+const V1_FOLDER = path.resolve('tests', 'fixtures', 'folder-v1.json')
+const v1Folder = async () => JSON.parse(await fs.readFile(V1_FOLDER, 'utf8'))
+async function placeV1(dir: string) {
+  await fs.mkdir(path.dirname(folderFile(dir)), { recursive: true })
+  await fs.copyFile(V1_FOLDER, folderFile(dir))
+  return fs.readFile(folderFile(dir), 'utf8')
+}
 
 async function sandbox(t: { after: (fn: () => Promise<void>) => void }, name: string) {
   const base = path.resolve('.test-output')
@@ -36,27 +50,33 @@ async function sandbox(t: { after: (fn: () => Promise<void>) => void }, name: st
   })
   return root
 }
-// Pretends this build writes v2 of one format, with a v1 -> v2 step, for the length of a test.
-function pretendV2(
+// Pretends this build writes the next version of one format, with a step from the current one, for the length of a
+// test.
+function pretendNext(
   t: { after: (fn: () => void) => void },
   format: FormatKind,
   step: (value: Record<string, unknown>) => Record<string, unknown>
 ) {
-  FORMAT_VERSION[format] = 2
-  UPGRADE_STEPS[format][1] = step
+  const current = FORMAT_VERSION[format]
+  FORMAT_VERSION[format] = current + 1
+  UPGRADE_STEPS[format][current] = step
   t.after(() => {
-    FORMAT_VERSION[format] = 1
-    delete UPGRADE_STEPS[format][1]
+    FORMAT_VERSION[format] = current
+    delete UPGRADE_STEPS[format][current]
   })
 }
 const raw = async (file: string) => JSON.parse(await fs.readFile(file, 'utf8'))
 
 test('upgrade steps run in order, and a missing step or newer data is refused', (t) => {
-  assert.deepEqual(upgradeFormat('folder', { schemaVersion: 1, a: 1 }), {
+  assert.deepEqual(upgradeFormat('details', { schemaVersion: 1, a: 1 }), {
     schemaVersion: 1,
     a: 1,
   })
-  assert.throws(() => upgradeFormat('folder', { schemaVersion: 2 }), NewerFormatError)
+  assert.deepEqual(upgradeFormat('folder', { schemaVersion: 1, a: 1 }), {
+    schemaVersion: 2,
+    a: 1,
+  })
+  assert.throws(() => upgradeFormat('folder', { schemaVersion: 3 }), NewerFormatError)
   FORMAT_VERSION.project = 3
   t.after(() => {
     FORMAT_VERSION.project = 1
@@ -76,17 +96,22 @@ test('upgrade steps run in order, and a missing step or newer data is refused', 
 
 test('an older folder record is upgraded on read and written in the new format only on save', async (t) => {
   const dir = await sandbox(t, 'upgrade-folder')
-  await ensureFolder(dir, false)
-  const before = await fs.readFile(folderFile(dir), 'utf8')
-  pretendV2(t, 'folder', (v) => ({ ...v, note: 'from v1' }))
+  const before = await placeV1(dir)
+  await fs.writeFile(path.join(dir, 'clip.mp4'), 'ORIGINAL')
   const record = await readFolder(dir)
   assert.equal(record.schemaVersion, 2)
-  assert.equal((record as unknown as { note: string }).note, 'from v1')
+  assert.equal(record.details?.kind, undefined)
+  assert.equal(record.details?.browseAs, 'work')
   assert.equal(await fs.readFile(folderFile(dir), 'utf8'), before, 'reading never writes')
+  // A save that is refused leaves the v1 file as it was, with no backup made.
+  await assert.rejects(saveFolder(dir, record, record.revision + 1))
+  assert.equal(await fs.readFile(folderFile(dir), 'utf8'), before)
+  await assert.rejects(fs.stat(folderFile(dir) + '.bak'), { code: 'ENOENT' })
   await saveFolder(dir, record, record.revision)
   const saved = await raw(folderFile(dir))
   assert.equal(saved.schemaVersion, 2)
-  assert.equal(saved.note, 'from v1')
+  assert.equal('kind' in saved.details, false)
+  assert.deepEqual(saved.futureNote, { kept: true })
   assert.equal(
     await fs.readFile(folderFile(dir) + '.bak', 'utf8'),
     before,
@@ -101,6 +126,57 @@ test('an older folder record is upgraded on read and written in the new format o
   await fs.writeFile(folderFile(dir), '{broken')
   await restoreJson(dir, folderFile(dir), validateFolder, (v) => v.folderId === record.folderId)
   assert.equal((await readFolder(dir)).schemaVersion, 2)
+  assert.equal((await readFolder(dir)).details?.kind, undefined)
+  assert.equal(await fs.readFile(path.join(dir, 'clip.mp4'), 'utf8'), 'ORIGINAL')
+})
+
+test('folder records v1 -> v2: the combined audio/video kind set by hand is dropped, the rest is kept (R-387)', async () => {
+  const old = await v1Folder(),
+    before = structuredClone(old)
+  const next = upgradeStored(old) as Record<string, any>
+  assert.deepEqual(old, before, 'the value read is never changed in place')
+  const { kind: _kind, ...details } = before.details
+  assert.deepEqual(next, { ...before, schemaVersion: 2, details })
+  assert.deepEqual(next.futureNote, { kept: true }, 'unknown fields stay')
+  assert.deepEqual(next.details.futureDetail, [1, 2, 3])
+  assert.equal(next.projectOverrides['fixture-project'][0].value, 'Private title')
+  validateFolder(next)
+  assert.deepEqual(upgradeStored(next), next, 'upgrading again changes nothing')
+  // With the manual choice gone, what the folder holds decides.
+  const row = { record: next } as unknown as FolderRow,
+    sample = { images: 0, videos: 0, audio: 0, total: 0 }
+  assert.equal(detectFolderKind(row, { ...sample, videos: 2, total: 2 }).kind, 'video')
+  assert.equal(detectFolderKind(row, { ...sample, audio: 9, total: 9 }).kind, 'music')
+  assert.equal(detectFolderKind(row, { ...sample, total: 4 }).kind, 'general')
+  // Every other manual kind, and a record without details, only gets the new version number.
+  for (const kind of ['game', 'book', 'general']) {
+    const record = { ...before, details: { ...before.details, kind } }
+    assert.deepEqual(upgradeStored(record), { ...record, schemaVersion: 2 })
+  }
+  const { details: _details, ...bare } = before
+  assert.deepEqual(upgradeStored(bare), { ...bare, schemaVersion: 2 })
+  // A v2 record cannot carry the old kind, and an export holding v1 records imports as v2.
+  assert.throws(() => validateFolder({ ...next, details: { ...next.details, kind: 'media' } }))
+  assert.deepEqual(upgradeStored(migrateRecord(2, structuredClone(before), 'folder')), next)
+})
+
+test('a scan reads a v1 folder record in the new format without rewriting it', async (t) => {
+  const root = await sandbox(t, 'upgrade-scan-v1'),
+    media = path.join(root, 'media'),
+    album = path.join(media, 'Album')
+  await fs.mkdir(album, { recursive: true })
+  for (const name of ['01.mp3', '02.mp3', 'cover.jpg'])
+    await fs.writeFile(path.join(album, name), 'x')
+  const before = await placeV1(album)
+  const lib = new Library(path.join(root, 'local'), undefined, false)
+  await lib.init()
+  await lib.create(media, { name: 'P', scanAll: true, depth: { mode: 'through', level: 2 } })
+  const row = lib.snapshot().rows.find((r) => r.path === album)!
+  assert.equal(row.error, undefined)
+  assert.equal(row.record?.schemaVersion, 2)
+  assert.deepEqual(detectFolderKind(row, row.contents), { kind: 'music', source: 'content' })
+  assert.equal(await fs.readFile(folderFile(album), 'utf8'), before)
+  assert.equal(await fs.readFile(path.join(album, '01.mp3'), 'utf8'), 'x')
 })
 
 test('a folder record from a newer version is read-only: not recreated, restored over or cleaned', async (t) => {
@@ -111,7 +187,7 @@ test('a folder record from a newer version is read-only: not recreated, restored
   await ensureFolder(inner, false)
   const record = await readFolder(dir)
   await saveFolder(dir, record, record.revision)
-  const newer = JSON.stringify({ ...(await raw(folderFile(dir))), schemaVersion: 2, future: 1 })
+  const newer = JSON.stringify({ ...(await raw(folderFile(dir))), schemaVersion: 3, future: 1 })
   await fs.writeFile(folderFile(dir), newer)
   await assert.rejects(readFolder(dir), NewerFormatError)
   await assert.rejects(ensureFolder(dir, false), NewerFormatError)
@@ -154,7 +230,7 @@ test('app settings are upgraded once at start-up after the old file is kept; new
   await first.update({ action: 'createGroup', name: 'G' }, [])
   const file = path.join(root, 'workspace-ui.json'),
     v1 = await fs.readFile(file, 'utf8')
-  pretendV2(t, 'workspace', (v) => ({ ...v, extra: true }))
+  pretendNext(t, 'workspace', (v) => ({ ...v, extra: true }))
   const upgraded = new WorkspaceStore(root)
   await upgraded.init()
   assert.equal((await raw(file)).schemaVersion, 2)

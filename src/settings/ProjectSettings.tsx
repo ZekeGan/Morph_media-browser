@@ -2,7 +2,7 @@ import { t as tr, useLocale } from '../i18n'
 import { HelpTip } from '../common/HelpTip'
 import { useState } from 'react'
 import { cardPresets } from '../../shared/layouts'
-import { folderKinds } from '../../shared/kind'
+import { templateKinds } from '../../shared/kind'
 import { Alert, Button, Checkbox, Group, Select, Stack, Tabs, Text, TextInput } from '@mantine/core'
 import type {
   Project,
@@ -80,7 +80,7 @@ export function ProjectSettings({
                 <Text fw={600}>{tr('各類型的預設版面')}</Text>
                 <HelpTip text={tr('版面套用優先序：資料夾自選 › 類型預設 › 專案目前版面。')} />
               </Group>
-              {folderKinds.map((kind) => (
+              {templateKinds.map((kind) => (
                 <Select
                   key={kind}
                   mt="xs"
@@ -88,7 +88,7 @@ export function ProjectSettings({
                     {
                       game: tr('遊戲'),
                       book: tr('書籍／漫畫'),
-                      media: tr('影音'),
+                      media: tr('音樂／影片'),
                       general: tr('一般'),
                     }[kind]
                   }

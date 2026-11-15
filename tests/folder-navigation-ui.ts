@@ -19,7 +19,8 @@ await fs.mkdir(path.join(media, 'C'))
 await fs.mkdir(path.join(multi, 'A', 'B'), { recursive: true })
 // R-340: two works (B inside the category A, and C) so "all works" shows several cards.
 await fs.mkdir(path.join(multi, 'C'))
-await fs.writeFile(path.join(media, 'book.cbz'), zipFixture([{ name: '001.png', bytes: tinyPng }]))
+// A plain ZIP opens like a comic archive but does not make the folder a book (R-387), so Media keeps the mixed page.
+await fs.writeFile(path.join(media, 'book.zip'), zipFixture([{ name: '001.png', bytes: tinyPng }]))
 const library = new Library(local, undefined, false)
 await library.init()
 await library.create(media, {
@@ -49,7 +50,7 @@ for (const project of projects) {
   )
   originals.set(file, await fs.readFile(file))
 }
-originals.set(path.join(media, 'book.cbz'), await fs.readFile(path.join(media, 'book.cbz')))
+originals.set(path.join(media, 'book.zip'), await fs.readFile(path.join(media, 'book.zip')))
 const store = new WorkspaceStore(local, ['zh-TW'])
 await store.init()
 await store.update(
@@ -311,7 +312,7 @@ try {
   await page.locator('.folder-panel-dock-settings').waitFor({ state: 'detached' })
   await page.locator('.breadcrumb-link').first().click()
   await current('Media')
-  await page.locator('.media-thumbnail').filter({ hasText: 'book.cbz' }).click()
+  await page.locator('.media-thumbnail').filter({ hasText: 'book.zip' }).click()
   await page.locator('.media-viewer-shell .is-active').waitFor()
   await side(-1, '.react-flow')
   await current('Media')

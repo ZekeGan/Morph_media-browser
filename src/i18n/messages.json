@@ -5243,12 +5243,6 @@
     "en": "Book / comic",
     "es": "Libro / cómic"
   },
-  "影音": {
-    "ja": "映像・音楽",
-    "zh-CN": "影音",
-    "en": "Video / audio",
-    "es": "Vídeo / audio"
-  },
   "偵測到遊戲引擎": {
     "ja": "ゲームエンジンを検出",
     "zh-CN": "检测到游戏引擎",
@@ -12028,5 +12022,11 @@
     "en": "EXE + several .xfl archives (including scr / grps / grpe.xfl)",
     "ja": "EXE + 複数の .xfl アーカイブ（scr／grps／grpe.xfl を含む）",
     "es": "EXE + varios archivos .xfl (incluidos scr / grps / grpe.xfl)"
+  },
+  "音樂／影片": {
+    "zh-CN": "音乐／影片",
+    "en": "Music / video",
+    "ja": "音楽／動画",
+    "es": "Música / vídeo"
   }
 }

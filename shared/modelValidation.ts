@@ -3,6 +3,7 @@ import { imageTypes } from './images'
 import { compatibleFieldTypes, httpUrl, validFieldValue } from './fields'
 import { validStableQuery } from './query'
 import { checkNotNewer, FORMAT_VERSION } from './upgrade'
+import { isFolderKind, templateKinds } from './kind'
 import { withOnlyCells } from './cellLists'
 import {
   MAX_MORE_CONDITIONS,
@@ -373,8 +374,7 @@ export function validateDetails(v: unknown): asserts v is FolderDetails {
       new Set(v.shownExtras).size !== v.shownExtras.length)
   )
     throw new Error('遊戲操作顯示設定不合法')
-  if (v.kind !== undefined && !['game', 'book', 'media', 'general'].includes(v.kind))
-    throw new Error('資料夾類型不合法')
+  if (v.kind !== undefined && !isFolderKind(v.kind)) throw new Error('資料夾類型不合法')
   if (v.browseAs !== undefined && !['work', 'collection'].includes(v.browseAs))
     throw new Error('瀏覽方式不合法')
   if (v.bannerAssetId !== undefined && !id(v.bannerAssetId)) throw new Error('封面身分不合法')
@@ -531,7 +531,7 @@ export function validateProject(v: unknown): asserts v is Project {
     v.kindLayouts !== undefined &&
     (!obj(v.kindLayouts) ||
       !Object.entries(v.kindLayouts).every(
-        ([kind, preset]) => ['book', 'game', 'media', 'general'].includes(kind) && id(preset)
+        ([kind, preset]) => (templateKinds as string[]).includes(kind) && id(preset)
       ))
   )
     throw new Error('類型版面指定不合法')

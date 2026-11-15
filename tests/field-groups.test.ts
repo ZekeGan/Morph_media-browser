@@ -52,7 +52,7 @@ const row = (values: Record<string, unknown>, folderId = 'folder-1'): FolderRow 
   duplicate: false,
   record: {
     kind: 'media-viewer.folder',
-    schemaVersion: 1,
+    schemaVersion: 2,
     folderId,
     revision: 1,
     attributes: Object.entries(values).map(([attributeId, value]) => ({

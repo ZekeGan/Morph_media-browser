@@ -137,7 +137,7 @@ test('embedded and packaged NW.js deployments stay unknown; WOLF unpacked and mi
         row = state.rows.find((row) => row.path === dir)!
       assert.equal(row.boundary?.state, 'candidate')
       assert.deepEqual(row.boundary.engines, sample.engine ? [sample.engine] : [])
-      assert.equal(row.record?.schemaVersion, 1)
+      assert.equal(row.record?.schemaVersion, 2)
       state = await lib.visit(row.rowId)
       assert.equal(
         state.structure!.some((row) => row.path.startsWith(dir + path.sep)),

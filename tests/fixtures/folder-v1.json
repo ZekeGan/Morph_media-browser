@@ -1,0 +1,42 @@
+{
+  "kind": "media-viewer.folder",
+  "schemaVersion": 1,
+  "folderId": "fixture-folder-v1",
+  "revision": 4,
+  "attributes": [
+    {
+      "attributeId": "title",
+      "key": "TITLE",
+      "type": "string",
+      "value": "Shared title",
+      "source": "manual"
+    },
+    {
+      "attributeId": "tags",
+      "key": "TAGS",
+      "type": "tags",
+      "value": ["live", "2019"],
+      "source": "manual"
+    }
+  ],
+  "projectOverrides": {
+    "fixture-project": [
+      {
+        "attributeId": "title",
+        "key": "TITLE",
+        "type": "string",
+        "value": "Private title",
+        "source": "manual"
+      }
+    ]
+  },
+  "assets": [],
+  "futureNote": { "kept": true },
+  "details": {
+    "schemaVersion": 1,
+    "kind": "media",
+    "browseAs": "work",
+    "playback": { "clip": { "time": 12.5 } },
+    "futureDetail": [1, 2, 3]
+  }
+}

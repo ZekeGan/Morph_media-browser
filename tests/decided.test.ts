@@ -151,7 +151,7 @@ test('new portable fields save through real library paths without changing schem
   })
   row = lib.snapshot().rows[0]
   assert.equal(fieldValue(row, 'flag'), null)
-  assert.equal((await readFolder(media)).schemaVersion, 1)
+  assert.equal((await readFolder(media)).schemaVersion, 2)
   assert.equal(await fs.readFile(path.join(media, 'original.bin'), 'utf8'), 'ORIGINAL')
   const assigned = {
     ...presetDraft(project),

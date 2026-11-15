@@ -415,7 +415,7 @@ export const cellType = (kind: string) =>
     'field-url': 'url',
     'field-date-only': 'date',
   })[kind] ?? 'string'
-// Content templates are kept per folder kind (book, game, media, general).
+// Content templates are kept per template kind (book, game, media, general; music and video folders share media).
 export const contentCells = (
   project: { cells: Cell[]; contentCells?: Record<string, Cell[]> },
   kind: string

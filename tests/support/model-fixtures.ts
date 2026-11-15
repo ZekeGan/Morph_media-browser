@@ -17,7 +17,7 @@ export function modelDetails(): FolderDetails {
 export function modelFolder(): FolderRecord {
   return {
     kind: 'media-viewer.folder',
-    schemaVersion: 1,
+    schemaVersion: 2,
     folderId: 'folder',
     revision: 1,
     attributes: [

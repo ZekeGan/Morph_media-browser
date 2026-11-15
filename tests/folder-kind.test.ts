@@ -14,18 +14,31 @@ const row = (details?: object, boundary?: object) =>
     boundary,
     record: details ? { details: { schemaVersion: 1, ...details } } : undefined,
   }) as unknown as FolderRow
-const files = (images: number, videos = 0, audio = 0) =>
+const files = (images: number, videos = 0, audio = 0, names: string[] = []) =>
   sampleOf([
     ...Array.from({ length: images }, () => ({ kind: 'image' })),
     ...Array.from({ length: videos }, () => ({ kind: 'video' })),
     ...Array.from({ length: audio }, () => ({ kind: 'audio' })),
+    // Named files get the kind the folder listing gives them.
+    ...names.map((name) => ({
+      name,
+      kind: /\.(txt|epub)$/.test(name)
+        ? 'text'
+        : /\.pdf$/.test(name)
+          ? 'pdf'
+          : /\.(zip|cbz)$/.test(name)
+            ? 'archive'
+            : 'other',
+    })),
     { kind: 'folder' },
     { kind: 'subtitle' },
   ])
+const kindOf = (...sample: Parameters<typeof files>) =>
+  detectFolderKind(row({}), files(...sample)).kind
 
 test('folder kind: manual choice, detected game, reading mode, then file content; unsure means general', () => {
-  assert.deepEqual(detectFolderKind(row({ kind: 'media' }, { engines: ['x'] }), files(20)), {
-    kind: 'media',
+  assert.deepEqual(detectFolderKind(row({ kind: 'music' }, { engines: ['x'] }), files(20)), {
+    kind: 'music',
     source: 'manual',
   })
   assert.deepEqual(detectFolderKind(row(undefined, { engines: ['RPG Maker'], evidence: [] })), {
@@ -37,18 +50,90 @@ test('folder kind: manual choice, detected game, reading mode, then file content
     detectFolderKind(row({ boundary: { state: 'not-game', engines: [], evidence: [] } }, {})).kind,
     'general'
   )
-  assert.deepEqual(detectFolderKind(row({ reading: { mode: 'manga' } }), files(0)), {
+  assert.deepEqual(detectFolderKind(row({ reading: { mode: 'manga' } }), files(0, 5)), {
     kind: 'book',
     source: 'reading',
   })
-  assert.equal(detectFolderKind(row({}), files(30)).kind, 'book')
-  assert.equal(detectFolderKind(row({}), files(2)).kind, 'general', 'two images are not a book')
-  assert.equal(detectFolderKind(row({}), files(5, 5)).kind, 'media', 'half video or audio is media')
-  assert.equal(detectFolderKind(row({}), files(0, 0, 4)).kind, 'media')
-  assert.equal(detectFolderKind(row({}), files(10, 0, 0)).kind, 'book')
-  assert.equal(detectFolderKind(row({}), files(7, 0, 0)).kind, 'book')
   assert.deepEqual(detectFolderKind(row({})), { kind: 'general', source: 'default' })
-  assert.equal(detectFolderKind(row({}), files(0)).kind, 'general', 'an empty folder is general')
+  assert.equal(kindOf(0), 'general', 'an empty folder is general')
+})
+
+test('folder kind by content: video, music, text book, manga, in that order (R-387)', () => {
+  // Video: at least one, and no fewer than the pictures.
+  assert.equal(kindOf(5, 5), 'video')
+  assert.equal(kindOf(0, 1, 9), 'video', 'the video rule comes before music')
+  assert.equal(kindOf(6, 5), 'general', 'more pictures than videos is neither video nor manga')
+  assert.equal(kindOf(6, 1, 0, ['a.cbz']), 'general', 'a video rules manga out')
+  // Music: most files, not counting cover pictures, cue sheets, lyrics and playlists.
+  assert.equal(kindOf(0, 0, 4), 'music')
+  assert.equal(kindOf(2, 0, 3, ['album.cue', '01.lrc', '02.LRC', 'list.m3u8', 'rip.log']), 'music')
+  assert.equal(kindOf(0, 0, 2, ['a.bin', 'b.bin']), 'general', 'half is not most')
+  assert.equal(kindOf(0, 0, 2, ['a.bin']), 'music')
+  // Pictures count once they outnumber the tracks; music and pictures together cannot be told apart, so general.
+  assert.equal(kindOf(30, 0, 3), 'general', 'an album with many scans is undecidable')
+  assert.equal(kindOf(20, 0, 12), 'general')
+  assert.equal(kindOf(3, 0, 2), 'general', 'a book with drama tracks is undecidable')
+  // Text books: any EPUB, or TXT files making up at least half.
+  assert.equal(kindOf(8, 0, 0, ['book.epub']), 'book')
+  assert.equal(kindOf(0, 0, 0, ['a.txt', 'b.bin']), 'book')
+  assert.equal(kindOf(0, 0, 0, ['a.txt', 'b.bin', 'c.bin']), 'general')
+  // Manga: three or more pictures that are most of the files, or a comic archive.
+  assert.equal(kindOf(30), 'book')
+  assert.equal(kindOf(2), 'general', 'two pictures are not a book')
+  assert.equal(kindOf(3, 0, 0, ['a.bin', 'b.bin']), 'book')
+  assert.equal(kindOf(3, 0, 0, ['a.bin', 'b.bin', 'c.bin']), 'general', 'half is not most')
+  for (const name of ['v1.cbz', 'v1.CBR', 'v1.cb7'])
+    assert.equal(kindOf(0, 0, 0, [name, 'a.bin', 'b.bin']), 'book')
+  // PDF and plain ZIP files never decide.
+  assert.equal(kindOf(0, 0, 0, ['a.pdf', 'b.zip']), 'general')
+  assert.deepEqual(files(1, 0, 0, ['a.epub', 'b.txt', 'c.cbz', 'd.cue', 'e.pdf']), {
+    images: 1,
+    videos: 0,
+    audio: 0,
+    texts: 2,
+    epubs: 1,
+    comics: 1,
+    sidecars: 1,
+    total: 6,
+  })
+})
+
+test('the scan counts what a folder holds the way an opened folder does', async (t) => {
+  const base = path.resolve('.test-output')
+  await fs.mkdir(base, { recursive: true })
+  const root = await fs.mkdtemp(path.join(base, 'folder-kind-scan-')),
+    media = path.join(root, 'media')
+  t.after(async () => {
+    const target = await fs.realpath(root)
+    if (!target.startsWith(base + path.sep)) throw new Error('Unsafe cleanup')
+    await fs.rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+  })
+  const folders: Record<string, string[]> = {
+    Album: ['01.mp3', '02.flac', 'cover.bmp', 'album.cue', '01.lrc'],
+    Comic: ['v1.cbr', 'notes.bin'],
+    Clips: ['a.mp4', 'a.jpg'],
+    Papers: ['a.pdf', 'b.zip'],
+  }
+  for (const [name, list] of Object.entries(folders)) {
+    await fs.mkdir(path.join(media, name), { recursive: true })
+    for (const file of list) await fs.writeFile(path.join(media, name, file), 'x')
+  }
+  const lib = new Library(path.join(root, 'local'), undefined, false)
+  await lib.init()
+  await lib.create(media, { name: 'Kinds', scanAll: true, depth: { mode: 'through', level: 2 } })
+  const rowOf = (name: string) => lib.snapshot().rows.find((r) => r.name === name)!
+  assert.deepEqual(rowOf('Album').contents, {
+    images: 1,
+    videos: 0,
+    audio: 2,
+    texts: 0,
+    epubs: 0,
+    comics: 0,
+    sidecars: 2,
+    total: 5,
+  })
+  const detected = (name: string) => detectFolderKind(rowOf(name), rowOf(name).contents).kind
+  assert.deepEqual(Object.keys(folders).map(detected), ['music', 'book', 'video', 'general'])
 })
 
 test('the folderKind request stores or clears the manual kind and rejects unknown kinds', async (t) => {
@@ -144,7 +229,7 @@ test('the folderKind request stores or clears the manual kind and rejects unknow
     action: 'folderKind',
     rowId: rowA().rowId,
     revision: rowA().record!.revision,
-    kind: 'media',
+    kind: 'video',
   })
   assert.equal((await readFolder(rowA().path)).details?.boundary?.state, 'root')
 })
@@ -181,9 +266,9 @@ test('folderKinds sets the kind of several folders and reports the ones that fai
       { rowId: a.rowId, revision: a.record!.revision },
       { rowId: b.rowId, revision: b.record!.revision + 5 },
     ],
-    kind: 'media',
+    kind: 'music',
   })
-  assert.equal((await readFolder(rowOf('A').path)).details?.kind, 'media')
+  assert.equal((await readFolder(rowOf('A').path)).details?.kind, 'music')
   assert.equal(
     (await readFolder(rowOf('B').path)).details?.kind,
     undefined,
@@ -191,7 +276,7 @@ test('folderKinds sets the kind of several folders and reports the ones that fai
   )
   assert.match(result.notice?.message ?? JSON.stringify(result.notice), /失敗|b/i)
   await assert.rejects(
-    explorer.request({ action: 'folderKinds', rows: [], kind: 'media' }),
+    explorer.request({ action: 'folderKinds', rows: [], kind: 'video' }),
     /批次範圍不合法/
   )
   await assert.rejects(

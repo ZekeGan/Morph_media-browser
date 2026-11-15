@@ -121,7 +121,7 @@ export interface Asset {
 }
 export interface FolderRecord {
   kind: 'media-viewer.folder'
-  schemaVersion: 1
+  schemaVersion: 2
   folderId: string
   revision: number
   attributes: Attribute[]
@@ -204,7 +204,7 @@ export interface FolderRow {
   readonly?: boolean
   boundary?: { engines: string[]; evidence: string[]; state: string }
   // R-340: the files directly inside, counted while scanning (not saved); absent where the scan did not look inside.
-  contents?: { images: number; videos: number; audio: number; texts: number; total: number }
+  contents?: Required<import('./kind').KindSample>
 }
 export interface ScanProgress {
   visited: number

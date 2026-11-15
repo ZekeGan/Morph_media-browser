@@ -9,16 +9,25 @@ export type FormatKind = 'folder' | 'details' | 'project' | 'workspace' | 'setti
 // The version this build writes. Bump one together with a step from the previous version, a fixture of the old
 // format and a test (see the checklist in docs/DATA_FORMAT.md).
 export const FORMAT_VERSION: Record<FormatKind, number> = {
-  folder: 1,
+  folder: 2,
   details: 1,
   project: 1,
   workspace: 1,
   settings: 1,
 }
 type Step = (value: Record<string, unknown>) => Record<string, unknown>
-// UPGRADE_STEPS[kind][n] turns version n into version n + 1. None are needed yet.
+// UPGRADE_STEPS[kind][n] turns version n into version n + 1.
 export const UPGRADE_STEPS: Record<FormatKind, Partial<Record<number, Step>>> = {
-  folder: {},
+  folder: {
+    // 1 -> 2 (R-387): the combined audio/video kind is split into music and video. A folder set to the old kind by
+    // hand loses that choice, so what it holds decides; nothing else changes.
+    1: (value) => {
+      const details = value.details
+      if (!plain(details) || details.kind !== 'media') return value
+      const { kind: _kind, ...rest } = details
+      return { ...value, details: rest }
+    },
+  },
   details: {},
   project: {},
   workspace: {},

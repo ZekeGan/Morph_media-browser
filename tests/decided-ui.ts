@@ -378,7 +378,7 @@ try {
   const snapshot = (await page.evaluate(() => window.media.request({ action: 'snapshot' })))
     .snapshot
   assert.equal(snapshot.projects[0].projectId, project.projectId)
-  assert.ok((await fs.readFile(folderFile(media), 'utf8')).includes('"schemaVersion": 1'))
+  assert.ok((await fs.readFile(folderFile(media), 'utf8')).includes('"schemaVersion": 2'))
   assert.deepEqual(errors, [])
   console.log(
     'PASS new fields/schemes, translated modes, auto-open preference, virtual overview, archive reader, native PDF pages, settings preview/import/recovery, readonly originals; ' +

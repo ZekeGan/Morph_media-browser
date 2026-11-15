@@ -77,10 +77,14 @@ try {
   await kind.click()
   await page.getByRole('option', { name: '一般', exact: true }).click()
   await page.getByRole('tab', { name: '遊戲操作', exact: true }).waitFor({ state: 'detached' })
-  // Scan boundaries belong to games: a manga project with no detected game does not show them.
+  // Choosing "game" marked the folder as a game main folder (R-380) and choosing another type keeps that mark, so the
+  // scan range, which only a game folder's own tab carries, stays reachable in Advanced (R-401).
   await page.getByRole('tab', { name: '進階', exact: true }).click()
   await page.getByText('技術細節（原始資料）').waitFor()
-  assert.equal(await page.getByText('掃描範圍', { exact: true }).count(), 0)
+  await page
+    .getByRole('tabpanel', { name: '進階' })
+    .getByText('掃描範圍', { exact: true })
+    .waitFor()
   assert.deepEqual(errors, [])
   passed = true
   console.log('PASS add choice option from folder settings. ' + root)

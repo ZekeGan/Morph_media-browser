@@ -8,7 +8,7 @@ import { RightPanel } from '../panel/RightPanel'
 import { lazy, Suspense } from 'react'
 import { ActionIcon, Alert, Button, Group, Text, Tooltip } from '@mantine/core'
 import { pathKey } from '../../shared/browse'
-import { effectiveKind } from '../../shared/kind'
+import { effectiveKind, templateKind } from '../../shared/kind'
 import { PanelSkeleton } from '../panel/PanelSkeleton'
 import { type FolderRow, type Project, type Request, type Response } from '../../shared/model'
 import type { BrowseState, ExplorerRequest, ExplorerResponse } from '../../shared/explorer'
@@ -108,7 +108,7 @@ export function BrowsePanel(props: Props) {
     >
       {detail && panelOpen && (
         <RightPanel
-          className={kind === 'media' ? 'video-panel' : ''}
+          className={templateKind(kind) === 'media' ? 'video-panel' : ''}
           label={tr('資料夾內容')}
           resizerLabel={tr('調整資料夾內容寬度')}
           width={browse.panelWidth}
@@ -143,7 +143,7 @@ export function BrowsePanel(props: Props) {
                   <Icon name="arrow-right" />
                 </ActionIcon>
               </Tooltip>
-              {kind !== 'media' && (
+              {templateKind(kind) !== 'media' && (
                 <strong className="browse-panel-name">
                   <KindIcon row={detail} size={16} />
                   {detail.name}

@@ -1,10 +1,10 @@
 # 資料格式參考
 
-> 最後確認：2026-11-14（R-363）。可攜記錄與應用程式資料的格式；型別以 `shared/model.ts`、`shared/workspace.ts` 為準，升級在 `shared/upgrade.ts`。
+> 最後確認：2026-11-16（R-387）。可攜記錄與應用程式資料的格式；型別以 `shared/model.ts`、`shared/workspace.ts` 為準，升級在 `shared/upgrade.ts`。
 
 M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是可重建的副本。此頁列出各檔案的位置與欄位，讓其他工具或貢獻者能讀懂；設計理由見 [資料模型](FOLDER_PROJECT_MODEL.md) 與 [儲存安全](STORAGE_OPTIONS.md)，型別定義的原始碼是 [shared/model.ts](../shared/model.ts)、[shared/explorer.ts](../shared/explorer.ts)、[shared/workspace.ts](../shared/workspace.ts)，驗證在同檔的 `validate*` 函式。
 
-> 欄位以現行程式為準；`schemaVersion` 與應用程式版本號無關，目前都是 `1`。日後改格式時的自動升級規則見[格式升級與相容規則](#格式升級與相容規則)。
+> 欄位以現行程式為準；`schemaVersion` 與應用程式版本號無關；資料夾記錄是 `2`，其餘都是 `1`。改格式時的自動升級規則見[格式升級與相容規則](#格式升級與相容規則)。
 
 ## 檔案位置
 
@@ -21,7 +21,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 
 ## 資料夾記錄 `folder.json`
 
-`kind: "media-viewer.folder"`、`schemaVersion: 1`。
+`kind: "media-viewer.folder"`、`schemaVersion: 2`（v1 → v2 見[升級步驟](#已有的升級步驟)）。
 
 | 欄位 | 型別 | 說明 |
 | --- | --- | --- |
@@ -53,7 +53,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 - `shownExtras`（R-315）：這個遊戲按鈕列要顯示的自動操作，`steam`／`store`／`save` 的子集；沒有時都不顯示。
 - `cellImages`：圖片組件各自選定的資產；`bannerAssetId`：封面資產。
 - 刪除已保存圖片（`deleteImage`）：同一次原子寫入（含版本檢查）移除 `assets` 項目並清掉 `cellImages`／`bannerAssetId` 對它的引用；寫入成功後才刪除 `.media-viewer/assets/` 內的受管檔案（需通過 `safePath`、必須是一般檔案、且無其他項目共用同一路徑）。寫入失敗則檔案與記錄都保留；使用者原始媒體檔不會被觸碰。刪除後不保留副本，但 `.bak` 仍含舊記錄，不會復活檔案。
-- `kind`：使用者手動指定的資料夾類型（`game`、`book`、`media`、`general`）；沒有時由程式偵測，不寫入記錄（見 [WORK_ITEMS](WORK_ITEMS.md) 的資料夾類型整合）。
+- `kind`：使用者手動指定的資料夾類型（`game`、`book`、`music`、`video`、`general`）；沒有時由程式偵測，不寫入記錄（規則見 [UI_RULES](UI_RULES.md) 的資料夾類型）。v1 的 `media`（影音合一）在升級到 v2 時移除。
 - `reading`、`playback`、`subtitles`：漫畫閱讀偏好、影片續播進度與字幕設定。`reading` 的 `webtoon`、`webtoonWidth`（30～100）、`webtoonAsked`（R-256）記條漫模式、寬度與是否已回答過條漫提示。
 - `novels`（R-282）：文字書的閱讀位置，以檔名為鍵 `{ chapter, position, percent, updated, bookmarks? }`；`position`、`percent` 是 0～1 的比例，書籤最多 500 個。
 
@@ -62,7 +62,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 ```json
 {
   "kind": "media-viewer.folder",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "folderId": "f4c1-example",
   "revision": 3,
   "attributes": [
@@ -81,8 +81,8 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 | 欄位 | 說明 |
 | --- | --- |
 | `projectId`、`rootFolderId`、`revision`、`name` | 身分與版本；`rootFolderId` 指向根資料夾的記錄 |
-| `contentCells` | 內容模板，以資料夾類型為鍵（`book`、`game`、`media`、`general`；舊鍵 `manga`、`album`、`video`、`music`、`other` 仍可讀取）；舊 `mediaCategory`／`mediaSourceCategory` 已移除，讀到時忽略 |
-| `kindLayouts` | 各資料夾類型套用的 CELL 版面方案 ID（資料夾自選的版面優先） |
+| `contentCells` | 內容模板，以模板類型為鍵（`book`、`game`、`media`、`general`；音樂與影片資料夾共用 `media`；舊鍵 `manga`、`album`、`video`、`music`、`other` 仍可讀取）；舊 `mediaCategory`／`mediaSourceCategory` 已移除，讀到時忽略 |
+| `kindLayouts` | 各模板類型（`book`、`game`、`media`、`general`；音樂與影片資料夾共用 `media`）套用的 CELL 版面方案 ID（資料夾自選的版面優先） |
 | `depth` | `{ mode: 'through' | 'exact', level }` 掃描層級 |
 | `fieldBindings` | 專案的欄位清單：`{ alias, attributeId, type, options?, optionColors?, trueLabel?, falseLabel? }`；`trueLabel`／`falseLabel`（R-234）只用於是／否欄位，各 1～20 字的顯示文字 |
 | `fieldGroups`（選用） | 欄位群組：`{ groupId, name, memberIds }`，最多 100 個；成員 1～20 個、須在 `fieldBindings`、型別相同（文字與標籤可混用）、一個欄位只屬一個群組；名稱 1～100 字，不分大小寫不可與其他群組或欄位別名重複 |
@@ -138,13 +138,13 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 - **版本衝突**：`revision` 不符的寫入一律拒絕，保留使用者草稿。
 - **未知資料保留**：程式不認得的檔案與資料夾不會被清理；清理只移除 M:orph 自己建立的受管資料，並先預覽。
 - **遊戲保護**：遊戲根目錄可以有自己的記錄，內部不建立記錄、不修改原始檔。
-- **升級**：目前只有 `schemaVersion: 1`。日後改版會讀得懂舊版並自動遷移，規則見下節。
+- **升級**：資料夾記錄是 `schemaVersion: 2`，其餘是 `1`；舊版記錄讀取時自動升級，規則見下節。
 
 ## 格式升級與相容規則
 
 使用者的目標：資料結構在版本之間改變時，使用者不必做任何多餘操作，`%APPDATA%` 與資料夾裡的私有資料都自動轉換。階段與承諾範圍見 [RELEASING](RELEASING.md#階段)：Alpha 不承諾相容，**Beta 起必須符合本節**。決策見 [DECISIONS C-119](DECISIONS.md#c-119版本階段打-tag-與資料自動升級2026-11-04)。
 
-> 實作：入口是 `shared/upgrade.ts`（`FORMAT_VERSION`、`UPGRADE_STEPS`、`upgradeFormat`、`NewerFormatError`）；目前所有格式都還是 v1，所以還沒有任何升級步驟。驗證函式依 `FORMAT_VERSION` 檢查，較新版本丟出 `NewerFormatError`。資料夾與專案記錄（含 `.bak`）一律經 `electron/files.ts` 的 `readJson` 讀取，讀到就已是最新格式，新增讀取路徑不必自己呼叫升級。測試在 `tests/upgrade.test.ts`，以暫時把某格式當成 v2 的方式走完整條升級與唯讀路徑。
+> 實作：入口是 `shared/upgrade.ts`（`FORMAT_VERSION`、`UPGRADE_STEPS`、`upgradeFormat`、`NewerFormatError`）；已有的步驟列在[下面](#已有的升級步驟)。驗證函式依 `FORMAT_VERSION` 檢查，較新版本丟出 `NewerFormatError`。資料夾與專案記錄（含 `.bak`）一律經 `electron/files.ts` 的 `readJson` 讀取，讀到就已是最新格式，新增讀取路徑不必自己呼叫升級。測試在 `tests/upgrade.test.ts`：資料夾記錄用舊格式樣本 `tests/fixtures/folder-v1.json` 走真正的升級步驟，還沒有步驟的格式以暫時把它當成下一版的方式走完整條升級與唯讀路徑。
 
 **什麼時候要升 `schemaVersion`**
 
@@ -177,9 +177,15 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 - 只升級已存在且經允許路徑讀到的記錄。遊戲 ROOT 內部的保護邊界不變：升級不建立任何新記錄，也不因升級而進入遊戲內部。
 - 升級過程不得修改使用者的原始媒體檔。
 
+### 已有的升級步驟
+
+| 格式 | 步驟 | 內容 |
+| --- | --- | --- |
+| 資料夾記錄 | v1 → v2（R-387） | 資料夾類型的「影音」拆成 `music` 與 `video`。`details.kind` 是 `media` 時移除這個鍵（之後依內容自動判斷）；其他欄位、其他類型值與不認得的欄位都不變。`details` 自己的 `schemaVersion` 仍是 `1`。舊版程式讀到 v2 的記錄時依「較新版本的資料」處理（唯讀）。專案匯出包的 `EXPORT_VERSION` 不變：包內的 v1 記錄匯入時走同一個步驟；舊版程式匯入這一版的匯出包時，包裝版本檢查會通過，但包內的 v2 記錄在寫入前的驗證就被判定為「較新版本的資料」，整份匯入拒絕、什麼都不寫 |
+
 ### 每次升格式版本的必備項目
 
-1. 一份舊格式的樣本資料（`tests/` 下的 fixture），涵蓋共用值、專案私有覆寫與未知欄位。
+1. 一份舊格式的樣本資料（`tests/fixtures/` 下，例如 `folder-v1.json`），涵蓋共用值、專案私有覆寫與未知欄位。
 2. 升級鏈測試：從每個舊版本一路升到最新、重複升級結果相同、未知欄位保留。
 3. 失敗與取消測試：原檔與 `.bak` 保持，原始媒體檔不變。
 4. 「較新版本資料」的唯讀行為測試。

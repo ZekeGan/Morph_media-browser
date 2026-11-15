@@ -2,7 +2,7 @@ import { MediaBrowser } from '../media/MediaBrowser'
 import { BookShelf, FilePage } from './FilePage'
 import { MediaViewer } from '../media/MediaViewer'
 import { isGameFolder, visibleFile } from '../../shared/media'
-import { effectiveKind, sampleOf } from '../../shared/kind'
+import { effectiveKind, sampleOf, templateKind } from '../../shared/kind'
 import { importedFieldLabels } from '../editor/importedFieldLabels'
 import { isUrl, siteName } from '../metadata/importSource'
 import { PanelSkeleton } from './PanelSkeleton'
@@ -247,7 +247,8 @@ export function FolderContent({
   if (!content) return <PanelSkeleton />
   const visibleEntries = content.entries.filter((entry) => visibleFile(entry, visibility))
   const selectedFile = visibleEntries.find((entry) => entry.id === selectedFileId) ?? selectedEntry
-  const kind = effectiveKind(row, sampleOf(content.entries))
+  // Music and video folders share one page and one content template (R-387).
+  const kind = templateKind(effectiveKind(row, sampleOf(content.entries)))
   // Everything that is not a dedicated game ROOT or book uses the unified folder page.
   const unified = kind !== 'book' && !(kind === 'game' && isGameFolder(row))
   if (unified && (!selectedFile || ['audio', 'video'].includes(selectedFile.kind)))

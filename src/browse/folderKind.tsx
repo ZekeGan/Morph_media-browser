@@ -23,14 +23,10 @@ export function kindLook(row: FolderRow, sample?: KindSample) {
     detected.kind === 'game'
       ? 'game'
       : detected.kind === 'book'
-        ? (sample?.texts ?? 0) > (sample?.images ?? 0)
+        ? (sample?.epubs ?? 0) >= 1 || (sample?.texts ?? 0) > (sample?.images ?? 0)
           ? 'novel'
           : 'manga'
-        : detected.kind === 'media'
-          ? (sample?.audio ?? 0) > (sample?.videos ?? 0)
-            ? 'music'
-            : 'video'
-          : 'general'
+        : detected.kind
   const candidate =
     row.boundary?.state === 'candidate' || row.record?.details?.boundary?.state === 'candidate'
   return { look, manual: detected.source === 'manual', candidate }

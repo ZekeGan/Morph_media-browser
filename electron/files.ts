@@ -176,7 +176,7 @@ export async function ensureFolder(
   }
   const record: FolderRecord = {
     kind: 'media-viewer.folder',
-    schemaVersion: 1,
+    schemaVersion: 2,
     folderId: randomUUID(),
     revision: 1,
     attributes: [],

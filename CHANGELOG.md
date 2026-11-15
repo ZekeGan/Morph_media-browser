@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Folder types: audio/video is split into Music and Video, and detection is stricter (video beats images, music needs a majority of tracks, any EPUB or CBZ/CBR/CB7 makes a book, PDF and plain ZIP no longer decide). Folder records move to format version 2; a folder set by hand to the old audio/video type goes back to automatic detection. Older versions of M:orph open version 2 records read-only (R-387).
 - Game actions tab: explanations moved into "?" tips, the scan range moved here from Advanced, and the launch wording no longer says EXE since SWF and other files can be launched (R-382, R-383, R-401).
 - Game detection: Liar-soft games (an EXE with several .xfl archives) are recognised (R-396).
 - File overview: the scope switch's selection mark no longer sits off its item the first time it opens (R-402).

@@ -1,5 +1,7 @@
 import { fmt } from '../shared/message'
 import { mediaTypes } from './media-files'
+import { imageTypes } from '../shared/images'
+import { countFile, emptySample } from '../shared/kind'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { createHash } from 'node:crypto'
@@ -188,18 +190,21 @@ export async function scan(ex: Library) {
       }
       if ((!p.scanAll && depth >= p.depth.level) || ex.cancelled) return []
       const children: ScanEntry[] = []
-      const contents = { images: 0, videos: 0, audio: 0, texts: 0, total: 0 }
+      const contents = emptySample()
       try {
         for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
           if (entry.name.toLowerCase() === DATA_DIR) continue
           if (entry.isFile()) {
             // R-340: what the folder holds itself, by extension only (nothing is opened).
-            const kind = mediaTypes[path.extname(entry.name).toLowerCase()]?.[0]
-            contents.total++
-            if (kind === 'image') contents.images++
-            else if (kind === 'video') contents.videos++
-            else if (kind === 'audio') contents.audio++
-            else if (kind === 'text') contents.texts++
+            // The same kinds the folder listing gives, so both feed the same rules (shared/kind.ts).
+            const ext = path.extname(entry.name).toLowerCase()
+            // Subtitles are left out here as the opened folder's sample leaves them out, so both totals agree.
+            if (mediaTypes[ext]?.[0] === 'subtitle') continue
+            countFile(
+              contents,
+              imageTypes[ext.slice(1)] ? 'image' : (mediaTypes[ext]?.[0] ?? 'other'),
+              entry.name
+            )
             continue
           }
           if (entry.isSymbolicLink()) {

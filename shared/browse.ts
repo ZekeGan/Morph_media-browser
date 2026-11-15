@@ -176,7 +176,7 @@ export function columnValue(project: Project, row: FolderRow, id: string): unkno
 // without subfolders. maxDepth limits how far below the starting folder to look.
 type Contents = NonNullable<FolderRow['contents']>
 const holdsMedia = (c: Contents | undefined) =>
-  !!c && (c.images >= 3 || c.videos >= 1 || c.audio >= 2 || c.texts >= 1)
+  !!c && (c.images >= 3 || c.videos >= 1 || c.audio >= 2 || c.texts >= 1 || c.comics >= 1)
 // Volumes of one series: two or more subfolders, every one a leaf of pictures, and nearly all named with a number.
 const numbered = /\d|[一二三四五六七八九十]+[巻卷話话集冊册]|vol/i
 function isSeries(children: FolderRow[], kids: Map<string, FolderRow[]>) {

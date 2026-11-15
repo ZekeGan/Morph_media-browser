@@ -7,6 +7,7 @@ import {
   effectiveKind,
   folderKinds,
   sampleOf,
+  templateKind,
   type KindSample,
 } from '../../shared/kind'
 import { GameActionEditor, GameActionTargets } from '../game/GameActions'
@@ -131,14 +132,15 @@ export function FolderPanel({
   const kindLabel: Record<string, string> = {
     game: tr('遊戲'),
     book: tr('書籍／漫畫'),
-    media: tr('影音'),
+    music: tr('音樂'),
+    video: tr('影片'),
     general: tr('一般'),
   }
   const layoutName = (id?: string) => {
     const preset = cardPresets(project).find((p) => p.id === id) ?? cardPresets(project)[0]
     return preset.id === 'default' && preset.name === '預設版面' ? tr('預設版面') : preset.name
   }
-  const kindLayoutId = project.kindLayouts?.[effectiveKind(row, sample)]
+  const kindLayoutId = project.kindLayouts?.[templateKind(effectiveKind(row, sample))]
   const effectiveLayout = layoutName(kindLayoutId ?? project.activeLayoutId)
   const kindReason: Record<string, string> = {
     game: tr('偵測到遊戲引擎'),
@@ -175,7 +177,10 @@ export function FolderPanel({
     )
   const imageCells = [
     ...new Map(
-      [...rowCells(project, row), ...contentCells(project, effectiveKind(row, sample))]
+      [
+        ...rowCells(project, row),
+        ...contentCells(project, templateKind(effectiveKind(row, sample))),
+      ]
         .filter((c) => c.kind === 'image')
         .map((c) => [c.cellId, c])
     ).values(),

@@ -1,9 +1,10 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { worksBelow } from '../shared/browse'
+import { emptySample } from '../shared/kind'
 import type { FolderRow } from '../shared/model'
 
-const none = { images: 0, videos: 0, audio: 0, texts: 0, total: 0 }
+const none = emptySample()
 const pictures = { ...none, images: 20, total: 20 }
 let n = 0
 const row = (path: string, extra: Partial<FolderRow> = {}): FolderRow => ({

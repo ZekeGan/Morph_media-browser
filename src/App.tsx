@@ -387,7 +387,7 @@ export function App() {
                         {
                           book: tr('書籍／漫畫'),
                           game: tr('遊戲'),
-                          media: tr('影音'),
+                          media: tr('音樂／影片'),
                           general: tr('一般'),
                         } as Record<string, string>
                       )[templateCategory] ?? tr('一般')

@@ -85,7 +85,7 @@ await library.create(media, {
 // Folder types are detected from the files; this fixture is mixed media, so say so.
 for (const dir of [media, child]) {
   const record = await readFolder(dir)
-  record.details = { ...(record.details ?? { schemaVersion: 1 }), kind: 'media' }
+  record.details = { ...(record.details ?? { schemaVersion: 1 }), kind: 'video' }
   await saveFolder(dir, record, record.revision)
 }
 const project = library.snapshot().projects[0].project!,

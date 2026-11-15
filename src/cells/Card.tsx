@@ -170,7 +170,8 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
     const kinds: Record<string, string> = {
       book: tr('書籍／漫畫'),
       game: tr('遊戲'),
-      media: tr('影音'),
+      music: tr('音樂'),
+      video: tr('影片'),
       general: tr('一般'),
     }
     return (

@@ -1,5 +1,5 @@
 import { fieldValue, type Attribute, type Cell, type FolderRow, type Project } from './model'
-import { effectiveKind } from './kind'
+import { effectiveKind, templateKind } from './kind'
 import { settleCells } from './fieldGroups'
 import { cellLists } from './cellLists'
 // R-362: a book's cover is a component of its template (the folder's cover picture, else its first image), so it can
@@ -128,7 +128,7 @@ export function saveCardPreset(
 export function rowCells(project: Project, row: FolderRow): Cell[] {
   const chosen =
     (row.record?.folderId && project.folderLayouts?.[row.record.folderId]) ||
-    project.kindLayouts?.[effectiveKind(row)]
+    project.kindLayouts?.[templateKind(effectiveKind(row))]
   return chosen
     ? (cardPresets(project).find((preset) => preset.id === chosen)?.cells ?? visibleCells(project))
     : visibleCells(project)

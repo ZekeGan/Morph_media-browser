@@ -53,7 +53,7 @@ async function searchPipeline(template: Snapshot, root: string, count: number) {
       readonly: false,
       record: {
         kind: 'media-viewer.folder' as const,
-        schemaVersion: 1 as const,
+        schemaVersion: 2 as const,
         folderId: 'perf-folder-' + i,
         revision: 1,
         attributes: [
