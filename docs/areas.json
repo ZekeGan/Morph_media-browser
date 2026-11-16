@@ -70,6 +70,7 @@
         "src/panel/RightPanel*",
         "src/panel/FolderPanel*",
         "src/panel/FolderParts*",
+        "src/panel/FolderPage*",
         "src/panel/FolderContent*",
         "src/panel/FilePage*",
         "src/panel/FolderAdvanced*",
@@ -265,6 +266,7 @@
         "GAME_VIEWER_DESIGN.md#路徑參數與執行責任"
       ],
       "code": ["src/game/GameActions*",
+        "src/game/GamePage*",
         "src/game/GameExtras*",
         "src/game/useGameExtras*",
         "src/game/playtime*",

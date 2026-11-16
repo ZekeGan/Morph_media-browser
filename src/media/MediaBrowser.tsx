@@ -14,7 +14,7 @@ import { Gallery } from '../gallery/Gallery'
 import { MediaViewer } from './MediaViewer'
 import { FolderAlbumCover } from './FolderAlbumCover'
 import { usePlayback } from './Playback'
-import { FolderHeader } from '../panel/FolderParts'
+import { FolderPage } from '../panel/FolderPage'
 import { useFileVisibility } from '../files/useFileVisibility'
 import { useRefreshNonce } from '../browse/refresh'
 import { Icon } from '../common/icons'
@@ -186,175 +186,186 @@ export function MediaBrowser({
       )
     : []
   return (
-    <div className="mixed-media-browser">
-      <FolderHeader
-        row={row}
-        project={project}
-        openFolder={() => void act({ action: 'open', rowId: row.rowId })}
-        folders={folders}
-        childNames={childNames}
-        busy={busy}
-        onChild={onChild}
-      />
-      <FolderAlbumCover row={row} files={entries.filter((entry) => entry.kind !== 'folder')} />
-      <div className="mixed-media-toolbar">
-        <Select
-          className="media-scope-select"
-          aria-label={tr('檔案範圍')}
-          size="xs"
-          allowDeselect={false}
-          value={scope}
-          disabled={busy || !!opening}
-          onChange={(value) => value && setScope(value as typeof scope)}
-          data={[
-            { value: 'current', label: tr('目前資料夾') },
-            { value: 'descendants', label: tr('包含子資料夾') },
-          ]}
-        />
-        <Select
-          aria-label={tr('檔案類型')}
-          size="xs"
-          allowDeselect={false}
-          value={filter}
-          onChange={(value) => value && setFilter(value as MediaFilter)}
-          data={(['all', 'video', 'image', 'audio', 'other'] as const).map((value) => ({
-            value,
-            label: tr(
-              { all: '全部', video: '影片', image: '圖片', audio: '音樂', other: '其他' }[value]
-            ),
-          }))}
-        />
-        <Select
-          className="media-view-select"
-          aria-label={tr('檔案展示方式')}
-          size="xs"
-          allowDeselect={false}
-          value={view}
-          onChange={(value) => value && setView(value)}
-          data={[
-            { value: 'masonry', label: tr('瀑布流') },
-            { value: 'tiles', label: tr('縮圖') },
-            { value: 'list', label: tr('列表') },
-          ]}
-        />
-        <Menu position="bottom-end">
-          <Menu.Target>
-            <ActionIcon variant="subtle" aria-label={tr('更多檔案選項')}>
-              <Icon name="more" />
-            </ActionIcon>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Menu.Label>{tr('檔案展示方式')}</Menu.Label>
-            {(
-              [
-                ['masonry', '瀑布流'],
-                ['tiles', '縮圖'],
-                ['list', '列表'],
-              ] as const
-            ).map(([value, label]) => (
+    <FolderPage
+      page="media"
+      row={row}
+      project={project}
+      openFolder={() => void act({ action: 'open', rowId: row.rowId })}
+      folders={folders}
+      childNames={childNames}
+      busy={busy}
+      onChild={onChild}
+      visual={
+        <FolderAlbumCover row={row} files={entries.filter((entry) => entry.kind !== 'folder')} />
+      }
+      controls={
+        <div className="mixed-media-toolbar">
+          <Select
+            className="media-scope-select"
+            aria-label={tr('檔案範圍')}
+            size="xs"
+            allowDeselect={false}
+            value={scope}
+            disabled={busy || !!opening}
+            onChange={(value) => value && setScope(value as typeof scope)}
+            data={[
+              { value: 'current', label: tr('目前資料夾') },
+              { value: 'descendants', label: tr('包含子資料夾') },
+            ]}
+          />
+          <Select
+            aria-label={tr('檔案類型')}
+            size="xs"
+            allowDeselect={false}
+            value={filter}
+            onChange={(value) => value && setFilter(value as MediaFilter)}
+            data={(['all', 'video', 'image', 'audio', 'other'] as const).map((value) => ({
+              value,
+              label: tr(
+                { all: '全部', video: '影片', image: '圖片', audio: '音樂', other: '其他' }[value]
+              ),
+            }))}
+          />
+          <Select
+            className="media-view-select"
+            aria-label={tr('檔案展示方式')}
+            size="xs"
+            allowDeselect={false}
+            value={view}
+            onChange={(value) => value && setView(value)}
+            data={[
+              { value: 'masonry', label: tr('瀑布流') },
+              { value: 'tiles', label: tr('縮圖') },
+              { value: 'list', label: tr('列表') },
+            ]}
+          />
+          <Menu position="bottom-end">
+            <Menu.Target>
+              <ActionIcon variant="subtle" aria-label={tr('更多檔案選項')}>
+                <Icon name="more" />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Label>{tr('檔案展示方式')}</Menu.Label>
+              {(
+                [
+                  ['masonry', '瀑布流'],
+                  ['tiles', '縮圖'],
+                  ['list', '列表'],
+                ] as const
+              ).map(([value, label]) => (
+                <Menu.Item
+                  key={value}
+                  leftSection={view === value ? <Icon name="check" /> : null}
+                  onClick={() => setView(value)}
+                >
+                  {tr(label)}
+                </Menu.Item>
+              ))}
+              <Menu.Divider />
               <Menu.Item
-                key={value}
-                leftSection={view === value ? <Icon name="check" /> : null}
-                onClick={() => setView(value)}
+                leftSection={grouped ? <Icon name="check" /> : null}
+                onClick={() => setGrouped((value) => !value)}
               >
-                {tr(label)}
+                {tr('依來源分組')}
               </Menu.Item>
-            ))}
-            <Menu.Divider />
-            <Menu.Item
-              leftSection={grouped ? <Icon name="check" /> : null}
-              onClick={() => setGrouped((value) => !value)}
-            >
-              {tr('依來源分組')}
-            </Menu.Item>
-            <Menu.Item
-              leftSection={visibility.hidden ? <Icon name="check" /> : null}
-              onClick={() => void save({ ...visibility, hidden: !visibility.hidden })}
-            >
-              {tr('顯示隱藏檔案')}
-            </Menu.Item>
-            <Menu.Item
-              leftSection={visibility.dotfiles ? <Icon name="check" /> : null}
-              onClick={() => void save({ ...visibility, dotfiles: !visibility.dotfiles })}
-            >
-              {tr('顯示點開頭檔案')}
-            </Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
-      </div>
-      {(error || visibilityError || overview.notices.length > 0) && (
-        <p role="alert">
-          {[error, visibilityError, ...(scope === 'descendants' ? overview.notices : [])]
-            .filter(Boolean)
-            .join('\n')}
-        </p>
-      )}
-      {!!opening && <small role="status">{tr('載入內容…')}</small>}
-      <Gallery
-        key={scope + '/' + filter + '/' + view}
-        entries={shown}
-        mixed
-        manga={false}
-        presentation={view}
-        suspended={!!session}
-        loading={pending}
-        groupBySource={grouped}
-        sourceRoot={row.path}
-        onSource={(id) => {
-          if (
-            !busy &&
-            sourceRows.some(
-              (source) =>
-                source.rowId === id &&
-                source.record &&
-                !source.readonly &&
-                !source.error &&
-                !source.stopped
-            )
-          )
-            onSource(id)
-        }}
-        onReader={() => {}}
-        save={() => {}}
-        onOpen={(entry) => void open(entry)}
-        onOpenFolder={(entry) =>
-          void act({ action: 'open', rowId: (entry as OverviewEntry).rowId ?? row.rowId })
-        }
-        onEnqueue={
-          playback
-            ? (files) => {
-                for (const source of sourceRows) {
-                  const group = files.filter(
-                    (file) => ((file as OverviewEntry).rowId ?? row.rowId) === source.rowId
-                  )
-                  if (group.length)
-                    playback.add(
-                      {
-                        row: source,
-                        project,
-                        entries: visible.filter((file) => file.rowId === source.rowId),
-                      },
-                      group
-                    )
-                }
-              }
-            : undefined
-        }
-      />
-      {session && (
-        <MediaViewer
-          row={session.source}
-          project={project}
-          file={session.file}
-          entries={viewerFiles}
-          coverEntries={sourceFiles}
+              <Menu.Item
+                leftSection={visibility.hidden ? <Icon name="check" /> : null}
+                onClick={() => void save({ ...visibility, hidden: !visibility.hidden })}
+              >
+                {tr('顯示隱藏檔案')}
+              </Menu.Item>
+              <Menu.Item
+                leftSection={visibility.dotfiles ? <Icon name="check" /> : null}
+                onClick={() => void save({ ...visibility, dotfiles: !visibility.dotfiles })}
+              >
+                {tr('顯示點開頭檔案')}
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </div>
+      }
+      notice={
+        <>
+          {(error || visibilityError || overview.notices.length > 0) && (
+            <p role="alert">
+              {[error, visibilityError, ...(scope === 'descendants' ? overview.notices : [])]
+                .filter(Boolean)
+                .join('\n')}
+            </p>
+          )}
+          {!!opening && <small role="status">{tr('載入內容…')}</small>}
+        </>
+      }
+      list={
+        <Gallery
+          key={scope + '/' + filter + '/' + view}
+          entries={shown}
+          mixed
+          manga={false}
+          presentation={view}
+          suspended={!!session}
           loading={pending}
-          run={run}
-          act={act}
-          busy={busy}
-          close={() => setSession(undefined)}
+          groupBySource={grouped}
+          sourceRoot={row.path}
+          onSource={(id) => {
+            if (
+              !busy &&
+              sourceRows.some(
+                (source) =>
+                  source.rowId === id &&
+                  source.record &&
+                  !source.readonly &&
+                  !source.error &&
+                  !source.stopped
+              )
+            )
+              onSource(id)
+          }}
+          onReader={() => {}}
+          save={() => {}}
+          onOpen={(entry) => void open(entry)}
+          onOpenFolder={(entry) =>
+            void act({ action: 'open', rowId: (entry as OverviewEntry).rowId ?? row.rowId })
+          }
+          onEnqueue={
+            playback
+              ? (files) => {
+                  for (const source of sourceRows) {
+                    const group = files.filter(
+                      (file) => ((file as OverviewEntry).rowId ?? row.rowId) === source.rowId
+                    )
+                    if (group.length)
+                      playback.add(
+                        {
+                          row: source,
+                          project,
+                          entries: visible.filter((file) => file.rowId === source.rowId),
+                        },
+                        group
+                      )
+                  }
+                }
+              : undefined
+          }
         />
-      )}
-    </div>
+      }
+      overlay={
+        session && (
+          <MediaViewer
+            row={session.source}
+            project={project}
+            file={session.file}
+            entries={viewerFiles}
+            coverEntries={sourceFiles}
+            loading={pending}
+            run={run}
+            act={act}
+            busy={busy}
+            close={() => setSession(undefined)}
+          />
+        )
+      }
+    />
   )
 }
