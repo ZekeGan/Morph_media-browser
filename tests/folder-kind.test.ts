@@ -50,9 +50,10 @@ test('folder kind: manual choice, detected game, reading mode, then file content
     detectFolderKind(row({ boundary: { state: 'not-game', engines: [], evidence: [] } }, {})).kind,
     'general'
   )
-  assert.deepEqual(detectFolderKind(row({ reading: { mode: 'manga' } }), files(0, 5)), {
-    kind: 'book',
-    source: 'reading',
+  // R-411: an old reading mode is kept in the record but no longer decides the type.
+  assert.deepEqual(detectFolderKind(row({ reading: { mode: 'manga' } }), files(2)), {
+    kind: 'general',
+    source: 'default',
   })
   assert.deepEqual(detectFolderKind(row({})), { kind: 'general', source: 'default' })
   assert.equal(kindOf(0), 'general', 'an empty folder is general')
@@ -327,8 +328,7 @@ test('R-404: pictures alone are not manga inside a music or video folder, or in 
     assert.equal(detectFolderKind(named(name), seven).kind, 'general', name)
   for (const name of ['scansion', 'My scans', 'Vol 1', 'covers of x'])
     assert.equal(detectFolderKind(named(name), seven).kind, 'book', name)
-  // A manual kind, a reading mode and comic archives still win.
+  // A manual kind and comic archives still win.
   assert.equal(detectFolderKind(row({ kind: 'book' }), seven, 'music').kind, 'book')
-  assert.equal(detectFolderKind(row({ reading: { mode: 'manga' } }), seven, 'music').kind, 'book')
   assert.equal(detectFolderKind(named('scans'), files(0, 0, 0, ['a.cbz'])).kind, 'book')
 })

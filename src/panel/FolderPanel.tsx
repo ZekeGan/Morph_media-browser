@@ -147,7 +147,6 @@ export function FolderPanel({
   const effectiveLayout = layoutName(kindLayoutId ?? project.activeLayoutId)
   const kindReason: Record<string, string> = {
     game: tr('偵測到遊戲引擎'),
-    reading: tr('已用漫畫模式閱讀'),
     content: tr('依檔案內容判斷'),
     default: tr('無法判斷，視為一般'),
     manual: '',

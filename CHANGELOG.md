@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Folder types are changed in one place only (folder settings, Appearance): the image viewer no longer has a manga/image mode switch and a folder read in manga mode is no longer taken for a book; the right panel title always shows the folder name and type icon (R-411).
 - Image mode (not manga) always reads left to right and turns without a slide; a manga folder's saved direction is no longer used or changed by it (R-406).
 - Folders: double-clicking the folder that is already selected enters it, and entering a subfolder from the right panel of a previewed folder puts that folder in the history too, so Back returns to it (R-410).
 - Videos remember where they were left on this computer: reopening one goes on from there (with 從頭開始), a video folder offers 繼續觀看, and thumbnails show how far each was watched; short videos and finished ones start over (R-405).

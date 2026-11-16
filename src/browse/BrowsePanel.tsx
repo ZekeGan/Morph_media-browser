@@ -145,12 +145,10 @@ export function BrowsePanel(props: Props) {
                   <Icon name="arrow-right" />
                 </ActionIcon>
               </Tooltip>
-              {templateKind(kind) !== 'media' && (
-                <strong className="browse-panel-name">
-                  <KindIcon row={detail} size={16} />
-                  {detail.name}
-                </strong>
-              )}
+              <strong className="browse-panel-name">
+                <KindIcon row={detail} size={16} />
+                {detail.name}
+              </strong>
 
               <Tooltip label={tr('在檔案總管開啟')}>
                 <ActionIcon

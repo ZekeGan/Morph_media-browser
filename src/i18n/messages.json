@@ -3731,12 +3731,6 @@
     "es": "Modo de imagen",
     "zh-CN": "图片模式"
   },
-  "漫畫模式": {
-    "en": "Manga mode",
-    "ja": "漫画モード",
-    "es": "Modo manga",
-    "zh-CN": "漫画模式"
-  },
   "沒有符合條件的檔案": {
     "en": "No matching files",
     "ja": "一致するファイルはありません",
@@ -5242,12 +5236,6 @@
     "zh-CN": "检测到游戏引擎",
     "en": "Game engine detected",
     "es": "Motor de juego detectado"
-  },
-  "已用漫畫模式閱讀": {
-    "ja": "マンガモードで閲覧済み",
-    "zh-CN": "已用漫画模式阅读",
-    "en": "Already read in comic mode",
-    "es": "Ya se leyó en modo cómic"
   },
   "依檔案內容判斷": {
     "ja": "ファイルの内容から判断",

@@ -172,7 +172,7 @@ export function columnValue(project: Project, row: FolderRow, id: string): unkno
 
 // R-340: "all works" — each branch below a folder is followed down to its first work, which is shown and not entered;
 // folders that only hold other folders (collections) are passed through. A folder marked by hand wins; then a game
-// (or a possible one), a folder read as manga, a folder that holds media of its own, a series of volumes, and any folder
+// (or a possible one), a folder that holds media of its own, a series of volumes, and any folder
 // without subfolders. maxDepth limits how far below the starting folder to look.
 type Contents = NonNullable<FolderRow['contents']>
 const holdsMedia = (c: Contents | undefined) =>
@@ -193,7 +193,6 @@ export function isWork(row: FolderRow, kids: Map<string, FolderRow[]>) {
   if (mark) return mark === 'work'
   if (row.boundary || row.record?.details?.boundary?.state) return true
   if (row.record?.details?.kind && row.record.details.kind !== 'general') return true
-  if (row.record?.details?.reading?.mode === 'manga') return true
   if (holdsMedia(row.contents)) return true
   const children = kids.get(row.rowId) ?? []
   return !children.length || isSeries(children, kids)

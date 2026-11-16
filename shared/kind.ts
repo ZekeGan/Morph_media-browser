@@ -64,13 +64,12 @@ export const sampleOf = (entries: { kind: string; name?: string }[]): KindSample
   return sample
 }
 
-export type KindSource = 'manual' | 'game' | 'reading' | 'content' | 'default'
+export type KindSource = 'manual' | 'game' | 'content' | 'default'
 export interface DetectedKind {
   kind: FolderKind
   source: KindSource
 }
-// Order: what you set by hand, then a detected game (its boundary protection applies in any project), then a folder
-// already read as manga, then what the files look like: video, music, text book, manga. Unsure means general.
+// Order: what you set by hand, then a detected game (its boundary protection applies in any project), then what the files look like: video, music, text book, manga. Unsure means general.
 // PDF and plain ZIP files never decide a kind. Rules: docs/UI_RULES.md (資料夾類型).
 // R-404: folders that only hold an album's or release's extras. The whole name (a number may follow) decides.
 const extrasName = /^(scans?|booklet|artworks?|covers?|bk|ジャケット|特典|スキャン)[\s_]*\d*$/i
@@ -87,7 +86,6 @@ export function detectFolderKind(
   const manual = row.record?.details?.kind
   if (manual) return { kind: manual, source: 'manual' }
   if (isGameFolder(row)) return { kind: 'game', source: 'game' }
-  if (row.record?.details?.reading?.mode === 'manga') return { kind: 'book', source: 'reading' }
   if (sample && sample.total > 0) {
     const { images, videos, audio, total } = sample,
       texts = sample.texts ?? 0,

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ActionIcon, Button, FocusTrap, Tooltip } from '@mantine/core'
+import { ActionIcon, FocusTrap, Tooltip } from '@mantine/core'
 import type { ExplorerRequest, ExplorerResponse, MediaEntry } from '../../shared/explorer'
 import type { FolderRow, Project, Request, Response } from '../../shared/model'
 import { canPreviewMedia, mediaQueue } from '../../shared/media'
@@ -55,10 +55,9 @@ export function MediaViewer({
   const [selected, setSelected] = useState(file.id),
     [showQueue, setShowQueue] = useState(false),
     [immersive, setImmersive] = useState(false),
-    [queueMounted, setQueueMounted] = useState(false),
-    [manga, setManga] = useState(
-      mangaHint ?? (effectiveKind(row) === 'book' || row.record?.details?.reading?.mode === 'manga')
-    )
+    [queueMounted, setQueueMounted] = useState(false)
+  // R-411: the folder's type decides the mode (a book reads as manga); it is changed only in the folder settings.
+  const manga = mangaHint ?? effectiveKind(row) === 'book'
   const queueSlot = useRef<HTMLDivElement>(null),
     queueToggle = useRef<HTMLButtonElement>(null)
   const supported = canPreviewMedia(file)
@@ -157,7 +156,6 @@ export function MediaViewer({
                 <p role="alert">{tr('檔案已不存在於目前清單，請關閉後重新整理。')}</p>
               ) : current?.kind === 'image' ? (
                 <Reader
-                  key={String(manga)}
                   openFolder={() => void act({ action: 'open', rowId: row.rowId })}
                   embedded
                   images={queue}
@@ -179,7 +177,7 @@ export function MediaViewer({
                         action: 'reading',
                         rowId: row.rowId,
                         revision: row.record.revision,
-                        prefs: { ...prefs, mode: manga ? 'manga' : 'image' },
+                        prefs,
                       })
                   }}
                   extraTools={
@@ -187,15 +185,6 @@ export function MediaViewer({
                       <small className="media-viewer-source" title={row.path}>
                         {row.name}
                       </small>
-                      {effectiveKind(row) !== 'book' && (
-                        <Button
-                          size="compact-xs"
-                          variant="subtle"
-                          onClick={() => setManga((value) => !value)}
-                        >
-                          {manga ? tr('圖片模式') : tr('漫畫模式')}
-                        </Button>
-                      )}
                       {queueButton}
                     </>
                   }
