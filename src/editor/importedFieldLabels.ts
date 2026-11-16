@@ -80,4 +80,11 @@ export const importedFieldLabels = (): Record<string, string> => ({
   SUBTITLE: tr('副標題'),
   PRICE: tr('價格'),
   CATCHPHRASE: tr('宣傳語'),
+  // R-395: MusicBrainz recordings and artists
+  DURATION: tr('時長'),
+  FIRST_RELEASE: tr('首次發行專輯'),
+  ARTIST_TYPE: tr('歌手類型'),
+  BEGIN_DATE: tr('開始活動'),
+  END_DATE: tr('結束活動'),
+  DISAMBIGUATION: tr('辨識說明'),
 })

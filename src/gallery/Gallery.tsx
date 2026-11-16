@@ -41,6 +41,7 @@ const Tile = memo(
     pick,
     menu,
     openFolder,
+    progress,
   }: {
     entry: MediaEntry
     tile: GalleryTile
@@ -55,6 +56,8 @@ const Tile = memo(
     pick: (index: number, mode: 'toggle' | 'range') => void
     menu: (index: number, event: React.MouseEvent) => void
     openFolder?: (entry: MediaEntry) => void
+    // R-405: how far a video was watched (0..1), drawn as a thin line.
+    progress?: number
   }) {
     useLocale()
 
@@ -181,6 +184,9 @@ const Tile = memo(
           ) : (
             <span>{tr('圖片無法載入，點擊檢視')}</span>
           )}
+          {progress !== undefined && (
+            <span className="video-progress" style={{ width: Math.round(progress * 100) + '%' }} />
+          )}
         </span>
         <small>{entry.name}</small>
       </button>
@@ -224,6 +230,7 @@ const Tile = memo(
   (before, after) =>
     before.open === after.open &&
     before.openFolder === after.openFolder &&
+    before.progress === after.progress &&
     before.picking === after.picking &&
     before.pick === after.pick &&
     before.menu === after.menu &&
@@ -251,6 +258,7 @@ export function Gallery({
   onOpen,
   onOpenFolder,
   onEnqueue,
+  progress,
   groupBySource = false,
   sourceRoot,
   onSource,
@@ -267,6 +275,7 @@ export function Gallery({
   onOpen?: (entry: MediaEntry, entries: MediaEntry[]) => void
   onOpenFolder?: (entry: MediaEntry) => void
   onEnqueue?: (entries: MediaEntry[]) => void
+  progress?: (entry: MediaEntry) => number | undefined
   groupBySource?: boolean
   sourceRoot?: string
   onSource?: (id: string) => void
@@ -706,6 +715,7 @@ export function Gallery({
               pick={pick}
               menu={openMenu}
               openFolder={onOpenFolder}
+              progress={progress?.(items[tile.index])}
             />
           ))}
       </div>

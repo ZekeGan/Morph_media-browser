@@ -18,6 +18,8 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Videos remember where they were left on this computer: reopening one goes on from there (with 從頭開始), a video folder offers 繼續觀看, and thumbnails show how far each was watched; short videos and finished ones start over (R-405).
+- Websites: MusicBrainz recording and artist pages can be imported (R-395).
 - Folder types: a picture-only folder inside a music or video folder, or one named like scans, booklet or artwork, is no longer taken for manga (R-404).
 - Game folders: the 尚未指定啟動檔 hint follows the project's main launch action, so it no longer disappears after the toolbar's actions were changed; a project without any launch action is told so (R-397).
 - Manga reader: a sideways drag moves the page with the pointer, like a strip of full-window slides with the page before or after waiting in the next slot, and springs back below the turn threshold; with the page-turn transition off (or reduced motion) the page stays still and a swipe just turns it; a click in the middle third shows or hides the toolbar (R-392).

@@ -16,6 +16,8 @@ import { FolderAlbumCover } from './FolderAlbumCover'
 import { AlbumActions, AlbumHeader, AlbumTracks, useAlbum } from './AlbumView'
 import { VideoHeader } from './VideoHeader'
 import { usePlayback } from './Playback'
+import { podcastFolder } from './podcast'
+import { placeProgress, useVideoPlaces, videoPlace } from './videoPlace'
 import { FolderPage } from '../panel/FolderPage'
 import { useFileVisibility } from '../files/useFileVisibility'
 import { useRefreshNonce } from '../browse/refresh'
@@ -161,6 +163,14 @@ export function MediaBrowser({
   const folders = entries.filter((entry) => entry.kind === 'folder'),
     pending = scope === 'descendants' ? overview.loading : loading
   const playback = usePlayback()
+  // R-405: the thin line on a video's thumbnail; places live on this computer only.
+  useVideoPlaces()
+  const videoProgress = (entry: MediaEntry) => {
+    if (entry.kind !== 'video') return undefined
+    const owner = (entry as OverviewEntry).rowId,
+      source = (owner && sourceRows.find((item) => item.rowId === owner)) || row
+    return placeProgress(videoPlace(podcastFolder(source), entry.id))
+  }
   useEffect(() => {
     playback?.source({ row, project, entries: entries.filter((entry) => entry.kind !== 'folder') })
   }, [row.rowId, entries, project])
@@ -353,6 +363,7 @@ export function MediaBrowser({
               onReader={() => {}}
               save={() => {}}
               onOpen={(entry) => void open(entry)}
+              progress={videoProgress}
               onOpenFolder={(entry) =>
                 void act({ action: 'open', rowId: (entry as OverviewEntry).rowId ?? row.rowId })
               }

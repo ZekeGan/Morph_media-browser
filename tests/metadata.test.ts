@@ -148,3 +148,66 @@ test('Steam rejects unavailable/mismatched/oversized replies and treats blocked 
   assert.equal(result.preview.values.find((v) => v.key === 'RELEASE_STATUS')?.value, '尚未發售')
   assert.ok(result.preview.values.some((v) => v.key === 'COVER_STATUS'))
 })
+test('R-395: MusicBrainz recording and artist addresses read their own fixed API paths', async () => {
+  const rec = 'e65c5269-17e5-4e0f-bb89-e130990de766',
+    art = '9aed24f5-4293-4c5b-a7c9-1027c8d9d608',
+    asked: string[] = [],
+    fetcher = (async (input: RequestInfo | URL) => {
+      const url = String(input)
+      asked.push(url)
+      if (url.includes('/recording/'))
+        return new Response(
+          JSON.stringify({
+            id: rec,
+            title: 'Song',
+            length: 245000,
+            'artist-credit': [{ name: 'Singer' }],
+            releases: [{ title: 'Album', date: '2001-02-03' }],
+          })
+        )
+      return new Response(
+        JSON.stringify({
+          id: art,
+          name: 'Singer',
+          type: 'Person',
+          country: 'JP',
+          'life-span': { begin: '1990-01', end: null },
+          disambiguation: 'the one',
+        })
+      )
+    }) as typeof fetch,
+    value = (r: Awaited<ReturnType<typeof metadata>>, key: string) =>
+      r.preview.values.find((v) => v.key === key)?.value
+  const song = await metadata('https://musicbrainz.org/recording/' + rec.toUpperCase(), fetcher)
+  assert.equal(song.preview.title, 'Song')
+  assert.equal(song.preview.source, 'https://musicbrainz.org/recording/' + rec)
+  assert.equal(value(song, 'DURATION'), '4:05')
+  assert.deepEqual(value(song, 'ARTISTS'), ['Singer'])
+  assert.equal(value(song, 'FIRST_RELEASE'), 'Album')
+  assert.equal(value(song, 'RELEASE_DATE'), '2001-02-03')
+  const person = await metadata('https://musicbrainz.org/artist/' + art, fetcher)
+  assert.equal(person.preview.title, 'Singer')
+  assert.equal(value(person, 'ARTIST_TYPE'), 'Person')
+  assert.equal(value(person, 'COUNTRY'), 'JP')
+  assert.equal(value(person, 'BEGIN_DATE'), '1990-01')
+  assert.equal(value(person, 'END_DATE'), undefined)
+  assert.equal(value(person, 'DISAMBIGUATION'), 'the one')
+  assert.deepEqual(asked, [
+    `https://musicbrainz.org/ws/2/recording/${rec}?inc=artist-credits+releases&fmt=json`,
+    `https://musicbrainz.org/ws/2/artist/${art}?fmt=json`,
+  ])
+  // An id that is not a UUID never reaches the network.
+  await assert.rejects(
+    metadata('https://musicbrainz.org/recording/not-a-uuid', (async () => {
+      throw new Error('MUST NOT FETCH')
+    }) as typeof fetch),
+    (error) => !String(error).includes('MUST NOT FETCH')
+  )
+  // A reply for a different id is refused.
+  await assert.rejects(
+    metadata(
+      'https://musicbrainz.org/artist/' + art,
+      (async () => new Response(JSON.stringify({ id: rec, name: 'X' }))) as typeof fetch
+    )
+  )
+})

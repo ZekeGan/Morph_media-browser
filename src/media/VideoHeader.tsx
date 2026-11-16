@@ -4,13 +4,15 @@ import type { MediaEntry } from '../../shared/explorer'
 import type { FolderRow, Project } from '../../shared/model'
 import { usePlayback } from './Playback'
 import { Icon } from '../common/icons'
+import { podcastFolder } from './podcast'
+import { clockText, continueTarget, useVideoPlaces } from './videoPlace'
 import { t as tr } from '../i18n'
 
 const names = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
 
 // R-390: a video folder's header: its name and how many videos it holds, and 播放, which makes the videos (in name
-// order) the play queue and opens the first in the big viewer. Video places are not kept, so it always starts at
-// the first video.
+// order) the play queue and opens the first in the big viewer. When a video here was left partway (R-405, kept on this
+// computer), it reads 繼續觀看 and opens that video, which goes on from its place.
 export function VideoHeader({
   row,
   project,
@@ -20,7 +22,8 @@ export function VideoHeader({
   project: Project
   entries: MediaEntry[]
 }) {
-  const playback = usePlayback()
+  const playback = usePlayback(),
+    places = useVideoPlaces()
   const videos = useMemo(
     () =>
       entries
@@ -29,6 +32,7 @@ export function VideoHeader({
     [entries]
   )
   if (!videos.length) return null
+  const resume = continueTarget(places, podcastFolder(row), videos)
   return (
     <div className="video-header">
       <div className="album-facts">
@@ -43,9 +47,14 @@ export function VideoHeader({
         <Button
           size="xs"
           leftSection={<Icon name="play" size={14} />}
-          onClick={() => playback.replace({ row, project, entries }, videos, 0, true)}
+          title={resume?.video.name}
+          onClick={() =>
+            playback.replace({ row, project, entries }, videos, resume?.index ?? 0, true)
+          }
         >
-          {tr('播放影片')}
+          {resume
+            ? tr('繼續觀看：{0}（{1}）', resume.video.name, clockText(resume.place.time))
+            : tr('播放影片')}
         </Button>
       )}
     </div>

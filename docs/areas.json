@@ -124,6 +124,7 @@
         "src/media/FolderAlbumCover*",
         "src/media/AlbumView*",
         "src/media/podcast*",
+        "src/media/videoPlace*",
         "src/media/VideoHeader*",
         "src/media/playOrder*",
         "src/media/media-workspace.css",
@@ -137,7 +138,7 @@
         "electron/explorer-stream*"
       ],
       "ui": ["media-scope-ui", "media-workspace-ui", "audio-playback-ui", "media-feedback-ui"],
-      "tests": ["media-workspace.test.ts", "explorer.test.ts", "album.test.ts", "podcast.test.ts"]
+      "tests": ["media-workspace.test.ts", "explorer.test.ts", "album.test.ts", "podcast.test.ts", "video-place.test.ts"]
     },
     {
       "id": "gallery",

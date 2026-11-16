@@ -1,6 +1,6 @@
 # 影片播放器
 
-> 最後確認：2026-11-11。只寫現行規則；選型與歷次取捨見 [決策索引](DECISIONS.md)（C-83～C-85）。程式：`src/video/VideoViewer.tsx`、`src/video/VideoControls.tsx`、`src/video/VideoSubtitleSettings.tsx`、`shared/subtitles.ts`；測試：`tests/video-player-ui.ts`、`tests/video-failure-ui.ts`。影片從媒體頁的大視窗（`MediaViewer`）或右側面板的檔案預覽開啟，入口與佇列見 [媒體工作區](MEDIA_WORKSPACE.md#統一媒體工作區)。
+> 最後確認：2026-11-16（R-395 R-405）。只寫現行規則；選型與歷次取捨見 [決策索引](DECISIONS.md)（C-83～C-85）。程式：`src/video/VideoViewer.tsx`、`src/video/VideoControls.tsx`、`src/video/VideoSubtitleSettings.tsx`、`shared/subtitles.ts`；測試：`tests/video-player-ui.ts`、`tests/video-failure-ui.ts`。影片從媒體頁的大視窗（`MediaViewer`）或右側面板的檔案預覽開啟，入口與佇列見 [媒體工作區](MEDIA_WORKSPACE.md#統一媒體工作區)。
 
 <a id="現行控制欄2026-10-28"></a>
 
@@ -29,7 +29,7 @@ YouTube 式控制列；「放大／縮小」只指進入／退出全螢幕，不
 
 ## 播放生命週期
 
-- 同時只有一個播放實例。開啟影片即播放；不記錄或恢復觀看進度。
+- 同時只有一個播放實例。開啟影片即播放。觀看位置（R-405，C-139）只存在這台電腦的瀏覽器儲存（`morph.videoPlaces`，鍵為資料夾記錄的 folderId＋檔案 ID），不寫入資料夾記錄：播放中每 10 秒、暫停、播完、切換影片與關閉播放器時記；片長不到 5 分鐘不記；剩不到 5% 或不到 2 分鐘算看完，下次從頭；最多 2000 部，超過去掉最久沒看的。重新打開自動從上次位置繼續，播放器上短暫顯示「從 mm:ss 繼續」與「從頭開始」（沿用漫畫閱讀器的提示樣式）；大播放器、面板內播放器與播放佇列共用 `VideoViewer`，所以同一套規則。規則在 `src/media/videoPlace.ts`。
 - 音量與靜音存在本機 `workspace-ui.json` 的 `videoAudio`，不寫入媒體或可攜記錄。取得偏好前維持靜音；只有使用者修改才排程保存，失敗時照常播放並顯示原因。
 - 切換影片、定位進度、開啟更多設定、離開內容或隱藏應用都會取消待播動作。離開資料夾／專案即停止並釋放影片來源；隱藏或最小化時暫停，重新顯示不自動恢復。除 DOM 可見性外也監聽原生 `window:state.visible`。
 - 卸載時從實際媒體節點暫停、移除 src 並取消載入；只允許仍掛載的節點啟動播放。

@@ -1,6 +1,6 @@
 # 外部資料預覽與匯入
 
-> 最後確認：2026-11-13（R-365,R-367）。從網站補充資料夾資訊的現行規則。程式：`shared/sources.ts`、`electron/metadata.ts`、`electron/metadata-public.ts`、`electron/sources/`、`src/metadata/FolderSourceImport.tsx`、`electron/explorer-source.ts`；測試：`tests/metadata.test.ts`、`tests/date-fields.test.ts`。
+> 最後確認：2026-11-16（R-395 R-405）。從網站補充資料夾資訊的現行規則。程式：`shared/sources.ts`、`electron/metadata.ts`、`electron/metadata-public.ts`、`electron/sources/`、`src/metadata/FolderSourceImport.tsx`、`electron/explorer-source.ts`；測試：`tests/metadata.test.ts`、`tests/date-fields.test.ts`。
 
 已接入的來源以 `shared/sources.ts` 為準（目前：E-Hentai、ExHentai、Hitomi.la、nhentai、Bangumi、AniList、DLsite、Steam、VNDB、MusicBrainz、Open Library、Pixiv、Wikimedia Commons）。此頁持有來源流程與人工值保護；程式入口：[metadata](../electron/metadata.ts)、[Explorer](../electron/explorer.ts) 的 metadataPreview／applyMetadata。
 
@@ -37,7 +37,7 @@
 | 漫畫／動畫 | E-Hentai、ExHentai、Hitomi.la、nhentai、Bangumi、AniList、MangaDex、Kitsu、MangaUpdates | MangaDex 讀 `/manga/<UUID>`，封面另由 `cover_art` 組成 `uploads.mangadex.org` 網址；Kitsu 的 API 只接受 `Accept: application/vnd.api+json`，類型在 `included`；MangaUpdates 網址是 base36，換成數字 ID 查 API。E-H 系列沿用 [gdata](https://ehwiki.org/wiki/API)，封面縮圖在 `ehgt.org`（JPG、PNG 或 WebP）；Hitomi 僅解析公開 galleryinfo JSON，絕不執行遠端 JS；[Bangumi](https://bangumi.github.io/api/)／[AniList](https://docs.anilist.co/guide/auth/) 讀公開作品條目 |
 | 同人／商店 | DLsite、BOOTH | BOOTH 讀商品頁旁的 `<商品>.json`（社團、分類、標籤、價格、成人標記），封面限 `booth.pximg.net`。DLsite：商品頁的作品 ID（RJ 等）。先讀 `/{站}/api/=/product.json?workno=` 取名稱：社團 `MAKER_NAME`、作品類型名稱、系列、ジャンル（`GENRES`）、作者依職位各成一個標籤欄位（`CREATED_BY`、`SCENARIO_BY`、`ILLUST_BY`、`VOICE_BY`、`MUSIC_BY`…，鍵名照來源）；再讀 `product/info/ajax` 補價格、下載數、評分，這個請求失敗不影響匯入。封面限 `img.dlsite.jp` |
 | 遊戲 | Steam、VNDB；Getchu、批評空間、Melonbooks、虎之穴、FANZA 的遊戲網址經 VNDB | Steam 商店公開資料；[VNDB Kana](https://api.vndb.org/kana) 的公開視覺小說條目。商店網址（R-293）不讀商店頁：從網址取出作品 ID，以 VNDB 發行版本記錄的外部連結（`release` 的 `extlink` 篩選，例如 `["getchu", 36221]`、`["egs", 3193]`、`["dmm", "dlsoft.dmm.co.jp/detail/…/"]`）找出作品，以 VNDB 資料預覽；不需要年齡確認、金鑰，也不受地區限制。VNDB 沒有該連結時提示改貼 VNDB 或 DLsite 網址。只涵蓋遊戲，同人誌不在 VNDB |
-| 音樂 | MusicBrainz、Apple Music、Deezer | [公開發行版本資料](https://musicbrainz.org/doc/MusicBrainz_API)，不因此加入音樂播放器；Apple Music 用 iTunes Lookup（專輯＋曲目，封面換成 600×600）；Deezer 讀公開專輯 API |
+| 音樂 | MusicBrainz、Apple Music、Deezer | [公開發行版本資料](https://musicbrainz.org/doc/MusicBrainz_API)，不因此加入音樂播放器。認 `/release/`（專輯：曲目、演出者、條碼）、`/recording/`（R-395，單曲：曲名、演出者、時長 `DURATION` 以 m:ss 文字記、首次發行專輯與日期）、`/artist/`（歌手：名稱、類型、國家、活動期間 `BEGIN_DATE`／`END_DATE`、辨識說明）；ID 一律先驗成 UUID 再組成固定的 `ws/2` 請求；Apple Music 用 iTunes Lookup（專輯＋曲目，封面換成 600×600）；Deezer 讀公開專輯 API |
 | 書籍 | Open Library、Google Books、小説家になろう、カクヨム | [公開書目與作者](https://openlibrary.org/developers/api)，作者補讀最多三筆；Google Books 讀 `volumes/<ID>`（不填金鑰時共用匿名額度，常遇到 429，金鑰見 R-285）；なろう用官方小說 API（R18 的 novel18 走 `novel18api`）；カクヨム讀作品頁內嵌的 Next.js 資料，不執行頁面程式 |
 | 網頁 | 其他任何 HTTPS 網址（R-283） | 只讀頁面自己宣告的 JSON-LD、OpenGraph／Twitter、`<title>`：標題、簡介、作者、日期、關鍵字、網站名稱與封面。只接受不含帳號密碼的 HTTPS、不允許本機與內網位址（轉址也逐次檢查，最多三次）、2 MB、15 秒；依標頭或 `<meta charset>` 解碼（含 Shift_JIS、EUC-JP）；以只往前的掃描讀標籤，不執行頁面程式。封面主機無法事先列名單，一律經圖片網址匯入的安全下載（HTTPS、非內網、大小與影像格式檢查）。 |
 | 圖片／插畫 | Pixiv、Wikimedia Commons、Danbooru | Pixiv 公開作品回應（插畫 `/artworks/<ID>` 與小說 `/novel/show.php?id=`）；Danbooru 讀 `posts/<ID>.json`，標籤依作者／原作／角色／一般分欄，分級存進年齡分級；[Commons API](https://commons.wikimedia.org/wiki/Commons:API/MediaWiki) 保留作者及授權，不推論私人照片身分 |

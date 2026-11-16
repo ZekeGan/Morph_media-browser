@@ -12130,5 +12130,53 @@
     "en": "Add launch action",
     "ja": "起動操作を追加",
     "es": "Añadir acción de inicio"
+  },
+  "時長": {
+    "zh-CN": "时长",
+    "en": "Length",
+    "ja": "長さ",
+    "es": "Duración"
+  },
+  "首次發行專輯": {
+    "zh-CN": "首次发行专辑",
+    "en": "First release",
+    "ja": "初出リリース",
+    "es": "Primer lanzamiento"
+  },
+  "歌手類型": {
+    "zh-CN": "歌手类型",
+    "en": "Artist type",
+    "ja": "アーティスト種別",
+    "es": "Tipo de artista"
+  },
+  "開始活動": {
+    "zh-CN": "开始活动",
+    "en": "Began",
+    "ja": "活動開始",
+    "es": "Inicio de actividad"
+  },
+  "結束活動": {
+    "zh-CN": "结束活动",
+    "en": "Ended",
+    "ja": "活動終了",
+    "es": "Fin de actividad"
+  },
+  "辨識說明": {
+    "zh-CN": "辨识说明",
+    "en": "Disambiguation",
+    "ja": "識別用の説明",
+    "es": "Desambiguación"
+  },
+  "從 {0} 繼續": {
+    "zh-CN": "从 {0} 继续",
+    "en": "Continue from {0}",
+    "ja": "{0} から再開",
+    "es": "Continuar desde {0}"
+  },
+  "繼續觀看：{0}（{1}）": {
+    "zh-CN": "继续观看：{0}（{1}）",
+    "en": "Continue watching: {0} ({1})",
+    "ja": "続きから再生：{0}（{1}）",
+    "es": "Seguir viendo: {0} ({1})"
   }
 }

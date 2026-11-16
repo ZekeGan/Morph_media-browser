@@ -12,9 +12,11 @@ import {
 } from '../../shared/explorer'
 import { parseSubtitles, type Cue } from '../../shared/subtitles'
 import { VideoControls } from './VideoControls'
-import { Accordion } from '@mantine/core'
+import { Accordion, Button } from '@mantine/core'
 import { VideoSubtitleSettings } from './VideoSubtitleSettings'
 import { useVideoAudio } from '../media/useVideoAudio'
+import { podcastFolder } from '../media/podcast'
+import { clockText, resumeAt, saveVideoPlace, videoPlace } from '../media/videoPlace'
 
 type UpNext = {
   fileId: string
@@ -67,7 +69,9 @@ export function VideoViewer({
   const [subtitleSection, setSubtitleSection] = useState<string | null>(null),
     [audioDragging, setAudioDragging] = useState(false),
     [menuOpen, setMenuOpen] = useState(false),
-    [subtitleExpanded, setSubtitleExpanded] = useState(false)
+    [subtitleExpanded, setSubtitleExpanded] = useState(false),
+    // R-405: the second this video resumed from, shown briefly with a way back to the start.
+    [resumed, setResumed] = useState<number>()
 
   const [paused, setPaused] = useState(true),
     [time, setTime] = useState(0),
@@ -94,7 +98,12 @@ export function VideoViewer({
     mounted = useRef(false),
     saving = useRef(false),
     wantsPlayback = useRef(initialFileId ? true : autoplay),
-    pendingStart = useRef(false)
+    pendingStart = useRef(false),
+    // R-405: the latest place of the playing video and when it was last written; kept on this computer only.
+    lastPlace = useRef<
+      { folder: string; fileId: string; time: number; duration: number } | undefined
+    >(undefined),
+    savedAt = useRef(-1)
 
   const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined),
     clickTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined),
@@ -118,6 +127,20 @@ export function VideoViewer({
   filesLive.current = videos
   currentFile.current = file?.id
   wantedUrl.current = file?.url
+
+  // R-405: remembers where this video is; written at most every 10 seconds, and when it pauses or ends. The latest
+  // place is also written when the video is switched or the player closes.
+  const remember = (node: HTMLVideoElement, write: boolean) => {
+    const target = currentFile.current,
+      duration = Number.isFinite(node.duration) ? node.duration : 0
+    if (node !== video.current || !target || !duration) return
+    const time = node.ended ? duration : node.currentTime
+    lastPlace.current = { folder: podcastFolder(latest.current), fileId: target, time, duration }
+    if (write || Math.abs(time - savedAt.current) >= 10) {
+      savedAt.current = time
+      saveVideoPlace(lastPlace.current.folder, target, time, duration)
+    }
+  }
 
   const countdown = (value?: UpNext) => {
     nextRef.current = value
@@ -434,7 +457,24 @@ export function VideoViewer({
     }
   }, [])
 
+  // The place of the video that is leaving (a new one chosen, or the player closed).
+  useEffect(
+    () => () => {
+      const place = lastPlace.current
+      lastPlace.current = undefined
+      savedAt.current = -1
+      if (place) saveVideoPlace(place.folder, place.fileId, place.time, place.duration)
+    },
+    [file?.id]
+  )
   useEffect(() => {
+    if (resumed === undefined) return
+    const timer = setTimeout(() => setResumed(undefined), 4000)
+    return () => clearTimeout(timer)
+  }, [resumed])
+
+  useEffect(() => {
+    setResumed(undefined)
     setSubtitle(undefined)
     setCues([])
     setError('')
@@ -752,10 +792,14 @@ export function VideoViewer({
             }}
 
             onPause={(event) => {
-              if (event.currentTarget === video.current) setPaused(true)
+              if (event.currentTarget !== video.current) return
+              setPaused(true)
+              remember(event.currentTarget, true)
             }}
             onTimeUpdate={(event) => {
-              if (event.currentTarget === video.current) setTime(event.currentTarget.currentTime)
+              if (event.currentTarget !== video.current) return
+              setTime(event.currentTarget.currentTime)
+              remember(event.currentTarget, false)
             }}
 
             onLoadedMetadata={(event) => {
@@ -763,6 +807,13 @@ export function VideoViewer({
               if (node !== video.current) return
               setDuration(Number.isFinite(node.duration) ? node.duration : 0)
               node.playbackRate = speed.current
+              // R-405: goes on from where it was left, unless it was watched to the end.
+              const at = resumeAt(videoPlace(podcastFolder(latest.current), file.id))
+              if (at > 0 && at < node.duration) {
+                node.currentTime = at
+                setTime(at)
+                setResumed(at)
+              }
               if (wantsPlayback.current) void playSelected(node)
             }}
 
@@ -787,6 +838,7 @@ export function VideoViewer({
               if (event.currentTarget !== video.current) return
               setPaused(true)
               setWaiting(false)
+              remember(event.currentTarget, true)
               const next = videos[index + 1]
               if (
                 autoNext &&
@@ -823,6 +875,22 @@ export function VideoViewer({
             }}
           >
             <span style={{ background: settings.background + 'c0' }}>{visible}</span>
+          </div>
+        )}
+
+        {resumed !== undefined && (
+          <div className="reader-notice" role="status">
+            <span>{tr('從 {0} 繼續', clockText(resumed))}</span>
+            <Button
+              size="compact-xs"
+              variant="subtle"
+              onClick={() => {
+                setResumed(undefined)
+                seek(0)
+              }}
+            >
+              {tr('從頭開始')}
+            </Button>
           </div>
         )}
 
