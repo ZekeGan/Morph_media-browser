@@ -167,6 +167,12 @@ export function Reader({
   useEffect(() => {
     onImmersive?.(immersive)
   }, [immersive])
+  // R-392: a click in the middle third shows or hides the toolbar; in immersive reading it holds the tool rail and
+  // progress bar open (they otherwise only appear at the edges), like the novel reader's bars.
+  const [bars, setBars] = useState(false)
+  useEffect(() => setBars(false), [immersive])
+  const toggleChrome = () =>
+    immersive ? setBars((value) => !value) : setToolbar((value) => !value)
   const select = useRef<HTMLInputElement>(null),
     viewport = useRef<HTMLDivElement>(null),
     drag = useRef<
@@ -178,10 +184,37 @@ export function Reader({
           pan: boolean
           moved: boolean
           time: number
+          // Started within the edge panels' strips: no page drag (R-264).
+          edge: boolean
         }
       | undefined
     >(undefined)
   const heading = useRef<'left' | 'right' | undefined>(undefined)
+  // R-392: the page being looked at moves with the pointer (a transform on its frame layer, no re-render). On release
+  // a turn continues the slide from where the page was left (--drag-x), anything shorter eases back.
+  const activeLayer = () =>
+    viewport.current?.querySelector<HTMLElement>('.reader-frame-layer.is-active') ?? null
+  const followDrag = (dx: number) => {
+    const layer = activeLayer()
+    if (!layer) return
+    layer.style.transition = 'none'
+    layer.style.transform = dx ? `translateX(${dx}px)` : ''
+  }
+  const releaseDrag = (turnedBy: number) => {
+    const layer = activeLayer()
+    if (!layer || !layer.style.transform) return
+    if (turnedBy) {
+      layer.style.setProperty('--drag-x', layer.style.transform.replace(/translateX\((.*)\)/, '$1'))
+      layer.style.transition = ''
+      layer.style.transform = ''
+      window.setTimeout(() => layer.style.removeProperty('--drag-x'), 400)
+      return
+    }
+    const animate = turnMotion && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    layer.style.transition = animate ? 'transform 150ms ease-out' : 'none'
+    layer.style.transform = ''
+    if (animate) window.setTimeout(() => (layer.style.transition = ''), 180)
+  }
   const cache = useRef(new Map<string, CachedImage>()),
     sequence = useRef(0),
     activeRef = useRef(''),
@@ -1012,6 +1045,7 @@ export function Reader({
           (embedded ? ' reader-embedded' : '') +
           (manga ? ' manga-reader' : '') +
           (toolbar ? '' : ' reader-focused') +
+          (immersive && bars ? ' reader-bars' : '') +
           (idle ? ' cursor-idle' : '')
         }
         role="dialog"
@@ -1140,6 +1174,7 @@ export function Reader({
             onPointerDown={(event) => {
               if (event.button !== 0) return
               const element = event.currentTarget,
+                bounds = element.getBoundingClientRect(),
                 pan = geometry.width > box.width || geometry.height > box.height
               if (pan) event.preventDefault()
               drag.current = {
@@ -1150,6 +1185,10 @@ export function Reader({
                 pan,
                 moved: false,
                 time: performance.now(),
+                edge:
+                  event.clientX - bounds.left < 24 ||
+                  bounds.right - event.clientX < 24 ||
+                  bounds.bottom - event.clientY < 24,
               }
               element.setPointerCapture(event.pointerId)
             }}
@@ -1162,6 +1201,13 @@ export function Reader({
                 event.currentTarget.scrollLeft = start.left - (event.clientX - start.x)
                 event.currentTarget.scrollTop = start.top - (event.clientY - start.y)
               }
+              // R-392: a page that fits follows the pointer sideways while it is dragged.
+              if (manga && !start.pan && start.moved && !start.edge)
+                followDrag(
+                  Math.abs(event.clientX - start.x) > Math.abs(event.clientY - start.y)
+                    ? event.clientX - start.x
+                    : 0
+                )
             }}
             onPointerUp={(event) => {
               const start = drag.current
@@ -1172,36 +1218,33 @@ export function Reader({
                 const bounds = event.currentTarget.getBoundingClientRect(),
                   dx = event.clientX - start.x,
                   dy = event.clientY - start.y,
-                  fast = Math.abs(dx) > 40 && performance.now() - start.time < 250,
-                  edge =
-                    start.x - bounds.left < 24 ||
-                    bounds.right - start.x < 24 ||
-                    bounds.bottom - start.y < 24
+                  fast = Math.abs(dx) > 40 && performance.now() - start.time < 250
                 if (
-                  !edge &&
+                  !start.edge &&
                   Math.abs(dx) > Math.abs(dy) &&
                   (Math.abs(dx) > bounds.width * 0.15 || fast)
-                )
+                ) {
+                  releaseDrag(dx)
                   step(readerArrowStep(dx < 0 ? 'ArrowRight' : 'ArrowLeft', rtl))
+                } else releaseDrag(0)
                 return
               }
+              // R-392: the left and right thirds turn the page, the middle third shows or hides the toolbar.
               if (
                 manga &&
                 start &&
                 !start.moved &&
                 Math.hypot(event.clientX - start.x, event.clientY - start.y) <= 5
               ) {
-                const bounds = event.currentTarget.getBoundingClientRect()
-                step(
-                  readerArrowStep(
-                    event.clientX < bounds.left + bounds.width / 2 ? 'ArrowLeft' : 'ArrowRight',
-                    rtl
-                  )
-                )
+                const bounds = event.currentTarget.getBoundingClientRect(),
+                  third = (event.clientX - bounds.left) / bounds.width
+                if (third >= 1 / 3 && third <= 2 / 3) toggleChrome()
+                else step(readerArrowStep(third < 0.5 ? 'ArrowLeft' : 'ArrowRight', rtl))
               }
             }}
             onPointerCancel={() => {
               drag.current = undefined
+              releaseDrag(0)
             }}
           >
             <div

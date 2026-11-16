@@ -735,6 +735,8 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .reader-rail-gap { height:1px; margin:4px 2px; background:var(--line); }
 .reader-progress { position:absolute; z-index:10; left:50%; bottom:10px; width:min(760px, calc(100% - 40px)); display:flex; align-items:center; gap:8px; padding:6px 12px; border:1px solid var(--line); border-radius:var(--radius); background:var(--overlay); backdrop-filter:blur(12px); transform:translate(-50%, calc(100% + 16px)); opacity:0; transition:transform 160ms ease-out, opacity 160ms ease-out; }
 .reader-edge-left:hover + .reader-rail, .reader-rail:hover, .reader-rail:has(:focus-visible) { transform:translate(0, -50%); opacity:1; transition-delay:80ms; }
+.reader-bars .reader-rail { transform:translate(0, -50%); opacity:1; }
+.reader-bars .reader-progress { transform:translate(-50%, 0); opacity:1; }
 .reader-edge-bottom:hover + .reader-progress, .reader-progress:hover, .reader-progress:has(:focus-visible) { transform:translate(-50%, 0); opacity:1; transition-delay:80ms; }
 .reader-progress-track { position:relative; flex:1; min-width:0; padding:6px 0; }
 .reader-progress-pages { flex-shrink:0; font-size:12px; color:var(--muted); white-space:nowrap; }
@@ -748,9 +750,11 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
   from { transform:translateX(-100%); }
 }
 @keyframes reader-leave-left {
+  from { transform:translateX(var(--drag-x, 0px)); }
   to { transform:translateX(-100%); }
 }
 @keyframes reader-leave-right {
+  from { transform:translateX(var(--drag-x, 0px)); }
   to { transform:translateX(100%); }
 }
 .reader-frame-layer.enter-right { animation:reader-enter-right 200ms ease-out; }

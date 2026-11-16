@@ -21,6 +21,7 @@ import {
 import { createPortal } from 'react-dom'
 import { ActionIcon, Pagination, Tooltip } from '@mantine/core'
 import { BrowseNav } from './BrowseNav'
+import { KindRowsContext } from './folderKind'
 import { FolderCards } from './FolderCards'
 import { useCardSettings } from './useCardSettings'
 import { useTableColumns } from './useTableColumns'
@@ -73,7 +74,17 @@ interface Props {
   notify: (message: string) => void
   onOverlay: (v: boolean) => void
 }
-export function BrowseWorkspace({
+// R-404: lets a folder's icon, badge and panel find the folder above it by path.
+export function BrowseWorkspace(props: Props) {
+  const all = props.structure.length ? props.structure : props.rows,
+    kindRows = useMemo(() => new Map(all.map((r) => [pathKey(r.path), r])), [all])
+  return (
+    <KindRowsContext.Provider value={kindRows}>
+      <BrowseWorkspaceBody {...props} />
+    </KindRowsContext.Provider>
+  )
+}
+function BrowseWorkspaceBody({
   toolbarTarget,
   project,
   root,

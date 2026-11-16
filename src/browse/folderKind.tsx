@@ -1,10 +1,11 @@
-import { useSyncExternalStore } from 'react'
+import { createContext, useContext, useSyncExternalStore } from 'react'
 import { Tooltip } from '@mantine/core'
 import type { FolderRow } from '../../shared/model'
-import { detectFolderKind, type KindSample } from '../../shared/kind'
+import { parentPath, pathKey } from '../../shared/browse'
+import { detectFolderKind, type FolderKind, type KindSample } from '../../shared/kind'
 import { t as tr, useLocale } from '../i18n'
 import { Icon, type IconName } from '../common/icons'
-import { useFolderSample } from './folderStats'
+import { cachedFolderSample, useFolderSample } from './folderStats'
 
 // R-343: what a folder is, shown as its icon in the tree, table and panel title, and as a small badge on its card.
 // A folder that has not been opened yet is only known by what was set by hand, a game boundary or its reading mode.
@@ -17,8 +18,17 @@ const looks: Record<KindLook, { icon: IconName; label: string }> = {
   video: { icon: 'video', label: '影片' },
   general: { icon: 'folder', label: '一般' },
 }
-export function kindLook(row: FolderRow, sample?: KindSample) {
-  const detected = detectFolderKind(row, sample)
+// R-404: the rows of the open project by path, so the kind of the folder above can be found (set by BrowseWorkspace).
+export const KindRowsContext = createContext<Map<string, FolderRow> | undefined>(undefined)
+// The kind of the folder directly above, from its own files only (one level, never its parent). Undefined if unknown.
+export function useParentKind(row: FolderRow | undefined): FolderKind | undefined {
+  const rows = useContext(KindRowsContext)
+  const parent = row && rows?.get(pathKey(parentPath(row.path)))
+  if (!parent || parent.rowId === row.rowId) return undefined
+  return detectFolderKind(parent, cachedFolderSample(parent.rowId) ?? parent.contents).kind
+}
+export function kindLook(row: FolderRow, sample?: KindSample, parentKind?: FolderKind) {
+  const detected = detectFolderKind(row, sample, parentKind)
   const look: KindLook =
     detected.kind === 'game'
       ? 'game'
@@ -33,7 +43,8 @@ export function kindLook(row: FolderRow, sample?: KindSample) {
 }
 // What the scan counted (R-340) is enough for folders never opened; an opened folder's content sample is more exact.
 export function useKindLook(row: FolderRow) {
-  return kindLook(row, useFolderSample(row.rowId) ?? row.contents)
+  const parentKind = useParentKind(row)
+  return kindLook(row, useFolderSample(row.rowId) ?? row.contents, parentKind)
 }
 
 // The icon only (tree, table, panel title); a candidate game shows the game icon in its unconfirmed style.

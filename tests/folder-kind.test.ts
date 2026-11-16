@@ -303,3 +303,32 @@ test('folderKinds sets the kind of several folders and reports the ones that fai
   assert.equal(batched?.kind, 'game')
   assert.equal(batched?.boundary, undefined)
 })
+
+test('R-404: pictures alone are not manga inside a music or video folder, or in a folder named like extras', () => {
+  const named = (name: string) => ({ ...row({}), name }) as FolderRow,
+    seven = files(7)
+  assert.equal(detectFolderKind(row({}), seven).kind, 'book')
+  assert.equal(detectFolderKind(row({}), seven, 'music').kind, 'general')
+  assert.equal(detectFolderKind(row({}), seven, 'video').kind, 'general')
+  assert.equal(detectFolderKind(row({}), seven, 'general').kind, 'book')
+  assert.equal(detectFolderKind(row({}), seven, 'book').kind, 'book')
+  for (const name of [
+    'scans',
+    'Scans 1',
+    'SCAN_2',
+    'Booklet',
+    'artworks',
+    'Covers',
+    'BK',
+    'ジャケット',
+    '特典',
+    'スキャン',
+  ])
+    assert.equal(detectFolderKind(named(name), seven).kind, 'general', name)
+  for (const name of ['scansion', 'My scans', 'Vol 1', 'covers of x'])
+    assert.equal(detectFolderKind(named(name), seven).kind, 'book', name)
+  // A manual kind, a reading mode and comic archives still win.
+  assert.equal(detectFolderKind(row({ kind: 'book' }), seven, 'music').kind, 'book')
+  assert.equal(detectFolderKind(row({ reading: { mode: 'manga' } }), seven, 'music').kind, 'book')
+  assert.equal(detectFolderKind(named('scans'), files(0, 0, 0, ['a.cbz'])).kind, 'book')
+})

@@ -37,3 +37,5 @@ export function useFolderStats(rowId: string | undefined) {
 export function useFolderSample(rowId: string | undefined) {
   return useFolderStats(rowId)?.sample
 }
+// The sample of an opened folder, read without subscribing (for a parent's kind, R-404).
+export const cachedFolderSample = (rowId: string) => cache.get(rowId)?.sample

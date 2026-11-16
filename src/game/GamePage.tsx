@@ -3,6 +3,7 @@ import {
   gameActionTemplates,
   type ExplorerRequest,
   type ExplorerResponse,
+  launchGap,
 } from '../../shared/explorer'
 import type { FolderRow, Project, Request, Response } from '../../shared/model'
 import { Icon } from '../common/icons'
@@ -185,15 +186,14 @@ export function GamePage({
               </ActionIcon>
             </Tooltip>
           </Group>
-          {gameActionTemplates(project).some((t) => t.id === 'default-launch-game') &&
-            !row.record?.details?.targets?.['default-launch-game'] && (
-              <small className="muted game-launch-hint">
-                {tr('尚未指定啟動檔，「啟動遊戲」按鈕暫時無法使用。')}{' '}
-                <Button size="compact-xs" variant="subtle" onClick={() => configure('game')}>
-                  {tr('前往設定指定啟動檔')}
-                </Button>
-              </small>
-            )}
+          {launchGap(project, row.record?.details?.targets) === 'target' && (
+            <small className="muted game-launch-hint">
+              {tr('尚未指定啟動檔，「啟動遊戲」按鈕暫時無法使用。')}{' '}
+              <Button size="compact-xs" variant="subtle" onClick={() => configure('game')}>
+                {tr('前往設定指定啟動檔')}
+              </Button>
+            </small>
+          )}
         </>
       }
     />

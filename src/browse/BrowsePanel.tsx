@@ -1,6 +1,7 @@
 import '../media/media-workspace.css'
 import { KindIcon } from './folderKind'
 import { useFolderSample } from './folderStats'
+import { useParentKind } from './folderKind'
 import type { OverviewEntry } from '../../shared/explorer'
 import { t as tr } from '../i18n'
 import { Icon } from '../common/icons'
@@ -95,8 +96,9 @@ export function BrowsePanel(props: Props) {
   const { canEnter, switchTo, switchDiscard, switchStay, nextBook, readNext, readNextDone } = props
   // R-327: what the folder contains counts too (once its content was read), so a manga folder found by its pictures
   // gets its layout button like one marked by hand.
-  const sample = useFolderSample(detail?.rowId)
-  const kind = detail ? effectiveKind(detail, sample) : 'general'
+  const sample = useFolderSample(detail?.rowId),
+    parentKind = useParentKind(detail)
+  const kind = detail ? effectiveKind(detail, sample, parentKind) : 'general'
   return (
     <div
       ref={panelSlot}

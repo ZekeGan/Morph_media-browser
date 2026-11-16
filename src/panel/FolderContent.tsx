@@ -8,6 +8,7 @@ import { PanelSkeleton } from './PanelSkeleton'
 import { useFileVisibility } from '../files/useFileVisibility'
 import { DocumentViewer } from '../documents/DocumentViewer'
 import { cacheFolderStats } from '../browse/folderStats'
+import { useParentKind } from '../browse/folderKind'
 import { GamePage } from '../game/GamePage'
 import { t as tr, useLocale } from '../i18n'
 import { useRefreshNonce } from '../browse/refresh'
@@ -78,6 +79,7 @@ export function FolderContent({
   onAutoRead?: () => void
 }) {
   useLocale()
+  const parentKind = useParentKind(row)
   const { visibility } = useFileVisibility()
   const contentRow = useRef(row.rowId)
   const [galleryFile, setGalleryFile] = useState<ContentResult['entries'][number]>(),
@@ -181,7 +183,7 @@ export function FolderContent({
   const visibleEntries = content.entries.filter((entry) => visibleFile(entry, visibility))
   const selectedFile = visibleEntries.find((entry) => entry.id === selectedFileId) ?? selectedEntry
   // Music and video folders share one page and one content template (R-387).
-  const folderKind = effectiveKind(row, sampleOf(content.entries)),
+  const folderKind = effectiveKind(row, sampleOf(content.entries), parentKind),
     kind = templateKind(folderKind)
   // R-389: every kind is drawn by the same skeleton (FolderPage); the kind only picks its page. Everything that is
   // not a game main folder or a book uses the unified file page.

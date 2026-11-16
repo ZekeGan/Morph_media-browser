@@ -163,6 +163,17 @@ export const launchChoice = (
     )
   return chain.find((t) => targets?.[t.id]?.kind === t.kind) ?? main
 }
+// R-397: what a game folder still lacks to start: 'action' when the project has no launch action at all, 'target' when
+// the main launch action has nothing bound for this folder, else undefined. Does not depend on the default action's id,
+// since a project may have replaced or removed it.
+export const launchGap = (
+  project: { actionTemplates?: ActionTemplate[] },
+  targets: Record<string, { kind: string }> | undefined
+): 'action' | 'target' | undefined => {
+  const main = launchTemplate(project)
+  if (!main) return 'action'
+  return targets?.[main.id]?.kind === main.kind ? undefined : 'target'
+}
 export const gameActionTemplates = (project: {
   actionTemplates?: ActionTemplate[]
 }): ActionTemplate[] =>

@@ -72,7 +72,18 @@ export interface DetectedKind {
 // Order: what you set by hand, then a detected game (its boundary protection applies in any project), then a folder
 // already read as manga, then what the files look like: video, music, text book, manga. Unsure means general.
 // PDF and plain ZIP files never decide a kind. Rules: docs/UI_RULES.md (資料夾類型).
-export function detectFolderKind(row: FolderRow, sample?: KindSample): DetectedKind {
+// R-404: folders that only hold an album's or release's extras. The whole name (a number may follow) decides.
+const extrasName = /^(scans?|booklet|artworks?|covers?|bk|ジャケット|特典|スキャン)[\s_]*\d*$/i
+export const isExtrasFolderName = (name: string | undefined) =>
+  !!name && extrasName.test(name.trim())
+
+export function detectFolderKind(
+  row: FolderRow,
+  sample?: KindSample,
+  // The kind of the folder directly above (from its own files, one level only); music or video there means pictures
+  // in this folder are extras, not manga. Left out where the parent is not known.
+  parentKind?: FolderKind
+): DetectedKind {
   const manual = row.record?.details?.kind
   if (manual) return { kind: manual, source: 'manual' }
   if (isGameFolder(row)) return { kind: 'game', source: 'game' }
@@ -90,11 +101,13 @@ export function detectFolderKind(row: FolderRow, sample?: KindSample): DetectedK
     if (epubs >= 1 || (texts - epubs >= 1 && (texts - epubs) * 2 >= total))
       return { kind: 'book', source: 'content' }
     // Manga: mostly pictures, or a comic archive. Videos or music among them make it undecidable (an album with
-    // many scans, a book with drama tracks), and an undecidable folder is general.
+    // many scans, a book with drama tracks), and an undecidable folder is general. Pictures alone do not decide it
+    // inside a music or video folder, or in a folder named like album extras (R-404).
+    const extras = parentKind === 'music' || parentKind === 'video' || isExtrasFolderName(row.name)
     if (
       videos === 0 &&
       audio === 0 &&
-      ((images >= 3 && images * 2 > total) || (sample.comics ?? 0) >= 1)
+      ((images >= 3 && images * 2 > total && !extras) || (sample.comics ?? 0) >= 1)
     )
       return { kind: 'book', source: 'content' }
   }
@@ -102,5 +115,8 @@ export function detectFolderKind(row: FolderRow, sample?: KindSample): DetectedK
 }
 
 // The kind the interface follows for a folder: what you set, what it is detected as, else general.
-export const effectiveKind = (row: FolderRow, sample?: KindSample): FolderKind =>
-  detectFolderKind(row, sample).kind
+export const effectiveKind = (
+  row: FolderRow,
+  sample?: KindSample,
+  parentKind?: FolderKind
+): FolderKind => detectFolderKind(row, sample, parentKind).kind

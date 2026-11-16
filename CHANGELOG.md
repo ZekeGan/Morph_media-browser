@@ -18,6 +18,9 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Folder types: a picture-only folder inside a music or video folder, or one named like scans, booklet or artwork, is no longer taken for manga (R-404).
+- Game folders: the 尚未指定啟動檔 hint follows the project's main launch action, so it no longer disappears after the toolbar's actions were changed; a project without any launch action is told so (R-397).
+- Manga reader: a sideways drag moves the page with the pointer and springs back below the turn threshold; a click in the middle third shows or hides the toolbar (R-392).
 - Book folders: a folder with one EPUB shows the book's cover, title, author and ISBN, and a folder of text books offers 繼續閱讀 for the one read last (R-390).
 - Video folders get a header with their name, how many videos they hold and 播放影片, which plays them in name order in the big viewer (R-390).
 - Podcasts: a music folder can be shown as a podcast (kept on this computer only): newest episodes first with date, length and how far each was heard, 從上次繼續 and 播放最新一集, and each episode goes on from where it was left (R-390).

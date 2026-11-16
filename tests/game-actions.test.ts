@@ -5,11 +5,26 @@ import path from 'node:path'
 import { Library } from '../electron/library'
 import { Explorer, type DesktopOperations } from '../electron/explorer'
 import { folderFile, readFolder } from '../electron/files'
-import { gameActionTemplates } from '../shared/explorer'
+import { gameActionTemplates, launchGap } from '../shared/explorer'
 
 test('implicit launch template does not overwrite explicit templates', () => {
   assert.equal(gameActionTemplates({})[0].id, 'default-launch-game')
   assert.deepEqual(gameActionTemplates({ actionTemplates: [] }), [])
+})
+
+test('R-397: the launch hint follows the main launch action, not the default id', () => {
+  const exe = { id: 'run', label: '開始', kind: 'exe' as const, color: '#000' },
+    open = { id: 'dir', label: '資料夾', kind: 'folder' as const, color: '#000' }
+  // Default project: the default action has no target yet.
+  assert.equal(launchGap({}, undefined), 'target')
+  assert.equal(launchGap({}, { 'default-launch-game': { kind: 'exe' } }), undefined)
+  // The default action was replaced: the hint still shows for the replacement.
+  assert.equal(launchGap({ actionTemplates: [exe, open] }, undefined), 'target')
+  assert.equal(launchGap({ actionTemplates: [exe, open] }, { dir: { kind: 'folder' } }), 'target')
+  assert.equal(launchGap({ actionTemplates: [exe] }, { run: { kind: 'exe' } }), undefined)
+  // No launch action at all (empty list, or only folder/web actions).
+  assert.equal(launchGap({ actionTemplates: [] }, undefined), 'action')
+  assert.equal(launchGap({ actionTemplates: [open] }, undefined), 'action')
 })
 
 test('game targets require explicit selection, preserve arguments and leave original files unchanged', async (t) => {

@@ -12118,5 +12118,17 @@
     "en": "Play videos",
     "ja": "動画を再生",
     "es": "Reproducir vídeos"
+  },
+  "尚未設定啟動操作": {
+    "zh-CN": "尚未设置启动操作",
+    "en": "No launch action set up",
+    "ja": "起動操作が未設定です",
+    "es": "Aún no hay acción de inicio"
+  },
+  "新增啟動操作": {
+    "zh-CN": "新增启动操作",
+    "en": "Add launch action",
+    "ja": "起動操作を追加",
+    "es": "Añadir acción de inicio"
   }
 }

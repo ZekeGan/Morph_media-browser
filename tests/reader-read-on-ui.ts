@@ -122,6 +122,13 @@ try {
   await waitPages('4')
   await page.keyboard.press('ArrowUp')
   await waitPages('3')
+  // R-392: a click in the middle third shows or hides the toolbar instead of turning the page.
+  const stage = (await reader().locator('.reader-stage').boundingBox())!
+  await page.mouse.click(stage.x + stage.width / 2, stage.y + stage.height / 2)
+  await page.locator('.reader-toolbar').waitFor({ state: 'detached' })
+  assert.equal(await shown(), '3')
+  await page.mouse.click(stage.x + stage.width / 2, stage.y + stage.height / 2)
+  await page.locator('.reader-toolbar').waitFor()
   // R-378: with the page-turn transition off (A, or its toolbar button) the new page just appears.
   const transition = reader().getByRole('button', { name: '翻頁過渡', exact: true })
   assert.equal(await transition.getAttribute('aria-pressed'), 'true')

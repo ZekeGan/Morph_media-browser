@@ -20,6 +20,7 @@ import {
   syncPresetDraft,
 } from '../../shared/layouts'
 import { commonFieldNames } from '../editor/commonFields'
+import { useParentKind } from '../browse/folderKind'
 import { t as tr, useLocale } from '../i18n'
 import { HelpLabel, HelpTip } from '../common/HelpTip'
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
@@ -46,6 +47,7 @@ import {
   type ActionTemplate,
   type ExplorerRequest,
   type ExplorerResponse,
+  launchGap,
 } from '../../shared/explorer'
 import { fieldValue } from '../../shared/model'
 import { withBookCover } from '../../shared/explorer'
@@ -127,8 +129,9 @@ export function FolderPanel({
       alive = false
     }
   }, [row.rowId])
-  const detectedKind = detectFolderKind(row, sample)
-  const isGame = effectiveKind(row, sample) === 'game'
+  const parentKind = useParentKind(row)
+  const detectedKind = detectFolderKind(row, sample, parentKind)
+  const isGame = effectiveKind(row, sample, parentKind) === 'game'
   const kindLabel: Record<string, string> = {
     game: tr('遊戲'),
     book: tr('書籍／漫畫'),
@@ -140,7 +143,7 @@ export function FolderPanel({
     const preset = cardPresets(project).find((p) => p.id === id) ?? cardPresets(project)[0]
     return preset.id === 'default' && preset.name === '預設版面' ? tr('預設版面') : preset.name
   }
-  const kindLayoutId = project.kindLayouts?.[templateKind(effectiveKind(row, sample))]
+  const kindLayoutId = project.kindLayouts?.[templateKind(effectiveKind(row, sample, parentKind))]
   const effectiveLayout = layoutName(kindLayoutId ?? project.activeLayoutId)
   const kindReason: Record<string, string> = {
     game: tr('偵測到遊戲引擎'),
@@ -179,7 +182,7 @@ export function FolderPanel({
     ...new Map(
       [
         ...rowCells(project, row),
-        ...contentCells(project, templateKind(effectiveKind(row, sample))),
+        ...contentCells(project, templateKind(effectiveKind(row, sample, parentKind))),
       ]
         .filter((c) => c.kind === 'image')
         .map((c) => [c.cellId, c])
@@ -528,15 +531,12 @@ export function FolderPanel({
     value == null || value === '' || (Array.isArray(value) && value.length === 0)
   const todo: { key: string; text: string; button: string; go: () => void }[] = []
   if (row.record && !disabled) {
-    if (
-      isGame &&
-      gameActionTemplates(project).some((t) => t.id === 'default-launch-game') &&
-      !row.record.details?.targets?.['default-launch-game']
-    )
+    const launchGapNow = isGame ? launchGap(project, row.record.details?.targets) : undefined
+    if (launchGapNow)
       todo.push({
         key: 'launch',
-        text: tr('尚未指定啟動檔'),
-        button: tr('指定啟動檔'),
+        text: launchGapNow === 'action' ? tr('尚未設定啟動操作') : tr('尚未指定啟動檔'),
+        button: launchGapNow === 'action' ? tr('新增啟動操作') : tr('指定啟動檔'),
         go: () => setTab('game'),
       })
     if (isGame && !row.record.details?.bannerAssetId && !assets.length)
