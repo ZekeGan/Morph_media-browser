@@ -42,6 +42,12 @@
 
 ## 已登記（未核定）
 
+- **R-419** 外部來源擴充（需要金鑰）：TMDB 搜尋與影集各季各集、SteamGridDB 橫幅標誌圖示 ｜中｜安全邊界｜無｜領域：metadata｜依賴：無
+  使用者 2026-11-17 同意，排在不需金鑰那批之後。沿用已設定的 TMDB、SteamGridDB 金鑰：①TMDB 用資料夾名稱搜尋候選 ②TMDB 影集各季、各集（集名、編號），可替影片資料夾的檔案標上集數 ③SteamGridDB 的橫幅（hero）、標誌（logo）、圖示（icon），給遊戲主視覺用。暫不做：IGDB（Twitch OAuth）、Discogs（權杖）、VNDB／Bangumi／AniList 個人清單同步（要保存使用者帳號權杖）
+
+- **R-418** 外部來源擴充（不需金鑰）：用資料夾名稱搜尋候選、VNDB 補資料、Steam 商店來源、Wikidata ｜大｜安全邊界｜無｜領域：metadata｜依賴：無
+  使用者 2026-11-17 同意。①搜尋：在資料夾的外部來源用資料夾名稱（可改）向 VNDB、MusicBrainz、AniList、Bangumi、Steam 搜尋，列出候選讓使用者選一個再預覽匯入，不做全自動配對；成人向來源是否列入另定 ②VNDB：標籤（附劇透等級，預設不顯示劇透）、遊玩時長、評分、外部連結（Steam、DLsite、官網）、版本的遊戲引擎（與本機偵測的引擎對照）、截圖可選擇匯入成圖片 ③新增 Steam 商店來源（appdetails，不需金鑰）：簡介、類型、發售日、截圖、橫幅，Steam ID 可接「用 Steam 啟動」④Wikidata：歌手照片（經 Commons）與各網站 ID 對照。所有請求沿用固定網域、逾時、大小上限與 User-Agent 規則
+
 ## 擱置
 
 - **R-416** RPG Maker XP/VX/Ace 存檔位置推算：存檔在遊戲根目錄而不是 Save 資料夾 ｜小｜安全邊界｜無｜領域：game｜依賴：無
