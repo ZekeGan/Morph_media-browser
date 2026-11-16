@@ -5,6 +5,7 @@ import { Video, VideoPlayer } from '@videojs/react/video'
 import type { FolderRow } from '../../shared/model'
 import {
   defaultSubtitle,
+  type EmbeddedSubtitleInfo,
   type ExplorerRequest,
   type ExplorerResponse,
   type MediaEntry,
@@ -13,7 +14,9 @@ import {
 import { parseSubtitles, type Cue } from '../../shared/subtitles'
 import { VideoControls } from './VideoControls'
 import { Accordion, Button } from '@mantine/core'
-import { VideoSubtitleSettings } from './VideoSubtitleSettings'
+import { VideoSubtitleSettings, type EmbeddedState } from './VideoSubtitleSettings'
+import { embeddedLabel } from './embeddedLabel'
+import { describeError } from '../notices/errors'
 import { useVideoAudio } from '../media/useVideoAudio'
 import { podcastFolder } from '../media/podcast'
 import { clockText, resumeAt, saveVideoPlace, videoPlace } from '../media/videoPlace'
@@ -58,7 +61,9 @@ export function VideoViewer({
 
   const [fileId, setFileId] = useState(initialFileId ?? videos[0]?.id),
     [subtitle, setSubtitle] = useState<ExplorerResponse['subtitle']>(),
-    [cues, setCues] = useState<Cue[]>([])
+    [cues, setCues] = useState<Cue[]>([]),
+    // R-412: the subtitle tracks inside the playing MKV/WebM, read when the subtitle settings are opened.
+    [embedded, setEmbedded] = useState<EmbeddedState>()
 
   const [settings, setSettings] = useState(defaultSubtitle),
     [error, setError] = useState(''),
@@ -397,6 +402,23 @@ export function VideoViewer({
       if (mounted.current && currentFile.current === target) setError(String(reason))
     }
   }
+  // R-412: one embedded track; main returns it as SRT text, so it loads like a subtitle file.
+  const loadEmbedded = async (track: EmbeddedSubtitleInfo) => {
+    const target = currentFile.current
+    if (!target) return
+    try {
+      const result = await window.explorer.request({
+        action: 'embeddedSubtitle',
+        rowId: row.rowId,
+        fileId: target,
+        track: track.number,
+      })
+      if (mounted.current && currentFile.current === target && result.subtitle)
+        apply({ ...result.subtitle, name: embeddedLabel(track) })
+    } catch (reason) {
+      if (mounted.current && currentFile.current === target) setError(describeError(reason).message)
+    }
+  }
   const importSubtitle = async () => {
     if (!subtitle) return
     const result = await run({
@@ -473,8 +495,51 @@ export function VideoViewer({
     return () => clearTimeout(timer)
   }, [resumed])
 
+  // R-412: the tracks inside an MKV/WebM are read once its subtitle settings are opened (main keeps a cache, so
+  // opening the same video again is quick), with progress while it reads.
+  const matroska = !!file && /\.(mkv|webm)$/i.test(file.name)
+  useEffect(() => {
+    if (!subtitleExpanded || !matroska || !file || embedded?.fileId === file.id) return
+    const target = file.id
+    setEmbedded({ fileId: target, status: 'loading', progress: 0, tracks: [] })
+    void window.explorer
+      .request({ action: 'embeddedSubtitles', rowId: row.rowId, fileId: target })
+      .then((result) => {
+        if (mounted.current && currentFile.current === target)
+          setEmbedded({
+            fileId: target,
+            status: 'done',
+            progress: 1,
+            tracks: result.embedded?.tracks ?? [],
+          })
+      })
+      .catch((reason) => {
+        if (mounted.current && currentFile.current === target)
+          setEmbedded({
+            fileId: target,
+            status: 'error',
+            progress: 0,
+            tracks: [],
+            error: describeError(reason).message,
+          })
+      })
+  }, [subtitleExpanded, matroska, file?.id])
+  useEffect(
+    () =>
+      window.explorer.onSubtitleProgress((progress) => {
+        if (progress.rowId === row.rowId && progress.fileId === currentFile.current)
+          setEmbedded((state) =>
+            state?.status === 'loading' && state.fileId === progress.fileId
+              ? { ...state, progress: progress.fraction }
+              : state
+          )
+      }),
+    [row.rowId]
+  )
+
   useEffect(() => {
     setResumed(undefined)
+    setEmbedded(undefined)
     setSubtitle(undefined)
     setCues([])
     setError('')
@@ -1000,6 +1065,8 @@ export function VideoViewer({
                     subtitle={subtitle}
                     files={files}
                     subtitles={subtitles}
+                    embedded={matroska ? embedded : undefined}
+                    loadEmbedded={loadEmbedded}
                     settings={settings}
                     readonly={row.readonly}
                     load={load}

@@ -176,9 +176,16 @@
         "VIDEO_VIEWER_DESIGN.md#播放生命週期",
         "VIDEO_VIEWER_DESIGN.md#拖入字幕與同步設定"
       ],
-      "code": ["src/video/Video*", "src/video/video-player.css", "shared/subtitles*"],
-      "ui": ["video-player-ui", "video-failure-ui"],
-      "tests": []
+      "code": [
+        "src/video/Video*",
+        "src/video/embeddedLabel*",
+        "src/video/video-player.css",
+        "shared/subtitles*",
+        "electron/embedded-subtitles*",
+        "electron/mkv-subtitles*"
+      ],
+      "ui": ["video-player-ui", "video-failure-ui", "video-embedded-ui"],
+      "tests": ["embedded-subtitles.test.ts"]
     },
     {
       "id": "documents",

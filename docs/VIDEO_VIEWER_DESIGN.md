@@ -1,6 +1,6 @@
 # 影片播放器
 
-> 最後確認：2026-11-16（R-395 R-405）。只寫現行規則；選型與歷次取捨見 [決策索引](DECISIONS.md)（C-83～C-85）。程式：`src/video/VideoViewer.tsx`、`src/video/VideoControls.tsx`、`src/video/VideoSubtitleSettings.tsx`、`shared/subtitles.ts`；測試：`tests/video-player-ui.ts`、`tests/video-failure-ui.ts`。影片從媒體頁的大視窗（`MediaViewer`）或右側面板的檔案預覽開啟，入口與佇列見 [媒體工作區](MEDIA_WORKSPACE.md#統一媒體工作區)。
+> 最後確認：2026-11-17（R-412）。只寫現行規則；選型與歷次取捨見 [決策索引](DECISIONS.md)（C-83～C-85）。程式：`src/video/VideoViewer.tsx`、`src/video/VideoControls.tsx`、`src/video/VideoSubtitleSettings.tsx`、`shared/subtitles.ts`；測試：`tests/video-player-ui.ts`、`tests/video-failure-ui.ts`。影片從媒體頁的大視窗（`MediaViewer`）或右側面板的檔案預覽開啟，入口與佇列見 [媒體工作區](MEDIA_WORKSPACE.md#統一媒體工作區)。
 
 <a id="現行控制欄2026-10-28"></a>
 
@@ -57,6 +57,8 @@ YouTube 式控制列；「放大／縮小」只指進入／退出全螢幕，不
 2. 同時拖多份時列出來源供選擇，一次顯示一條，可切換／關閉，不自動合併成雙語。從檔案總管拖入由 preload／main 驗證實際檔案，不接受任意字串路徑。
 3. 資料夾內的字幕用相對引用，不複製；外部拖入只作本次播放來源，要跨設備保存需明確匯入成可攜副本（存在 `details.subtitles`）。
 4. 文字編碼預設 UTF-8，亂碼時可改選 Big5 或 Shift_JIS，不覆寫原字幕。不自動以同名字幕取代使用者的選擇。
+5. 字幕檔支援 SRT、VTT 與 ASS／SSA（R-412）：ASS／SSA 只取 `[Events]` 的台詞，去掉樣式、特效與向量繪圖，`\N` 換行；不渲染字型與位置（完整渲染另列需求）。
+6. **內嵌字幕**（R-412，[C-141](DECISIONS.md#c-141影片內嵌字幕改用純-javascript-讀取2026-11-17)）：MKV／WebM 影片打開「字幕設定 → 字幕來源」時，主程序讀出影片裡的字幕軌，在檔案字幕下方的「內嵌字幕」列出「內嵌：語言／名稱」，讀取時顯示進度；選一軌就和選字幕檔一樣顯示，來源標示「影片內嵌」，不提供編碼選擇與匯入。圖形字幕（PGS、VobSub）只列出並標示「有圖形字幕，目前無法顯示」。讀取有上限與逾時（見決策），結果存本機快取，檔案大小或修改時間變了才重讀；失敗顯示原因，不影響播放與外部字幕。
 
 | 問題 | 處理 |
 | --- | --- |

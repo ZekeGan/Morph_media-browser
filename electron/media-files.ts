@@ -37,6 +37,9 @@ export const mediaTypes: Record<string, [MediaEntry['kind'], string]> = {
   '.mov': ['video', 'video/quicktime'],
   '.srt': ['subtitle', 'text/plain'],
   '.vtt': ['subtitle', 'text/vtt'],
+  // R-412
+  '.ass': ['subtitle', 'text/plain'],
+  '.ssa': ['subtitle', 'text/plain'],
 }
 
 // A file's real type from its first bytes; players report only "cannot decode", which hides disguised files.

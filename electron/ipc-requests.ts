@@ -175,6 +175,8 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
     encoding: opt(text),
   },
   chooseSubtitle: { rowId: ref },
+  embeddedSubtitles: { rowId: ref, fileId: ref },
+  embeddedSubtitle: { rowId: ref, fileId: ref, track: int },
   imageUrlPreview: { url: text },
   imageUrlApply: { ...revisionRow, token: ref, cover: bool },
   metadataPreview: { source: text, provider: opt(ref) },

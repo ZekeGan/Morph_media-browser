@@ -8975,12 +8975,6 @@
     "ja": "上書きの型が一致しません",
     "es": "La sustitución tiene un tipo incorrecto"
   },
-  "僅支援 SRT／VTT": {
-    "zh-CN": "仅支持 SRT／VTT",
-    "en": "Only SRT / VTT are supported",
-    "ja": "SRT／VTT のみ対応しています",
-    "es": "Solo se admiten SRT / VTT"
-  },
   "字幕需為 5MB 以內的文字檔": {
     "zh-CN": "字幕需为 5MB 以内的文本文件",
     "en": "Subtitles must be text files up to 5 MB",
@@ -11231,12 +11225,6 @@
     "ja": "字幕の終了時間は開始より後にしてください",
     "es": "El final del subtítulo debe ser posterior al inicio"
   },
-  "找不到有效 SRT／VTT 字幕，原字幕保留": {
-    "zh-CN": "找不到有效 SRT／VTT 字幕，原字幕保留",
-    "en": "No valid SRT / VTT subtitles found; the original subtitles are kept",
-    "ja": "有効な SRT／VTT 字幕が見つからないため、元の字幕を残しました",
-    "es": "No se encontraron subtítulos SRT / VTT válidos; se conservan los originales"
-  },
   "資料夾內容設定": {
     "zh-CN": "文件夹内容设置",
     "en": "folder content settings",
@@ -12346,5 +12334,113 @@
     "en": "Invalid source language setting",
     "ja": "ソース言語の設定が正しくありません",
     "es": "Configuración de idiomas de las fuentes no válida"
+  },
+  "內嵌字幕": {
+    "zh-CN": "内嵌字幕",
+    "en": "Embedded subtitles",
+    "ja": "内蔵字幕",
+    "es": "Subtítulos incrustados"
+  },
+  "內嵌：{0}": {
+    "zh-CN": "内嵌：{0}",
+    "en": "Embedded: {0}",
+    "ja": "内蔵：{0}",
+    "es": "Incrustado: {0}"
+  },
+  "正在讀取內嵌字幕… {0}%": {
+    "zh-CN": "正在读取内嵌字幕… {0}%",
+    "en": "Reading embedded subtitles… {0}%",
+    "ja": "内蔵字幕を読み込み中… {0}%",
+    "es": "Leyendo subtítulos incrustados… {0}%"
+  },
+  "讀取內嵌字幕的進度": {
+    "zh-CN": "读取内嵌字幕的进度",
+    "en": "Progress of reading embedded subtitles",
+    "ja": "内蔵字幕の読み込み進捗",
+    "es": "Progreso de lectura de los subtítulos incrustados"
+  },
+  "這部影片沒有內嵌字幕": {
+    "zh-CN": "这部视频没有内嵌字幕",
+    "en": "This video has no embedded subtitles",
+    "ja": "この動画には内蔵字幕がありません",
+    "es": "Este vídeo no tiene subtítulos incrustados"
+  },
+  "有圖形字幕，目前無法顯示": {
+    "zh-CN": "有图形字幕，目前无法显示",
+    "en": "Has picture subtitles, which can't be shown yet",
+    "ja": "画像字幕があります。現在は表示できません",
+    "es": "Tiene subtítulos gráficos, que aún no se pueden mostrar"
+  },
+  "影片內嵌": {
+    "zh-CN": "视频内嵌",
+    "en": "Inside the video",
+    "ja": "動画内蔵",
+    "es": "Dentro del vídeo"
+  },
+  "只有 Matroska（MKV／WebM）影片能讀內嵌字幕": {
+    "zh-CN": "只有 Matroska（MKV／WebM）视频能读取内嵌字幕",
+    "en": "Only Matroska (MKV / WebM) videos can have embedded subtitles read",
+    "ja": "内蔵字幕を読み取れるのは Matroska（MKV／WebM）動画のみです",
+    "es": "Solo se pueden leer subtítulos incrustados de vídeos Matroska (MKV / WebM)"
+  },
+  "找不到這個字幕軌": {
+    "zh-CN": "找不到这个字幕轨",
+    "en": "Subtitle track not found",
+    "ja": "この字幕トラックが見つかりません",
+    "es": "No se encontró la pista de subtítulos"
+  },
+  "這個字幕軌沒有可顯示的文字": {
+    "zh-CN": "这个字幕轨没有可显示的文字",
+    "en": "This subtitle track has no text to show",
+    "ja": "この字幕トラックには表示できる文字がありません",
+    "es": "Esta pista de subtítulos no tiene texto que mostrar"
+  },
+  "不是 Matroska 影片檔": {
+    "zh-CN": "不是 Matroska 视频文件",
+    "en": "Not a Matroska video file",
+    "ja": "Matroska 動画ファイルではありません",
+    "es": "No es un archivo de vídeo Matroska"
+  },
+  "影片檔沒有軌道資訊": {
+    "zh-CN": "视频文件没有轨道信息",
+    "en": "The video file has no track information",
+    "ja": "動画ファイルにトラック情報がありません",
+    "es": "El archivo de vídeo no tiene información de pistas"
+  },
+  "字幕軌資料損毀": {
+    "zh-CN": "字幕轨数据损坏",
+    "en": "The subtitle track data is damaged",
+    "ja": "字幕トラックのデータが壊れています",
+    "es": "Los datos de la pista de subtítulos están dañados"
+  },
+  "字幕軌資料過大": {
+    "zh-CN": "字幕轨数据过大",
+    "en": "The subtitle track data is too large",
+    "ja": "字幕トラックのデータが大きすぎます",
+    "es": "Los datos de la pista de subtítulos son demasiado grandes"
+  },
+  "讀取內嵌字幕逾時": {
+    "zh-CN": "读取内嵌字幕超时",
+    "en": "Reading the embedded subtitles timed out",
+    "ja": "内蔵字幕の読み込みがタイムアウトしました",
+    "es": "Se agotó el tiempo al leer los subtítulos incrustados"
+  },
+  "內嵌字幕過大": {
+    "zh-CN": "内嵌字幕过大",
+    "en": "The embedded subtitles are too large",
+    "ja": "内蔵字幕が大きすぎます",
+    "es": "Los subtítulos incrustados son demasiado grandes"
+  },
+  "僅支援 SRT／VTT／ASS／SSA": {
+    "zh-CN": "仅支持 SRT／VTT／ASS／SSA",
+    "en": "Only SRT / VTT / ASS / SSA are supported",
+    "ja": "SRT／VTT／ASS／SSA のみ対応しています",
+    "es": "Solo se admiten SRT / VTT / ASS / SSA"
+  },
+  "找不到有效 SRT／VTT／ASS 字幕，原字幕保留": {
+    "zh-CN": "找不到有效 SRT／VTT／ASS 字幕，原字幕保留",
+    "en": "No valid SRT / VTT / ASS subtitles found; the original subtitles are kept",
+    "ja": "有効な SRT／VTT／ASS 字幕が見つからないため、元の字幕を残しました",
+    "es": "No se encontraron subtítulos SRT / VTT / ASS válidos; se conservan los originales"
   }
 }
