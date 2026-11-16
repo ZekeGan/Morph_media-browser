@@ -14,13 +14,16 @@ import { GameActionEditor, GameActionTargets } from '../game/GameActions'
 import { GameExtraSettings } from '../game/GameExtras'
 import {
   addCommonFields,
+  cardChoice,
   cardPresets,
+  cardRule,
   presetDraft,
   rowCells,
   syncPresetDraft,
 } from '../../shared/layouts'
 import { commonFieldNames } from '../editor/commonFields'
-import { useParentKind } from '../browse/folderKind'
+import { useIsWork, useParentKind } from '../browse/folderKind'
+import { editLayoutRules } from '../../shared/layoutRules'
 import { t as tr, useLocale } from '../i18n'
 import { HelpLabel, HelpTip } from '../common/HelpTip'
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
@@ -130,6 +133,7 @@ export function FolderPanel({
     }
   }, [row.rowId])
   const parentKind = useParentKind(row)
+  const isWork = useIsWork(row)
   const detectedKind = detectFolderKind(row, sample, parentKind)
   const isGame = effectiveKind(row, sample, parentKind) === 'game'
   const kindLabel: Record<string, string> = {
@@ -143,8 +147,14 @@ export function FolderPanel({
     const preset = cardPresets(project).find((p) => p.id === id) ?? cardPresets(project)[0]
     return preset.id === 'default' && preset.name === '預設版面' ? tr('預設版面') : preset.name
   }
-  const kindLayoutId = project.kindLayouts?.[templateKind(effectiveKind(row, sample, parentKind))]
-  const effectiveLayout = layoutName(kindLayoutId ?? project.activeLayoutId)
+  // R-413: what the rules give this folder without its own choice.
+  const effectiveLayout = layoutName(
+    cardChoice(
+      { ...project, layoutRules: { card: { ...cardRule(project), folders: undefined } } },
+      row,
+      isWork
+    ).id
+  )
   const kindReason: Record<string, string> = {
     game: tr('偵測到遊戲引擎'),
     content: tr('依檔案內容判斷'),
@@ -180,7 +190,7 @@ export function FolderPanel({
   const imageCells = [
     ...new Map(
       [
-        ...rowCells(project, row),
+        ...rowCells(project, row, isWork),
         ...contentCells(project, templateKind(effectiveKind(row, sample, parentKind))),
       ]
         .filter((c) => c.kind === 'image')
@@ -866,7 +876,7 @@ export function FolderPanel({
                   />
                 }
                 allowDeselect={false}
-                value={project.folderLayouts?.[row.record.folderId] ?? ''}
+                value={cardRule(project)?.folders?.[row.record.folderId] ?? ''}
                 data={[
                   { value: '', label: tr('遵循類型與專案設定（目前：{0}）', effectiveLayout) },
                   ...cardPresets(project).map((preset) => ({
@@ -879,10 +889,16 @@ export function FolderPanel({
                 ]}
                 disabled={busy || fieldDirty}
                 onChange={(id) => {
-                  const folderLayouts = { ...project.folderLayouts }
-                  if (id) folderLayouts[row.record!.folderId] = id
-                  else delete folderLayouts[row.record!.folderId]
-                  void act({ action: 'saveProject', project: { ...project, folderLayouts } })
+                  const folderId = row.record!.folderId
+                  void act({
+                    action: 'saveProject',
+                    project: editLayoutRules(project, (rules) => {
+                      const folders = { ...rules.card.folders }
+                      if (id) folders[folderId] = id
+                      else delete folders[folderId]
+                      rules.card.folders = folders
+                    }),
+                  })
                 }}
               />
             )}
@@ -1010,9 +1026,18 @@ function BookLayoutChoice({
     : settleGrid(withBookCover(contentCells(project, 'book')))
   const presets = project.bookPresets ?? [{ id: 'default', name: '預設版面', cells: defaultCells }]
   const current = presets.find((preset) => preset.id === (project.bookPresetId ?? presets[0].id))
-  const own = project.folderBookPresets?.[folderId]
+  const own = (
+    project.layoutRules ? project.layoutRules.panel?.folders : project.folderBookPresets
+  )?.[folderId]
+  // R-413: the folder's template is kept in the panel layout rules.
+  const setOwn = <P extends Project>(base: P, id: string | null) =>
+    editLayoutRules(base, (rules) => {
+      const folders = { ...rules.panel.folders }
+      if (id) folders[folderId] = id
+      else delete folders[folderId]
+      rules.panel.folders = folders
+    })
   const choose = async (value: string | null) => {
-    const folders = { ...project.folderBookPresets }
     if (value === '__own') {
       const used = new Set(presets.map((preset) => preset.name.toLocaleLowerCase()))
       const base = folderName.slice(0, 90).trim() || tr('此資料夾')
@@ -1021,30 +1046,23 @@ function BookLayoutChoice({
       const shown =
         presets.find((preset) => preset.id === own)?.cells ?? current?.cells ?? defaultCells
       const id = crypto.randomUUID()
-      folders[folderId] = id
       const saved = await act({
         action: 'saveProject',
-        project: {
-          ...project,
-          contentCells: { ...project.contentCells, book: current?.cells ?? defaultCells },
-          contentCover: true,
-          bookPresets: [...presets, { id, name, cells: structuredClone(shown) }],
-          bookPresetId: current?.id ?? presets[0].id,
-          folderBookPresets: folders,
-        },
+        project: setOwn(
+          {
+            ...project,
+            contentCells: { ...project.contentCells, book: current?.cells ?? defaultCells },
+            contentCover: true,
+            bookPresets: [...presets, { id, name, cells: structuredClone(shown) }],
+            bookPresetId: current?.id ?? presets[0].id,
+          },
+          id
+        ),
       })
       if (saved) onEdit?.(id)
       return
     }
-    if (value) folders[folderId] = value
-    else delete folders[folderId]
-    void act({
-      action: 'saveProject',
-      project: {
-        ...project,
-        folderBookPresets: Object.keys(folders).length ? folders : undefined,
-      },
-    })
+    void act({ action: 'saveProject', project: setOwn(project, value || null) })
   }
   return (
     <Select

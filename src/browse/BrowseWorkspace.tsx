@@ -12,6 +12,7 @@ import {
   lazy,
   Suspense,
   useCallback,
+  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -21,20 +22,23 @@ import {
 import { createPortal } from 'react-dom'
 import { ActionIcon, Pagination, Tooltip } from '@mantine/core'
 import { BrowseNav } from './BrowseNav'
-import { KindRowsContext } from './folderKind'
+import { isLayoutWork, KindRowsContext, LayoutWorksContext } from './folderKind'
 import { FolderCards } from './FolderCards'
 import { useCardSettings } from './useCardSettings'
 import { useTableColumns } from './useTableColumns'
 import { FolderTable } from './FolderTable'
 import { KindBatchBar } from './KindBatchBar'
-import { cardPresets } from '../../shared/layouts'
+import { cardChoice, cardPresets } from '../../shared/layouts'
+import { LayoutConfig } from './LayoutConfig'
 import {
   browserRows,
   columnValue,
   folderBreadcrumbs,
+  isWork,
   maxBrowseDepth,
   pathKey,
   sortRows,
+  treeStructure,
 } from '../../shared/browse'
 import type { FolderRow, Project, Request, Response } from '../../shared/model'
 import type {
@@ -77,10 +81,16 @@ interface Props {
 // R-404: lets a folder's icon, badge and panel find the folder above it by path.
 export function BrowseWorkspace(props: Props) {
   const all = props.structure.length ? props.structure : props.rows,
-    kindRows = useMemo(() => new Map(all.map((r) => [pathKey(r.path), r])), [all])
+    kindRows = useMemo(() => new Map(all.map((r) => [pathKey(r.path), r])), [all]),
+    works = useMemo(() => {
+      const { children } = treeStructure(all)
+      return new Map(all.map((r) => [r.rowId, isWork(r, children)]))
+    }, [all])
   return (
     <KindRowsContext.Provider value={kindRows}>
-      <BrowseWorkspaceBody {...props} />
+      <LayoutWorksContext.Provider value={works}>
+        <BrowseWorkspaceBody {...props} />
+      </LayoutWorksContext.Provider>
     </KindRowsContext.Provider>
   )
 }
@@ -102,6 +112,8 @@ function BrowseWorkspaceBody({
   onOverlay,
 }: Props) {
   const locale = useLocale()
+  const works = useContext(LayoutWorksContext),
+    [layoutsOpen, setLayoutsOpen] = useState(false)
 
   const [browse, setBrowse] = useState(initial),
     [readNext, setReadNext] = useState<{ id: string; immersive: boolean }>(),
@@ -692,20 +704,15 @@ function BrowseWorkspaceBody({
       }
     },
   })
-  const presets = cardPresets(project),
-    pickPreset = (id: string) => {
-      const preset = presets.find((p) => p.id === id)
-      if (preset)
-        void act({
-          action: 'saveProject',
-          project: {
-            ...project,
-            cells: preset.cells,
-            layoutPresets: presets,
-            activeLayoutId: preset.id,
-          },
-        })
-    }
+  // R-413: the button shows the layout the folder being browsed uses; it opens the layout configuration window.
+  const layoutLabel = (() => {
+    const presets = cardPresets(project),
+      id = currentFolder
+        ? cardChoice(project, currentFolder, isLayoutWork(works, currentFolder.rowId)).id
+        : (project.activeLayoutId ?? presets[0].id),
+      preset = presets.find((p) => p.id === id) ?? presets[0]
+    return preset.id === 'default' && preset.name === '預設版面' ? tr('預設版面') : preset.name
+  })()
   const switchMode = async (mode: BrowseMode) => {
     if (busy || !ready) return
     if (highlight && highlight !== state.current.detailId) {
@@ -772,6 +779,15 @@ function BrowseWorkspaceBody({
           </Tooltip>,
           toolbarTarget
         )}
+      <LayoutConfig
+        opened={layoutsOpen}
+        close={() => setLayoutsOpen(false)}
+        project={project}
+        rows={all}
+        start={currentFolder}
+        busy={busy}
+        save={async (next) => !!(await act({ action: 'saveProject', project: next }))}
+      />
       <section className="center-pane" aria-label={tr('資料夾瀏覽區')}>
         <BrowseToolbar
           boundariesOnly={boundariesOnly}
@@ -791,8 +807,8 @@ function BrowseWorkspaceBody({
           openConfig={openConfig}
           orderedColumns={orderedColumns}
           persist={persist}
-          pickPreset={pickPreset}
-          presets={presets}
+          layoutLabel={layoutLabel}
+          openLayouts={() => setLayoutsOpen(true)}
           project={project}
           ready={ready}
           setBoundariesOnly={setBoundariesOnly}

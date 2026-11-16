@@ -5267,12 +5267,6 @@
     "ja": "種類ごとの既定レイアウト",
     "es": "Diseño predeterminado por tipo"
   },
-  "遵循專案目前版面": {
-    "zh-CN": "遵循项目当前版面",
-    "en": "Follow the project's current layout",
-    "ja": "プロジェクトの現在のレイアウトに従う",
-    "es": "Seguir el diseño actual del proyecto"
-  },
   "批次指定資料夾類型": {
     "zh-CN": "批量指定文件夹类型",
     "en": "Set folder type in bulk",
@@ -5326,12 +5320,6 @@
     "en": "Edit layout",
     "ja": "レイアウトを編集",
     "es": "Editar diseño"
-  },
-  "卡片外觀選單": {
-    "zh-CN": "卡片外观菜单",
-    "en": "Card look menu",
-    "ja": "カードの見た目メニュー",
-    "es": "Menú de aspecto de la tarjeta"
   },
   "加入常用欄位": {
     "zh-CN": "加入常用字段",
@@ -12274,5 +12262,101 @@
     "en": "No saves yet; this folder appears once the game saves",
     "ja": "まだセーブがありません。ゲームがセーブするとこのフォルダーが作られます",
     "es": "Aún no hay partidas; la carpeta aparecerá cuando el juego guarde"
+  },
+  "版面 0（{0}）": {
+    "zh-CN": "版面 0（{0}）",
+    "en": "Layout 0 ({0})",
+    "ja": "レイアウト 0（{0}）",
+    "es": "Diseño 0 ({0})"
+  },
+  "版面配置": {
+    "zh-CN": "版面配置",
+    "en": "Layout setup",
+    "ja": "レイアウト設定",
+    "es": "Configuración de diseños"
+  },
+  "預設設定": {
+    "zh-CN": "默认设置",
+    "en": "Defaults",
+    "ja": "既定の設定",
+    "es": "Valores predeterminados"
+  },
+  "作品依類型選版面，其他資料夾依所在層級選版面；沒有指定的都用版面 0。資料夾專屬的版面在下方樹狀圖設定。": {
+    "zh-CN": "作品按类型选版面，其他文件夹按所在层级选版面；没有指定的都用版面 0。文件夹专属的版面在下方树状图设置。",
+    "en": "Works use the layout of their kind; other folders use the layout of their level. Anything not set uses layout 0. Set a folder's own layout in the tree below.",
+    "ja": "作品は種類ごと、その他のフォルダーは階層ごとにレイアウトを選びます。指定のないものはレイアウト 0 を使います。フォルダー専用のレイアウトは下のツリーで設定します。",
+    "es": "Las obras usan el diseño de su tipo; las demás carpetas, el de su nivel. Lo que no esté definido usa el diseño 0. El diseño propio de una carpeta se define en el árbol de abajo."
+  },
+  "版面 0": {
+    "zh-CN": "版面 0",
+    "en": "Layout 0",
+    "ja": "レイアウト 0",
+    "es": "Diseño 0"
+  },
+  "第 {0} 層": {
+    "zh-CN": "第 {0} 层",
+    "en": "Level {0}",
+    "ja": "第 {0} 階層",
+    "es": "Nivel {0}"
+  },
+  "虛線框是作品（依類型），實線框是一般資料夾（依層級），強調色邊框是此資料夾專屬。點資料夾可指定專屬版面。": {
+    "zh-CN": "虚线框是作品（按类型），实线框是一般文件夹（按层级），强调色边框是此文件夹专属。点击文件夹可指定专属版面。",
+    "en": "Dashed boxes are works (by kind), solid boxes are other folders (by level), and an accent border marks a folder's own layout. Click a folder to give it its own layout.",
+    "ja": "破線の枠は作品（種類ごと）、実線の枠は一般フォルダー（階層ごと）、強調色の枠はフォルダー専用です。フォルダーをクリックすると専用のレイアウトを指定できます。",
+    "es": "Los recuadros discontinuos son obras (por tipo), los continuos son carpetas normales (por nivel) y un borde de color marca el diseño propio de una carpeta. Haz clic en una carpeta para darle su propio diseño."
+  },
+  "所選資料夾：{0}": {
+    "zh-CN": "所选文件夹：{0}",
+    "en": "Selected folder: {0}",
+    "ja": "選択中のフォルダー：{0}",
+    "es": "Carpeta seleccionada: {0}"
+  },
+  "作品": {
+    "zh-CN": "作品",
+    "en": "Work",
+    "ja": "作品",
+    "es": "Obra"
+  },
+  "此資料夾專屬": {
+    "zh-CN": "此文件夹专属",
+    "en": "This folder's own",
+    "ja": "このフォルダー専用",
+    "es": "Propio de esta carpeta"
+  },
+  "不指定（目前：{0}）": {
+    "zh-CN": "不指定（当前：{0}）",
+    "en": "Not set (now: {0})",
+    "ja": "指定なし（現在：{0}）",
+    "es": "Sin definir (ahora: {0})"
+  },
+  "這個資料夾還沒有記錄，不能指定專屬版面": {
+    "zh-CN": "这个文件夹还没有记录，不能指定专属版面",
+    "en": "This folder has no record yet, so it cannot have its own layout",
+    "ja": "このフォルダーにはまだ記録がないため、専用のレイアウトを指定できません",
+    "es": "Esta carpeta aún no tiene registro, así que no puede tener su propio diseño"
+  },
+  "依類型": {
+    "zh-CN": "按类型",
+    "en": "By kind",
+    "ja": "種類ごと",
+    "es": "Por tipo"
+  },
+  "依層級": {
+    "zh-CN": "按层级",
+    "en": "By level",
+    "ja": "階層ごと",
+    "es": "Por nivel"
+  },
+  "在瀏覽工具列的「版面配置」修改。": {
+    "zh-CN": "在浏览工具栏的「版面配置」修改。",
+    "en": "Change them with Layout setup in the browse toolbar.",
+    "ja": "閲覧ツールバーの「レイアウト設定」で変更します。",
+    "es": "Se cambian en Configuración de diseños, en la barra de navegación."
+  },
+  "版面配置規則不合法": {
+    "zh-CN": "版面配置规则不合法",
+    "en": "The layout rules are not valid",
+    "ja": "レイアウト設定の規則が正しくありません",
+    "es": "Las reglas de diseño no son válidas"
   }
 }

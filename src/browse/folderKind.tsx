@@ -20,6 +20,16 @@ const looks: Record<KindLook, { icon: IconName; label: string }> = {
 }
 // R-404: the rows of the open project by path, so the kind of the folder above can be found (set by BrowseWorkspace).
 export const KindRowsContext = createContext<Map<string, FolderRow> | undefined>(undefined)
+// R-413: the folders of the open project that count as works (shared/browse.ts isWork), which decides whether a
+// folder takes its kind's layout or its level's. A folder not in it (outside a workspace, or not in the structure
+// the workspace knows) is taken as a work, as the older kind layouts were applied to every folder.
+export const LayoutWorksContext = createContext<Map<string, boolean> | undefined>(undefined)
+export const isLayoutWork = (works: Map<string, boolean> | undefined, rowId: string) =>
+  works?.get(rowId) ?? true
+export function useIsWork(row: FolderRow | undefined) {
+  const works = useContext(LayoutWorksContext)
+  return !row || isLayoutWork(works, row.rowId)
+}
 // The kind of the folder directly above, from its own files only (one level, never its parent). Undefined if unknown.
 export function useParentKind(row: FolderRow | undefined): FolderKind | undefined {
   const rows = useContext(KindRowsContext)

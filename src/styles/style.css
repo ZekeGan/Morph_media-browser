@@ -391,6 +391,14 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .tree-branch-toggle:hover { background:var(--line); }
 .tree-actions { position:absolute; left:10px; top:10px; z-index:5; display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:5px; border-radius:6px; background:var(--overlay); font-size:11px; color:var(--muted); }
 .tree-actions button { border:1px solid var(--line); background:var(--surface); color:inherit; border-radius:4px; padding:4px 7px; font-size:11px; }
+/* R-413: layout configuration window — the tree shows which layout each folder uses and where the choice comes from. */
+.layout-config-tree { height: min(52vh, 520px); min-height: 280px; margin-top: 6px; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.layout-config-tree .react-flow__node-default.layout-node { padding: 6px 8px; text-align: left; font-size: 12px; }
+.layout-config-tree .layout-node.is-work { border-style: dashed; }
+.layout-config-tree .layout-node.from-folder { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.layout-node-choice { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 11px; }
+.layout-config-button { max-width: 180px; }
+.layout-config-button .mantine-Button-label { overflow: hidden; text-overflow: ellipsis; }
 /* One scrollable sidebar; groups no longer create their own scrollbars. */
 .section-projects { max-height:none; overflow:visible; }
 .sidebar-groups { scrollbar-width:none; }

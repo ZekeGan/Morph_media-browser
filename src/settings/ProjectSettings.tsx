@@ -1,9 +1,8 @@
 import { t as tr, useLocale } from '../i18n'
-import { HelpTip } from '../common/HelpTip'
 import { useState } from 'react'
-import { cardPresets } from '../../shared/layouts'
-import { templateKinds } from '../../shared/kind'
-import { Alert, Button, Checkbox, Group, Select, Stack, Tabs, Text, TextInput } from '@mantine/core'
+import { cardPresets, cardRule } from '../../shared/layouts'
+import { folderKinds } from '../../shared/kind'
+import { Alert, Button, Checkbox, Group, Stack, Tabs, Text, TextInput } from '@mantine/core'
 import type {
   Project,
   ProjectRemovalPreview,
@@ -76,43 +75,34 @@ export function ProjectSettings({
               />
             </section>
             <section className="settings-section">
-              <Group gap={4} wrap="nowrap">
-                <Text fw={600}>{tr('各類型的預設版面')}</Text>
-                <HelpTip text={tr('版面套用優先序：資料夾自選 › 類型預設 › 專案目前版面。')} />
-              </Group>
-              {templateKinds.map((kind) => (
-                <Select
-                  key={kind}
-                  mt="xs"
-                  label={
+              <Text fw={600}>{tr('各類型的預設版面')}</Text>
+              {/* R-413: layouts are chosen in the layout setup window; here they are only listed. */}
+              <Text size="xs" c="dimmed">
+                {tr('在瀏覽工具列的「版面配置」修改。')}
+              </Text>
+              {folderKinds.map((kind) => {
+                const id = cardRule(project)?.types?.[kind],
+                  preset = cardPresets(project).find((p) => p.id === id)
+                return (
+                  <Text key={kind} size="sm" mt={4}>
                     {
-                      game: tr('遊戲'),
-                      book: tr('書籍／漫畫'),
-                      media: tr('音樂／影片'),
-                      general: tr('一般'),
-                    }[kind]
-                  }
-                  allowDeselect={false}
-                  value={project.kindLayouts?.[kind] ?? ''}
-                  disabled={busy}
-                  data={[
-                    { value: '', label: tr('遵循專案目前版面') },
-                    ...cardPresets(project).map((preset) => ({
-                      value: preset.id,
-                      label:
-                        preset.id === 'default' && preset.name === '預設版面'
-                          ? tr('預設版面')
-                          : preset.name,
-                    })),
-                  ]}
-                  onChange={(id) => {
-                    const kindLayouts = { ...project.kindLayouts }
-                    if (id) kindLayouts[kind] = id
-                    else delete kindLayouts[kind]
-                    change({ ...project, kindLayouts })
-                  }}
-                />
-              ))}
+                      {
+                        game: tr('遊戲'),
+                        book: tr('書籍／漫畫'),
+                        music: tr('音樂'),
+                        video: tr('影片'),
+                        general: tr('一般'),
+                      }[kind]
+                    }
+                    {'：'}
+                    {!preset
+                      ? tr('版面 0')
+                      : preset.id === 'default' && preset.name === '預設版面'
+                        ? tr('預設版面')
+                        : preset.name}
+                  </Text>
+                )
+              })}
             </section>
             <div>
               <Text size="xs" c="dimmed">

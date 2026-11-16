@@ -102,5 +102,7 @@ export function withOnlyCells(
 ): Record<string, unknown> {
   const next: Record<string, unknown> = { ...value, cells }
   for (const { key, refs } of holders) for (const name of [key, ...refs]) next[name] = undefined
+  // The layout rules are checked once with the project, not again with every list of cells (R-413).
+  next.layoutRules = undefined
   return next
 }

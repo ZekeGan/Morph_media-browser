@@ -30,6 +30,29 @@ const id = (v: unknown): v is string =>
 const integer = (v: unknown, min: number, max: number) =>
   Number.isInteger(v) && Number(v) >= min && Number(v) <= max
 const text = (v: unknown, max = 10000): v is string => typeof v === 'string' && v.length <= max
+// R-413: { card?, panel? }, each { types?, levels?, folders? } whose values are layout ids; a level left unset is ''.
+function validLayoutRule(rule: unknown): boolean {
+  return (
+    obj(rule) &&
+    Object.keys(rule).every((k) => ['types', 'levels', 'folders'].includes(k)) &&
+    (rule.types === undefined ||
+      (obj(rule.types) &&
+        Object.entries(rule.types).every(([kind, layout]) => isFolderKind(kind) && id(layout)))) &&
+    (rule.levels === undefined ||
+      (Array.isArray(rule.levels) &&
+        rule.levels.length <= 100 &&
+        rule.levels.every((layout) => layout === '' || id(layout)))) &&
+    (rule.folders === undefined ||
+      (obj(rule.folders) &&
+        Object.keys(rule.folders).length <= 50000 &&
+        Object.entries(rule.folders).every(([folder, layout]) => id(folder) && id(layout))))
+  )
+}
+const validLayoutRules = (v: unknown) =>
+  obj(v) &&
+  Object.keys(v).every((k) => k === 'card' || k === 'panel') &&
+  (v.card === undefined || validLayoutRule(v.card)) &&
+  (v.panel === undefined || validLayoutRule(v.panel))
 const relative = (v: unknown): v is string =>
   text(v) &&
   !v.startsWith('/') &&
@@ -559,6 +582,8 @@ export function validateProject(v: unknown): asserts v is Project {
       ))
   )
     throw new Error('類型版面指定不合法')
+  if (v.layoutRules !== undefined && !validLayoutRules(v.layoutRules))
+    throw new Error('版面配置規則不合法')
   if (
     v.stylePresets !== undefined &&
     (!Array.isArray(v.stylePresets) ||

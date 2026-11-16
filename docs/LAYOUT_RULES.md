@@ -24,4 +24,4 @@
 
 ## 資料
 
-專案記錄的版面規則欄位 layoutRules（暫定，接上畫面時加入）：`{ card?, panel? }`，各是 `{ types?, levels?, folders? }`：`types` 以資料夾類型為鍵、`levels[0]` 是第 1 層、`folders` 以資料夾 ID 為鍵，值都是版面 ID。舊欄位 `kindLayouts`（音樂與影片共用 `media`）、`folderLayouts`、`bookPresetId`、`folderBookPresets` 讀取時換算成同樣的規則，格式升級時移除，見 [DATA_FORMAT](DATA_FORMAT.md)。
+專案記錄的 `layoutRules`（暫定）：`{ card?, panel? }`，各是 `{ types?, levels?, folders? }`：`types` 以資料夾類型為鍵、`levels[0]` 是第 1 層、`folders` 以資料夾 ID 為鍵，值都是版面 ID。舊欄位 `kindLayouts`（音樂與影片共用 `media`）、`folderLayouts`、`bookPresetId`、`folderBookPresets` 讀取時換算成同樣的規則，格式升級時移除，見 [DATA_FORMAT](DATA_FORMAT.md)。

@@ -42,20 +42,19 @@ export function chooseLayout(
   return (
     pick(folderId ? rule?.folders?.[folderId] : undefined, 'folder') ??
     (work
-      ? pick(rule?.types?.[effectiveKind(row)], 'type')
+      ? // What the scan counted is enough to tell the kind of a folder never opened (R-340).
+        pick(rule?.types?.[effectiveKind(row, row.contents)], 'type')
       : level > 0
         ? pick(rule?.levels?.[level - 1], 'level')
         : undefined) ?? { id: fallback, source: 'default' }
   )
 }
 
-// The rules an older project implies: its kind layouts (music and video shared one), its folder layouts, and its book
-// templates (the project's chosen template for book folders, and the folders' own choices).
+// The rules an older project implies: its kind layouts (music and video shared one), its folder layouts, and the
+// folders' own book templates. The project's chosen book template (bookPresetId) stays where it is: it is the book
+// panel's layout 0, as activeLayoutId is the cards'.
 export function legacyLayoutRules(
-  project: Pick<
-    Project,
-    'kindLayouts' | 'folderLayouts' | 'bookPresets' | 'bookPresetId' | 'folderBookPresets'
-  >
+  project: Pick<Project, 'kindLayouts' | 'folderLayouts' | 'folderBookPresets'>
 ): LayoutRules {
   const types: LayoutRule['types'] = {}
   for (const kind of folderKinds) {
@@ -68,17 +67,41 @@ export function legacyLayoutRules(
       ? { folders: { ...project.folderLayouts } }
       : {}),
   }
-  const panel: LayoutRule = {
-    ...(project.bookPresets?.length && project.bookPresetId
-      ? { types: { book: project.bookPresetId } }
-      : {}),
-    ...(project.folderBookPresets && Object.keys(project.folderBookPresets).length
+  const panel: LayoutRule =
+    project.folderBookPresets && Object.keys(project.folderBookPresets).length
       ? { folders: { ...project.folderBookPresets } }
-      : {}),
-  }
+      : {}
   return {
     ...(Object.keys(card).length ? { card } : {}),
     ...(Object.keys(panel).length ? { panel } : {}),
+  }
+}
+
+// Every change to the rules goes through here: the project's rules (or those its older fields imply) are copied,
+// changed, emptied parts dropped, and the older fields they replace are removed so there is one place to read.
+export function editLayoutRules<
+  P extends Pick<Project, 'layoutRules' | 'kindLayouts' | 'folderLayouts' | 'folderBookPresets'>,
+>(project: P, change: (rules: { card: LayoutRule; panel: LayoutRule }) => void): P {
+  const base = structuredClone(project.layoutRules ?? legacyLayoutRules(project)),
+    rules = { card: base.card ?? {}, panel: base.panel ?? {} }
+  change(rules)
+  const tidy = (rule: LayoutRule) => {
+    const out: LayoutRule = {}
+    if (rule.types && Object.keys(rule.types).length) out.types = rule.types
+    const levels = [...(rule.levels ?? [])]
+    while (levels.length && !levels[levels.length - 1]) levels.pop()
+    if (levels.length) out.levels = levels
+    if (rule.folders && Object.keys(rule.folders).length) out.folders = rule.folders
+    return Object.keys(out).length ? out : undefined
+  }
+  const card = tidy(rules.card),
+    panel = tidy(rules.panel)
+  return {
+    ...project,
+    layoutRules: { ...(card ? { card } : {}), ...(panel ? { panel } : {}) },
+    kindLayouts: undefined,
+    folderLayouts: undefined,
+    folderBookPresets: undefined,
   }
 }
 

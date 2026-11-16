@@ -1,7 +1,7 @@
 import { fieldValue, type Attribute, type Cell, type FolderRow, type Project } from './model'
-import { effectiveKind, templateKind } from './kind'
 import { settleCells } from './fieldGroups'
 import { cellLists } from './cellLists'
+import { chooseLayout, dropLayout, legacyLayoutRules } from './layoutRules'
 // R-362: a book's cover is a component of its template (the folder's cover picture, else its first image), so it can
 // be moved, resized or left out like any other.
 export const bookCover = (grid: Cell['grid'] = { x: 0, y: 0, w: 4, h: 4 }): Cell => ({
@@ -124,14 +124,20 @@ export function saveCardPreset(
   }
 }
 
-// A folder's own choice wins, then the layout set for its kind, then the project's active layout.
-export function rowCells(project: Project, row: FolderRow): Cell[] {
-  const chosen =
-    (row.record?.folderId && project.folderLayouts?.[row.record.folderId]) ||
-    project.kindLayouts?.[templateKind(effectiveKind(row))]
-  return chosen
-    ? (cardPresets(project).find((preset) => preset.id === chosen)?.cells ?? visibleCells(project))
-    : visibleCells(project)
+// R-413: the card rules of the project (or those its older fields imply) pick the layout; layout 0 is the project's
+// active layout. `work` says whether the folder counts as a work (where unknown, it is taken as one, which matches
+// the older rule that applied kind layouts to every folder).
+export const cardRule = (project: Project) =>
+  project.layoutRules ? project.layoutRules.card : legacyLayoutRules(project).card
+export function cardChoice(project: Project, row: FolderRow, work = true) {
+  const presets = cardPresets(project)
+  return chooseLayout(cardRule(project), row, work, project.activeLayoutId ?? presets[0].id, (id) =>
+    presets.some((preset) => preset.id === id)
+  )
+}
+export function rowCells(project: Project, row: FolderRow, work = true): Cell[] {
+  const { id } = cardChoice(project, row, work)
+  return cardPresets(project).find((preset) => preset.id === id)?.cells ?? visibleCells(project)
 }
 export function presetDraft(project: Project): Project {
   const presets = structuredClone(cardPresets(project)),
@@ -197,6 +203,17 @@ export function removePreset(project: Project): Project {
     throw new Error('至少保留一個方案')
   const presets = project.layoutPresets.filter((preset) => preset.id !== project.activeLayoutId),
     first = presets[0]
+  if (project.layoutRules)
+    return {
+      ...project,
+      layoutPresets: presets,
+      activeLayoutId: first.id,
+      cells: structuredClone(first.cells),
+      layoutRules: {
+        ...project.layoutRules,
+        card: dropLayout(project.layoutRules.card, project.activeLayoutId!),
+      },
+    }
   return {
     ...project,
     layoutPresets: presets,
@@ -374,8 +391,11 @@ export function bookEditorProject(project: Project, defaultCells: Cell[], start?
     cells: structuredClone(presets.find((preset) => preset.id === active)!.cells),
     layoutPresets: structuredClone(presets),
     activeLayoutId: active,
-    folderLayouts: project.folderBookPresets,
+    folderLayouts: project.layoutRules
+      ? project.layoutRules.panel?.folders
+      : project.folderBookPresets,
     kindLayouts: undefined,
+    layoutRules: undefined,
   }
 }
 // Back from the editor: the card layouts stay as they were. The template chosen when saving becomes the project's
@@ -403,6 +423,15 @@ export function fromBookEditor(original: Project, edited: Project, keepDefault: 
       activeLayoutId: original.activeLayoutId,
       folderLayouts: original.folderLayouts,
       kindLayouts: original.kindLayouts,
+      // R-413: with layout rules the folders' templates live in the panel rule.
+      layoutRules: original.layoutRules && {
+        ...original.layoutRules,
+        panel: (() => {
+          const { folders: _old, ...rest } = original.layoutRules.panel ?? {},
+            panel = { ...rest, ...(folders ? { folders } : {}) }
+          return Object.keys(panel).length ? panel : undefined
+        })(),
+      },
       contentCells: {
         ...synced.contentCells,
         book: structuredClone(presets.find((preset) => preset.id === chosen)!.cells),
@@ -410,18 +439,24 @@ export function fromBookEditor(original: Project, edited: Project, keepDefault: 
       contentCover: true,
       bookPresets: presets,
       bookPresetId: chosen,
-      folderBookPresets: folders,
+      folderBookPresets: original.layoutRules ? undefined : folders,
     },
     original.fieldGroups ?? []
   )
 }
 // The template a book folder shows: its own choice, else the project's.
+// R-413: with layout rules, the panel rule's folder and book entries take the place of folderBookPresets/bookPresetId.
 export function bookCellsFor(
-  project: Pick<Project, 'bookPresets' | 'bookPresetId' | 'folderBookPresets'>,
+  project: Pick<Project, 'bookPresets' | 'bookPresetId' | 'folderBookPresets' | 'layoutRules'>,
   folderId: string | undefined,
   projectCells: Cell[]
 ): Cell[] {
-  const chosen = folderId ? project.folderBookPresets?.[folderId] : undefined,
+  const panel = project.layoutRules?.panel,
+    chosen = folderId
+      ? project.layoutRules
+        ? panel?.folders?.[folderId]
+        : project.folderBookPresets?.[folderId]
+      : undefined,
     find = (id?: string) => project.bookPresets?.find((preset) => preset.id === id)?.cells
-  return find(chosen) ?? find(project.bookPresetId) ?? projectCells
+  return find(chosen) ?? find(panel?.types?.book) ?? find(project.bookPresetId) ?? projectCells
 }

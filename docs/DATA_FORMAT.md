@@ -84,6 +84,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 | `projectId`、`rootFolderId`、`revision`、`name` | 身分與版本；`rootFolderId` 指向根資料夾的記錄 |
 | `contentCells` | 內容模板，以模板類型為鍵（`book`、`game`、`media`、`general`；音樂與影片資料夾共用 `media`；舊鍵 `manga`、`album`、`video`、`music`、`other` 仍可讀取）；舊 `mediaCategory`／`mediaSourceCategory` 已移除，讀到時忽略 |
 | `kindLayouts` | 各模板類型（`book`、`game`、`media`、`general`；音樂與影片資料夾共用 `media`）套用的 CELL 版面方案 ID（資料夾自選的版面優先） |
+| `layoutRules`（暫定，R-413） | 版面配置規則 `{ card?, panel? }`，各是 `{ types?, levels?, folders? }`（值為版面方案 ID，`levels[0]` 是第 1 層、未設定的層為空字串）；有它時取代 `kindLayouts`、`folderLayouts`、`folderBookPresets` 決定版面，第一次在版面配置視窗保存時把舊欄位換算進來並移除。規則見 [LAYOUT_RULES](LAYOUT_RULES.md) |
 | `depth` | `{ mode: 'through' | 'exact', level }` 掃描層級 |
 | `fieldBindings` | 專案的欄位清單：`{ alias, attributeId, type, options?, optionColors?, trueLabel?, falseLabel? }`；`trueLabel`／`falseLabel`（R-234）只用於是／否欄位，各 1～20 字的顯示文字 |
 | `fieldGroups`（選用） | 欄位群組：`{ groupId, name, memberIds }`，最多 100 個；成員 1～20 個、須在 `fieldBindings`、型別相同（文字與標籤可混用）、一個欄位只屬一個群組；名稱 1～100 字，不分大小寫不可與其他群組或欄位別名重複 |

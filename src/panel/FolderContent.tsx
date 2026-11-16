@@ -388,7 +388,11 @@ export function FolderContent({
             <Card
               project={{
                 ...project,
+                // The panel shows these cells, never a card layout the rules would pick (R-413).
+                layoutPresets: undefined,
+                layoutRules: {},
                 folderLayouts: undefined,
+                kindLayouts: undefined,
                 cells:
                   kind === 'book'
                     ? bookCellsFor(project, row.record?.folderId, contentCells(project, kind))

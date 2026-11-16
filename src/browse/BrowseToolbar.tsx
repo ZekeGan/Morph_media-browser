@@ -18,7 +18,6 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
-import { cardPresets } from '../../shared/layouts'
 import { cardDisplay } from '../../shared/browse'
 import { type FolderRow, type Project } from '../../shared/model'
 import type { BrowseMode, BrowseState } from '../../shared/explorer'
@@ -40,8 +39,9 @@ type Props = {
   openConfig: (id: string, tab?: string) => void
   orderedColumns: { id: string; label: string }[]
   persist: (next: BrowseState) => void
-  pickPreset: (id: string) => void
-  presets: ReturnType<typeof cardPresets>
+  // R-413: the layout the current folder uses, shown on the button that opens the layout configuration window.
+  layoutLabel: string
+  openLayouts: () => void
   project: Project
   ready: boolean
   setBoundariesOnly: (value: boolean) => void
@@ -75,9 +75,8 @@ export function BrowseToolbar(props: Props) {
     openConfig,
     orderedColumns,
     persist,
-    pickPreset,
-    presets,
-    project,
+    layoutLabel,
+    openLayouts,
     ready,
     setBoundariesOnly,
     setColumnQuery,
@@ -147,18 +146,19 @@ export function BrowseToolbar(props: Props) {
           {folderMode && browse.mode === 'CARD' && (
             <>
               <div className="preset-controls">
-                <Select
-                  aria-label={tr('卡片外觀')}
+                {/* R-413: which layout each folder uses is set in the layout configuration window. */}
+                <Button
                   size="xs"
-                  value={project.activeLayoutId ?? presets[0].id}
-                  allowDeselect={false}
-                  data={presets.map((p) => ({
-                    value: p.id,
-                    label: p.id === 'default' && p.name === '預設版面' ? tr('預設版面') : p.name,
-                  }))}
+                  variant="default"
+                  className="layout-config-button"
+                  leftSection={<Icon name="grid" size={14} />}
+                  title={tr('版面配置')}
+                  aria-label={tr('版面配置') + '：' + layoutLabel}
                   disabled={busy}
-                  onChange={(id) => id && pickPreset(id)}
-                />
+                  onClick={openLayouts}
+                >
+                  {layoutLabel}
+                </Button>
                 <Tooltip label={tr('編輯版面')} openDelay={350} withArrow>
                   <ActionIcon
                     variant="default"
@@ -170,24 +170,17 @@ export function BrowseToolbar(props: Props) {
                   </ActionIcon>
                 </Tooltip>
               </div>
-              <Menu>
-                <Menu.Target>
-                  <ActionIcon
-                    className="compact-presets"
-                    aria-label={tr('卡片外觀選單')}
-                    variant="subtle"
-                  >
-                    <Icon name="grid" />
-                  </ActionIcon>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  {presets.map((p) => (
-                    <Menu.Item key={p.id} onClick={() => pickPreset(p.id)}>
-                      {p.id === 'default' && p.name === '預設版面' ? tr('預設版面') : p.name}
-                    </Menu.Item>
-                  ))}
-                </Menu.Dropdown>
-              </Menu>
+              <Tooltip label={tr('版面配置')} withArrow>
+                <ActionIcon
+                  className="compact-presets"
+                  aria-label={tr('版面配置')}
+                  variant="subtle"
+                  disabled={busy}
+                  onClick={openLayouts}
+                >
+                  <Icon name="grid" />
+                </ActionIcon>
+              </Tooltip>
             </>
           )}
           {folderMode && hasGames && browse.mode !== 'TREE' && (

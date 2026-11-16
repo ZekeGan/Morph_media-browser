@@ -4,6 +4,7 @@ import type { FolderRow, Project } from '../shared/model'
 import {
   chooseLayout,
   dropLayout,
+  editLayoutRules,
   layoutLevel,
   legacyLayoutRules,
   type LayoutRule,
@@ -71,19 +72,32 @@ test('a rule naming a deleted layout is skipped', () => {
   assert.deepEqual(choice, { id: 'A', source: 'type' })
 })
 
-test('older projects: kind layouts, folder layouts and book templates become rules', () => {
-  const rules = legacyLayoutRules({
+test("older projects: kind layouts, folder layouts and folders' book templates become rules", () => {
+  const project = {
     kindLayouts: { media: 'M', game: 'G' },
     folderLayouts: { f1: 'X' },
     bookPresets: [{ id: 'bk', name: 'b', cells: [] }],
     bookPresetId: 'bk',
     folderBookPresets: { f2: 'bk2' },
-  } as unknown as Project)
-  assert.deepEqual(rules, {
+  } as unknown as Project
+  assert.deepEqual(legacyLayoutRules(project), {
     card: { types: { game: 'G', music: 'M', video: 'M' }, folders: { f1: 'X' } },
-    panel: { types: { book: 'bk' }, folders: { f2: 'bk2' } },
+    panel: { folders: { f2: 'bk2' } },
   })
   assert.deepEqual(legacyLayoutRules({} as Project), {})
+  // The first change moves them into layoutRules and removes the older fields; the book default stays.
+  const edited = editLayoutRules(project, (rules) => {
+    rules.card.levels = ['T', '']
+    delete rules.card.folders
+  })
+  assert.deepEqual(edited.layoutRules, {
+    card: { types: { game: 'G', music: 'M', video: 'M' }, levels: ['T'] },
+    panel: { folders: { f2: 'bk2' } },
+  })
+  assert.equal(edited.kindLayouts, undefined)
+  assert.equal(edited.folderLayouts, undefined)
+  assert.equal(edited.folderBookPresets, undefined)
+  assert.equal(edited.bookPresetId, 'bk')
 })
 
 test('deleting a layout clears it from every rule', () => {

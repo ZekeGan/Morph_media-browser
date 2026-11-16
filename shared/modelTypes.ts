@@ -171,6 +171,9 @@ export interface Project {
   folderLayouts?: Record<string, string>
   // Card layout preset applied to every folder of a kind (book, game, media, general) unless the folder picks its own.
   kindLayouts?: Record<string, string>
+  // R-413 (provisional): one set of rules for card and right-panel layouts (shared/layoutRules.ts); when present it
+  // replaces kindLayouts, folderLayouts, bookPresetId and folderBookPresets for choosing a layout.
+  layoutRules?: import('./layoutRules').LayoutRules
   scanAll?: boolean
   // R-340: works shows every work below the current folder (category folders passed through); level then limits depth.
   cardView?: { mode: 'multi' | 'single'; level: number | 'all'; works?: boolean }

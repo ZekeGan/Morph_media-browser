@@ -145,7 +145,8 @@ try {
   await body.evaluate((element) => element.querySelector('#controlled-scroll-content')?.remove())
   const toolbar = page.locator('.workspace-toolbar'),
     mode = toolbar.locator('.center-mode'),
-    preset = toolbar.getByRole('textbox', { name: '卡片外觀', exact: true })
+    // R-413: the layout picker became the button that opens the layout setup window.
+    preset = toolbar.getByRole('button', { name: /^版面配置：/ })
   const modeBox = (await mode.boundingBox())!,
     presetBox = (await preset.boundingBox())!
   assert.ok(Math.abs(modeBox.y - presetBox.y) < 12)

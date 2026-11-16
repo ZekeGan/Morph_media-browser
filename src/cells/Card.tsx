@@ -23,6 +23,7 @@ import { latestNovel } from '../../shared/novel'
 import { cellColors } from './cellStyle'
 import './cells.css'
 import { yesNo } from '../editor/fieldTypes'
+import { useIsWork } from '../browse/folderKind'
 type CellProps = {
   cell: Cell
   row?: FolderRow
@@ -518,6 +519,7 @@ export function Card({
   useLocale()
   // Rows each growing component needs, measured in the browser and applied in batches: one render for a whole card,
   // and the first measurement before the first paint so a card does not visibly jump.
+  const work = useIsWork(row)
   const [needed, setNeeded] = useState<Record<string, number>>({}),
     queue = useRef<Record<string, number>>({}),
     frame = useRef(0)
@@ -548,7 +550,7 @@ export function Card({
   )
   useEffect(() => () => cancelAnimationFrame(frame.current), [])
   const placed = placeCells(
-    rowCells(project, row),
+    rowCells(project, row, work),
     (cell) => cellVisible(cell, row, project),
     needed
   )
