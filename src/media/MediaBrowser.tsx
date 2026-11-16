@@ -14,6 +14,7 @@ import { Gallery } from '../gallery/Gallery'
 import { MediaViewer } from './MediaViewer'
 import { FolderAlbumCover } from './FolderAlbumCover'
 import { AlbumActions, AlbumHeader, AlbumTracks, useAlbum } from './AlbumView'
+import { VideoHeader } from './VideoHeader'
 import { usePlayback } from './Playback'
 import { FolderPage } from '../panel/FolderPage'
 import { useFileVisibility } from '../files/useFileVisibility'
@@ -39,11 +40,14 @@ export function MediaBrowser({
   prefs,
   onPrefs,
   album = false,
+  video = false,
 }: {
   row: FolderRow
   project: Project
   // A music folder: shown as an album (R-390).
   album?: boolean
+  // A video folder: its header offers to play the videos (R-390).
+  video?: boolean
   entries: ContentResult['entries']
   loading: boolean
   error: string
@@ -207,6 +211,11 @@ export function MediaBrowser({
       visual={
         album ? (
           <AlbumHeader row={row} entries={own} album={albumData} />
+        ) : video ? (
+          <>
+            <FolderAlbumCover row={row} files={own} />
+            <VideoHeader row={row} project={project} entries={own} />
+          </>
         ) : (
           <FolderAlbumCover row={row} files={own} />
         )

@@ -12106,5 +12106,17 @@
     "en": "New",
     "ja": "未聴",
     "es": "Sin escuchar"
+  },
+  "{0} 部影片": {
+    "zh-CN": "{0} 部视频",
+    "en": "{0} videos",
+    "ja": "動画 {0} 本",
+    "es": "{0} vídeos"
+  },
+  "播放影片": {
+    "zh-CN": "播放视频",
+    "en": "Play videos",
+    "ja": "動画を再生",
+    "es": "Reproducir vídeos"
   }
 }

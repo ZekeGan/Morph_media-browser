@@ -31,7 +31,13 @@ type PlaybackApi = {
   add: (source: Source, files: MediaEntry[]) => void
   // R-390: the queue becomes these files and the one at `start` plays in the mini player; the answer puts the
   // previous queue back (what is playing goes on). Nothing happens without a playable file.
-  replace: (source: Source, files: MediaEntry[], start: number) => (() => void) | undefined
+  // `big` plays in the big viewer instead of the mini player (videos).
+  replace: (
+    source: Source,
+    files: MediaEntry[],
+    start: number,
+    big?: boolean
+  ) => (() => void) | undefined
   // The file playing now, so a folder page can mark it.
   playing?: { rowId: string; fileId: string }
   source: (source: Source) => void
@@ -153,7 +159,7 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     setShowQueue(false)
     await play(value, file)
   }, [])
-  const replace = useCallback((value: Source, files: MediaEntry[], start: number) => {
+  const replace = useCallback((value: Source, files: MediaEntry[], start: number, big = false) => {
     const wanted = files.filter((file) => ['audio', 'video'].includes(file.kind))
     if (!wanted.length) return undefined
     const previous = itemsRef.current,
@@ -163,7 +169,7 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     setFolder(value)
     focus.current = document.activeElement as HTMLElement
     setShowQueue(false)
-    setMini(true)
+    setMini(!big)
     void select(next[Math.min(Math.max(0, start), next.length - 1)])
     return () => setItems(previous)
   }, [])

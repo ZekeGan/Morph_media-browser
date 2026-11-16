@@ -194,6 +194,7 @@ export function FolderContent({
         row={row}
         project={project}
         album={folderKind === 'music'}
+        video={folderKind === 'video'}
         entries={visibleEntries}
         loading={!!content.nextCursor && !error}
         error={[error, ...new Set(content.notices)].filter(Boolean).join('\n')}

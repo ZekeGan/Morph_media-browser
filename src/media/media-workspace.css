@@ -1324,3 +1324,4 @@
 .album-track[aria-current='true'] .album-track-no { color: var(--accent); }
 .album-track-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .album-track-time { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.video-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 4px 0 10px; }

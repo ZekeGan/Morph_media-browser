@@ -124,6 +124,7 @@
         "src/media/FolderAlbumCover*",
         "src/media/AlbumView*",
         "src/media/podcast*",
+        "src/media/VideoHeader*",
         "src/media/playOrder*",
         "src/media/media-workspace.css",
         "shared/media*",
