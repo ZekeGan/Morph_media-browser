@@ -138,8 +138,13 @@ try {
   const peek = page.locator('.reader-peek-right')
   assert.equal(await peek.evaluate((node) => getComputedStyle(node).visibility), 'visible')
   assert.ok((await peek.locator('img').count()) >= 1, 'the next page is drawn beside')
-  const offset = await peek.evaluate((node) => node.getBoundingClientRect().left)
-  assert.ok(offset < middle.x * 2 - 40, 'the next page has come into view: ' + offset)
+  // R-392: every page has the whole window; the one beside waits exactly one window away and moves with the drag.
+  const slot = await peek.evaluate((node) => node.getBoundingClientRect().left),
+    current = await page
+      .locator('.reader-frame-layer.is-active')
+      .evaluate((node) => node.getBoundingClientRect().left)
+  assert.ok(Math.abs(slot - current - stage.width) < 2, `one window apart: ${current} → ${slot}`)
+  assert.ok(current < stage.x - 40, 'the strip has moved with the pointer: ' + current)
   await page.mouse.move(middle.x - 300, middle.y, { steps: 6 })
   await page.screenshot({ path: path.join(base, 'shot', 'r392-drag-peek.png') })
   await page.mouse.move(middle.x - 80, middle.y, { steps: 6 })

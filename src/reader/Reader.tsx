@@ -198,8 +198,13 @@ export function Reader({
   // so the next page is seen while it is pulled in. Without a page on that side the drag meets resistance.
   const peek = (side: 'left' | 'right') =>
     viewport.current?.querySelector<HTMLElement>('.reader-peek-' + side) ?? null
-  const dragOffset = (dx: number) =>
-    (dx < 0 ? peek('right') : peek('left')) ? dx : Math.round(dx * 0.3)
+  // At most one window: the page beside stops once it is in place instead of going on past it.
+  const dragOffset = (dx: number) => {
+    const width = viewport.current?.clientWidth ?? Infinity
+    return (dx < 0 ? peek('right') : peek('left'))
+      ? Math.max(-width, Math.min(width, dx))
+      : Math.round(dx * 0.3)
+  }
   const placeDrag = (dx: number, transition: string) => {
     const layer = activeLayer()
     if (!layer) return
@@ -223,7 +228,7 @@ export function Reader({
     const layer = activeLayer()
     if (!layer || !layer.style.transform) return
     if (turnedBy && (turnedBy < 0 ? peek('right') : peek('left'))) {
-      pendingDrag.current = turnedBy
+      pendingDrag.current = dragOffset(turnedBy)
       return
     }
     const animate = turnMotion && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -372,7 +377,9 @@ export function Reader({
         side,
         indices,
         size,
-        offset: Math.round(size ? geometry.width / 2 + size.width / 2 + 16 : box.width),
+        // Every page has the whole window to itself, like a strip of slides: the one beside is exactly one window
+        // away, so it waits in a fixed place and a drag simply moves the strip.
+        offset: Math.round(box.width),
       },
     ]
   })
