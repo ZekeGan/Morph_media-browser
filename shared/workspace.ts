@@ -29,6 +29,8 @@ export interface WorkspacePrefs {
   browse?: Record<string, BrowseState>
   theme?: ThemeId
   locale?: LocaleId
+  // R-381: the languages an external source's title and description are taken in, first choice first. Missing = follow the interface language.
+  sourceLanguages?: LocaleId[]
   videoAudio?: { volume: number; muted: boolean }
   playOrder?: PlayOrder
   fileVisibility?: { hidden: boolean; dotfiles: boolean }
@@ -70,6 +72,7 @@ export type WorkspaceCommand =
   | { action: 'playOrder'; value: PlayOrder }
   | { action: 'fileVisibility'; value: { hidden: boolean; dotfiles: boolean } }
   | { action: 'appearance'; theme: ThemeId; locale: LocaleId }
+  | { action: 'sourceLanguages'; value: LocaleId[] }
   | { action: 'createGroup'; name: string }
   | { action: 'renameGroup'; id: string; name: string }
   | { action: 'removeGroup'; id: string }

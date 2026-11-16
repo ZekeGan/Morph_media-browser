@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
-import type { ExplorerApi } from '../shared/explorer'
+import type { ExplorerApi, SubtitleProgress } from '../shared/explorer'
 import type { MediaApi, Request, Response, ScanProgress } from '../shared/model'
 import type { DesktopApi, FolderNavigation, WindowState } from '../shared/workspace'
 const api: MediaApi = {
@@ -63,6 +63,12 @@ const desktop: DesktopApi = {
 contextBridge.exposeInMainWorld('desktop', desktop)
 const explorer: ExplorerApi = {
   request: (request) => ipcRenderer.invoke('explorer:request', request),
+  onSubtitleProgress(callback) {
+    const listener = (_event: Electron.IpcRendererEvent, progress: SubtitleProgress) =>
+      callback(progress)
+    ipcRenderer.on('explorer:subtitleProgress', listener)
+    return () => ipcRenderer.removeListener('explorer:subtitleProgress', listener)
+  },
   dropSubtitle: (rowId, file) => {
     const filePath = webUtils.getPathForFile(file)
     if (!filePath) return Promise.reject(new Error('需由檔案總管拖入實際字幕檔'))

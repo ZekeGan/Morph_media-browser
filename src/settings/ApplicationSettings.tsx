@@ -20,6 +20,7 @@ const writeUndo = (value?: { id: string; at: string }) => {
 }
 import type { Request, Response } from '../../shared/model'
 import { t as tr, useLocale } from '../i18n'
+import { SourceLanguageSetting } from './SourceLanguageSetting'
 import { LocaleEmulatorSetting } from '../game/LocaleEmulatorSetting'
 import { FlashPlayerSetting } from '../game/FlashPlayerSetting'
 import { SiteKeys } from './SiteKeys'
@@ -263,6 +264,7 @@ export function ApplicationSettings({
             {applied ? tr('已套用') : ''}
           </Text>
           <Stack gap="sm">
+            <SourceLanguageSetting opened={opened} locale={appearance.savedLocale} />
             <LocaleEmulatorSetting opened={opened} />
             <FlashPlayerSetting opened={opened} />
           </Stack>

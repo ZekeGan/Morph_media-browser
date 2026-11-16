@@ -10,6 +10,8 @@ export interface Site {
   json(url: string, body?: unknown, extra?: RequestExtra): Promise<any>
   // R-285: the user's key values for this site (empty when none is needed or set).
   keys: Record<string, string>
+  // R-381: the preferred languages as locale ids (zh-TW, ja, zh-CN, en, es), first choice first; empty = site default.
+  languages: string[]
   text(key: string, value: unknown): void
   list(key: string, value: unknown): void
   number(key: string, value: unknown): void

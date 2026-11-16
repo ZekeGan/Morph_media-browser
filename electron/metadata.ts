@@ -304,6 +304,7 @@ export async function metadata(
   expected?: MetadataSourceId,
   options: WebOptions & {
     keyFor?: (site: string) => Promise<Record<string, string> | undefined>
+    languages?: string[]
   } = {}
 ) {
   if (typeof source !== 'string' || source.length > 2048) throw new Error('來源網址不合法')

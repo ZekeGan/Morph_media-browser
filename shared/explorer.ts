@@ -376,6 +376,9 @@ export type ExplorerRequest =
       encoding?: string
     }
   | { action: 'chooseSubtitle'; rowId: string }
+  // R-412: the subtitle tracks inside an MKV/WebM video, and one of them as subtitle text.
+  | { action: 'embeddedSubtitles'; rowId: string; fileId: string }
+  | { action: 'embeddedSubtitle'; rowId: string; fileId: string; track: number }
   | { action: 'imageUrlPreview'; url: string }
   | { action: 'imageUrlApply'; rowId: string; revision: number; token: string; cover: boolean }
   | { action: 'metadataPreview'; source: string; provider?: MetadataSourceId }
@@ -395,6 +398,7 @@ export interface ExplorerResponse {
   content?: ContentResult
   search?: SearchResult
   subtitle?: { token: string; name: string; text: string; portable: boolean }
+  embedded?: { fileId: string; tracks: EmbeddedSubtitleInfo[] }
   shortcuts?: string[]
   extras?: GameExtras
   novel?: NovelBook
@@ -429,8 +433,26 @@ export interface GameExtras {
   // R-320: whether a Flash player is set, so an .swf action can start.
   flashPlayer?: boolean
 }
+// R-412: one subtitle track of a video. A graphic track (PGS, VobSub) is listed but has nothing to show as text.
+export interface EmbeddedSubtitleInfo {
+  number: number
+  language?: string
+  name?: string
+  format?: 'srt' | 'ass' | 'ssa' | 'vtt'
+  default?: boolean
+  forced?: boolean
+  graphic: boolean
+  cues: number
+}
+export interface SubtitleProgress {
+  rowId: string
+  fileId: string
+  fraction: number
+}
 export interface ExplorerApi {
   request(request: ExplorerRequest): Promise<ExplorerResponse>
+  // R-412: how far the reading of a video's subtitle tracks has come (0 to 1).
+  onSubtitleProgress(callback: (progress: SubtitleProgress) => void): () => void
   dropSubtitle(rowId: string, file: File): Promise<ExplorerResponse>
 }
 export const newDetails = (): FolderDetails => ({ schemaVersion: 1 })

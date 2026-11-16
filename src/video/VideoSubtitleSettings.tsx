@@ -6,6 +6,7 @@ import {
   ColorInput,
   Group,
   NumberInput,
+  Progress,
   Select,
   Stack,
   Switch,
@@ -13,11 +14,22 @@ import {
 } from '@mantine/core'
 import {
   defaultSubtitle,
+  type EmbeddedSubtitleInfo,
   type ExplorerResponse,
   type MediaEntry,
   type SubtitlePrefs,
 } from '../../shared/explorer'
 import { t as tr, useLocale } from '../i18n'
+import { embeddedLabel } from './embeddedLabel'
+
+// R-412: what is known about the subtitle tracks inside the playing video.
+export interface EmbeddedState {
+  fileId: string
+  status: 'loading' | 'done' | 'error'
+  progress: number
+  tracks: EmbeddedSubtitleInfo[]
+  error?: string
+}
 
 interface Props {
   captions: boolean
@@ -28,6 +40,8 @@ interface Props {
   subtitle: ExplorerResponse['subtitle']
   files: File[]
   subtitles: MediaEntry[]
+  embedded?: EmbeddedState
+  loadEmbedded: (track: EmbeddedSubtitleInfo) => Promise<void>
   settings: SubtitlePrefs
   readonly?: boolean
   load: (entry?: MediaEntry, external?: File) => Promise<void>
@@ -48,6 +62,8 @@ export function VideoSubtitleSettings({
   subtitle,
   files,
   subtitles,
+  embedded,
+  loadEmbedded,
   settings,
   readonly,
   load,
@@ -58,6 +74,8 @@ export function VideoSubtitleSettings({
   setSettings,
 }: Props) {
   useLocale()
+  // A track from inside the video has no file of its own: no encoding to choose, nothing to import.
+  const fromVideo = !!subtitle?.token.startsWith('emb-')
   return (
     <Stack gap="xs" className="player-subtitle-settings">
       <Switch
@@ -70,7 +88,8 @@ export function VideoSubtitleSettings({
 
       {subtitle && (
         <Text size="xs" className="player-subtitle-source" title={subtitle.name}>
-          {subtitle.name} · {subtitle.portable ? tr('資料夾內來源') : tr('本次臨時來源')}
+          {subtitle.name} ·{' '}
+          {fromVideo ? tr('影片內嵌') : subtitle.portable ? tr('資料夾內來源') : tr('本次臨時來源')}
         </Text>
       )}
       <Accordion
@@ -90,7 +109,7 @@ export function VideoSubtitleSettings({
                 <Button size="xs" variant="default" disabled={!subtitle} onClick={clear}>
                   {tr('關閉字幕')}
                 </Button>
-                {subtitle && !subtitle.portable && (
+                {subtitle && !subtitle.portable && !fromVideo && (
                   <Button size="xs" disabled={readonly} onClick={() => void importSubtitle()}>
                     {tr('匯入字幕（存一份在資料夾資訊裡）')}
                   </Button>
@@ -124,6 +143,59 @@ export function VideoSubtitleSettings({
                     </Button>
                   ))}
                 </div>
+              )}
+
+              {embedded && (
+                <Stack
+                  gap={4}
+                  className="subtitle-embedded"
+                  aria-label={tr('內嵌字幕')}
+                  role="group"
+                >
+                  <Text size="xs" c="dimmed">
+                    {tr('內嵌字幕')}
+                  </Text>
+                  {embedded.status === 'loading' && (
+                    <>
+                      <Text size="xs" role="status">
+                        {tr('正在讀取內嵌字幕… {0}%', Math.round(embedded.progress * 100))}
+                      </Text>
+                      <Progress
+                        size="xs"
+                        value={Math.round(embedded.progress * 100)}
+                        aria-label={tr('讀取內嵌字幕的進度')}
+                      />
+                    </>
+                  )}
+                  {embedded.status === 'error' && <Alert color="orange">{embedded.error}</Alert>}
+                  {embedded.status === 'done' && embedded.tracks.length === 0 && (
+                    <Text size="xs" c="dimmed">
+                      {tr('這部影片沒有內嵌字幕')}
+                    </Text>
+                  )}
+                  <div className="subtitle-list">
+                    {embedded.tracks
+                      .filter((track) => !track.graphic)
+                      .map((track) => (
+                        <Button
+                          key={track.number}
+                          size="xs"
+                          variant={subtitle?.token === 'emb-' + track.number ? 'light' : 'subtle'}
+                          aria-pressed={subtitle?.token === 'emb-' + track.number}
+                          onClick={() => void loadEmbedded(track)}
+                        >
+                          {embeddedLabel(track)}
+                        </Button>
+                      ))}
+                  </div>
+                  {embedded.tracks
+                    .filter((track) => track.graphic)
+                    .map((track) => (
+                      <Text key={track.number} size="xs" c="dimmed">
+                        {embeddedLabel(track)} · {tr('有圖形字幕，目前無法顯示')}
+                      </Text>
+                    ))}
+                </Stack>
               )}
             </Stack>
           </Accordion.Panel>
@@ -162,6 +234,7 @@ export function VideoSubtitleSettings({
                 comboboxProps={{ withinPortal: false }}
                 value={settings.encoding}
                 data={['utf-8', 'big5', 'shift_jis']}
+                disabled={fromVideo}
                 onChange={changeEncoding}
               />
               <small className="muted">

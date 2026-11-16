@@ -27,6 +27,38 @@ import {
   narou,
 } from './sources/batch1'
 
+// A cover request. Redirects are refused unless the site names the hosts they may go to (the Cover Art Archive
+// hands out its images from archive.org); each hop is checked the same way as the first address.
+async function coverResponse(
+  fetcher: typeof fetch,
+  first: URL,
+  allowed: RegExp | undefined,
+  headers: Record<string, string>
+) {
+  let url = first
+  for (let hop = 0; ; hop++) {
+    const response = await fetcher(url, {
+      signal: AbortSignal.timeout(15000),
+      redirect: allowed ? 'manual' : 'error',
+      headers,
+    })
+    const location = response.headers.get('location')
+    if (!allowed || ![301, 302, 303, 307, 308].includes(response.status) || !location)
+      return response
+    const next = new URL(location, url)
+    if (
+      hop >= 3 ||
+      next.protocol !== 'https:' ||
+      next.port ||
+      next.username ||
+      next.password ||
+      !allowed.test(next.hostname)
+    )
+      throw new Error('封面來源未允許')
+    url = next
+  }
+}
+
 type Result = {
   preview: Omit<MetadataPreview, 'token'>
   cover?: { bytes: Buffer; mime: string; ext: string }
@@ -65,7 +97,11 @@ export async function publicMetadata(
   provider: PublicSourceId,
   source: string,
   fetcher: typeof fetch,
-  options: { keyFor?: (site: string) => Promise<Record<string, string> | undefined> } = {}
+  options: {
+    keyFor?: (site: string) => Promise<Record<string, string> | undefined>
+    // R-381: the languages to take titles and descriptions in, first choice first (locale ids).
+    languages?: string[]
+  } = {}
 ): Promise<Result> {
   const config = sourceConfig[provider]
   const values: MetadataPreview['values'] = []
@@ -133,6 +169,7 @@ export async function publicMetadata(
     request,
     json: async (url, body, extra) => sourceJson(await request(url, body, extra)),
     keys,
+    languages: options.languages ?? [],
     text(key, value) {
       const result = clean(value)
       if (result) values.push({ key, type: 'string', value: result })
@@ -167,13 +204,9 @@ export async function publicMetadata(
       )
         throw new Error('封面來源未允許')
       const bytes = await limitedBytes(
-        await fetcher(url, {
-          signal: AbortSignal.timeout(15000),
-          redirect: 'error',
-          headers: {
-            'User-Agent': userAgent,
-            ...(config.referer ? { Referer: canonical } : {}),
-          },
+        await coverResponse(fetcher, url, config.coverRedirectHosts, {
+          'User-Agent': userAgent,
+          ...(config.referer ? { Referer: canonical } : {}),
         }),
         10 * 1024 * 1024
       )

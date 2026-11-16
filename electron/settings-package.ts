@@ -11,6 +11,7 @@ const keys = [
   'projects',
   'theme',
   'locale',
+  'sourceLanguages',
   'videoAudio',
   'playOrder',
 ] as const
@@ -95,7 +96,7 @@ export function mergeSettings(
         groupId: project.groupId ? (groupIds.get(project.groupId) ?? null) : null,
         addedOrder: next.nextOrder++,
       }
-  for (const key of ['theme', 'locale', 'videoAudio', 'playOrder'] as const)
+  for (const key of ['theme', 'locale', 'sourceLanguages', 'videoAudio', 'playOrder'] as const)
     if (next[key] === undefined && incoming[key] !== undefined)
       Object.assign(next, { [key]: structuredClone(incoming[key]) })
   next.sections = [

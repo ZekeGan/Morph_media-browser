@@ -176,9 +176,16 @@
         "VIDEO_VIEWER_DESIGN.md#播放生命週期",
         "VIDEO_VIEWER_DESIGN.md#拖入字幕與同步設定"
       ],
-      "code": ["src/video/Video*", "src/video/video-player.css", "shared/subtitles*"],
-      "ui": ["video-player-ui", "video-failure-ui"],
-      "tests": []
+      "code": [
+        "src/video/Video*",
+        "src/video/embeddedLabel*",
+        "src/video/video-player.css",
+        "shared/subtitles*",
+        "electron/embedded-subtitles*",
+        "electron/mkv-subtitles*"
+      ],
+      "ui": ["video-player-ui", "video-failure-ui", "video-embedded-ui"],
+      "tests": ["embedded-subtitles.test.ts"]
     },
     {
       "id": "documents",
@@ -315,13 +322,14 @@
         "electron/keys*",
         "shared/keys*",
         "src/settings/SiteKeys*",
+        "src/settings/SourceLanguageSetting*",
         "shared/sources*",
         "src/metadata/importSource*",
         "src/metadata/ImageUrlImport*",
         "src/metadata/FolderSourceImport*"
       ],
-      "ui": ["media-feedback-ui", "keys-ui", "field-sources-ui"],
-      "tests": ["metadata.test.ts", "decided-media.test.ts", "keys.test.ts", "web-sources.test.ts", "vndb-store.test.ts", "remove-source.test.ts", "date-fields.test.ts"]
+      "ui": ["media-feedback-ui", "keys-ui", "source-language-ui", "field-sources-ui"],
+      "tests": ["metadata.test.ts", "decided-media.test.ts", "keys.test.ts", "web-sources.test.ts", "vndb-store.test.ts", "source-languages.test.ts", "remove-source.test.ts", "date-fields.test.ts"]
     },
     {
       "id": "appearance",

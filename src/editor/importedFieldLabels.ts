@@ -87,4 +87,12 @@ export const importedFieldLabels = (): Record<string, string> => ({
   BEGIN_DATE: tr('開始活動'),
   END_DATE: tr('結束活動'),
   DISAMBIGUATION: tr('辨識說明'),
+  // R-393: VNDB releases and MusicBrainz albums
+  WORK_NOTE: tr('補充說明'),
+  FIRST_WORK: tr('取資料的作品'),
+  ALBUM_TYPE: tr('專輯類型'),
+  CATALOG_NUMBER: tr('型號'),
+  DISC_COUNT: tr('片數'),
+  MEDIA_FORMAT: tr('媒體格式'),
+  TRACK_LIST: tr('曲目清單'),
 })

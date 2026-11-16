@@ -35,6 +35,8 @@ import { parseSubtitles } from '../shared/subtitles'
 import { key, probeFile } from './media-files'
 import * as contentFns from './explorer-content'
 import * as streamFns from './explorer-stream'
+import * as embeddedFns from './embedded-subtitles'
+import type { EmbeddedTrack } from './mkv-subtitles'
 import * as sourceFns from './explorer-source'
 import * as overviewFns from './explorer-overview'
 import {
@@ -75,12 +77,18 @@ export interface DesktopOperations {
   // R-320: the program that plays .swf games, from the app settings, and setting it.
   flashPlayer?(): string | undefined
   setFlashPlayer?(file: string | undefined): Promise<void>
+  // R-381: the languages external sources are read in, first choice first (app settings).
+  sourceLanguages?(): string[]
+  // R-412: how far reading a video's subtitle tracks has come.
+  subtitleProgress?(progress: { rowId: string; fileId: string; fraction: number }): void
   // R-285: the encrypted website keys (main only).
   keyStore?: KeyStore
   // R-308: a session of a game started from M:orph ended.
   played?(folderId: string, started: number, ended: number): void
   thumbnail(file: string, mime?: string, url?: string): Promise<Buffer>
 }
+// R-412: ASS and SSA scripts are read as text like SRT and VTT.
+const subtitleExtensions = ['.srt', '.vtt', '.ass', '.ssa']
 export class Explorer {
   readonly index: SearchIndex
   archives = new Map<string, { file: string; index: ArchiveIndex }>()
@@ -117,6 +125,9 @@ export class Explorer {
     { rowId: string; name: string; file: string; mime: string; portable?: boolean }
   >()
   externals = new Map<string, { rowId: string; file: string }>()
+  // R-412: subtitle tracks read from videos (a few kept in memory, the rest in the local cache) and the reads running.
+  embeddedSubtitles = new Map<string, EmbeddedTrack[]>()
+  embeddedJobs = new Map<string, Promise<EmbeddedTrack[]>>()
   imagePreviews = new Map<string, RemoteImage & { expires: number }>()
   imageUrlOptions: ImageUrlOptions = {}
   previews = new Map<
@@ -315,8 +326,8 @@ export class Explorer {
     await this.library.checkedRow(rowId)
     const file = filePath ?? (await this.desktop.choose('subtitle'))
     if (!file) return { cancelled: true }
-    if (!path.isAbsolute(file) || !['.srt', '.vtt'].includes(path.extname(file).toLowerCase()))
-      throw new Error('僅支援 SRT／VTT')
+    if (!path.isAbsolute(file) || !subtitleExtensions.includes(path.extname(file).toLowerCase()))
+      throw new Error('僅支援 SRT／VTT／ASS／SSA')
     const real = await fs.realpath(file),
       stat = await fs.stat(real)
     if (!stat.isFile() || stat.size > 5 * 1024 * 1024) throw new Error('字幕需為 5MB 以內的文字檔')
@@ -1067,13 +1078,17 @@ export class Explorer {
       case 'chooseSubtitle': {
         return this.chooseSubtitle(req.rowId)
       }
+      case 'embeddedSubtitles':
+        return embeddedFns.embeddedList(this, req.rowId, req.fileId)
+      case 'embeddedSubtitle':
+        return embeddedFns.embeddedText(this, req.rowId, req.fileId, req.track)
       case 'subtitle': {
         let file: string,
           portable = false,
           token = req.fileId ?? req.externalToken ?? ''
         if (req.fileId) {
           const f = await this.file(req.rowId, req.fileId)
-          if (!['.srt', '.vtt'].includes(path.extname(f.file).toLowerCase()))
+          if (!subtitleExtensions.includes(path.extname(f.file).toLowerCase()))
             throw new Error('字幕格式未支援')
           file = f.file
           portable = true

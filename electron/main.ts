@@ -133,7 +133,7 @@ else {
                           ? ['exe', 'swf']
                           : kind === 'exe'
                             ? ['exe']
-                            : ['srt', 'vtt'],
+                            : ['srt', 'vtt', 'ass', 'ssa'],
                     },
                   ],
                 }),
@@ -168,6 +168,9 @@ else {
         setLocaleEmulator: async (file) => {
           await workspace.setLocaleEmulator(file)
         },
+        sourceLanguages: () => workspace.sourceLanguages(),
+        subtitleProgress: (progress) =>
+          win?.webContents.send('explorer:subtitleProgress', progress),
         flashPlayer: () => workspace.flashPlayerPath(),
         setFlashPlayer: async (file) => {
           await workspace.setFlashPlayer(file)

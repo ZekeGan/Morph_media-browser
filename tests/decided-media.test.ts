@@ -162,7 +162,8 @@ test('public metadata adapters use no credentials, retain source identities and 
     assert.equal(result.preview.provider, provider)
     assert.equal(result.preview.title, 'Title')
     assert.ok(result.preview.values.some((value) => value.key === 'SOURCE_URL'))
-    assert.equal(requests.length, provider === 'dlsite' ? 2 : 1)
+    // R-393: a MusicBrainz release also asks for its Cover Art Archive picture.
+    assert.equal(requests.length, provider === 'dlsite' || provider === 'musicbrainz' ? 2 : 1)
     if (provider === 'dlsite') {
       const value = (key: string) => result.preview.values.find((v) => v.key === key)?.value
       assert.equal(value('MAKER_NAME'), 'Circle')
