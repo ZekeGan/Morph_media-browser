@@ -19,6 +19,7 @@ export function AudioViewer({
   previous,
   next,
   first,
+  startAt,
 }: {
   background?: boolean
   file: MediaEntry
@@ -28,6 +29,8 @@ export function AudioViewer({
   next?: () => void
   // Back to the first track of the list, for "loop all" at the end; omitted when this is the only track.
   first?: () => void
+  // Seconds to start from (a podcast episode heard part of the way, R-390).
+  startAt?: number
 }) {
   const order = usePlayOrder()
   const node = useRef<HTMLAudioElement | null>(null),
@@ -210,6 +213,9 @@ export function AudioViewer({
           onLoadedMetadata={(event) => {
             if (event.currentTarget !== node.current) return
             setDuration(event.currentTarget.duration)
+            // R-390: a podcast episode goes on from where it was left, unless it was heard to the end.
+            if (startAt && startAt < event.currentTarget.duration - 60)
+              event.currentTarget.currentTime = startAt
             if (intent.current) void start()
           }}
           onPlay={(event) => {

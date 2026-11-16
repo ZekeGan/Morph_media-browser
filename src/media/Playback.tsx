@@ -19,6 +19,7 @@ import { Icon } from '../common/icons'
 import { FileMenu } from './FileMenu'
 import { MediaThumb } from './MediaThumb'
 import { PlayOrderButton, usePlayOrder } from './playOrder'
+import { episodePlace, isPodcast, podcastFolder, saveEpisodePlace } from './podcast'
 import { ViewToggle } from '../browse/ViewToggle'
 import { t as tr, useLocale } from '../i18n'
 import './media-workspace.css'
@@ -180,14 +181,23 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     const item = index < 0 ? undefined : items[index + delta]
     if (item) void select(item)
   }
+  // R-390: a podcast episode's place is kept on this computer every few seconds and whenever it pauses or ends.
+  const savedAt = useRef(-1)
   const sync = () => {
     const node = media()
-    if (node)
-      setState({
-        time: node.currentTime,
-        duration: Number.isFinite(node.duration) ? node.duration : 0,
-        paused: node.paused,
-      })
+    if (!node) return
+    const duration = Number.isFinite(node.duration) ? node.duration : 0
+    setState({ time: node.currentTime, duration, paused: node.paused })
+    const playing = currentRef.current
+    if (playing?.file.kind !== 'audio') return
+    const folder = podcastFolder(playing.row)
+    if (
+      isPodcast(folder) &&
+      (node.paused || node.ended || Math.abs(node.currentTime - savedAt.current) >= 5)
+    ) {
+      savedAt.current = node.currentTime
+      saveEpisodePlace(folder, playing.file.id, node.ended ? duration : node.currentTime, duration)
+    }
   }
   const constrain = (x: number, y: number) => ({
     x: Math.max(0, Math.min(x, window.innerWidth - Math.min(380, window.innerWidth))),
@@ -389,6 +399,11 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
                       previous={index > 0 ? () => step(-1) : undefined}
                       next={index >= 0 && index < items.length - 1 ? () => step(1) : undefined}
                       first={index > 0 ? () => void select(items[0]) : undefined}
+                      startAt={
+                        isPodcast(podcastFolder(current.row))
+                          ? episodePlace(podcastFolder(current.row), current.file.id)?.time
+                          : undefined
+                      }
                     />
                   ) : (
                     <VideoViewer

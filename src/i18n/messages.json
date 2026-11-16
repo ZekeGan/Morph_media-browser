@@ -12064,5 +12064,47 @@
     "en": "Disc {0}",
     "ja": "ディスク {0}",
     "es": "Disco {0}"
+  },
+  "{0} 集": {
+    "zh-CN": "{0} 集",
+    "en": "{0} episodes",
+    "ja": "{0} 話",
+    "es": "{0} episodios"
+  },
+  "從上次繼續": {
+    "zh-CN": "从上次继续",
+    "en": "Continue",
+    "ja": "続きから再生",
+    "es": "Continuar"
+  },
+  "播放最新一集": {
+    "zh-CN": "播放最新一集",
+    "en": "Play latest",
+    "ja": "最新話を再生",
+    "es": "Reproducir el último"
+  },
+  "以 Podcast 顯示": {
+    "zh-CN": "以 Podcast 显示",
+    "en": "Show as podcast",
+    "ja": "ポッドキャストとして表示",
+    "es": "Mostrar como pódcast"
+  },
+  "已聽完": {
+    "zh-CN": "已听完",
+    "en": "Finished",
+    "ja": "聴き終えた",
+    "es": "Escuchado"
+  },
+  "聽到一半": {
+    "zh-CN": "听到一半",
+    "en": "In progress",
+    "ja": "途中まで",
+    "es": "A medias"
+  },
+  "未聽": {
+    "zh-CN": "未听",
+    "en": "New",
+    "ja": "未聴",
+    "es": "Sin escuchar"
   }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Button, Group, Text } from '@mantine/core'
+import { Button, Group, Switch, Text } from '@mantine/core'
 import type { MediaEntry } from '../../shared/explorer'
 import type { FolderRow, Project } from '../../shared/model'
 import {
@@ -14,6 +14,7 @@ import {
 } from '../../shared/album'
 import { FolderAlbumCover } from './FolderAlbumCover'
 import { usePlayback } from './Playback'
+import { listenState, podcastFolder, setPodcast, usePodcasts } from './podcast'
 import { Icon } from '../common/icons'
 import { t as tr } from '../i18n'
 
@@ -65,7 +66,15 @@ export function useAlbum(row: FolderRow, entries: MediaEntry[]) {
     const byKey = new Map(tracks.map((track, index) => [track.key, files[index]]))
     return discs.flatMap((disc) => disc.tracks.map((track) => byKey.get(track.key)!))
   }, [discs, tracks, files])
-  return { files, tracks, tags, discs, summary, ordered }
+  // Podcast episodes: newest first by the file's date (R-390).
+  const newest = useMemo(() => [...files].sort((a, b) => b.modified - a.modified), [files])
+  return { files, tracks, tags, discs, summary, ordered, newest }
+}
+// Whether this folder is shown as a podcast on this computer.
+function usePodcast(row: FolderRow) {
+  const store = usePodcasts(),
+    folder = podcastFolder(row)
+  return { folder, podcast: store.folders.includes(folder), places: store.episodes }
 }
 type Album = ReturnType<typeof useAlbum>
 
@@ -79,10 +88,11 @@ export function AlbumHeader({
   album: Album
 }) {
   const { summary } = album
+  const { podcast } = usePodcast(row)
   const facts = [
     summary.artist,
-    summary.year ? String(summary.year) : undefined,
-    tr('{0} 首', summary.count),
+    summary.year && !podcast ? String(summary.year) : undefined,
+    podcast ? tr('{0} 集', summary.count) : tr('{0} 首', summary.count),
     summary.duration !== undefined ? trackClock(summary.duration) : undefined,
   ].filter(Boolean)
   return (
@@ -113,6 +123,7 @@ export function AlbumActions({
   album: Album
 }) {
   const playback = usePlayback()
+  const { folder, podcast, places } = usePodcast(row)
   const [undo, setUndo] = useState<{ restore: () => void; count: number }>()
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => () => clearTimeout(timer.current), [])
@@ -125,24 +136,59 @@ export function AlbumActions({
     setUndo({ restore, count })
     timer.current = setTimeout(() => setUndo(undefined), 8000)
   }
+  // The episode heard most recently and not finished: 從上次繼續 plays it from where it was left.
+  const resume = album.newest
+    .map((file) => ({ file, place: places[folder + '/' + file.id] }))
+    .filter(({ place }) => listenState(place) === 'partial')
+    .sort((a, b) => b.place!.at - a.place!.at)[0]?.file
   return (
     <div className="album-actions">
       <Group gap="xs">
-        <Button
+        {podcast ? (
+          <>
+            <Button
+              size="xs"
+              leftSection={<Icon name="play" size={14} />}
+              disabled={!resume}
+              onClick={() => resume && start([resume])}
+            >
+              {tr('從上次繼續')}
+            </Button>
+            <Button
+              size="xs"
+              variant="default"
+              leftSection={<Icon name="play" size={14} />}
+              onClick={() => start([album.newest[0]])}
+            >
+              {tr('播放最新一集')}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              size="xs"
+              leftSection={<Icon name="play" size={14} />}
+              onClick={() => start(album.ordered)}
+            >
+              {tr('全部播放')}
+            </Button>
+            <Button
+              size="xs"
+              variant="default"
+              leftSection={<Icon name="shuffle" size={14} />}
+              onClick={() => start(shuffled(album.ordered))}
+            >
+              {tr('隨機播放')}
+            </Button>
+          </>
+        )}
+        <Switch
           size="xs"
-          leftSection={<Icon name="play" size={14} />}
-          onClick={() => start(album.ordered)}
-        >
-          {tr('全部播放')}
-        </Button>
-        <Button
-          size="xs"
-          variant="default"
-          leftSection={<Icon name="shuffle" size={14} />}
-          onClick={() => start(shuffled(album.ordered))}
-        >
-          {tr('隨機播放')}
-        </Button>
+          ml="auto"
+          label={tr('以 Podcast 顯示')}
+          checked={podcast}
+          onChange={(event) => setPodcast(folder, event.currentTarget.checked)}
+        />
       </Group>
       {undo && (
         <Text size="xs" c="dimmed" role="status" className="album-undo">
@@ -177,11 +223,66 @@ export function AlbumTracks({
   album: Album
 }) {
   const playback = usePlayback()
+  const { folder, podcast, places } = usePodcast(row)
   const several = album.discs.length > 1
   const play = (fileId: string) => {
     const at = album.ordered.findIndex((file) => file.id === fileId)
     playback?.replace({ row, project, entries }, album.ordered, at)
   }
+  const isPlaying = (fileId: string) =>
+    playback?.playing?.rowId === row.rowId && playback.playing.fileId === fileId
+  // A podcast lists its episodes newest first, each with its date, length and how far it was heard; a click plays
+  // only that episode, from where it was left.
+  if (podcast)
+    return (
+      <div className="album-tracks podcast-episodes">
+        <ol>
+          {album.newest.map((file) => {
+            const key = trackKey(row.rowId, file.id),
+              tag = album.tags[key],
+              place = places[folder + '/' + file.id],
+              state = listenState(place),
+              playing = isPlaying(file.id)
+            return (
+              <li key={key}>
+                <button
+                  type="button"
+                  className="album-track podcast-episode"
+                  aria-current={playing ? 'true' : undefined}
+                  data-state={state}
+                  title={file.name}
+                  onClick={() => playback?.replace({ row, project, entries }, [file], 0)}
+                >
+                  <span className="album-track-no">
+                    {playing ? (
+                      <Icon name="volume" size={14} />
+                    ) : state === 'done' ? (
+                      <Icon name="check" size={14} />
+                    ) : null}
+                  </span>
+                  <span className="album-track-title">
+                    {tag?.title ?? trackTitle(file.name)}
+                    <small className="muted">
+                      {' · '}
+                      {new Date(file.modified).toLocaleDateString()}
+                      {' · '}
+                      {state === 'done'
+                        ? tr('已聽完')
+                        : state === 'partial'
+                          ? tr('聽到一半')
+                          : tr('未聽')}
+                    </small>
+                  </span>
+                  <span className="album-track-time">
+                    {trackClock(tag?.duration ?? (place?.duration || undefined))}
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+        </ol>
+      </div>
+    )
   return (
     <div className="album-tracks">
       {album.discs.map((disc) => (
@@ -191,9 +292,7 @@ export function AlbumTracks({
             {disc.tracks.map((track, index) => {
               const tag = album.tags[track.key],
                 title = tag?.title ?? trackTitle(track.name),
-                playing =
-                  playback?.playing?.rowId === track.rowId &&
-                  playback.playing.fileId === track.fileId
+                playing = isPlaying(track.fileId)
               return (
                 <li key={track.key}>
                   <button
