@@ -163,6 +163,24 @@ try {
     )
   await page.keyboard.press('a')
   assert.equal(await transition.getAttribute('aria-pressed'), 'false')
+  // R-392: with the transition off a drag does not move the page or show the one beside.
+  await page.mouse.move(middle.x, middle.y)
+  await page.mouse.down()
+  await page.mouse.move(middle.x - 120, middle.y, { steps: 6 })
+  assert.equal(
+    await page
+      .locator('.reader-frame-layer.is-active')
+      .evaluate((node) => (node as HTMLElement).style.transform),
+    ''
+  )
+  assert.equal(
+    await page.locator('.reader-peek-right').evaluate((node) => getComputedStyle(node).visibility),
+    'hidden'
+  )
+  await page.mouse.move(middle.x, middle.y, { steps: 3 })
+  await page.waitForTimeout(300)
+  await page.mouse.up()
+  await reader().locator('.reader-stage').focus()
   await page.keyboard.press(' ')
   await waitPages('4')
   assert.equal(await entering(), false, 'no slide with the transition off')

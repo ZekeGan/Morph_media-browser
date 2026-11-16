@@ -1272,8 +1272,17 @@ export function Reader({
                 event.currentTarget.scrollLeft = start.left - (event.clientX - start.x)
                 event.currentTarget.scrollTop = start.top - (event.clientY - start.y)
               }
-              // R-392: a page that fits follows the pointer sideways while it is dragged.
-              if (manga && !start.pan && start.moved && !start.edge)
+              // R-392: a page that fits follows the pointer sideways while it is dragged. With the page-turn
+              // transition off (or the system asking for less motion) it stays still: the swipe still turns the page
+              // on release, and the new page simply appears, as it does for keys and clicks.
+              if (
+                manga &&
+                !start.pan &&
+                start.moved &&
+                !start.edge &&
+                turnMotion &&
+                !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+              )
                 followDrag(
                   Math.abs(event.clientX - start.x) > Math.abs(event.clientY - start.y)
                     ? event.clientX - start.x
