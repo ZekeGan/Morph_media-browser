@@ -125,6 +125,7 @@
         "src/media/playOrder*",
         "src/media/media-workspace.css",
         "shared/media*",
+        "shared/album*",
         "shared/explorer*",
         "electron/media-files*",
         "electron/explorer.ts",
@@ -133,7 +134,7 @@
         "electron/explorer-stream*"
       ],
       "ui": ["media-scope-ui", "media-workspace-ui", "audio-playback-ui", "media-feedback-ui"],
-      "tests": ["media-workspace.test.ts", "explorer.test.ts"]
+      "tests": ["media-workspace.test.ts", "explorer.test.ts", "album.test.ts"]
     },
     {
       "id": "gallery",

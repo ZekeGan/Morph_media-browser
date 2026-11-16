@@ -893,6 +893,8 @@ export class Explorer {
         await store.mark(req.site, result)
         return { keys: await store.status() }
       }
+      case 'audioTags':
+        return { audioTags: await streamFns.audioTags(this, req.rowId, req.fileIds) }
       case 'novel': {
         const file = await this.file(req.rowId, req.fileId)
         if (!/\.(txt|epub)$/i.test(file.file)) throw new Error('不是文字書（TXT／EPUB）')

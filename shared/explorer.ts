@@ -329,6 +329,8 @@ export type ExplorerRequest =
   | { action: 'clearKey'; site: string }
   | { action: 'testKey'; site: string }
   | { action: 'novel'; rowId: string; fileId: string; summary?: boolean }
+  // R-390: the tags and length of some audio files of one folder (at most 24 a request), read without their covers.
+  | { action: 'audioTags'; rowId: string; fileIds: string[] }
   // Only this book's place changes, so main writes it against the record's current revision.
   | { action: 'novelProgress'; rowId: string; fileId: string; progress: NovelProgress }
   | {
@@ -362,6 +364,8 @@ export interface ExplorerResponse {
   shortcuts?: string[]
   extras?: GameExtras
   novel?: NovelBook
+  // By file id; a file that cannot be read has an empty entry.
+  audioTags?: Record<string, import('./album').AudioTags>
   keys?: Record<string, import('./keys').KeyStatus>
   localeEmulator?: string
   flashPlayer?: string

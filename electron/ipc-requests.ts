@@ -160,6 +160,7 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
     value: (v) => typeof v === 'boolean' || localeProfileId(v),
   },
   novel: { rowId: ref, fileId: ref, summary: opt(bool) },
+  audioTags: { rowId: ref, fileIds: list(ref, 24) },
   keyStatus: {},
   setKey: { site: ref, values: record(text) },
   clearKey: { site: ref },

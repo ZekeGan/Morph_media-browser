@@ -9,6 +9,7 @@ import { identifyImage } from '../shared/images'
 import { openAsBlob } from 'node:fs'
 import { parseBlob, selectCover } from 'music-metadata'
 import type { Explorer } from './explorer'
+import type { AudioTags } from '../shared/album'
 
 export async function audioCover(
   ex: Explorer,
@@ -21,6 +22,50 @@ export async function audioCover(
   )
   ex.audioCoverTail = task.catch(() => {})
   return task
+}
+
+// R-390: tags and length of audio files for the album page. Same guarded file lookup and read-only Blob access as the
+// cover; covers are skipped and the length is only what the header gives, so no file is read whole. Reads share the
+// cover queue, one at a time. A file that cannot be read gives an empty entry instead of failing the others.
+const tagText = (value: unknown) =>
+  typeof value === 'string' && value.trim() ? value.trim().slice(0, 300) : undefined
+const tagNumber = (value: unknown, max: number) =>
+  typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= max
+    ? value
+    : undefined
+export async function audioTags(ex: Explorer, rowId: string, fileIds: string[]) {
+  const result: Record<string, AudioTags> = Object.create(null)
+  for (const id of [...new Set(fileIds)]) {
+    const task = ex.audioCoverTail.then(async (): Promise<AudioTags> => {
+      try {
+        const entry = await ex.file(rowId, id)
+        if (!entry.mime.startsWith('audio/') || entry.stat.size > 256 * 1024 * 1024) return {}
+        const { common, format } = await parseBlob(
+          await openAsBlob(entry.file, { type: entry.mime }),
+          { duration: false, skipCovers: true, skipPostHeaders: true }
+        )
+        const duration = format.duration
+        return {
+          title: tagText(common.title),
+          artist: tagText(common.artist),
+          albumArtist: tagText(common.albumartist),
+          album: tagText(common.album),
+          year: tagNumber(common.year, 9999),
+          track: tagNumber(common.track?.no, 9999),
+          disc: tagNumber(common.disk?.no, 99),
+          duration:
+            typeof duration === 'number' && Number.isFinite(duration) && duration > 0
+              ? duration
+              : undefined,
+        }
+      } catch {
+        return {}
+      }
+    })
+    ex.audioCoverTail = task.catch(() => {})
+    result[id] = await task
+  }
+  return result
 }
 
 export async function readAudioCover(

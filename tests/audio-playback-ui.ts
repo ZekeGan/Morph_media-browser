@@ -390,8 +390,10 @@ try {
           await auto.click()
         assert.equal(await auto.getAttribute('aria-label'), label)
       }
-      assert.equal(await auto.getAttribute('aria-label'), '播放順序：播完停止')
-      assert.equal(await auto.getAttribute('aria-pressed'), 'false')
+      // R-390: with nothing chosen yet, the next track follows.
+      assert.equal(await auto.getAttribute('aria-label'), '播放順序：接續下一首')
+      assert.equal(await auto.getAttribute('aria-pressed'), 'true')
+      await playOrder('播放順序：播完停止')
       await page.evaluate(() => {
         ;(window as any).beforeAutoAudio = document.querySelector('audio')
       })

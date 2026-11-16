@@ -6,8 +6,9 @@ import { t as tr } from '../i18n'
 import { isPlayOrder, playOrders, type PlayOrder } from '../../shared/workspace'
 
 // What happens when a track or video ends, shared by every player in the window (R-268) and kept in the local
-// workspace settings. A failed save keeps the choice for this session.
-let order: PlayOrder = 'stop',
+// workspace settings. A failed save keeps the choice for this session. Until the user picks one, the next track
+// follows (R-390); a stored choice, including "stop", is kept.
+let order: PlayOrder = 'next',
   loaded = false,
   chosen = false
 const listeners = new Set<() => void>()
