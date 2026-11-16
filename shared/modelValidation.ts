@@ -391,7 +391,7 @@ export function validateDetails(v: unknown): asserts v is FolderDetails {
       (v.reading.mode !== undefined && !['image', 'manga'].includes(v.reading.mode)) ||
       (v.reading.page !== undefined && !integer(v.reading.page, 0, 1000000)) ||
       (v.reading.fit !== undefined && !['width', 'height', 'original'].includes(v.reading.fit)) ||
-      (v.reading.webtoonWidth !== undefined && !integer(v.reading.webtoonWidth, 30, 100)) ||
+      (v.reading.webtoonWidth !== undefined && !integer(v.reading.webtoonWidth, 10, 100)) ||
       ['spread', 'rtl', 'firstSingle', 'webtoon', 'webtoonAsked'].some(
         (k) => v.reading[k] !== undefined && typeof v.reading[k] !== 'boolean'
       ))

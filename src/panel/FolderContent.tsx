@@ -94,9 +94,10 @@ export function FolderContent({
     [, setReader] = useState(false),
     [fileReader, setFileReader] = useState(false),
     [documentFile, setDocumentFile] = useState<ContentResult['entries'][number]>()
-  // R-282: after the last page of a text book, the next text book in this folder.
+  // R-282: after the last page of a text book, the next text book in this folder. R-415: a comic archive (CBZ) goes on
+  // to the next archive the same way.
   const nextText = (file: ContentResult['entries'][number]) => {
-    const books = (content?.entries ?? []).filter((entry) => entry.kind === 'text'),
+    const books = (content?.entries ?? []).filter((entry) => entry.kind === file.kind),
       following = books[books.findIndex((entry) => entry.id === file.id) + 1]
     return following && following.id !== file.id
       ? { name: following.name, open: () => setDocumentFile(following) }

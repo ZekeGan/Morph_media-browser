@@ -12172,5 +12172,11 @@
     "en": "Not a text book (TXT / EPUB / MD)",
     "ja": "テキスト本（TXT／EPUB／MD）ではありません",
     "es": "No es un libro de texto (TXT / EPUB / MD)"
+  },
+  "前往下一本": {
+    "zh-CN": "前往下一本",
+    "en": "Go to next book",
+    "ja": "次の本へ",
+    "es": "Ir al siguiente libro"
   }
 }

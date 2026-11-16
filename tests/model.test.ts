@@ -197,6 +197,9 @@ test('subtitle, playback and launch validation retain numeric and path boundarie
     '字幕記錄不合法'
   )
   reject(validateDetails, { ...details, reading: { page: -1 } }, '閱讀設定不合法')
+  // R-414: a webtoon column may be as narrow as 10%.
+  assert.doesNotThrow(() => validateDetails({ ...details, reading: { webtoonWidth: 10 } }))
+  reject(validateDetails, { ...details, reading: { webtoonWidth: 9 } }, '閱讀設定不合法')
 })
 
 test('validation preserves existing optional null compatibility and rejected input values', () => {

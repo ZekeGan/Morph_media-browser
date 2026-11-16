@@ -14,7 +14,7 @@ export interface WebtoonHandle {
   screen(direction: 1 | -1): boolean
   edge(end: boolean): void
 }
-export const WEBTOON_MIN = 30,
+export const WEBTOON_MIN = 10,
   WEBTOON_MAX = 100
 export const clampWidth = (value: number) =>
   Math.round(Math.min(WEBTOON_MAX, Math.max(WEBTOON_MIN, value)))
@@ -45,12 +45,16 @@ export const Webtoon = forwardRef<
     width: number
     onPage: (index: number) => void
     onWidth: (value: number) => void
+    // R-414: the window reached (true) or left (false) the bottom of the last page.
+    onEnd?: (atEnd: boolean) => void
   }
->(function Webtoon({ images, start, width, onPage, onWidth }, handle) {
+>(function Webtoon({ images, start, width, onPage, onWidth, onEnd }, handle) {
   const scroller = useRef<HTMLDivElement>(null),
     pages = useRef<(HTMLImageElement | null)[]>([]),
     current = useRef(start),
-    frame = useRef(0)
+    frame = useRef(0),
+    atEnd = useRef(false),
+    anchor = useRef<{ index: number; ratio: number } | undefined>(undefined)
   const toPage = (index: number) => {
     const element = scroller.current,
       page = pages.current[index]
@@ -77,20 +81,50 @@ export const Webtoon = forwardRef<
   useLayoutEffect(() => {
     if (start > 0) toPage(Math.min(start, images.length - 1))
   }, [])
+  // The page under the middle of the window, and how far down that page the middle is.
+  const middleOf = (element: HTMLDivElement) => {
+    const middle = element.scrollTop + element.clientHeight / 2
+    let low = 0,
+      high = pages.current.length - 1
+    while (low < high) {
+      const mid = Math.ceil((low + high) / 2),
+        top = pages.current[mid]?.offsetTop ?? 0
+      if (top <= middle) low = mid
+      else high = mid - 1
+    }
+    const page = pages.current[low]
+    return {
+      index: low,
+      ratio: page && page.offsetHeight ? (middle - page.offsetTop) / page.offsetHeight : 0,
+    }
+  }
+  // R-414: a new width resizes every page; the page under the middle of the window stays under it. The place is
+  // taken while the old layout is still on screen (during render), and put back once the new one is laid out.
+  const shownWidth = useRef(width)
+  if (shownWidth.current !== width) {
+    shownWidth.current = width
+    if (scroller.current) anchor.current = middleOf(scroller.current)
+  }
+  useLayoutEffect(() => {
+    const element = scroller.current,
+      held = anchor.current
+    anchor.current = undefined
+    if (!element || !held) return
+    const page = pages.current[held.index]
+    if (page)
+      element.scrollTop = page.offsetTop + held.ratio * page.offsetHeight - element.clientHeight / 2
+  }, [width])
   // The page under the middle of the window is the current page.
   const track = () => {
     cancelAnimationFrame(frame.current)
     frame.current = requestAnimationFrame(() => {
       const element = scroller.current
       if (!element) return
-      const middle = element.scrollTop + element.clientHeight / 2
-      let low = 0,
-        high = pages.current.length - 1
-      while (low < high) {
-        const mid = Math.ceil((low + high) / 2),
-          top = pages.current[mid]?.offsetTop ?? 0
-        if (top <= middle) low = mid
-        else high = mid - 1
+      const { index: low } = middleOf(element)
+      const end = element.scrollTop + element.clientHeight >= element.scrollHeight - 2
+      if (end !== atEnd.current) {
+        atEnd.current = end
+        onEnd?.(end)
       }
       if (low !== current.current) {
         current.current = low

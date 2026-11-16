@@ -18,6 +18,8 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Webtoon reading: changing the column width keeps the page on screen, the width can go down to 10%, the bottom of the last page shows the end notice with 前往下一本, and the progress bar always runs left to right (R-414).
+- A comic archive (CBZ) opened from a book folder continues with the next archive of the folder at its last page, like a text book (R-415).
 - Markdown files (.md) open in the text reader typeset (headings, lists, tables, code blocks) with a toolbar button back to the plain text; HTML in them is shown as text, pictures are not loaded, and only http(s) links open, in the system browser (R-399).
 - Folder types are changed in one place only (folder settings, Appearance): the image viewer no longer has a manga/image mode switch and a folder read in manga mode is no longer taken for a book; the right panel title always shows the folder name and type icon (R-411).
 - Image mode (not manga) always reads left to right and turns without a slide; a manga folder's saved direction is no longer used or changed by it (R-406).

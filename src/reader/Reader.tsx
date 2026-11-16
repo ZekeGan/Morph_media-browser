@@ -1016,10 +1016,12 @@ export function Reader({
   const track = useRef<HTMLDivElement>(null)
   const [scrub, setScrub] = useState<number>(),
     [hovered, setHovered] = useState<number>()
+  // R-414: the bar follows the reading direction; a webtoon always reads downward, whatever the page setting says.
+  const barRtl = rtl && !webtoon
   const last = Math.max(1, groups.length - 1),
     place = (index: number) => {
       const ratio = index / last
-      return (rtl ? 1 - ratio : ratio) * (track.current?.clientWidth ?? 0)
+      return (barRtl ? 1 - ratio : ratio) * (track.current?.clientWidth ?? 0)
     },
     previewIndex = scrub ?? hovered,
     previewEntry = previewIndex === undefined ? undefined : images[groups[previewIndex]?.[0] ?? -1]
@@ -1049,7 +1051,7 @@ export function Reader({
           onMouseMove={(event) => {
             const bounds = event.currentTarget.getBoundingClientRect(),
               ratio = Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width))
-            setHovered(Math.round((rtl ? 1 - ratio : ratio) * last))
+            setHovered(Math.round((barRtl ? 1 - ratio : ratio) * last))
           }}
           onMouseLeave={() => setHovered(undefined)}
         >
@@ -1061,13 +1063,13 @@ export function Reader({
             max={last}
             step={1}
             label={null}
-            inverted={rtl}
+            inverted={barRtl}
             disabled={groups.length < 2}
-            value={rtl ? last - (scrub ?? groupIndex) : (scrub ?? groupIndex)}
-            onChange={(value) => setScrub(rtl ? last - value : value)}
+            value={barRtl ? last - (scrub ?? groupIndex) : (scrub ?? groupIndex)}
+            onChange={(value) => setScrub(barRtl ? last - value : value)}
             onChangeEnd={(value) => {
               setScrub(undefined)
-              goToGroup(rtl ? last - value : value)
+              goToGroup(barRtl ? last - value : value)
             }}
           />
           {previewEntry && previewIndex !== undefined && (
@@ -1237,6 +1239,7 @@ export function Reader({
             width={webtoonWidth}
             onPage={setPage}
             onWidth={setWebtoonWidth}
+            onEnd={setEnding}
           />
         ) : (
           <div
@@ -1493,6 +1496,11 @@ export function Reader({
               <span>
                 {tr('下一本：{0}', nextBook.name)} · {tr('再按一次下一頁開啟')}
               </span>
+            )}
+            {webtoon && nextBook && (
+              <Button size="compact-xs" variant="light" onClick={pastEnd}>
+                {tr('前往下一本')}
+              </Button>
             )}
             <Button
               size="compact-xs"

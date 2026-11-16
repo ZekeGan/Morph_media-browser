@@ -47,6 +47,9 @@ export function DocumentViewer({
   useEffect(() => {
     if (file.kind !== 'archive') return
     let alive = true
+    // R-415: the next book in the same viewer starts from its own pages, not the previous book's.
+    setImages(undefined)
+    setError('')
     void window.explorer
       .request({ action: 'archive', rowId, fileId: file.id })
       .then((result) => {
@@ -80,6 +83,7 @@ export function DocumentViewer({
     return (
       <Suspense fallback={<p>{tr('載入內容…')}</p>}>
         <Reader
+          key={file.id}
           embedded={embedded}
           images={images}
           start={0}
@@ -87,6 +91,8 @@ export function DocumentViewer({
           prefs={undefined}
           close={close}
           save={() => {}}
+          // R-415: past the last page the reader offers the next book of the folder, as the text reader does.
+          nextBook={next && { name: next.name, open: () => next.open() }}
         />
       </Suspense>
     )

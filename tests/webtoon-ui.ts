@@ -89,6 +89,28 @@ try {
   )
   const reached = Number(/第 (\d+)/.exec(await shownPage())![1])
   assert.ok(reached > 1, 'scrolled to page ' + reached)
+  // R-414: changing the width keeps the page on screen (the page under the middle of the window), down to 10%.
+  const before = await shownPage()
+  for (const key of ['-', '-', '+']) {
+    await page.keyboard.press(key)
+    await page.waitForTimeout(150)
+    assert.equal(await shownPage(), before, 'page after ' + key)
+  }
+  for (let i = 0; i < 12; i++) await page.keyboard.press('-')
+  await page.waitForFunction(
+    () => (document.querySelector('.reader-webtoon-column') as HTMLElement)?.style.width === '10%'
+  )
+  for (let i = 0; i < 11; i++) await page.keyboard.press('+')
+  await page.waitForFunction(
+    () => (document.querySelector('.reader-webtoon-column') as HTMLElement)?.style.width === '65%'
+  )
+  // The bottom of the last page shows the same end notice as page-by-page reading; scrolling up takes it away.
+  await page.keyboard.press('End')
+  await reader().locator('.reader-end').waitFor()
+  assert.match((await reader().locator('.reader-end').textContent()) ?? '', /已是最後一頁/)
+  await page.screenshot({ path: path.join(base, 'shot', 'r414-webtoon-end.png') })
+  await page.keyboard.press('Home')
+  await reader().locator('.reader-end').waitFor({ state: 'detached' })
   await page.screenshot({ path: path.join(base, 'shot', 'r256-webtoon.png') })
   await page.keyboard.press('Escape')
   await reader().waitFor({ state: 'detached' })
