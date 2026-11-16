@@ -230,6 +230,7 @@
         "src/cells/cells.css",
         "src/cells/cellStyle*",
         "shared/cells*",
+        "shared/cardGrid*",
         "shared/fields*"
       ],
       "ui": [
@@ -237,13 +238,20 @@
         "field-edit-ui",
         "cell-style-ui",
         "cell-scroll-ui",
+        "card-grid-ui",
         "image-nth-ui",
         "game-cover-cell-ui",
         "game-launch-cell-ui",
         "enum-add-option-ui",
         "editor-fields-ui"
       ],
-      "tests": ["cells.test.ts", "cell-fallback.test.ts", "model.test.ts", "conditions.test.ts"]
+      "tests": [
+        "cells.test.ts",
+        "cell-fallback.test.ts",
+        "card-grid.test.ts",
+        "model.test.ts",
+        "conditions.test.ts"
+      ]
     },
     {
       "id": "search",
@@ -277,7 +285,8 @@
         "src/game/playtime*",
         "src/game/LocaleEmulatorSetting*",
         "src/game/FlashPlayerSetting*",
-        "electron/game-extras*", "src/game/game-actions.css", "shared/launchArgs*"],
+        "electron/game-extras*",
+        "electron/renpy-save*", "src/game/game-actions.css", "shared/launchArgs*"],
       "ui": ["game-actions-ui", "game-launch-cell-ui", "game-folder-page-ui"],
       "tests": ["game-actions.test.ts",
         "game-extras.test.ts", "game-shortcut.test.ts", "launch-args.test.ts"]

@@ -58,6 +58,9 @@ export interface Cell {
   wrap?: boolean
   // Long text and tag lists: keep the cell's height and let its content scroll instead of being cut off.
   scroll?: boolean
+  // Long text, tags, layout text (R-398): when the content is taller than the cell, take up to this many more grid rows
+  // (1 to 20) so the components below move down; absent keeps the height. Not together with `scroll`.
+  growMax?: number
   // Number cells only: unit text shown before or after the value (plain presentation) and fixed decimals.
   unit?: string
   unitPosition?: 'prefix' | 'suffix'

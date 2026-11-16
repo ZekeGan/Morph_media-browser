@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Card layout grid: a row whose components are all hidden collapses and the rows below move up; text, tag, layout-text, name and path components get an optional "grow when content is too tall" setting (up to 1 to 20 more rows, off by default, not together with scrolling) that pushes the components below it down (new tentative `growMax` cell field) (R-398).
 - Book folders: comic archives are a list under the folder details (no tiles), in file name order with numbers as numbers, each with its progress bar, 讀到 N / M 頁 and 繼續閱讀; the whole folder shares the spread, direction and webtoon settings, and every archive remembers its own page (new tentative `volumes` field in the folder record) (R-407).
 - CBR (RAR) and CB7 (7z) comic archives can be read, in memory only, through 7-Zip compiled to WebAssembly (7z-wasm); the format is taken from the file's content, so a ZIP named .cbr works too (R-407, replaces R-403).
 - Webtoon reading: changing the column width keeps the page on screen, the width can go down to 10%, the bottom of the last page shows the end notice with 前往下一本, and the progress bar always runs left to right (R-414).

@@ -343,7 +343,11 @@ export function Editor({
         )
       }
       const ids = [...canvas.querySelectorAll<HTMLElement>('.editor-cell[data-cell-id]')]
-        .filter((cell) => [cell, ...cell.querySelectorAll<HTMLElement>('*')].some(cut))
+        .filter(
+          (cell) =>
+            !cell.querySelector('.cell-grow-body') &&
+            [cell, ...cell.querySelectorAll<HTMLElement>('*')].some(cut)
+        )
         .map((cell) => cell.dataset.cellId!)
       setOverflowing((now) => (now.join() === ids.join() ? now : ids))
       // The selected component's copy/delete toolbar floats just above its top-right corner; at the very top of the

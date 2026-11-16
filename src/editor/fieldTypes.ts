@@ -336,6 +336,7 @@ export function switchTextToDate(
       const {
         wrap: _wrap,
         scroll: _scroll,
+        growMax: _growMax,
         tagColors: _tagColors,
         tagPrefix: _tagPrefix,
         ...plain
@@ -413,6 +414,7 @@ export function switchTextType(
       const {
         wrap: _wrap,
         scroll: _scroll,
+        growMax: _growMax,
         tagColors: _tagColors,
         tagPrefix: _tagPrefix,
         presentation: _presentation,

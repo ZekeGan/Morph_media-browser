@@ -26,6 +26,7 @@ import {
   type Project,
 } from '../../shared/model'
 import { isFieldKind, launchTemplates } from '../../shared/explorer'
+import { GROW_KINDS, MAX_GROW_ROWS } from '../../shared/cardGrid'
 import { DisplaySource } from './DisplaySource'
 import { yesNo } from './fieldTypes'
 import { ConditionEditor } from './ConditionEditor'
@@ -327,7 +328,10 @@ export function EditorInspector(props: EditorInspectorProps) {
                 }
                 checked={selectedCell.scroll ?? false}
                 onChange={(event) =>
-                  updateCell({ scroll: event.currentTarget.checked || undefined })
+                  updateCell({
+                    scroll: event.currentTarget.checked || undefined,
+                    growMax: event.currentTarget.checked ? undefined : selectedCell.growMax,
+                  })
                 }
               />
             )}
@@ -337,16 +341,50 @@ export function EditorInspector(props: EditorInspectorProps) {
                   <HelpLabel
                     label={tr('長文字換行顯示')}
                     help={
-                      selectedCell.scroll
-                        ? tr('可捲動時一律換行顯示')
+                      selectedCell.scroll || selectedCell.growMax
+                        ? tr('可捲動或自動加高時一律換行顯示')
                         : tr('關閉時只顯示一行，過長的部分以「…」截斷')
                     }
                   />
                 }
-                disabled={!!selectedCell.scroll}
-                checked={selectedCell.wrap ?? !!selectedCell.scroll}
+                disabled={!!selectedCell.scroll || !!selectedCell.growMax}
+                checked={selectedCell.wrap ?? (!!selectedCell.scroll || !!selectedCell.growMax)}
                 onChange={(event) => updateCell({ wrap: event.currentTarget.checked || undefined })}
               />
+            )}
+            {GROW_KINDS.includes(selectedCell.kind) && (
+              <>
+                <Checkbox
+                  label={
+                    <HelpLabel
+                      label={tr('內容過高時自動加高')}
+                      help={tr(
+                        '內容放不下時多佔幾列，下面的組件跟著往下移；不勾選則維持原高度。與「內容多時可捲動」擇一'
+                      )}
+                    />
+                  }
+                  checked={!!selectedCell.growMax}
+                  onChange={(event) =>
+                    updateCell({
+                      growMax: event.currentTarget.checked ? 3 : undefined,
+                      scroll: event.currentTarget.checked ? undefined : selectedCell.scroll,
+                    })
+                  }
+                />
+                {selectedCell.growMax && (
+                  <NumberInput
+                    label={tr('最多加高幾列')}
+                    min={1}
+                    max={MAX_GROW_ROWS}
+                    allowDecimal={false}
+                    clampBehavior="strict"
+                    value={selectedCell.growMax}
+                    onChange={(value) =>
+                      typeof value === 'number' && value >= 1 && updateCell({ growMax: value })
+                    }
+                  />
+                )}
+              </>
             )}
           </>
         }

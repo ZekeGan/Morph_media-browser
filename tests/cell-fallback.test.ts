@@ -230,6 +230,30 @@ test('only long text and tag cells can scroll', () => {
   )
 })
 
+test('growMax is a bounded option for tall-content kinds and excludes scroll (R-398)', () => {
+  const base = modelProject(),
+    withCell = (c: Cell) => ({
+      ...base,
+      layoutPresets: undefined,
+      activeLayoutId: undefined,
+      contentCells: undefined,
+      cells: [c],
+    }),
+    text = (patch: Partial<Cell>) => cell({ fallbackIds: undefined, ...patch })
+  assert.doesNotThrow(() => validateProject(withCell(text({ growMax: 3 }))))
+  assert.doesNotThrow(() => validateProject(withCell(text({ growMax: 20 }))))
+  for (const growMax of [0, 21, 1.5, '3'])
+    assert.throws(() => validateProject(withCell(text({ growMax: growMax as number }))))
+  assert.throws(() => validateProject(withCell(text({ growMax: 2, scroll: true }))))
+  assert.throws(() =>
+    validateProject(
+      withCell(
+        cell({ kind: 'open-folder', attributeId: undefined, fallbackIds: undefined, growMax: 2 })
+      )
+    )
+  )
+})
+
 test('optional text, box and colour styles are validated', () => {
   const base = modelProject(),
     withStyle = (style: Record<string, unknown>, patch: Record<string, unknown> = {}) => ({

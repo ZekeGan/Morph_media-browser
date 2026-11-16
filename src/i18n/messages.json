@@ -4553,12 +4553,6 @@
     "ja": "コンポーネントの高さを保ち、はみ出した内容はスクロールで確認できます（切り捨てません）。",
     "es": "Mantiene la altura del componente; el contenido sobrante se ve desplazándose en lugar de cortarse."
   },
-  "可捲動時一律換行顯示": {
-    "zh-CN": "可滚动时一律换行显示",
-    "en": "Scrolling cells always wrap",
-    "ja": "スクロール可能なときは常に折り返します",
-    "es": "Si es desplazable, siempre se ajusta el texto"
-  },
   "備用動作": {
     "zh-CN": "备用动作",
     "en": "Fallback actions",
@@ -12238,5 +12232,29 @@
     "en": "The comic archive reading record is not valid",
     "ja": "漫画アーカイブの閲覧記録が正しくありません",
     "es": "El registro de lectura del archivo de cómic no es válido"
+  },
+  "內容過高時自動加高": {
+    "zh-CN": "内容过高时自动加高",
+    "en": "Grow when content is too tall",
+    "ja": "内容が高いとき自動で高くする",
+    "es": "Crecer si el contenido es alto"
+  },
+  "內容放不下時多佔幾列，下面的組件跟著往下移；不勾選則維持原高度。與「內容多時可捲動」擇一": {
+    "zh-CN": "内容放不下时多占几行，下面的组件跟着往下移；不勾选则保持原高度。与“内容多时可滚动”二选一",
+    "en": "Takes more rows when the content does not fit, and the components below move down. Unchecked keeps the height. Use this or \"Scroll when long\", not both",
+    "ja": "内容が収まらないとき行数を増やし、下のコンポーネントが下に移動します。オフなら高さはそのままです。「長いときはスクロール」とはどちらか一方のみ",
+    "es": "Ocupa más filas si el contenido no cabe y los componentes de abajo bajan. Sin marcar, mantiene la altura. Elige esta opción o «Desplazar si es largo», no ambas"
+  },
+  "最多加高幾列": {
+    "zh-CN": "最多加高几行",
+    "en": "Most extra rows",
+    "ja": "最大で増やす行数",
+    "es": "Máximo de filas extra"
+  },
+  "可捲動或自動加高時一律換行顯示": {
+    "zh-CN": "可滚动或自动加高时一律换行显示",
+    "en": "Always wrapped when scrollable or growing",
+    "ja": "スクロールまたは自動で高くするときは常に折り返します",
+    "es": "Siempre con saltos de línea si es desplazable o crece"
   }
 }

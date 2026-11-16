@@ -1,4 +1,5 @@
 import { documentFile, type FolderDetails } from './explorer'
+import { GROW_KINDS, MAX_GROW_ROWS } from './cardGrid'
 import { imageTypes } from './images'
 import { compatibleFieldTypes, httpUrl, validFieldValue } from './fields'
 import { validStableQuery } from './query'
@@ -164,6 +165,8 @@ function validCell(c: unknown): boolean {
     (c.scroll === undefined ||
       (typeof c.scroll === 'boolean' &&
         ['field-text', 'field-tags', 'static-text'].includes(c.kind))) &&
+    (c.growMax === undefined ||
+      (integer(c.growMax, 1, MAX_GROW_ROWS) && GROW_KINDS.includes(c.kind) && !c.scroll)) &&
     (c.wrap === undefined ||
       (typeof c.wrap === 'boolean' && ['field-text', 'name', 'path'].includes(c.kind))) &&
     (c.unit === undefined || (c.kind === 'field-number' && text(c.unit, 20))) &&

@@ -13,8 +13,9 @@ import {
 import { describeError } from '../notices/errors'
 import { launchChoice } from '../../shared/explorer'
 import { rowCells } from '../../shared/layouts'
+import { placeCells, rowsFor } from '../../shared/cardGrid'
 import { effectiveKind } from '../../shared/kind'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { httpUrl } from '../../shared/fields'
 import { useFolderStats } from '../browse/folderStats'
 import { formatLastPlayed, formatPlayTime, usePlaytime } from '../game/playtime'
@@ -28,6 +29,45 @@ type CellProps = {
   open?: () => void
   preview?: boolean
   project?: Project
+  // Cards report how many grid rows a growing component's content needs (R-398); the editor preview does not.
+  onRows?: (cellId: string, rows: number, now?: boolean) => void
+}
+// A component that may grow (R-398) shows its content at natural height and tells its card how many rows that takes.
+function GrowBody({
+  cellId,
+  onRows,
+  children,
+}: {
+  cellId: string
+  onRows?: CellProps['onRows']
+  children: React.ReactNode
+}) {
+  const box = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const node = box.current,
+      cell = node?.parentElement
+    if (!node || !cell || !onRows) return
+    const measure = (now?: boolean) => {
+      const style = getComputedStyle(cell),
+        chrome = ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce(
+          (sum, key) => sum + (parseFloat(style[key as 'paddingTop']) || 0),
+          0
+        )
+      onRows(cellId, rowsFor(node.offsetHeight + chrome), now)
+    }
+    measure(true)
+    const observer = new ResizeObserver(() => measure())
+    observer.observe(node)
+    return () => {
+      observer.disconnect()
+      onRows(cellId, 0)
+    }
+  }, [cellId, onRows])
+  return (
+    <div ref={box} className="cell-grow-body">
+      {children}
+    </div>
+  )
 }
 // Covers come tall and wide; 'blur' shows all of the art and fills the rest with a blurred copy instead of bars or a crop.
 function CellPicture({
@@ -86,6 +126,10 @@ export function CellContent(props: CellProps) {
         <div className="cell-scroll-body" tabIndex={0} role="group" aria-label={tr('可捲動內容')}>
           <CellValue {...props} />
         </div>
+      ) : cell.growMax ? (
+        <GrowBody cellId={cell.cellId} onRows={props.onRows}>
+          <CellValue {...props} />
+        </GrowBody>
       ) : (
         <CellValue {...props} />
       )}
@@ -324,7 +368,7 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
     return Array.isArray(value) ? (
       <TagList
         tags={value}
-        fit={!cell.scroll}
+        fit={!cell.scroll && !cell.growMax}
         colors={cell.tagColors}
         prefix={cell.tagPrefix !== false}
       />
@@ -472,21 +516,56 @@ export function Card({
   open: () => void
 }) {
   useLocale()
-
+  // Rows each growing component needs, measured in the browser and applied in batches: one render for a whole card,
+  // and the first measurement before the first paint so a card does not visibly jump.
+  const [needed, setNeeded] = useState<Record<string, number>>({}),
+    queue = useRef<Record<string, number>>({}),
+    frame = useRef(0)
+  const flush = useCallback(() => {
+    cancelAnimationFrame(frame.current)
+    frame.current = 0
+    const batch = queue.current
+    queue.current = {}
+    setNeeded((now) => {
+      const next = { ...now }
+      let changed = false
+      for (const [id, rows] of Object.entries(batch)) {
+        if ((now[id] ?? 0) === rows) continue
+        changed = true
+        if (rows) next[id] = rows
+        else delete next[id]
+      }
+      return changed ? next : now
+    })
+  }, [])
+  const onRows = useCallback(
+    (cellId: string, rows: number, now?: boolean) => {
+      queue.current[cellId] = rows
+      if (now) flush()
+      else if (!frame.current) frame.current = requestAnimationFrame(flush)
+    },
+    [flush]
+  )
+  useEffect(() => () => cancelAnimationFrame(frame.current), [])
+  const placed = placeCells(
+    rowCells(project, row),
+    (cell) => cellVisible(cell, row, project),
+    needed
+  )
   return (
     <div className="card-grid">
-      {rowCells(project, row).map((cell) => (
+      {placed.map(({ cell, y, h }) => (
         <div
           key={cell.cellId}
           className="card-cell"
           title={groupSourceTitle(project, cell, row)}
           style={{
             gridColumn: `${cell.grid.x + 1} / span ${cell.grid.w}`,
-            gridRow: `${cell.grid.y + 1} / span ${cell.grid.h}`,
+            gridRow: `${y + 1} / span ${h}`,
             ...cellColors(cell),
           }}
         >
-          <CellContent cell={cell} row={row} project={project} open={open} />
+          <CellContent cell={cell} row={row} project={project} open={open} onRows={onRows} />
         </div>
       ))}
     </div>
