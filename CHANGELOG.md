@@ -18,6 +18,8 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Image mode (not manga) always reads left to right and turns without a slide; a manga folder's saved direction is no longer used or changed by it (R-406).
+- Folders: double-clicking the folder that is already selected enters it, and entering a subfolder from the right panel of a previewed folder puts that folder in the history too, so Back returns to it (R-410).
 - Videos remember where they were left on this computer: reopening one goes on from there (with 從頭開始), a video folder offers 繼續觀看, and thumbnails show how far each was watched; short videos and finished ones start over (R-405).
 - Websites: MusicBrainz recording and artist pages can be imported (R-395).
 - Folder types: a picture-only folder inside a music or video folder, or one named like scans, booklet or artwork, is no longer taken for manga (R-404).

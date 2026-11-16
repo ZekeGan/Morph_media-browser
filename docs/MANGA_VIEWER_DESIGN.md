@@ -1,6 +1,6 @@
 # 漫畫資料夾內容與閱讀器
 
-> 最後確認：2026-11-16（R-392）。漫畫內容與閱讀器的現行規則；共用焦點與媒體生命週期見 [UI_RULES](UI_RULES.md)，工作區位置見 [WORKSPACE_REVISION](WORKSPACE_REVISION.md)。程式：`src/reader/Reader.tsx`、`src/panel/FolderContent.tsx`、`shared/reader.ts`；契約在 `shared/explorer.ts`；取捨見 [決策索引](DECISIONS.md)（C-76、C-85）。
+> 最後確認：2026-11-16（R-406 R-410）。漫畫內容與閱讀器的現行規則；共用焦點與媒體生命週期見 [UI_RULES](UI_RULES.md)，工作區位置見 [WORKSPACE_REVISION](WORKSPACE_REVISION.md)。程式：`src/reader/Reader.tsx`、`src/panel/FolderContent.tsx`、`shared/reader.ts`；契約在 `shared/explorer.ts`；取捨見 [決策索引](DECISIONS.md)（C-76、C-85）。
 
 <a id="漫畫閱讀器"></a>
 
@@ -75,6 +75,7 @@
 
 - **手動切換、預設單頁**，降低視窗變寬就意外換頁或改配對的情況。
 - 提供由左至右／由右至左設定，無已存偏好時預設由右至左；顯示語意及點擊熱區依上述規則。
+- 圖片模式（非漫畫，R-406）固定由左向右：不讀也不寫資料夾存的漫畫方向，沒有方向按鈕；翻頁固定沒有過渡（不顯示「翻頁過渡」按鈕與 A 快捷鍵，已存的設定不變）。
 - 首張獨立是手動開關，不自動推定首圖是封面；其他特殊配對不由分類猜測。
 - 建議將選項改名為「首張獨立顯示」，預設關閉，只在雙頁模式生效。開啟時為 `1`、`2–3`、`4–5`；關閉時為 `1–2`、`3–4`、`5–6`，不自動推定第一張是封面。
 - 放在單／雙頁按鈕的閱讀選項 Popup，讓使用者看到配對結果，與 Tooltip 分開；C-85 已採每筆閱讀偏好獨立保存，具體可攜 schema 待設計，不變更分類或原圖。

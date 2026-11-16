@@ -351,6 +351,26 @@ try {
   await app.evaluate(({ BrowserWindow }) =>
     BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(1)
   )
+  // R-410: a click on the folder that is already selected, then a double click, enters it. (The tree is still the
+  // centre view from above; the cards are where folders are clicked and double-clicked.)
+  await page.locator('.center-mode').getByText('卡片', { exact: true }).click()
+  await current('Media')
+  const cardA = page
+    .locator('.folder-card')
+    .filter({ has: page.getByText('A', { exact: true }) })
+    .first()
+  await cardA.click()
+  await cardA.dblclick()
+  await current('A')
+  await side(-1)
+  await current('Media')
+  // R-410: entering B from the panel of a previewed A records A, so Back goes B, A, then the start.
+  await cardA.click()
+  await go('B')
+  await side(-1)
+  await current('A')
+  await side(-1)
+  await current('Media')
   await button('開啟專案 Multi navigation').first().click()
   // R-379: the right panel of the project just opened is there at once; it does not slide open again.
   const panelWidths = await page.evaluate(

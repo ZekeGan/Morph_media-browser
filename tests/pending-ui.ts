@@ -161,6 +161,9 @@ try {
   const preview = page.locator('.file-page')
   await preview.getByRole('button', { name: '檢視圖片 · cover.png', exact: true }).click()
   await page.getByRole('dialog', { name: '圖片檢視', exact: true }).waitFor()
+  // R-406: image mode has no page-turn transition or reading-direction control.
+  assert.equal(await button('翻頁過渡').count(), 0)
+  assert.equal(await button('由右至左').count(), 0)
   await button('放大').click()
   await page.waitForFunction(
     () => document.querySelector('.reader-zoom-value')?.textContent === '125%'

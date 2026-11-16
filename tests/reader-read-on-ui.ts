@@ -206,11 +206,10 @@ try {
   await page.waitForFunction(() => !document.fullscreenElement)
   // Outside immersive reading Tab moves through the toolbar as before.
   await page.waitForFunction(() => document.activeElement?.matches('.reader-stage'))
+  // The toolbar comes back with the window leaving fullscreen; Tab goes into it once it is there.
+  await page.locator('.reader-toolbar').waitFor()
   await page.keyboard.press('Tab')
-  assert.ok(
-    await page.evaluate(() => !document.activeElement?.matches('.reader-stage')),
-    'Tab leaves the page when the toolbar is shown'
-  )
+  await page.waitForFunction(() => !document.activeElement?.matches('.reader-stage'))
   assert.deepEqual(errors, [])
   passed = true
   console.log('PASS wheel turns and zooms, keys read on, wide pages stand alone. ' + root)

@@ -133,7 +133,8 @@ export function Reader({
       !manga && prefs?.fit === 'width' ? 'width' : 'height'
     )
   const [spread, setSpread] = useState(prefs?.spread ?? false),
-    [rtl, setRtl] = useState(prefs?.rtl ?? manga),
+    // R-406: image mode always reads left to right and never uses the folder's manga direction.
+    [rtl, setRtl] = useState(manga && (prefs?.rtl ?? true)),
     [first, setFirst] = useState(prefs?.firstSingle ?? false)
   // R-256: webtoon mode and its column width (this book's, else the last one used on this computer).
   const [webtoon, setWebtoon] = useState(manga && !!prefs?.webtoon),
@@ -141,10 +142,12 @@ export function Reader({
     [asked, setAsked] = useState(!!prefs?.webtoonAsked),
     [suggest, setSuggest] = useState(false)
   const strip = useRef<WebtoonHandle>(null)
-  const [turnMotion, setTurnMotionState] = useState(lastTurnMotion)
+  const [storedTurnMotion, setTurnMotionState] = useState(lastTurnMotion)
+  // R-406: image mode never slides; the stored setting is left alone.
+  const turnMotion = manga && storedTurnMotion
   const toggleTurnMotion = () => {
-    rememberTurnMotion(!turnMotion)
-    setTurnMotionState(!turnMotion)
+    rememberTurnMotion(!storedTurnMotion)
+    setTurnMotionState(!storedTurnMotion)
   }
   const setWebtoonWidth = useCallback((value: number) => {
     const next = clampWidth(value)
@@ -565,7 +568,8 @@ export function Reader({
     page,
     ...(!manga ? { fit } : {}),
     spread,
-    rtl,
+    // R-406: image mode keeps the folder's manga direction untouched.
+    ...(manga ? { rtl } : prefs?.rtl !== undefined ? { rtl: prefs.rtl } : {}),
     firstSingle: first,
     ...(webtoon ? { webtoon: true } : {}),
     ...(webtoon || prefs?.webtoonWidth ? { webtoonWidth } : {}),

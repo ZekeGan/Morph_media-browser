@@ -299,7 +299,9 @@ function BrowseWorkspaceBody({
     })
   }
   // Entering a folder: the center moves there and the panel follows. Whether the panel is open stays the user's call.
-  const open = async (id: string, fromHistory?: number) => {
+  const open = async (id: string, fromHistory?: number, via?: string) => {
+    // Entering wins over a pending "clear the selection" from a click on the selected folder.
+    cancelClear()
     // A single click already started showing this folder in the panel; let that finish instead of dropping the double click.
     const pending = previewing.current
     if (pending) await pending
@@ -325,7 +327,11 @@ function BrowseWorkspaceBody({
           location: row.path,
           locations: undefined,
         })
-      } else moveTo(row.path)
+      } else {
+        // Entering from the panel's subfolder list: the previewed folder goes into the history first, so Back returns to it.
+        if (via) moveTo(via)
+        moveTo(row.path)
+      }
     }
   }
   // A single click shows that folder in the right panel at once, without entering it: the center stays where it is.
@@ -528,7 +534,7 @@ function BrowseWorkspaceBody({
   const child = (name: string) => {
     if (!detail) return
     const next = all.find((r) => pathKey(r.path) === pathKey(detail.path + '/' + name))
-    if (next) void open(next.rowId)
+    if (next) void open(next.rowId, undefined, detail.path)
     else
       notify(
         detail.boundary
@@ -633,8 +639,15 @@ function BrowseWorkspaceBody({
     persist(state.current)
   }
   // Ctrl/Cmd+click marks folders one by one, Shift+click marks a range; a plain click clears the marks.
+  const clearTimer = useRef<number | undefined>(undefined)
+  const cancelClear = () => {
+    window.clearTimeout(clearTimer.current)
+    clearTimer.current = undefined
+  }
+  useEffect(() => cancelClear, [])
   const gestures = (id: string) => ({
     onClick: (e: React.MouseEvent) => {
+      cancelClear()
       if (e.ctrlKey || e.metaKey) {
         markAnchor.current = id
         setMarked((now) => (now.includes(id) ? now.filter((m) => m !== id) : [...now, id]))
@@ -647,16 +660,22 @@ function BrowseWorkspaceBody({
         return
       }
       markAnchor.current = id
-      // Clicking the selected folder again clears the selection at once; the second click of a double click
-      // (detail 2) selects it again before the folder is entered.
+      // Clicking the selected folder again clears the selection, but only after the double-click time passes
+      // without a second click; a second click or the double click cancels the timer and enters the folder.
       if (e.detail === 1 && highlight === id && !marked.length) {
-        clearSelection()
+        clearTimer.current = window.setTimeout(() => {
+          clearTimer.current = undefined
+          clearSelection()
+        }, 300)
         return
       }
       if (marked.length) setMarked([])
       setHighlight(id)
     },
-    onDoubleClick: () => void open(id),
+    onDoubleClick: () => {
+      cancelClear()
+      void open(id)
+    },
     onContextMenu: (e: React.MouseEvent) => {
       e.preventDefault()
       e.stopPropagation()
