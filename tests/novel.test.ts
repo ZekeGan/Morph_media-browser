@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { decodeText, readNovel, splitChapters } from '../electron/novel'
+import { decodeText, isbnOf, readNovel, splitChapters } from '../electron/novel'
 import { bookPercent, latestNovel, packagePath, rubyPieces } from '../shared/novel'
 import { validateDetails } from '../shared/model'
 import { Library } from '../electron/library'
@@ -76,7 +76,9 @@ test('an EPUB is read from its package, navigation and spine; scripts stay text 
       ),
       text(
         'OEBPS/content.opf',
-        '<package><metadata><dc:title>Test &amp; Book</dc:title></metadata><manifest>' +
+        '<package><metadata><dc:title>Test &amp; Book</dc:title>' +
+          '<dc:identifier>urn:uuid:1234</dc:identifier><dc:identifier>urn:isbn:978-4-06-123456-7</dc:identifier>' +
+          '</metadata><manifest>' +
           '<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>' +
           '<item id="c1" href="text/c1.xhtml" media-type="application/xhtml+xml"/>' +
           '<item id="c2" href="text/c2.xhtml" media-type="application/xhtml+xml"/>' +
@@ -119,6 +121,11 @@ test('an EPUB is read from its package, navigation and spine; scripts stay text 
   const book = await readNovel(file, (n) => 'media://archive/x/y/z/' + n)
   assert.equal(book.format, 'epub')
   assert.equal(book.title, 'Test & Book')
+  // R-390: the identifier that is an ISBN, as digits; the UUID is skipped.
+  assert.equal(book.isbn, '9784061234567')
+  assert.equal(isbnOf('ISBN 4-06-123456-X'), '406123456X')
+  assert.equal(isbnOf('urn:uuid:5e1f'), undefined)
+  assert.equal(isbnOf('12345'), undefined)
   assert.deepEqual(
     book.chapters.map((c) => [c.title, c.path]),
     [

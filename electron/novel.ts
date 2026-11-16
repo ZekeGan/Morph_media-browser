@@ -126,6 +126,14 @@ function elements(text: string, name: string, nested = false) {
 }
 const plain = (value: string) =>
   decodeEntities(value.slice(0, 1000).replace(/<[^<>]*>/g, '')).trim()
+// An identifier that is an ISBN-10 or ISBN-13, as its digits; anything else (a UUID, a store id) is not.
+export function isbnOf(value: string): string | undefined {
+  const digits = value
+    .replace(/^\s*(urn:)?isbn[:\s]*/i, '')
+    .replace(/[\s-]/g, '')
+    .toUpperCase()
+  return /^(97[89]\d{10}|\d{9}[\dX])$/.test(digits) ? digits : undefined
+}
 async function readEntry(file: string, index: ArchiveIndex, name: string, limit = MAX_TEXT) {
   const entry = index.texts?.find((item: ArchiveImage) => item.name === name)
   if (!entry || entry.size > limit) return undefined
@@ -157,7 +165,11 @@ export async function readEpub(
     .map((tag) => manifest.get(attr(tag, 'idref') ?? ''))
     .filter((item): item is { href: string; type: string; properties: string } => !!item?.href)
   const title = plain(elements(opf, 'dc:title')[0]?.inner ?? ''),
-    author = plain(elements(opf, 'dc:creator')[0]?.inner ?? '').slice(0, 200)
+    author = plain(elements(opf, 'dc:creator')[0]?.inner ?? '').slice(0, 200),
+    // R-390: the ISBN, when one of the identifiers is one ("urn:isbn:978…", "978-4-…", "ISBN 4…").
+    isbn = elements(opf, 'dc:identifier')
+      .map((element) => isbnOf(plain(element.inner)))
+      .find(Boolean)
   // The cover: an EPUB 3 item marked cover-image, else the EPUB 2 <meta name="cover" content="item id">.
   const coverMeta = tags(opf, 'meta').find((tag) => attr(tag, 'name') === 'cover'),
     coverItem =
@@ -205,6 +217,7 @@ export async function readEpub(
     format: 'epub',
     title,
     ...(author ? { author } : {}),
+    ...(isbn ? { isbn } : {}),
     ...(cover ? { cover } : {}),
     chapters,
     // A plain object again for IPC; built without a prototype so names like __proto__ stay ordinary keys.

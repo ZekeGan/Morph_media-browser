@@ -68,6 +68,8 @@ export interface NovelBook {
   title: string
   // R-338: from the EPUB package (dc:creator, the cover image); a summary leaves the chapters' text out.
   author?: string
+  // R-390: from dc:identifier when it is an ISBN, as digits.
+  isbn?: string
   cover?: string
   encoding: string
   chapters: { title: string; text?: string; html?: string; path?: string }[]

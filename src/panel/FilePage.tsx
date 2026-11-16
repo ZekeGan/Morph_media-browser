@@ -152,6 +152,40 @@ export function FilePage({
   )
 }
 
+// R-390: a folder holding one EPUB shows that book above its shelf: cover, title, author and ISBN from the EPUB.
+export function BookCard({ row, file }: { row: FolderRow; file: MediaEntry }) {
+  useLocale()
+  const [book, setBook] = useState<NovelBook>()
+  useEffect(() => {
+    setBook(undefined)
+    let alive = true
+    void window.explorer
+      .request({ action: 'novel', rowId: row.rowId, fileId: file.id, summary: true })
+      .then((result) => alive && setBook(result.novel))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [row.rowId, file.id])
+  if (!book) return null
+  return (
+    <div className="book-card">
+      {book.cover && <img className="book-card-cover" src={book.cover} alt={tr('封面')} />}
+      <div className="album-facts">
+        <Text fw={700} size="lg" className="album-title">
+          {book.title || file.name}
+        </Text>
+        {book.author && <Text size="sm">{book.author}</Text>}
+        {book.isbn && (
+          <Text size="xs" c="dimmed">
+            ISBN {book.isbn}
+          </Text>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // A comic archive the reader can open (CBZ; CBR and CB7 are not read yet and are not listed as books).
 export const isComicArchive = (entry: { kind: string; name: string }) =>
   entry.kind === 'archive' && /\.cbz$/i.test(entry.name)

@@ -425,6 +425,18 @@ try {
     storyBytes,
     'the book is never written'
   )
+  // R-390: the folder's one EPUB shows its title and author above the shelf, and 繼續閱讀 goes back to the book
+  // read last.
+  await page
+    .locator('.book-card')
+    .filter({ hasText: 'Picture Book' })
+    .filter({ hasText: 'Ann Author' })
+    .waitFor()
+  await page
+    .locator('.book-actions')
+    .filter({ hasText: 'story' })
+    .getByRole('button', { name: '繼續閱讀', exact: true })
+    .waitFor()
   // Opening it again returns to chapter 3.
   await page.getByRole('button', { name: /^(開始|繼續)閱讀 story.txt$/ }).click()
   await page.waitForFunction(() =>

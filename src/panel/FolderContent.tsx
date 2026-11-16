@@ -1,5 +1,5 @@
 import { MediaBrowser } from '../media/MediaBrowser'
-import { BookShelf, FilePage } from './FilePage'
+import { BookCard, BookShelf, FilePage } from './FilePage'
 import { MediaViewer } from '../media/MediaViewer'
 import { isGameFolder, visibleFile } from '../../shared/media'
 import { effectiveKind, sampleOf, templateKind } from '../../shared/kind'
@@ -287,6 +287,16 @@ export function FolderContent({
   const pages = visibleEntries.filter((entry) => entry.kind === 'image'),
     firstPage = pages[0],
     place = content.nextCursor ? undefined : savedPlace(row.record?.details?.reading, pages.length)
+  // R-390: a folder of text books: one EPUB gets a book card; 繼續閱讀 goes back to the book read most recently.
+  const books = content.entries.filter((entry) => entry.kind === 'text'),
+    epubs = books.filter((entry) => /\.epub$/i.test(entry.name)),
+    novels = row.record?.details?.novels ?? {},
+    lastRead = books
+      .filter((entry) => {
+        const saved = novels[entry.name]
+        return saved && saved.percent > 0 && saved.percent < 1
+      })
+      .sort((a, b) => (novels[b.name]!.updated > novels[a.name]!.updated ? 1 : -1))[0]
   // The book page (R-389: the fill-ins of the shared folder page).
   return (
     <FolderPage
@@ -357,6 +367,7 @@ export function FolderContent({
       }
       visual={
         <div className="media-info-template">
+          {!firstPage && epubs.length === 1 && <BookCard row={row} file={epubs[0]} />}
           {legacyCover && first && (
             <img
               className="manga-cover"
@@ -391,16 +402,25 @@ export function FolderContent({
       actions={
         // R-390: where the manga was left and the button to read on. The reader decides the page itself (R-253), so
         // this opens it at the first picture like a click on the first thumbnail.
-        firstPage && (
+        !firstPage && lastRead ? (
           <div className="book-actions">
-            <Button size="compact-sm" onClick={() => setGalleryFile(firstPage)}>
-              {(place?.resumes ??
-              (!!content.nextCursor && (row.record?.details?.reading?.page ?? 0) > 0))
-                ? tr('繼續閱讀')
-                : tr('開始閱讀')}
+            <Button size="compact-sm" onClick={() => setDocumentFile(lastRead)}>
+              {tr('繼續閱讀')}
             </Button>
-            {place && <small>{tr('讀到 {0} / {1} 頁', place.page, place.total)}</small>}
+            <small>{lastRead.name.replace(/\.(txt|epub)$/i, '')}</small>
           </div>
+        ) : (
+          firstPage && (
+            <div className="book-actions">
+              <Button size="compact-sm" onClick={() => setGalleryFile(firstPage)}>
+                {(place?.resumes ??
+                (!!content.nextCursor && (row.record?.details?.reading?.page ?? 0) > 0))
+                  ? tr('繼續閱讀')
+                  : tr('開始閱讀')}
+              </Button>
+              {place && <small>{tr('讀到 {0} / {1} 頁', place.page, place.total)}</small>}
+            </div>
+          )
         )
       }
       list={

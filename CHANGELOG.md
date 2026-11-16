@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Book folders: a folder with one EPUB shows the book's cover, title, author and ISBN, and a folder of text books offers 繼續閱讀 for the one read last (R-390).
 - Video folders get a header with their name, how many videos they hold and 播放影片, which plays them in name order in the big viewer (R-390).
 - Podcasts: a music folder can be shown as a podcast (kept on this computer only): newest episodes first with date, length and how far each was heard, 從上次繼續 and 播放最新一集, and each episode goes on from where it was left (R-390).
 - Music folders open as an album: cover, album name, artist, year, track count and length from the files' tags, 全部播放 and 隨機播放 that make the album the play queue (with undo), and a track list where a click plays the album from that track. With nothing chosen yet, the play order now goes on to the next track (R-390).

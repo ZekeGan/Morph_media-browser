@@ -1,6 +1,6 @@
 # 小說閱讀器
 
-> 最後確認：2026-11-14（R-377）。文字書（TXT、EPUB）的閱讀規則。程式：`src/novel/NovelReader.tsx`、`src/novel/NovelContent.tsx`、`electron/novel.ts`、`shared/novel.ts`；測試：`tests/novel.test.ts`、`tests/novel-ui.ts`。圖片漫畫的閱讀器見 [MANGA_VIEWER_DESIGN](MANGA_VIEWER_DESIGN.md)。
+> 最後確認：2026-11-16（R-390）。文字書（TXT、EPUB）的閱讀規則。程式：`src/novel/NovelReader.tsx`、`src/novel/NovelContent.tsx`、`electron/novel.ts`、`shared/novel.ts`；測試：`tests/novel.test.ts`、`tests/novel-ui.ts`。圖片漫畫的閱讀器見 [MANGA_VIEWER_DESIGN](MANGA_VIEWER_DESIGN.md)。
 
 ## 範圍與分類
 
@@ -23,7 +23,7 @@
 
 ## 檔案頁與書架（R-338）
 
-- 選一本文字書時，右側檔案頁顯示書的封面（EPUB 的 cover-image，或 EPUB 2 的 `<meta name="cover">`）、書名、作者（`dc:creator`）、章數、閱讀進度（讀到哪一章、百分比、最後閱讀日期）與「開始閱讀／繼續閱讀（章名）」。這些只用摘要請求（`novel` 加 `summary`），不把整本內文送到畫面。
+- 選一本文字書時，右側檔案頁顯示書的封面（EPUB 的 cover-image，或 EPUB 2 的 `<meta name="cover">`）、書名、作者（`dc:creator`）、章數、閱讀進度（讀到哪一章、百分比、最後閱讀日期）與「開始閱讀／繼續閱讀（章名）」。這些只用摘要請求（`novel` 加 `summary`），不把整本內文送到畫面。摘要另帶 ISBN（`dc:identifier` 裡是 ISBN-10／13 的那一個，存成純數字）。資料夾只有一本 EPUB、沒有圖片時，資料夾頁在書架上方顯示這本書的書卡；資料夾頁的「繼續閱讀」接最近讀過、還沒讀完的那一本（R-390）。多本書時不逐本讀摘要，因為每次都要讀整本、也會佔用壓縮檔讀取名額。
 - 資料夾有文字書、PDF 或壓縮檔時，內容區列成書架：每本一列，附進度條與按鈕；只有書而沒有圖片的資料夾不顯示圖片清單。不新增「小說」資料夾分類。
 
 ## 閱讀紀錄
