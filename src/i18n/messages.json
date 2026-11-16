@@ -12251,35 +12251,11 @@
     "ja": "まだセーブがありません。ゲームがセーブするとこのフォルダーが作られます",
     "es": "Aún no hay partidas; la carpeta aparecerá cuando el juego guarde"
   },
-  "版面 0（{0}）": {
-    "zh-CN": "版面 0（{0}）",
-    "en": "Layout 0 ({0})",
-    "ja": "レイアウト 0（{0}）",
-    "es": "Diseño 0 ({0})"
-  },
   "版面配置": {
     "zh-CN": "版面配置",
     "en": "Layout setup",
     "ja": "レイアウト設定",
     "es": "Configuración de diseños"
-  },
-  "預設設定": {
-    "zh-CN": "默认设置",
-    "en": "Defaults",
-    "ja": "既定の設定",
-    "es": "Valores predeterminados"
-  },
-  "作品依類型選版面，其他資料夾依所在層級選版面；沒有指定的都用版面 0。資料夾專屬的版面在下方樹狀圖設定。": {
-    "zh-CN": "作品按类型选版面，其他文件夹按所在层级选版面；没有指定的都用版面 0。文件夹专属的版面在下方树状图设置。",
-    "en": "Works use the layout of their kind; other folders use the layout of their level. Anything not set uses layout 0. Set a folder's own layout in the tree below.",
-    "ja": "作品は種類ごと、その他のフォルダーは階層ごとにレイアウトを選びます。指定のないものはレイアウト 0 を使います。フォルダー専用のレイアウトは下のツリーで設定します。",
-    "es": "Las obras usan el diseño de su tipo; las demás carpetas, el de su nivel. Lo que no esté definido usa el diseño 0. El diseño propio de una carpeta se define en el árbol de abajo."
-  },
-  "版面 0": {
-    "zh-CN": "版面 0",
-    "en": "Layout 0",
-    "ja": "レイアウト 0",
-    "es": "Diseño 0"
   },
   "第 {0} 層": {
     "zh-CN": "第 {0} 层",
@@ -12287,41 +12263,11 @@
     "ja": "第 {0} 階層",
     "es": "Nivel {0}"
   },
-  "虛線框是作品（依類型），實線框是一般資料夾（依層級），強調色邊框是此資料夾專屬。點資料夾可指定專屬版面。": {
-    "zh-CN": "虚线框是作品（按类型），实线框是一般文件夹（按层级），强调色边框是此文件夹专属。点击文件夹可指定专属版面。",
-    "en": "Dashed boxes are works (by kind), solid boxes are other folders (by level), and an accent border marks a folder's own layout. Click a folder to give it its own layout.",
-    "ja": "破線の枠は作品（種類ごと）、実線の枠は一般フォルダー（階層ごと）、強調色の枠はフォルダー専用です。フォルダーをクリックすると専用のレイアウトを指定できます。",
-    "es": "Los recuadros discontinuos son obras (por tipo), los continuos son carpetas normales (por nivel) y un borde de color marca el diseño propio de una carpeta. Haz clic en una carpeta para darle su propio diseño."
-  },
-  "所選資料夾：{0}": {
-    "zh-CN": "所选文件夹：{0}",
-    "en": "Selected folder: {0}",
-    "ja": "選択中のフォルダー：{0}",
-    "es": "Carpeta seleccionada: {0}"
-  },
   "作品": {
     "zh-CN": "作品",
     "en": "Work",
     "ja": "作品",
     "es": "Obra"
-  },
-  "此資料夾專屬": {
-    "zh-CN": "此文件夹专属",
-    "en": "This folder's own",
-    "ja": "このフォルダー専用",
-    "es": "Propio de esta carpeta"
-  },
-  "不指定（目前：{0}）": {
-    "zh-CN": "不指定（当前：{0}）",
-    "en": "Not set (now: {0})",
-    "ja": "指定なし（現在：{0}）",
-    "es": "Sin definir (ahora: {0})"
-  },
-  "這個資料夾還沒有記錄，不能指定專屬版面": {
-    "zh-CN": "这个文件夹还没有记录，不能指定专属版面",
-    "en": "This folder has no record yet, so it cannot have its own layout",
-    "ja": "このフォルダーにはまだ記録がないため、専用のレイアウトを指定できません",
-    "es": "Esta carpeta aún no tiene registro, así que no puede tener su propio diseño"
   },
   "依類型": {
     "zh-CN": "按类型",
@@ -12526,5 +12472,125 @@
     "en": "No valid SRT / VTT / ASS subtitles found; the original subtitles are kept",
     "ja": "有効な SRT／VTT／ASS 字幕が見つからないため、元の字幕を残しました",
     "es": "No se encontraron subtítulos SRT / VTT / ASS válidos; se conservan los originales"
+  },
+  "沿用預設（{0}）": {
+    "zh-CN": "沿用默认（{0}）",
+    "en": "Use default ({0})",
+    "ja": "既定を使用（{0}）",
+    "es": "Usar el predeterminado ({0})"
+  },
+  "規則": {
+    "zh-CN": "规则",
+    "en": "Rules",
+    "ja": "ルール",
+    "es": "Reglas"
+  },
+  "沒有其他規則時使用 · {0}": {
+    "zh-CN": "没有其他规则时使用 · {0}",
+    "en": "Used when no other rule applies · {0}",
+    "ja": "他のルールがないときに使用 · {0}",
+    "es": "Se usa si no hay otra regla · {0}"
+  },
+  "作品依類型": {
+    "zh-CN": "作品按类型",
+    "en": "Works by kind",
+    "ja": "作品は種類ごと",
+    "es": "Obras por tipo"
+  },
+  "{0}的版面": {
+    "zh-CN": "{0}的版面",
+    "en": "Layout for {0}",
+    "ja": "{0}のレイアウト",
+    "es": "Diseño de {0}"
+  },
+  "一般資料夾依層級": {
+    "zh-CN": "一般文件夹按层级",
+    "en": "Other folders by level",
+    "ja": "一般フォルダーは階層ごと",
+    "es": "Otras carpetas por nivel"
+  },
+  "第 {0} 層的版面": {
+    "zh-CN": "第 {0} 层的版面",
+    "en": "Layout for level {0}",
+    "ja": "第 {0} 階層のレイアウト",
+    "es": "Diseño del nivel {0}"
+  },
+  "全部展開": {
+    "zh-CN": "全部展开",
+    "en": "Expand all",
+    "ja": "すべて展開",
+    "es": "Expandir todo"
+  },
+  "{0} 的版面": {
+    "zh-CN": "{0} 的版面",
+    "en": "Layout of {0}",
+    "ja": "{0} のレイアウト",
+    "es": "Diseño de {0}"
+  },
+  "沿用（{0}）": {
+    "zh-CN": "沿用（{0}）",
+    "en": "Follow rules ({0})",
+    "ja": "ルールに従う（{0}）",
+    "es": "Según las reglas ({0})"
+  },
+  "清除專屬版面": {
+    "zh-CN": "清除专属版面",
+    "en": "Clear own layout",
+    "ja": "専用レイアウトを解除",
+    "es": "Quitar diseño propio"
+  },
+  "清除 {0} 的專屬版面": {
+    "zh-CN": "清除 {0} 的专属版面",
+    "en": "Clear the own layout of {0}",
+    "ja": "{0} の専用レイアウトを解除",
+    "es": "Quitar el diseño propio de {0}"
+  },
+  "還沒有記錄": {
+    "zh-CN": "还没有记录",
+    "en": "No record yet",
+    "ja": "まだ記録なし",
+    "es": "Aún sin registro"
+  },
+  "沒有符合的資料夾": {
+    "zh-CN": "没有符合的文件夹",
+    "en": "No matching folders",
+    "ja": "一致するフォルダーはありません",
+    "es": "No hay carpetas que coincidan"
+  },
+  "預覽：「{0}」與同一層的資料夾": {
+    "zh-CN": "预览：「{0}」与同一层的文件夹",
+    "en": "Preview: “{0}” and the folders beside it",
+    "ja": "プレビュー：「{0}」と同じ階層のフォルダー",
+    "es": "Vista previa: «{0}» y las carpetas de su nivel"
+  },
+  "{0} 處尚未保存": {
+    "zh-CN": "{0} 处尚未保存",
+    "en": "{0} unsaved changes",
+    "ja": "未保存の変更 {0} 件",
+    "es": "{0} cambios sin guardar"
+  },
+  "沒有變更": {
+    "zh-CN": "没有变更",
+    "en": "No changes",
+    "ja": "変更なし",
+    "es": "Sin cambios"
+  },
+  "專屬": {
+    "zh-CN": "专属",
+    "en": "Own",
+    "ja": "専用",
+    "es": "Propio"
+  },
+  "預設": {
+    "zh-CN": "默认",
+    "en": "Default",
+    "ja": "既定",
+    "es": "Predeterminado"
+  },
+  "沿用預設": {
+    "zh-CN": "沿用默认",
+    "en": "Default",
+    "ja": "既定を使用",
+    "es": "Predeterminado"
   }
 }

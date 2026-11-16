@@ -96,7 +96,7 @@ export function ProjectSettings({
                     }
                     {'：'}
                     {!preset
-                      ? tr('版面 0')
+                      ? tr('沿用預設')
                       : preset.id === 'default' && preset.name === '預設版面'
                         ? tr('預設版面')
                         : preset.name}

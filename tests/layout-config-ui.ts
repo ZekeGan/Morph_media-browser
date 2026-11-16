@@ -52,16 +52,34 @@ try {
   await button.click()
   const dialog = page.getByRole('dialog', { name: '版面配置' })
   await dialog.waitFor()
-  const node = (name: string) => dialog.locator('.layout-node').filter({ hasText: name }).first()
-  // The tree says what each folder uses and why: Artist by level, Album (music) by kind.
-  await node('Album').getByText('Albums · 依類型').waitFor()
-  await node('Artist').getByText('Top · 依層級').waitFor()
-  // Artist gets a layout of its own.
-  await node('Artist').click()
-  await dialog.getByText('所選資料夾：Artist').waitFor()
-  await dialog.getByRole('textbox', { name: '此資料夾專屬' }).click()
-  await page.getByRole('option', { name: 'Albums', exact: true }).click()
-  await node('Artist').getByText('Albums · 此資料夾專屬').waitFor()
+  const item = (name: string) =>
+    dialog
+      .locator('.layout-config-item')
+      .filter({ has: page.getByText(name, { exact: true }) })
+      .first()
+  // The list says what each folder uses and why: Artist by level, Album (music) by kind; the rules say how many
+  // folders they reach.
+  await item('Album').locator('.layout-config-source', { hasText: '類型' }).waitFor()
+  await item('Artist').locator('.layout-config-source', { hasText: '層級' }).waitFor()
+  assert.equal(
+    await item('Artist').getByRole('combobox', { name: 'Artist 的版面' }).inputValue(),
+    ''
+  )
+  await dialog.getByText('1 個資料夾').first().waitFor()
+  // Artist gets a layout of its own; the preview below shows its card with it before saving.
+  await item('Artist').getByRole('combobox', { name: 'Artist 的版面' }).selectOption('albums')
+  await item('Artist').locator('.layout-config-source', { hasText: '專屬' }).waitFor()
+  await dialog.locator('.layout-config-preview').getByText('LAYOUT-A').first().waitFor()
+  await dialog.getByText('1 處尚未保存').waitFor()
+  // Screenshots for review: wide, then the 900-wide window.
+  const shots = path.resolve('.test-output', 'shot')
+  await fs.mkdir(shots, { recursive: true })
+  await page.screenshot({ path: path.join(shots, 'r413-layout-config-wide.png') })
+  await app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()[0].setBounds({ x: 0, y: 0, width: 900, height: 900 })
+  )
+  await page.waitForTimeout(300)
+  await page.screenshot({ path: path.join(shots, 'r413-layout-config-900.png') })
   await dialog.getByRole('button', { name: '保存', exact: true }).click()
   await dialog.waitFor({ state: 'hidden' })
   await card.getByText('LAYOUT-A').waitFor()

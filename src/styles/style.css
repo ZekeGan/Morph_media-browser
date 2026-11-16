@@ -391,14 +391,41 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .tree-branch-toggle:hover { background:var(--line); }
 .tree-actions { position:absolute; left:10px; top:10px; z-index:5; display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:5px; border-radius:6px; background:var(--overlay); font-size:11px; color:var(--muted); }
 .tree-actions button { border:1px solid var(--line); background:var(--surface); color:inherit; border-radius:4px; padding:4px 7px; font-size:11px; }
-/* R-413: layout configuration window — the tree shows which layout each folder uses and where the choice comes from. */
-.layout-config-tree { height: min(52vh, 520px); min-height: 280px; margin-top: 6px; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
-.layout-config-tree .react-flow__node-default.layout-node { padding: 6px 8px; text-align: left; font-size: 12px; }
-.layout-config-tree .layout-node.is-work { border-style: dashed; }
-.layout-config-tree .layout-node.from-folder { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
-.layout-node-choice { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 11px; }
+/* R-413: layout setup window — rules on the left (with how many folders each reaches), the folders as an indented list with their layout and its source, and a preview of real cards below. */
+.layout-config-body { display: flex; flex-direction: column; gap: 10px; }
+.layout-config { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 0; height: min(68vh, 720px); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.layout-config-rules { display: flex; flex-direction: column; gap: 14px; padding: 12px; overflow: auto; background: var(--inset); border-right: 1px solid var(--line); }
+.layout-config-rules section { display: flex; flex-direction: column; gap: 6px; }
+.layout-config-heading { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .03em; }
+.layout-config-rule { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 2px 6px; align-items: center; font-size: 13px; }
+.layout-config-reach { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.layout-config-rule .layout-config-reach { grid-column: 2; }
+.layout-config .inherited select, .layout-config select.inherited { color: var(--muted); }
+.layout-config-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.layout-config-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.layout-config-search { width: 220px; }
+.layout-config-legend { display: flex; gap: 10px; margin-left: auto; font-size: 11px; color: var(--muted); flex-wrap: wrap; }
+.layout-config-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; background: var(--layout-source); }
+.layout-config .from-type { --layout-source: var(--selected-text); } .layout-config .from-level { --layout-source: var(--warning); } .layout-config .from-default { --layout-source: var(--muted); } .layout-config .from-folder { --layout-source: var(--accent); }
+.layout-config-list { flex: 1; min-height: 0; overflow: auto; }
+.layout-config-item { display: grid; grid-template-columns: minmax(0, 1fr) minmax(140px, 220px) 44px; gap: 8px; align-items: center; padding: 3px 10px 3px 7px; border-bottom: 1px solid var(--line); border-left: 3px solid var(--layout-source); cursor: default; }
+.layout-config-item.picked { background: var(--selected); }
+.layout-config-name { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.layout-config-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.layout-config-twist { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex: none; border: 0; padding: 0; background: none; color: var(--muted); border-radius: 4px; cursor: pointer; }
+.layout-config-twist:hover { background: var(--hover, var(--inset)); }
+.layout-config-twist:focus-visible { outline: 2px solid var(--accent); }
+.layout-config-dirty { width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--accent); }
+.layout-config-choice { display: flex; align-items: center; gap: 2px; min-width: 0; }
+.layout-config-choice > :first-child { flex: 1; min-width: 0; }
+.layout-config-source { font-size: 11px; color: var(--layout-source); white-space: nowrap; }
+.layout-config-preview { border-top: 1px solid var(--line); padding: 8px 10px; background: var(--inset); display: flex; flex-direction: column; gap: 6px; }
+.layout-config-cards { display: flex; gap: 10px; overflow-x: auto; }
+.layout-config-card { width: 220px; flex: none; pointer-events: none; }
+.layout-config-footer { align-items: center; }
 .layout-config-button { max-width: 180px; }
 .layout-config-button .mantine-Button-label { overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 960px) { .layout-config { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); height: calc(100vh - 230px); } .layout-config-rules { max-height: 30vh; border-right: 0; border-bottom: 1px solid var(--line); } .layout-config-item { grid-template-columns: minmax(0, 1fr) minmax(120px, 170px) 40px; } }
 /* One scrollable sidebar; groups no longer create their own scrollbars. */
 .section-projects { max-height:none; overflow:visible; }
 .sidebar-groups { scrollbar-width:none; }
