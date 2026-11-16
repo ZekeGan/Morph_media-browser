@@ -8,7 +8,7 @@ import { FolderDetails, SubfolderList } from './FolderParts'
 //   details › subfolders › main visual › sort/filter/view controls › the kind's own actions › content list.
 // A page only says which blocks it shows (the table below) and what fills them (the props of FolderPage), so a
 // kind's defaults change here and in its fill-ins, without another code path.
-export type FolderPageKind = 'game' | 'book' | 'media'
+export type FolderPageKind = 'game' | 'book' | 'media' | 'music'
 export interface FolderPageSpec {
   // The class of the page's frame; styles and UI tests go by it.
   className: string
@@ -60,6 +60,19 @@ export const folderPages: Record<FolderPageKind, FolderPageSpec> = {
     visual: true,
     controls: true,
     actions: false,
+    notice: 'list',
+    overlay: 'last',
+    lead: false,
+  },
+  // A music folder is the file page shown as an album: the cover and album facts, 全部播放／隨機播放, then the
+  // tracks (R-390).
+  music: {
+    className: 'mixed-media-browser music-album',
+    allFields: false,
+    subfolders: true,
+    visual: true,
+    controls: true,
+    actions: true,
     notice: 'list',
     overlay: 'last',
     lead: false,

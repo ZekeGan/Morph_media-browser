@@ -1304,3 +1304,23 @@
     margin: 0 auto 10px;
 }
 
+
+/* R-390: a music folder shown as an album */
+.album-header { display: flex; gap: 14px; align-items: flex-end; margin: 4px 0 10px; }
+.album-header .folder-album-cover { flex: none; width: 132px; margin: 0; }
+.album-header .folder-album-cover img { width: 132px; height: 132px; object-fit: cover; border-radius: var(--radius); }
+.album-facts { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.album-title { overflow-wrap: anywhere; }
+.album-actions { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.album-undo { display: flex; align-items: center; gap: 4px; }
+.album-tracks { margin-bottom: 12px; }
+.album-tracks ol { list-style: none; margin: 0; padding: 0; }
+.album-disc { margin: 10px 0 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.album-track { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 100%; min-height: 34px; padding: 4px 8px; border: 0; border-radius: var(--radius); background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.album-track:hover { background: var(--hover); }
+.album-track:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.album-track[aria-current='true'] { color: var(--accent); }
+.album-track-no { color: var(--muted); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+.album-track[aria-current='true'] .album-track-no { color: var(--accent); }
+.album-track-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.album-track-time { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }

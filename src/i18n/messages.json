@@ -12034,5 +12034,35 @@
     "en": "Volumes",
     "ja": "巻",
     "es": "Volúmenes"
+  },
+  "全部播放": {
+    "zh-CN": "全部播放",
+    "en": "Play all",
+    "ja": "すべて再生",
+    "es": "Reproducir todo"
+  },
+  "隨機播放": {
+    "zh-CN": "随机播放",
+    "en": "Shuffle",
+    "ja": "シャッフル再生",
+    "es": "Aleatorio"
+  },
+  "{0} 首": {
+    "zh-CN": "{0} 首",
+    "en": "{0} tracks",
+    "ja": "{0} 曲",
+    "es": "{0} pistas"
+  },
+  "已用這張專輯取代播放佇列（原本 {0} 項）": {
+    "zh-CN": "已用这张专辑取代播放队列（原本 {0} 项）",
+    "en": "The play queue is now this album (it had {0} items)",
+    "ja": "再生キューをこのアルバムに置き換えました（元は {0} 件）",
+    "es": "La cola de reproducción ahora es este álbum (tenía {0} elementos)"
+  },
+  "第 {0} 片": {
+    "zh-CN": "第 {0} 张",
+    "en": "Disc {0}",
+    "ja": "ディスク {0}",
+    "es": "Disco {0}"
   }
 }

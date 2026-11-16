@@ -253,6 +253,8 @@ const paths = {
     </>
   ),
   'play-once': <path d="m4 4 8 6-8 6ZM15.5 4v12" />,
+  // Two crossing arrows: play in a random order (R-390).
+  shuffle: <path d="M3 6h3l8 8h3M3 14h3l2.5-2.5M11.5 8.5 14 6h3m-2-2 2 2-2 2m0 4 2 2-2 2" />,
   repeat: (
     <path d="M3 10V8a3 3 0 0 1 3-3h10m-2.5-2.5L16 5l-2.5 2.5M17 10v2a3 3 0 0 1-3 3H4m2.5 2.5L4 15l2.5-2.5" />
   ),

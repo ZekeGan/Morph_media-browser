@@ -13,6 +13,7 @@ import { canPreviewMedia, matchesMedia, visibleFile, type MediaFilter } from '..
 import { Gallery } from '../gallery/Gallery'
 import { MediaViewer } from './MediaViewer'
 import { FolderAlbumCover } from './FolderAlbumCover'
+import { AlbumActions, AlbumHeader, AlbumTracks, useAlbum } from './AlbumView'
 import { usePlayback } from './Playback'
 import { FolderPage } from '../panel/FolderPage'
 import { useFileVisibility } from '../files/useFileVisibility'
@@ -37,9 +38,12 @@ export function MediaBrowser({
   onSource,
   prefs,
   onPrefs,
+  album = false,
 }: {
   row: FolderRow
   project: Project
+  // A music folder: shown as an album (R-390).
+  album?: boolean
   entries: ContentResult['entries']
   loading: boolean
   error: string
@@ -179,6 +183,11 @@ export function MediaBrowser({
       if (alive.current && token === operation.current) setOpening('')
     }
   }
+  const own = useMemo(() => entries.filter((entry) => entry.kind !== 'folder'), [entries])
+  const albumData = useAlbum(row, album ? own : [])
+  // The album list replaces the picture list for this folder's own tracks; other files (booklet scans, cue sheets)
+  // follow under it. Looking through subfolders or at one other type shows the usual list.
+  const asAlbum = album && scope === 'current' && (filter === 'all' || filter === 'audio')
   const sourceFiles = session ? visible.filter((entry) => entry.rowId === session.source.rowId) : []
   const viewerFiles = session
     ? sourceFiles.filter(
@@ -187,7 +196,7 @@ export function MediaBrowser({
     : []
   return (
     <FolderPage
-      page="media"
+      page={album ? 'music' : 'media'}
       row={row}
       project={project}
       openFolder={() => void act({ action: 'open', rowId: row.rowId })}
@@ -196,7 +205,14 @@ export function MediaBrowser({
       busy={busy}
       onChild={onChild}
       visual={
-        <FolderAlbumCover row={row} files={entries.filter((entry) => entry.kind !== 'folder')} />
+        album ? (
+          <AlbumHeader row={row} entries={own} album={albumData} />
+        ) : (
+          <FolderAlbumCover row={row} files={own} />
+        )
+      }
+      actions={
+        album && <AlbumActions row={row} project={project} entries={own} album={albumData} />
       }
       controls={
         <div className="mixed-media-toolbar">
@@ -298,57 +314,62 @@ export function MediaBrowser({
         </>
       }
       list={
-        <Gallery
-          key={scope + '/' + filter + '/' + view}
-          entries={shown}
-          mixed
-          manga={false}
-          presentation={view}
-          suspended={!!session}
-          loading={pending}
-          groupBySource={grouped}
-          sourceRoot={row.path}
-          onSource={(id) => {
-            if (
-              !busy &&
-              sourceRows.some(
-                (source) =>
-                  source.rowId === id &&
-                  source.record &&
-                  !source.readonly &&
-                  !source.error &&
-                  !source.stopped
-              )
-            )
-              onSource(id)
-          }}
-          onReader={() => {}}
-          save={() => {}}
-          onOpen={(entry) => void open(entry)}
-          onOpenFolder={(entry) =>
-            void act({ action: 'open', rowId: (entry as OverviewEntry).rowId ?? row.rowId })
-          }
-          onEnqueue={
-            playback
-              ? (files) => {
-                  for (const source of sourceRows) {
-                    const group = files.filter(
-                      (file) => ((file as OverviewEntry).rowId ?? row.rowId) === source.rowId
-                    )
-                    if (group.length)
-                      playback.add(
-                        {
-                          row: source,
-                          project,
-                          entries: visible.filter((file) => file.rowId === source.rowId),
-                        },
-                        group
-                      )
-                  }
-                }
-              : undefined
-          }
-        />
+        <>
+          {asAlbum && <AlbumTracks row={row} project={project} entries={own} album={albumData} />}
+          {(!asAlbum || shown.some((entry) => entry.kind !== 'audio')) && (
+            <Gallery
+              key={scope + '/' + filter + '/' + view}
+              entries={asAlbum ? shown.filter((entry) => entry.kind !== 'audio') : shown}
+              mixed
+              manga={false}
+              presentation={view}
+              suspended={!!session}
+              loading={pending}
+              groupBySource={grouped}
+              sourceRoot={row.path}
+              onSource={(id) => {
+                if (
+                  !busy &&
+                  sourceRows.some(
+                    (source) =>
+                      source.rowId === id &&
+                      source.record &&
+                      !source.readonly &&
+                      !source.error &&
+                      !source.stopped
+                  )
+                )
+                  onSource(id)
+              }}
+              onReader={() => {}}
+              save={() => {}}
+              onOpen={(entry) => void open(entry)}
+              onOpenFolder={(entry) =>
+                void act({ action: 'open', rowId: (entry as OverviewEntry).rowId ?? row.rowId })
+              }
+              onEnqueue={
+                playback
+                  ? (files) => {
+                      for (const source of sourceRows) {
+                        const group = files.filter(
+                          (file) => ((file as OverviewEntry).rowId ?? row.rowId) === source.rowId
+                        )
+                        if (group.length)
+                          playback.add(
+                            {
+                              row: source,
+                              project,
+                              entries: visible.filter((file) => file.rowId === source.rowId),
+                            },
+                            group
+                          )
+                      }
+                    }
+                  : undefined
+              }
+            />
+          )}
+        </>
       }
       overlay={
         session && (

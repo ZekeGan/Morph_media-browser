@@ -69,6 +69,9 @@ const sample = process.env.AUDIO_SAMPLE,
   originalSample = sample ? await fs.readFile(sample) : undefined
 if (originalSample) await fs.writeFile(path.join(media, 'embedded.mp3'), originalSample)
 await fs.copyFile(path.join(media, 'embedded.mp3'), path.join(music, 'embedded.mp3'))
+// A video keeps this a mixed folder (only tracks would make it a music album, R-387/R-390), so the file list and
+// the big player tested here stay in use.
+await fs.copyFile(await videoFixture(), path.join(music, 'clip.mp4'))
 await fs.writeFile(path.join(media, 'blocked.ini'), 'ORIGINAL CONFIG')
 const library = new Library(local, undefined, false)
 await library.init()

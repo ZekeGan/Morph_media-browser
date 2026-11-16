@@ -178,13 +178,23 @@ try {
   assert.equal(await button('圖片模式').getAttribute('aria-pressed'), 'true')
   await button('關閉媒體檢視器').click()
   await page.locator('.media-subfolders button').filter({ hasText: 'Single' }).click()
-  await filter('音樂')
-  await open('track.wav')
+  // R-390: a folder of one track and its cover is a music album; its header shows the single cover image. The type
+  // filter is still on video from above, which shows the plain list, so it goes back to all first.
+  await filter('全部')
+  await page.locator('.album-track').filter({ hasText: 'track' }).waitFor()
   await page.waitForFunction(() => {
-    const img = document.querySelector('.album-cover img') as HTMLImageElement
+    const img = document.querySelector('.album-header .album-cover img') as HTMLImageElement
     return !!img && img.complete && img.naturalWidth > 0
   })
-  await button('關閉媒體檢視器').click()
+  // 全部播放 makes the album the play queue and marks the track playing; the previous queue can be put back.
+  await button('全部播放').click()
+  await page.locator('.album-track[aria-current="true"]').waitFor()
+  await page.screenshot({ path: path.join(path.resolve('.test-output'), 'shot', 'r390-album.png') })
+  // The queue was empty, so there is nothing to put back; the second time it held the album.
+  assert.equal(await page.locator('.album-undo').count(), 0)
+  await button('隨機播放').click()
+  await page.getByRole('button', { name: '復原', exact: true }).click()
+  await page.locator('.album-undo').waitFor({ state: 'detached' })
   await button('開啟專案 Manga feedback').first().click()
   await page.locator('.project-workspace').waitFor()
   assert.equal(await page.getByLabel('展示內容', { exact: true }).count(), 1)

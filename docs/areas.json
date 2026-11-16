@@ -122,6 +122,7 @@
         "src/media/MediaThumb*",
         "src/media/fileLabels*",
         "src/media/FolderAlbumCover*",
+        "src/media/AlbumView*",
         "src/media/playOrder*",
         "src/media/media-workspace.css",
         "shared/media*",

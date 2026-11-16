@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Music folders open as an album: cover, album name, artist, year, track count and length from the files' tags, 全部播放 and 隨機播放 that make the album the play queue (with undo), and a track list where a click plays the album from that track. With nothing chosen yet, the play order now goes on to the next track (R-390).
 - Game page: the field table is gone; the folder details now also list the website and private values only the table used to show, wrap long values and mark website fields edited by hand (R-390).
 - Manga page: a 開始閱讀／繼續閱讀 button with how far you have read, and a folder with several CBZ volumes shows them as tiles (R-390).
 - Internal: the right panel draws every folder type through one shared set of blocks (details, subfolders, main visual, controls, type actions, content); nothing changes on screen (R-389).

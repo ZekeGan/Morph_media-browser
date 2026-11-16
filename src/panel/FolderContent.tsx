@@ -181,7 +181,8 @@ export function FolderContent({
   const visibleEntries = content.entries.filter((entry) => visibleFile(entry, visibility))
   const selectedFile = visibleEntries.find((entry) => entry.id === selectedFileId) ?? selectedEntry
   // Music and video folders share one page and one content template (R-387).
-  const kind = templateKind(effectiveKind(row, sampleOf(content.entries)))
+  const folderKind = effectiveKind(row, sampleOf(content.entries)),
+    kind = templateKind(folderKind)
   // R-389: every kind is drawn by the same skeleton (FolderPage); the kind only picks its page. Everything that is
   // not a game main folder or a book uses the unified file page.
   const page = folderPageKind(kind, row)
@@ -192,6 +193,7 @@ export function FolderContent({
         onPrefs={onMediaPrefs}
         row={row}
         project={project}
+        album={folderKind === 'music'}
         entries={visibleEntries}
         loading={!!content.nextCursor && !error}
         error={[error, ...new Set(content.notices)].filter(Boolean).join('\n')}
