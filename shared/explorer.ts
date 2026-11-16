@@ -417,8 +417,9 @@ export interface GameExtras {
   storeUrl?: string
   // R-316: the store's name for the button ("Open in Steam").
   storeSite?: string
-  // Where the save folder comes from: worked out from the engine, picked by the user, or not known.
-  save: 'engine' | 'user' | 'none'
+  // Where the save folder comes from: worked out from the engine, picked by the user, worked out but not created yet
+  // (no saves so far, R-384), or not known.
+  save: 'engine' | 'user' | 'pending' | 'none'
   saveEngine?: string
   // Bundled tools and manuals at the top of the game folder, not yet bound as actions.
   suggestions: { name: string; role: 'config' | 'manual' }[]

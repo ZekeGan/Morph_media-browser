@@ -1,6 +1,6 @@
 # 遊戲內容頁、動作與掃描邊界
 
-> 最後確認：2026-11-16（R-383 R-396 R-390）。遊戲內容頁與啟動按鈕的現行規則；辨識規則見 [GAME_ENGINE_DETECTION](GAME_ENGINE_DETECTION.md)，有效記錄與導覽邊界見 [工作區](WORKSPACE_REVISION.md)。程式：`src/game/GameActions.tsx`、`src/panel/FolderContent.tsx`、`shared/launchArgs.ts`、`electron/explorer.ts`；契約在 `shared/explorer.ts`；取捨見 [決策索引](DECISIONS.md)（C-78～C-80、C-85、C-92）。
+> 最後確認：2026-11-17（R-384）。遊戲內容頁與啟動按鈕的現行規則；辨識規則見 [GAME_ENGINE_DETECTION](GAME_ENGINE_DETECTION.md)，有效記錄與導覽邊界見 [工作區](WORKSPACE_REVISION.md)。程式：`src/game/GameActions.tsx`、`src/panel/FolderContent.tsx`、`shared/launchArgs.ts`、`electron/explorer.ts`；契約在 `shared/explorer.ts`；取捨見 [決策索引](DECISIONS.md)（C-78～C-80、C-85、C-92）。
 
 ## 遊戲內容頁
 
@@ -131,7 +131,7 @@ C-80 採特徵候選＋人工修正與集中處理；純手動仍作無法辨識
 
 - **用 Steam 啟動**（R-307）：ROOT 有 `steam_appid.txt`（只接受數字），或資料夾有 Steam 匯入的 App ID 時出現，開啟 `steam://run/<appid>`，讓疊加介面、成就與 DRM 正常。沒有程式處理 `steam://` 時按鈕停用並說明「這台電腦沒有安裝 Steam」。
 - **在 … 開啟**（R-310、R-316）：資料夾有 Steam、DLsite、FANZA、BOOTH 匯入的商店網址時出現（Steam 優先），按鈕寫出站名；VNDB、Bangumi 等資料庫頁不算商店，不出現按鈕。只開 `https`，用系統瀏覽器。
-- **開啟存檔資料夾**（R-305）：Unity 讀 `*_Data/app.info` 的公司與產品名 → `AppData\LocalLow\公司\產品`；Ren’Py 讀 `game/options.rpy` 的 `config.save_directory` → `AppData\Roaming\RenPy\…`；RPG Maker MV/MZ 用 `www/save`／`save`；RPG Maker XP～Ace 與 WOLF 用 `Save`。名稱只接受單一資料夾名（不含路徑符號），推算出的資料夾必須存在。推算不出來時，在設定「遊戲操作」分頁「存檔資料夾」自己指定（存在記錄的 `details.saveFolder`），也能改回自動。只開啟資料夾，不讀寫存檔。
+- **開啟存檔資料夾**（R-305）：Unity 讀 `*_Data/app.info` 的公司與產品名 → `AppData\LocalLow\公司\產品`；Ren’Py 讀 `game/options.rpy` 的 `config.save_directory` → `AppData\Roaming\RenPy\…`；RPG Maker MV/MZ 用 `www/save`／`save`；RPG Maker XP～Ace 與 WOLF 用 `Save`（XP/VX/Ace 的位置待真實樣本確認，已擱置為 R-416）；R-384 另補：Ren’Py 沒有 `options.rpy` 時改讀 `game/options.rpyc`，或 `game/*.rpa` 內的 `options.rpyc`（只讀索引與那一支小腳本，索引上限 8 MB、腳本上限 1 MB、最多 20 個封包，不解包到磁碟）；Godot 讀遊戲旁的 `project.godot` 的 `config/name` → `AppData\Roaming\Godotpp_userdata\<名稱>`（或 `custom_user_dir_name`；匯出後的專案設定在 .pck 內，不讀，推算不出來）；RPG Maker 2000/2003 看遊戲資料夾有沒有 `Save01.lsd` 之類，有就是遊戲資料夾本身；TyranoScript 與引擎不明的包裝應用，依 package.json 的 `name`：NW.js（有 `nw.pak`）→ `AppData\Local\<name>`，Electron（`resourcespp\package.json`，不開 app.asar）→ `AppData\Roaming\<productName 或 name>`。名稱只接受單一資料夾名（不含路徑符號）。推算出的資料夾存在才可開啟；引擎已知、資料夾還沒出現（遊戲尚未存檔）時顯示「還沒有存檔」並停用按鈕，推算不出來才顯示「推算不出來」。推算不出來時，在設定「遊戲操作」分頁「存檔資料夾」自己指定（存在記錄的 `details.saveFolder`），也能改回自動。只開啟資料夾，不讀寫存檔。
 - **遊玩時間**（R-308）：只記從 M:orph 直接啟動的 EXE 程序，程序結束才算一次（不到一秒不算）；M:orph 先關閉、經 Locale Emulator 或 Steam 啟動的那次不計。累計秒數、次數與最後遊玩時間存在本機設定 `playtime`（依資料夾身分），不寫進可攜記錄、不進設定包。內容頁按鈕列後面顯示；卡片的「系統資訊」組件可選「遊玩時間」「最後遊玩」；有遊戲的專案在表格多兩欄，可排序。
 
 ### 附帶程式與說明書（R-306）

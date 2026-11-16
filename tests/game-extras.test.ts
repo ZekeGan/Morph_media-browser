@@ -6,7 +6,9 @@ import { Library } from '../electron/library'
 import { Explorer, type DesktopOperations } from '../electron/explorer'
 import { readFolder, saveFolder } from '../electron/files'
 import { WorkspaceStore } from '../electron/workspace'
-import { bundledSuggestions, engineSaveFolder, storeUrl } from '../electron/game-extras'
+import { bundledSuggestions, engineSave, engineSaveFolder, storeUrl } from '../electron/game-extras'
+import { RPYC_LIMIT } from '../electron/renpy-save'
+import zlib from 'node:zlib'
 import { validateDetails } from '../shared/model'
 
 const base = path.resolve('.test-output')
@@ -358,4 +360,179 @@ test('play time is stored locally per folder and validated (R-308)', async (t) =
   assert.equal(prefs.playtime![id].last, new Date(160_000).toISOString())
   await store.recordPlay('../evil', 0, 10_000)
   assert.deepEqual(Object.keys((await store.read([])).prefs.playtime!), [id])
+})
+
+// R-384: engines that had a detection but no save rule, and "no saves yet" instead of "unknown".
+test('Godot, RPG Maker 2000/2003 and packaged NW.js or Electron apps get save folders (R-384)', async (t) => {
+  await fs.mkdir(base, { recursive: true })
+  const root = await fs.mkdtemp(path.join(base, 'game-saves-engines-'))
+  t.after(() => fs.rm(root, { recursive: true, force: true }))
+  const home = path.join(root, 'home'),
+    put = async (file: string, text = 'x') => {
+      await fs.mkdir(path.dirname(file), { recursive: true })
+      await fs.writeFile(file, text)
+    }
+  // Godot: the project name, or a custom user directory, from project.godot.
+  const godot = path.join(root, 'Godot')
+  await put(path.join(godot, 'project.godot'), '[application]\n\nconfig/name="My Game"\n')
+  assert.deepEqual(await engineSave(godot, ['Godot'], home), { state: 'pending' })
+  const godotSaves = path.join(home, 'AppData', 'Roaming', 'Godot', 'app_userdata', 'My Game')
+  await fs.mkdir(godotSaves, { recursive: true })
+  assert.deepEqual(await engineSave(godot, ['Godot'], home), { state: 'found', folder: godotSaves })
+  await put(
+    path.join(godot, 'project.godot'),
+    '[application]\nconfig/name="My Game"\nconfig/use_custom_user_dir=true\nconfig/custom_user_dir_name="Custom"\n'
+  )
+  assert.deepEqual(await engineSave(godot, ['Godot'], home), { state: 'pending' })
+  await put(path.join(godot, 'project.godot'), 'config/name="..\\Evil"\n')
+  assert.deepEqual(await engineSave(godot, ['Godot'], home), { state: 'unknown' })
+  // An exported Godot game keeps its settings inside the .pck, which is not read.
+  const exported = path.join(root, 'GodotExported')
+  await put(path.join(exported, 'Game.pck'))
+  assert.deepEqual(await engineSave(exported, ['Godot'], home), { state: 'unknown' })
+  // RPG Maker 2000/2003: Save01.lsd next to the game, the game folder itself.
+  const rm2k = path.join(root, 'RM2k')
+  await put(path.join(rm2k, 'RPG_RT.ldb'))
+  assert.deepEqual(await engineSave(rm2k, ['RPG Maker 2000/2003'], home), { state: 'pending' })
+  await put(path.join(rm2k, 'Save01.lsd'))
+  assert.deepEqual(await engineSave(rm2k, ['RPG Maker 2000/2003'], home), {
+    state: 'found',
+    folder: rm2k,
+  })
+  // NW.js: AppData\Local\<name>; Electron: AppData\Roaming\<productName or name>. Never a name with path parts.
+  const nw = path.join(root, 'Nw')
+  await put(path.join(nw, 'nw.pak'))
+  await put(path.join(nw, 'package.json'), JSON.stringify({ name: 'tyrano-game' }))
+  assert.deepEqual(await engineSave(nw, ['TyranoScript'], home), { state: 'pending' })
+  const nwFolder = path.join(home, 'AppData', 'Local', 'tyrano-game')
+  await fs.mkdir(nwFolder, { recursive: true })
+  assert.deepEqual(await engineSave(nw, ['TyranoScript'], home), {
+    state: 'found',
+    folder: nwFolder,
+  })
+  assert.deepEqual(
+    await engineSave(nw, ['Unity'], home),
+    { state: 'unknown' },
+    'only for Tyrano or unknown apps'
+  )
+  await put(path.join(nw, 'package.json'), JSON.stringify({ name: '../x' }))
+  assert.deepEqual(await engineSave(nw, [], home), { state: 'unknown' })
+  const electron = path.join(root, 'Electron')
+  await put(
+    path.join(electron, 'resources', 'app', 'package.json'),
+    JSON.stringify({ name: 'plain', productName: 'Pretty Name' })
+  )
+  const electronFolder = path.join(home, 'AppData', 'Roaming', 'Pretty Name')
+  await fs.mkdir(electronFolder, { recursive: true })
+  assert.deepEqual(await engineSave(electron, ['TyranoScript'], home), {
+    state: 'found',
+    folder: electronFolder,
+  })
+})
+
+test('a known place that does not exist yet is "no saves yet", not "unknown" (R-384)', async (t) => {
+  await fs.mkdir(base, { recursive: true })
+  const root = await fs.mkdtemp(path.join(base, 'game-saves-pending-'))
+  t.after(() => fs.rm(root, { recursive: true, force: true }))
+  const home = path.join(root, 'home'),
+    unity = path.join(root, 'Unity')
+  await fs.mkdir(path.join(unity, 'Game_Data'), { recursive: true })
+  await fs.writeFile(path.join(unity, 'Game_Data', 'app.info'), 'Studio\nTitle')
+  assert.deepEqual(await engineSave(unity, ['Unity'], home), { state: 'pending' })
+  await fs.writeFile(path.join(unity, 'Game_Data', 'app.info'), '..\nTitle')
+  assert.deepEqual(await engineSave(unity, ['Unity'], home), { state: 'unknown' })
+  assert.deepEqual(await engineSave(unity, ['RPG Maker MZ'], home), { state: 'pending' })
+  assert.deepEqual(await engineSave(unity, ['WOLF RPG'], home), { state: 'pending' })
+  assert.deepEqual(await engineSave(unity, ['Cocos'], home), { state: 'unknown' })
+  // Nothing was created while looking.
+  await assert.rejects(fs.stat(home))
+})
+
+// A script as Ren'Py stores it: "RENPY RPC2", a slot table, and the zlib-compressed pickle in slot 1.
+const rpyc = (source: string) => {
+  const body = zlib.deflateSync(
+      Buffer.from('\x80\x02csome.Node\nU\x16config.save_directory' + source, 'latin1')
+    ),
+    head = Buffer.alloc(10 + 12 * 2)
+  head.write('RENPY RPC2', 0, 'latin1')
+  head.writeUInt32LE(1, 10)
+  head.writeUInt32LE(head.length, 14)
+  head.writeUInt32LE(body.length, 18)
+  return Buffer.concat([head, body])
+}
+// An RPA-3.0 archive with one file, indexed by a protocol 2 pickle { name: [(offset, length, '')] }.
+const rpa = (name: string, content: Buffer, key = 0x42) => {
+  const header = Buffer.alloc(34, ' ')
+  const int = (value: number) => {
+    const b = Buffer.alloc(5)
+    b[0] = 0x4a
+    b.writeInt32LE(value, 1)
+    return b
+  }
+  const text = (value: string) => {
+    const b = Buffer.alloc(5 + Buffer.byteLength(value))
+    b[0] = 0x58
+    b.writeUInt32LE(Buffer.byteLength(value), 1)
+    b.write(value, 5)
+    return b
+  }
+  const index = zlib.deflateSync(
+    Buffer.concat([
+      Buffer.from([0x80, 2, 0x7d, 0x28]),
+      text(name),
+      Buffer.from([0x5d, 0x28]),
+      int(34 ^ key),
+      int(content.length ^ key),
+      text(''),
+      Buffer.from([0x87, 0x65, 0x75, 0x2e]),
+    ])
+  )
+  const offset = 34 + content.length
+  header.write(
+    `RPA-3.0 ${offset.toString(16).padStart(16, '0')} ${key.toString(16).padStart(8, '0')}\n`,
+    0,
+    'latin1'
+  )
+  return Buffer.concat([header, content, index])
+}
+
+test('Ren’Py save names come from options.rpyc, loose or inside an .rpa, with size limits (R-384)', async (t) => {
+  await fs.mkdir(base, { recursive: true })
+  const root = await fs.mkdtemp(path.join(base, 'game-saves-renpy-'))
+  t.after(() => fs.rm(root, { recursive: true, force: true }))
+  const home = path.join(root, 'home'),
+    loose = path.join(root, 'Loose'),
+    packed = path.join(root, 'Packed'),
+    saves = (name: string) => path.join(home, 'AppData', 'Roaming', 'RenPy', name)
+  await fs.mkdir(path.join(loose, 'game'), { recursive: true })
+  await fs.writeFile(path.join(loose, 'game', 'options.rpyc'), rpyc('"Loose-111"'))
+  assert.deepEqual(await engineSave(loose, ['Ren’Py'], home), { state: 'pending' })
+  await fs.mkdir(saves('Loose-111'), { recursive: true })
+  assert.deepEqual(await engineSave(loose, ['Ren’Py'], home), {
+    state: 'found',
+    folder: saves('Loose-111'),
+  })
+  await fs.mkdir(path.join(packed, 'game'), { recursive: true })
+  await fs.writeFile(
+    path.join(packed, 'game', 'scripts.rpa'),
+    rpa('game/options.rpyc', rpyc("'Packed-222'"))
+  )
+  assert.deepEqual(await engineSave(packed, ['Ren’Py'], home), { state: 'pending' })
+  await fs.mkdir(saves('Packed-222'), { recursive: true })
+  assert.deepEqual(await engineSave(packed, ['Ren’Py'], home), {
+    state: 'found',
+    folder: saves('Packed-222'),
+  })
+  // A name with path parts, damaged data or an oversized script is ignored.
+  await fs.writeFile(path.join(loose, 'game', 'options.rpyc'), rpyc('"..\\Evil"'))
+  assert.deepEqual(await engineSave(loose, ['Ren’Py'], home), { state: 'unknown' })
+  await fs.writeFile(path.join(loose, 'game', 'options.rpyc'), Buffer.from('RENPY RPC2 broken'))
+  assert.deepEqual(await engineSave(loose, ['Ren’Py'], home), { state: 'unknown' })
+  await fs.writeFile(path.join(loose, 'game', 'options.rpyc'), Buffer.alloc(RPYC_LIMIT + 1))
+  assert.deepEqual(await engineSave(loose, ['Ren’Py'], home), { state: 'unknown' })
+  await fs.writeFile(
+    path.join(packed, 'game', 'scripts.rpa'),
+    Buffer.from('RPA-3.0 0000000000000099 00000042\n')
+  )
+  assert.deepEqual(await engineSave(packed, ['Ren’Py'], home), { state: 'unknown' })
 })

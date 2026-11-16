@@ -39,7 +39,7 @@ import * as sourceFns from './explorer-source'
 import * as overviewFns from './explorer-overview'
 import {
   bundledSuggestions,
-  engineSaveFolder,
+  engineSave,
   localeProfiles,
   steamAppId,
   store,
@@ -777,7 +777,7 @@ export class Explorer {
             [],
           id = await steamAppId(row.path, record),
           user = record?.details?.saveFolder,
-          engineFolder = user ? undefined : await engineSaveFolder(row.path, engines),
+          guess = user ? undefined : await engineSave(row.path, engines),
           bound = new Set(
             Object.values(record?.details?.targets ?? {})
               .filter((t) => t.relative)
@@ -790,8 +790,14 @@ export class Explorer {
             ...(store(record)
               ? { storeUrl: store(record)!.url, storeSite: store(record)!.site }
               : {}),
-            save: user ? 'user' : engineFolder ? 'engine' : 'none',
-            ...(engineFolder ? { saveEngine: engines.join('／') } : {}),
+            save: user
+              ? 'user'
+              : guess?.state === 'found'
+                ? 'engine'
+                : guess?.state === 'pending'
+                  ? 'pending'
+                  : 'none',
+            ...(guess && guess.state !== 'unknown' ? { saveEngine: engines.join('／') } : {}),
             suggestions: (await bundledSuggestions(row.path)).filter(
               (item) => !bound.has(item.name.toLowerCase())
             ),
@@ -819,14 +825,21 @@ export class Explorer {
           return {}
         }
         const user = record.details?.saveFolder
-        const folder = user
-          ? await this.resolvedTarget(row.path, user, 'folder')
-          : await engineSaveFolder(
+        const guess = user
+          ? undefined
+          : await engineSave(
               row.path,
               row.boundary?.engines ??
                 (await detectGame(row.path).catch(() => undefined))?.engines ??
                 []
             )
+        if (guess?.state === 'pending')
+          throw new Error('還沒有存檔；遊戲存檔之後才會出現這個資料夾')
+        const folder = user
+          ? await this.resolvedTarget(row.path, user, 'folder')
+          : guess?.state === 'found'
+            ? guess.folder
+            : undefined
         if (!folder) throw new Error('找不到存檔資料夾；可以在遊戲操作裡自己指定')
         await this.desktop.open(folder)
         return {}

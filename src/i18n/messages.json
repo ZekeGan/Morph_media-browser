@@ -12256,5 +12256,23 @@
     "en": "Always wrapped when scrollable or growing",
     "ja": "スクロールまたは自動で高くするときは常に折り返します",
     "es": "Siempre con saltos de línea si es desplazable o crece"
+  },
+  "還沒有存檔": {
+    "zh-CN": "还没有存档",
+    "en": "No saves yet",
+    "ja": "まだセーブがありません",
+    "es": "Aún no hay partidas guardadas"
+  },
+  "還沒有存檔（依引擎推算：{0}）": {
+    "zh-CN": "还没有存档（按引擎推算：{0}）",
+    "en": "No saves yet (worked out from the engine: {0})",
+    "ja": "まだセーブがありません（エンジンから推定：{0}）",
+    "es": "Aún no hay partidas (según el motor: {0})"
+  },
+  "還沒有存檔；遊戲存檔之後才會出現這個資料夾": {
+    "zh-CN": "还没有存档；游戏存档之后才会出现这个文件夹",
+    "en": "No saves yet; this folder appears once the game saves",
+    "ja": "まだセーブがありません。ゲームがセーブするとこのフォルダーが作られます",
+    "es": "Aún no hay partidas; la carpeta aparecerá cuando el juego guarde"
   }
 }

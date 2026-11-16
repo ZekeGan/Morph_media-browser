@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { safePath } from './files'
+import { renpySaveDirectory } from './renpy-save'
 import { httpUrl } from '../shared/fields'
 import { localeProfileId, type FolderRecord } from '../shared/model'
 
@@ -70,10 +71,32 @@ const plainName = (value: string) =>
     ? value
     : undefined
 
-// R-305: where the engine keeps saves, when it can be worked out and exists. Unity: *_Data/app.info names the company
-// and product (AppData\LocalLow); Ren'Py: config.save_directory in game/options.rpy (AppData\Roaming\RenPy);
-// RPG Maker MV/MZ: save or www/save inside the game; RPG Maker XP–Ace and WOLF: Save inside the game.
-export async function engineSaveFolder(root: string, engines: string[], home = os.homedir()) {
+// R-305, R-384: where the engine keeps saves. `found` is a folder that exists; `pending` is a place the engine is known
+// to use that does not exist yet (the game has not saved: "no saves yet"); `unknown` is when nothing can be worked out.
+// Rules, all read-only and with names that must stay one plain folder name:
+// - Unity: *_Data/app.info names the company and product (AppData\LocalLow).
+// - Ren'Py: config.save_directory in game/options.rpy, else in options.rpyc (loose or inside an .rpa) (AppData\Roaming\RenPy).
+// - Godot: project.godot next to the game (an exported game keeps its settings inside the .pck, which is not read):
+//   AppData\Roaming\Godot\app_userdata\<config/name>, or <custom_user_dir_name> under AppData\Roaming.
+// - RPG Maker 2000/2003: Save01.lsd… next to RPG_RT.exe, so the game folder itself.
+// - NW.js (nw.pak next to the game) and Electron (resources\app): package.json `name`. NW.js keeps its profile in
+//   AppData\Local\<name>; Electron in AppData\Roaming\<productName or name>. TyranoScript games and unidentified
+//   packaged apps only; Electron's app.asar is not opened.
+// - RPG Maker MV/MZ: save or www/save inside the game; WOLF: Save; RPG Maker XP–Ace: Save (R-416 shelved).
+export type SaveGuess = { state: 'found'; folder: string } | { state: 'pending' | 'unknown' }
+export async function engineSave(
+  root: string,
+  engines: string[],
+  home = os.homedir()
+): Promise<SaveGuess> {
+  let pending = false
+  const user = (...parts: string[]) => path.join(home, 'AppData', ...parts)
+  // A folder the engine is known to use: found when it exists, otherwise remembered as "no saves yet".
+  const expect = async (folder: string) => {
+    if (await isDir(folder)) return true
+    pending = true
+    return false
+  }
   if (engines.includes('Unity')) {
     for (const entry of await fs.readdir(root, { withFileTypes: true }).catch(() => [])) {
       if (!entry.isDirectory() || !/_Data$/i.test(entry.name)) continue
@@ -82,19 +105,46 @@ export async function engineSaveFolder(root: string, engines: string[], home = o
       const safeCompany = plainName(company ?? ''),
         safeProduct = plainName(product ?? '')
       if (!safeCompany || !safeProduct) continue
-      const folder = path.join(home, 'AppData', 'LocalLow', safeCompany, safeProduct)
-      if (await isDir(folder)) return folder
+      const folder = user('LocalLow', safeCompany, safeProduct)
+      if (await expect(folder)) return { state: 'found', folder }
     }
   }
   if (engines.includes('Ren’Py')) {
     const options = await readSmall(root, path.join(root, 'game', 'options.rpy'))
     const name = plainName(
-      /config\.save_directory\s*=\s*["']([^"'\r\n]+)["']/.exec(options ?? '')?.[1] ?? ''
+      /config\.save_directory\s*=\s*["']([^"'\r\n]+)["']/.exec(options ?? '')?.[1] ??
+        (options === undefined ? ((await renpySaveDirectory(root)) ?? '') : '')
     )
     if (name) {
-      const folder = path.join(home, 'AppData', 'Roaming', 'RenPy', name)
-      if (await isDir(folder)) return folder
+      const folder = user('Roaming', 'RenPy', name)
+      if (await expect(folder)) return { state: 'found', folder }
     }
+  }
+  if (engines.includes('Godot')) {
+    const project = await readSmall(root, path.join(root, 'project.godot'))
+    if (project !== undefined) {
+      const setting = (key: string) =>
+          new RegExp('^' + key + '\s*=\s*"([^"\r\n]*)"', 'm').exec(project)?.[1] ?? '',
+        custom = /^config\/use_custom_user_dir\s*=\s*true/m.test(project)
+          ? plainName(setting('config/custom_user_dir_name'))
+          : undefined,
+        name = plainName(setting('config/name'))
+      const folder = custom
+        ? user('Roaming', custom)
+        : name
+          ? user('Roaming', 'Godot', 'app_userdata', name)
+          : undefined
+      if (folder && (await expect(folder))) return { state: 'found', folder }
+    }
+  }
+  if (engines.includes('RPG Maker 2000/2003')) {
+    const names = await fs.readdir(root).catch(() => [])
+    if (names.some((name) => /^Save\d\d\.lsd$/i.test(name))) return { state: 'found', folder: root }
+    pending = true
+  }
+  if (engines.includes('TyranoScript') || !engines.length) {
+    const folder = await packagedAppFolder(root, home)
+    if (folder && (await expect(folder))) return { state: 'found', folder }
   }
   const inside = [
     ...(engines.some((e) => /^RPG Maker M[VZ]$/.test(e)) ? ['www/save', 'save'] : []),
@@ -104,8 +154,41 @@ export async function engineSaveFolder(root: string, engines: string[], home = o
     const folder = path.join(root, rel)
     try {
       await safePath(root, folder)
-      if (await isDir(folder)) return folder
+      if (await isDir(folder)) return { state: 'found', folder }
     } catch {}
+  }
+  // Engines that create their save folder on the first save are known, just empty so far.
+  if (engines.some((e) => /^RPG Maker M[VZ]$/.test(e) || e === 'WOLF RPG')) pending = true
+  return { state: pending ? 'pending' : 'unknown' }
+}
+export async function engineSaveFolder(root: string, engines: string[], home = os.homedir()) {
+  const guess = await engineSave(root, engines, home)
+  return guess.state === 'found' ? guess.folder : undefined
+}
+
+// NW.js and Electron keep their profile (local storage, and so many games' saves) under the app's package.json name.
+async function packagedAppFolder(root: string, home: string) {
+  const has = async (...rel: string[]) => {
+    try {
+      await safePath(root, path.join(root, ...rel))
+      return (await fs.stat(path.join(root, ...rel))).isFile()
+    } catch {
+      return false
+    }
+  }
+  const nw =
+    (await has('nw.pak')) || (await has('nw_100_percent.pak')) || (await has('nw_200_percent.pak'))
+  for (const rel of nw ? [['package.json']] : [['resources', 'app', 'package.json']]) {
+    let manifest: { name?: unknown; productName?: unknown } | undefined
+    try {
+      manifest = JSON.parse((await readSmall(root, path.join(root, ...rel))) ?? '')
+    } catch {}
+    const name = plainName(typeof manifest?.name === 'string' ? manifest.name : '')
+    if (nw && name) return path.join(home, 'AppData', 'Local', name)
+    const product = plainName(
+      typeof manifest?.productName === 'string' ? manifest.productName : (name ?? '')
+    )
+    if (!nw && product) return path.join(home, 'AppData', 'Roaming', product)
   }
   return undefined
 }

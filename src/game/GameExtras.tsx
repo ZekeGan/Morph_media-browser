@@ -48,14 +48,16 @@ export function GameExtraButtons({ row, busy, run }: { row: FolderRow; busy: boo
         </Tooltip>
       )}
       {extras && extras.save !== 'none' && shown('save') && (
-        <Button
-          variant="default"
-          disabled={busy}
-          leftSection={<Icon name="folder" size={14} />}
-          onClick={() => void run({ action: 'runExtra', rowId: row.rowId, extra: 'save' })}
-        >
-          {tr('開啟存檔資料夾')}
-        </Button>
+        <Tooltip label={tr('還沒有存檔')} disabled={extras.save !== 'pending'}>
+          <Button
+            variant="default"
+            disabled={busy || extras.save === 'pending'}
+            leftSection={<Icon name="folder" size={14} />}
+            onClick={() => void run({ action: 'runExtra', rowId: row.rowId, extra: 'save' })}
+          >
+            {tr('開啟存檔資料夾')}
+          </Button>
+        </Tooltip>
       )}
       {play && (
         <small className="muted game-playtime" title={tr('{0} 次', play.count)}>
@@ -143,9 +145,11 @@ export function GameExtraSettings({
             <Text size="sm" c="dimmed">
               {extras.save === 'engine'
                 ? tr('依引擎推算（{0}）', extras.saveEngine ?? '')
-                : extras.save === 'user'
-                  ? tr('你指定的資料夾')
-                  : tr('推算不出來；可以自己指定')}
+                : extras.save === 'pending'
+                  ? tr('還沒有存檔（依引擎推算：{0}）', extras.saveEngine ?? '')
+                  : extras.save === 'user'
+                    ? tr('你指定的資料夾')
+                    : tr('推算不出來；可以自己指定')}
             </Text>
           </div>
           <Group gap={6} wrap="nowrap">
@@ -153,7 +157,7 @@ export function GameExtraSettings({
               <Button
                 size="xs"
                 variant="default"
-                disabled={disabled}
+                disabled={disabled || extras.save === 'pending'}
                 onClick={() => void run({ action: 'runExtra', rowId: row.rowId, extra: 'save' })}
               >
                 {tr('開啟')}

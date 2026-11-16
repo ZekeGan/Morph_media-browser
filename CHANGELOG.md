@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Save folder guessing: Godot (project.godot), RPG Maker 2000/2003 (Save01.lsd), NW.js and Electron-packed TyranoScript apps (package.json name) get rules; Ren’Py reads config.save_directory from options.rpyc, loose or inside an .rpa (read-only, size-limited); a folder the engine will use but that does not exist yet shows "no saves yet" instead of "can't work it out" (R-384).
 - Card layout grid: a row whose components are all hidden collapses and the rows below move up; text, tag, layout-text, name and path components get an optional "grow when content is too tall" setting (up to 1 to 20 more rows, off by default, not together with scrolling) that pushes the components below it down (new tentative `growMax` cell field) (R-398).
 - Book folders: comic archives are a list under the folder details (no tiles), in file name order with numbers as numbers, each with its progress bar, 讀到 N / M 頁 and 繼續閱讀; the whole folder shares the spread, direction and webtoon settings, and every archive remembers its own page (new tentative `volumes` field in the folder record) (R-407).
 - CBR (RAR) and CB7 (7z) comic archives can be read, in memory only, through 7-Zip compiled to WebAssembly (7z-wasm); the format is taken from the file's content, so a ZIP named .cbr works too (R-407, replaces R-403).

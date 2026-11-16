@@ -1,6 +1,6 @@
 # 現況架構與定位
 
-> 最後確認：2026-11-16（R-389）。模組責任、資料流與安全邊界；改動模組責任或資料流時同批更新本頁的圖。
+> 最後確認：2026-11-17（R-389）。模組責任、資料流與安全邊界；改動模組責任或資料流時同批更新本頁的圖。
 
 依目前程式整理；版本與依賴查 package.json。此頁只持有模組責任，功能規格由 [任務索引](README.md) 導向。舊 Next.js／View／Cell／DataType／JsonStorage 原型不是目標資料模型。
 
@@ -84,7 +84,7 @@ Renderer 負責畫面、草稿與互動；preload 只暴露受控 API；main 驗
 | 媒體／搜尋／通知 | [Gallery](../src/gallery/Gallery.tsx)、[Reader](../src/reader/Reader.tsx)、[VideoViewer](../src/video/VideoViewer.tsx)、[SearchDialog](../src/search/SearchDialog.tsx)、[Toasts](../src/notices/Toasts.tsx) | 相簿／閱讀器、Video.js、查詢 UI、右下通知；漫畫與小說閱讀器共用的按鍵／滾輪掛載在 [readerInput](../src/common/readerInput.ts) |
 | 影片控制與本機音量 | [VideoControls](../src/video/VideoControls.tsx)、[useVideoAudio](../src/media/useVideoAudio.ts) | native video 操作、控制列、可選接續；本機音量經 WorkspaceStore 保存。main 的 `window:state` 另發布可見／最小化狀態，供播放器暫停與取消倒數 |
 | 影片字幕設定畫面 | [VideoSubtitleSettings](../src/video/VideoSubtitleSettings.tsx) | 控制列內受控字幕群組、來源選擇、外觀／時間／編碼欄位；狀態、讀取／解析／保存由 VideoViewer 管理，選單留在播放器容器內 |
-| 檔案總覽／文件 | [FileOverview](../src/files/FileOverview.tsx)、[DocumentViewer](../src/documents/DocumentViewer.tsx)、[archive](../electron/archive.ts) | 已納管來源分頁／虛擬列、來源身分與生命週期；ZIP 受限直接讀取、PDF 內建 viewer，原文件唯讀 |
+| 檔案總覽／文件 | [FileOverview](../src/files/FileOverview.tsx)、[DocumentViewer](../src/documents/DocumentViewer.tsx)、[archive](../electron/archive.ts)、[archive-foreign](../electron/archive-foreign.ts) | 已納管來源分頁／虛擬列、來源身分與生命週期；ZIP 受限直接讀取、RAR／7z 以 7z-wasm 在記憶體內唯讀解出單張圖片、PDF 內建 viewer，原文件唯讀 |
 | 影片／字幕樣式 | [video-player.css](../src/video/video-player.css) | 播放區、字幕、檔案列、控制列、設定與響應式規則集中於此；main.tsx 在共用 style.css 後、themes.css 前固定載入，主題仍持有色票及共用圓角覆蓋。播放器 JS 維持延遲載入 |
 
 先 `rg -n "符號" 相關目錄`，再讀函式及呼叫端；不為定位一個問題全讀以上檔案。
