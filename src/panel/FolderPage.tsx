@@ -12,6 +12,8 @@ export type FolderPageKind = 'game' | 'book' | 'media'
 export interface FolderPageSpec {
   // The class of the page's frame; styles and UI tests go by it.
   className: string
+  // The details list every value stored for the folder, not only the project's fields, and show long text whole.
+  allFields: boolean
   subfolders: boolean
   visual: boolean
   controls: boolean
@@ -24,9 +26,11 @@ export interface FolderPageSpec {
   lead: boolean
 }
 export const folderPages: Record<FolderPageKind, FolderPageSpec> = {
-  // A game main folder: its inside is protected, so no subfolders are offered and the list is its field table.
+  // A game main folder: its inside is protected, so no subfolders or files are offered; its fields are all in the
+  // details (R-390).
   game: {
     className: 'game-content',
+    allFields: true,
     subfolders: false,
     visual: true,
     controls: false,
@@ -35,13 +39,15 @@ export const folderPages: Record<FolderPageKind, FolderPageSpec> = {
     overlay: 'first',
     lead: false,
   },
-  // Books and manga: the picture list brings its own reading controls.
+  // Books and manga: the picture list brings its own reading controls. Its action bar is the place a manga was left
+  // and the button to read on (R-390).
   book: {
     className: 'media-content',
+    allFields: false,
     subfolders: true,
     visual: true,
     controls: false,
-    actions: false,
+    actions: true,
     notice: 'top',
     overlay: 'first',
     lead: true,
@@ -49,6 +55,7 @@ export const folderPages: Record<FolderPageKind, FolderPageSpec> = {
   // Music, video and general folders share the unified file page.
   media: {
     className: 'mixed-media-browser',
+    allFields: false,
     subfolders: true,
     visual: true,
     controls: true,
@@ -103,7 +110,7 @@ export function FolderPage({
       {spec.overlay === 'first' && overlay}
       {spec.lead && lead}
       {spec.notice === 'top' && notice}
-      <FolderDetails row={row} project={project} openFolder={openFolder} />
+      <FolderDetails row={row} project={project} openFolder={openFolder} all={spec.allFields} />
       {spec.subfolders && folders && onChild && (
         <SubfolderList folders={folders} childNames={childNames} busy={busy} onChild={onChild} />
       )}

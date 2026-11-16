@@ -152,6 +152,10 @@ export function FilePage({
   )
 }
 
+// A comic archive the reader can open (CBZ; CBR and CB7 are not read yet and are not listed as books).
+export const isComicArchive = (entry: { kind: string; name: string }) =>
+  entry.kind === 'archive' && /\.cbz$/i.test(entry.name)
+
 // R-338: the text books (and other documents) in a folder, each with how far it has been read.
 export function BookShelf({
   row,
@@ -163,43 +167,73 @@ export function BookShelf({
   open: (entry: MediaEntry) => void
 }) {
   useLocale()
+  // R-390: two or more comic archives are the volumes of one work and are shown as tiles; everything else (and a
+  // single archive) stays in the list.
+  const comics = entries.filter(isComicArchive),
+    volumes = comics.length >= 2 ? comics : [],
+    listed = entries.filter((entry) => !volumes.includes(entry))
   if (!entries.length) return null
   return (
-    <ul className="book-shelf" aria-label={tr('文字書與文件')}>
-      {entries.map((entry) => {
-        const saved = entry.kind === 'text' ? row.record?.details?.novels?.[entry.name] : undefined,
-          percent = saved ? Math.round(saved.percent * 100) : 0
-        return (
-          <li key={entry.id}>
-            <Icon name={kindIcon[entry.kind] ?? 'file'} size={18} />
-            <div className="book-shelf-name">
-              <span title={entry.name}>{entry.name.replace(/\.(txt|epub)$/i, '')}</span>
-              {entry.kind === 'text' && (
-                <Progress value={percent} size="xs" aria-label={tr('閱讀進度')} />
-              )}
-            </div>
-            <small>{saved ? percent + '%' : friendlyType(entry)}</small>
-            {(() => {
-              const label =
-                entry.kind !== 'text'
-                  ? tr('開啟')
-                  : saved && saved.percent > 0 && saved.percent < 1
-                    ? tr('繼續閱讀')
-                    : tr('開始閱讀')
-              return (
-                <Button
-                  size="compact-sm"
-                  variant="light"
-                  aria-label={label + ' ' + entry.name}
-                  onClick={() => open(entry)}
-                >
-                  {label}
-                </Button>
-              )
-            })()}
-          </li>
-        )
-      })}
-    </ul>
+    <>
+      {!!volumes.length && (
+        <ul className="book-volumes" aria-label={tr('分冊')}>
+          {volumes.map((entry) => (
+            <li key={entry.id}>
+              <button
+                type="button"
+                className="book-volume"
+                aria-label={tr('開啟') + ' ' + entry.name}
+                title={entry.name}
+                onClick={() => open(entry)}
+              >
+                <span className="book-volume-cover" aria-hidden="true">
+                  <Icon name="page-spread" size={32} />
+                </span>
+                <span className="book-volume-name">{entry.name.replace(/\.cbz$/i, '')}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {!!listed.length && (
+        <ul className="book-shelf" aria-label={tr('文字書與文件')}>
+          {listed.map((entry) => {
+            const saved =
+                entry.kind === 'text' ? row.record?.details?.novels?.[entry.name] : undefined,
+              percent = saved ? Math.round(saved.percent * 100) : 0
+            return (
+              <li key={entry.id}>
+                <Icon name={kindIcon[entry.kind] ?? 'file'} size={18} />
+                <div className="book-shelf-name">
+                  <span title={entry.name}>{entry.name.replace(/\.(txt|epub)$/i, '')}</span>
+                  {entry.kind === 'text' && (
+                    <Progress value={percent} size="xs" aria-label={tr('閱讀進度')} />
+                  )}
+                </div>
+                <small>{saved ? percent + '%' : friendlyType(entry)}</small>
+                {(() => {
+                  const label =
+                    entry.kind !== 'text'
+                      ? tr('開啟')
+                      : saved && saved.percent > 0 && saved.percent < 1
+                        ? tr('繼續閱讀')
+                        : tr('開始閱讀')
+                  return (
+                    <Button
+                      size="compact-sm"
+                      variant="light"
+                      aria-label={label + ' ' + entry.name}
+                      onClick={() => open(entry)}
+                    >
+                      {label}
+                    </Button>
+                  )
+                })()}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </>
   )
 }

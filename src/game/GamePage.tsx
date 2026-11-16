@@ -1,40 +1,19 @@
-import { Fragment, useRef, useState } from 'react'
 import { ActionIcon, Button, Group, Menu, Tooltip } from '@mantine/core'
 import {
   gameActionTemplates,
   type ExplorerRequest,
   type ExplorerResponse,
 } from '../../shared/explorer'
-import {
-  fieldValue,
-  type FolderRow,
-  type Project,
-  type Request,
-  type Response,
-} from '../../shared/model'
-import { isFilled } from '../../shared/cells'
-import { fieldSourceGroups, rowFieldAttributes } from '../editor/fieldSources'
-import { importedFieldLabels } from '../editor/importedFieldLabels'
-import { yesNo } from '../editor/fieldTypes'
-import { isUrl, siteName } from '../metadata/importSource'
+import type { FolderRow, Project, Request, Response } from '../../shared/model'
 import { Icon } from '../common/icons'
 import { FolderPage } from '../panel/FolderPage'
 import { GameExtraButtons } from './GameExtras'
 import { t as tr, useLocale } from '../i18n'
 import './game-actions.css'
 
-// Imported rows name the website; other rows say where they come from.
-const describeSource = (source?: string) =>
-  !source
-    ? tr('未設定')
-    : isUrl(source)
-      ? siteName(source)
-      : source === 'manual'
-        ? tr('手動')
-        : source
-
 // The page of a game main folder (R-389: the fill-ins of the shared folder page). Main visual: the cover; actions:
-// confirming a possible game and the launch buttons; list: the field table. Nothing inside the game is listed.
+// confirming a possible game and the launch buttons. Its fields are in the folder details (R-390), which list every
+// stored value here; nothing inside the game is listed.
 export function GamePage({
   row,
   project,
@@ -51,64 +30,10 @@ export function GamePage({
   configure: (tab?: 'game') => void
 }) {
   useLocale()
-  // Width of the 欄位 and 來源 columns of the game table (content takes the rest); a per-viewer convenience.
-  const [gameWidths, setGameWidths] = useState<[number, number]>(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('morph.gameFieldWidths') ?? '[]')
-      if (Array.isArray(saved) && saved.length === 2 && saved.every((n) => n >= 60 && n <= 800))
-        return saved as [number, number]
-    } catch {
-      /* fall through to the defaults */
-    }
-    return [120, 110]
-  })
-  const gameDrag = useRef<{ column: 0 | 1; start: number; width: number } | undefined>(undefined)
-  const dragGameColumn = (event: React.PointerEvent) => {
-    const drag = gameDrag.current
-    if (!drag) return
-    const delta = event.clientX - drag.start,
-      width = Math.min(800, Math.max(60, drag.width + (drag.column === 0 ? delta : -delta)))
-    setGameWidths((current) => (drag.column === 0 ? [width, current[1]] : [current[0], width]))
-  }
-  const stopGameColumn = () => {
-    gameDrag.current = undefined
-    try {
-      localStorage.setItem('morph.gameFieldWidths', JSON.stringify(gameWidths))
-    } catch {
-      /* the widths still apply until the page closes */
-    }
-  }
-  const gameResizer = (column: 0 | 1, label: string) => (
-    <span
-      className="column-resizer"
-      role="separator"
-      aria-label={tr('調整 ') + label + tr(' 欄寬')}
-      onPointerDown={(event) => {
-        event.preventDefault()
-        gameDrag.current = { column, start: event.clientX, width: gameWidths[column] }
-        event.currentTarget.setPointerCapture(event.pointerId)
-      }}
-      onPointerMove={dragGameColumn}
-      onPointerUp={stopGameColumn}
-      onPointerCancel={() => {
-        gameDrag.current = undefined
-      }}
-    />
-  )
   const cover =
     row.record?.assets.find((a) => a.assetId === row.record?.details?.bannerAssetId) ??
     row.record?.assets[0]
   const disabled = busy || !row.record || row.readonly || row.stopped || !!row.error
-  const fields = [
-    ...new Map(
-      [
-        ...project.fieldBindings.map((f) => ({ attributeId: f.attributeId, key: f.alias })),
-        ...(row.record?.attributes ?? []),
-        ...(row.record?.projectOverrides[row.projectId] ?? []),
-      ].map((a) => [a.attributeId, a])
-    ).values(),
-  ]
-  const importedLabels = importedFieldLabels()
   return (
     <FolderPage
       page="game"
@@ -270,81 +195,6 @@ export function GamePage({
               </small>
             )}
         </>
-      }
-      list={
-        <table className="attribute-table game-fields">
-          <colgroup>
-            <col style={{ width: gameWidths[0] }} />
-            <col />
-            <col style={{ width: gameWidths[1] }} />
-          </colgroup>
-          <thead>
-            <tr>
-              <th>
-                {tr('欄位')}
-                {gameResizer(0, tr('欄位'))}
-              </th>
-              <th>
-                {tr('內容')}
-                {gameResizer(1, tr('來源'))}
-              </th>
-              <th>{tr('來源')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>{tr('資料夾名稱')}</td>
-              <td>{row.name}</td>
-              <td>{tr('檔案系統')}</td>
-            </tr>
-            <tr>
-              <td>{tr('目前路徑')}</td>
-              <td>{row.path}</td>
-              <td>{tr('檔案系統')}</td>
-            </tr>
-            {fieldSourceGroups(
-              fields.filter((f) => isFilled(fieldValue(row, f.attributeId))),
-              rowFieldAttributes([row])
-            ).map(({ source, fields }) => (
-              <Fragment key={source}>
-                <tr className="field-source-heading">
-                  <th colSpan={3}>{source}</th>
-                </tr>
-                {fields.map((f) => {
-                  const value = fieldValue(row, f.attributeId),
-                    attribute =
-                      row.record?.projectOverrides[row.projectId]?.find(
-                        (a) => a.attributeId === f.attributeId
-                      ) ?? row.record?.attributes.find((a) => a.attributeId === f.attributeId)
-                  const binding = project.fieldBindings.find(
-                      (b) => b.attributeId === f.attributeId
-                    ),
-                    alias = binding?.alias,
-                    plain = importedLabels[f.key]
-                  return (
-                    <tr key={f.attributeId}>
-                      <td title={!alias && plain ? f.key : undefined}>{alias ?? plain ?? f.key}</td>
-                      <td>
-                        {value == null
-                          ? '—'
-                          : Array.isArray(value)
-                            ? value.join(', ')
-                            : typeof value === 'boolean'
-                              ? yesNo(value, binding)
-                              : typeof value === 'object'
-                                ? JSON.stringify(value)
-                                : String(value)}
-                      </td>
-                      <td title={isUrl(attribute?.source) ? attribute?.source : undefined}>
-                        {describeSource(attribute?.source)}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
       }
     />
   )

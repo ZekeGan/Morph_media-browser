@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readingGroups, readerArrowStep, spreadGeometry } from '../shared/reader'
+import { readingGroups, readerArrowStep, savedPlace, spreadGeometry } from '../shared/reader'
 import { defaultTreeCollapsed, visibleTreeRows } from '../shared/browse'
 import type { FolderRow } from '../shared/model'
 test('reader groups preserve first-page and odd-page rules; RTL reverses only arrow navigation', () => {
@@ -95,4 +95,22 @@ test('collapsed TREE branches are excluded from layout input; deep collections s
   assert.equal(visibleTreeRows(flat, defaultTreeCollapsed(flat)).length, 1)
   const drive = [row('drive', 'C:\\', 1), row('child', 'C:\\Child', 2)]
   assert.equal(visibleTreeRows(drive, []).length, 2)
+})
+
+test('the saved place of a manga: page out of pictures, and whether the reader continues from it (R-390)', () => {
+  assert.equal(savedPlace(undefined, 180), undefined)
+  assert.equal(savedPlace({}, 180), undefined)
+  assert.equal(savedPlace({ page: 0 }, 180), undefined, 'the first page is no progress')
+  assert.equal(savedPlace({ page: 31 }, 0), undefined, 'no pictures, nothing to say')
+  assert.deepEqual(savedPlace({ page: 31 }, 180), { page: 32, total: 180, resumes: true })
+  // Left on the last page (the last two in spread mode): finished, the reader opens from the start.
+  assert.deepEqual(savedPlace({ page: 179 }, 180), { page: 180, total: 180, resumes: false })
+  assert.deepEqual(savedPlace({ page: 178 }, 180), { page: 179, total: 180, resumes: true })
+  assert.deepEqual(savedPlace({ page: 178, spread: true }, 180), {
+    page: 179,
+    total: 180,
+    resumes: false,
+  })
+  // Pictures were removed since: never more than there are.
+  assert.deepEqual(savedPlace({ page: 500 }, 180), { page: 180, total: 180, resumes: false })
 })

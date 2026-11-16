@@ -118,8 +118,6 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .other-file { display: flex; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 11px; }
 .other-file > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .other-file small { color: var(--muted); }
-.attribute-table { border-collapse: collapse; width: 100%; font-size: 12px; margin-top: 15px; }
-.attribute-table td,.attribute-table th { border-bottom: 1px solid var(--line); padding: 8px; text-align: left; overflow-wrap: anywhere; }
 .game-banner { position: relative; min-height: 150px; background: var(--viewer-bg); border-radius: 8px; display: grid; place-items: center; gap: 8px; padding-bottom: 8px; }
 .game-banner img { display: block; width: 100%; max-height: 300px; object-fit: contain; }
 .game-banner > .mantine-Select-root { max-width: 95%; }
@@ -293,10 +291,6 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .cover-change { position:absolute; top:8px; right:8px; }
 .game-actions { padding:0; }
 .game-actions>.mantine-ActionIcon-root { margin-left:auto; }
-.game-fields { margin:0; width:100%; border:1px solid var(--line); border-radius:8px; border-collapse:separate; border-spacing:0; overflow:hidden; }
-.game-fields td,.game-fields th { padding:10px 14px; }
-.game-fields tr:nth-child(even) { background:var(--soft); }
-.game-fields td:first-child,.game-fields th:first-child,.game-fields td:last-child,.game-fields th:last-child { white-space:nowrap; }
 @container center (max-width:700px) {
   .toolbar-left .preset-controls>.mantine-Select-root { display:none; }
   .toolbar-left .preset-controls>.mantine-ActionIcon-root { border-radius:var(--mantine-radius-default); margin-left:0; }
@@ -532,8 +526,6 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .workspace-file-tools .mantine-Select-root { min-width:100px; flex:1; }
 .folder-settings .path { overflow-wrap:anywhere; }
 .palette-drag-ghost { position:fixed; margin:0; pointer-events:none; z-index:10000; opacity:.9; box-shadow:0 6px 18px rgba(0,0,0,.35); overflow:hidden; }
-.game-fields { table-layout: fixed; }
-.game-fields th { position: relative; }
 .settings-savebar { position:sticky; bottom:0; z-index:5; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; padding:10px 12px; margin:0 -4px; border:1px solid var(--accent); border-radius:8px; background:var(--panel); box-shadow:0 -6px 14px rgba(0,0,0,.25); }
 .tab-dirty-dot { display:inline-block; width:7px; height:7px; margin-left:6px; border-radius:50%; background:var(--accent); vertical-align:middle; }
 .image-thumb { display:flex; align-items:center; justify-content:center; width:100%; max-width:220px; aspect-ratio:16/9; padding:0; border:1px dashed var(--line); border-radius:8px; background:var(--inset); color:var(--muted); cursor:pointer; overflow:hidden; font:inherit; }
@@ -801,6 +793,15 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .book-shelf-name { display:grid; gap:4px; min-width:0; }
 .book-shelf-name span { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 .book-shelf small { color:var(--muted); white-space:nowrap; }
+/* R-390: comic archives of one folder shown as volumes; the manga page's reading place and its button. */
+.book-volumes { display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:10px; margin:0 0 10px; padding:0; list-style:none; }
+.book-volume { display:grid; justify-items:center; gap:6px; width:100%; padding:10px 6px; border:1px solid var(--line); border-radius:var(--radius); background:var(--soft); color:inherit; font:inherit; cursor:pointer; }
+.book-volume:hover { border-color:var(--accent); }
+.book-volume:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.book-volume-cover { display:grid; place-items:center; width:100%; aspect-ratio:3/4; border-radius:calc(var(--radius) - 2px); color:var(--muted); }
+.book-volume-name { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; max-width:100%; font-size:12px; text-align:center; overflow-wrap:anywhere; }
+.book-actions { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; }
+.book-actions small { color:var(--muted); }
 /* R-343: what a folder is, as its icon in lists and a badge on its card. A candidate game is dashed: not yet confirmed. */
 .kind-icon { display:inline-flex; flex-shrink:0; margin-right:6px; vertical-align:-2px; color:var(--muted); }
 .kind-icon.kind-game { color:var(--accent); }

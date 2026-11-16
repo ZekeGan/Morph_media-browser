@@ -18,6 +18,8 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Game page: the field table is gone; the folder details now also list the website and private values only the table used to show, wrap long values and mark website fields edited by hand (R-390).
+- Manga page: a 開始閱讀／繼續閱讀 button with how far you have read, and a folder with several CBZ volumes shows them as tiles (R-390).
 - Internal: the right panel draws every folder type through one shared set of blocks (details, subfolders, main visual, controls, type actions, content); nothing changes on screen (R-389).
 - Folder types: audio/video is split into Music and Video, and detection is stricter (video beats images, music needs a majority of tracks, any EPUB or CBZ/CBR/CB7 makes a book, PDF and plain ZIP no longer decide). Folder records move to format version 2; a folder set by hand to the old audio/video type goes back to automatic detection. Older versions of M:orph open version 2 records read-only (R-387).
 - Game actions tab: explanations moved into "?" tips, the scan range moved here from Advanced, and the launch wording no longer says EXE since SWF and other files can be launched (R-382, R-383, R-401).

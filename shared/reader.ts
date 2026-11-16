@@ -44,3 +44,19 @@ export function spreadGeometry(
 }
 export const readerArrowStep = (key: string, rtl: boolean) =>
   key === 'ArrowLeft' ? (rtl ? 1 : -1) : key === 'ArrowRight' ? (rtl ? -1 : 1) : 0
+
+// R-390: what the book page says about where a manga was left: the page (counted from 1) out of the pictures it has.
+// `resumes` follows the reader (R-253): it continues from the saved page unless that is the first page or the book
+// was left on its last page (the last two in spread mode), which counts as finished and opens from the start.
+export function savedPlace(
+  prefs: { page?: number; spread?: boolean } | undefined,
+  images: number
+): { page: number; total: number; resumes: boolean } | undefined {
+  const page = prefs?.page
+  if (!page || !Number.isInteger(page) || page <= 0 || images <= 0) return undefined
+  return {
+    page: Math.min(page, images - 1) + 1,
+    total: images,
+    resumes: page < images - (prefs.spread ? 2 : 1),
+  }
+}

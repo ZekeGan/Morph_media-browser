@@ -370,26 +370,14 @@ try {
   assert.equal(await page.locator('.game-boundary-filter').count(), 1)
   await card('Game').dblclick()
   await header().getByText('Game', { exact: true }).waitFor()
-  await page.locator('.game-fields').waitFor()
-  // The three-column table only shows when the panel is wide: drag the panel wider first.
+  await page.locator('.game-content .game-banner').waitFor()
+  // R-390: the game page has no field table; its fields are in the folder details.
+  assert.equal(await page.locator('.game-fields').count(), 0)
   const grip = (await page.getByRole('separator', { name: '調整資料夾內容寬度' }).boundingBox())!
   await page.mouse.move(grip.x + 2, grip.y + grip.height / 2)
   await page.mouse.down()
   await page.mouse.move(grip.x - 320, grip.y + grip.height / 2, { steps: 6 })
   await page.mouse.up()
-  // The game table's columns can be resized by dragging the header separators.
-  const gameColumn = () =>
-    page
-      .locator('.game-fields col')
-      .first()
-      .evaluate((col) => col.getBoundingClientRect().width)
-  const columnBefore = await gameColumn(),
-    separator = (await page.getByRole('separator', { name: '調整 欄位 欄寬' }).boundingBox())!
-  await page.mouse.move(separator.x + 3, separator.y + separator.height / 2)
-  await page.mouse.down()
-  await page.mouse.move(separator.x + 63, separator.y + separator.height / 2, { steps: 4 })
-  await page.mouse.up()
-  assert.ok((await gameColumn()) > columnBefore + 40, 'dragging the separator widens the column')
   assert.equal(await page.locator('.game-content .game-banner').count(), 1)
   assert.equal(await page.locator('.game-content .game-actions').count(), 1)
   assert.equal(await page.locator('.game-content .content-subfolders').count(), 0)

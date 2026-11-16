@@ -7,6 +7,7 @@ import { isFilled } from '../../shared/cells'
 import { fieldSourceGroups, rowFieldAttributes } from '../editor/fieldSources'
 import { t as tr, useLocale } from '../i18n'
 import { yesNo } from '../editor/fieldTypes'
+import { importedFieldLabels } from '../editor/importedFieldLabels'
 
 // Filled values only; 0 and false are real values, empty strings and arrays are not.
 const shown = (value: unknown, binding?: { trueLabel?: string; falseLabel?: string }) =>
@@ -24,10 +25,14 @@ export function FolderDetails({
   row,
   project,
   openFolder,
+  all = false,
 }: {
   row: FolderRow
   project: Project
   openFolder: () => void
+  // R-390: also the values stored for the folder that are not fields of this project (for example ones a website
+  // import brought), long text shown whole, and a mark on website values changed by hand.
+  all?: boolean
 }) {
   useLocale()
   const [copied, setCopied] = useState(false),
@@ -39,14 +44,44 @@ export function FolderDetails({
     separator = row.path.includes('\\') ? '\\' : '/',
     shortPath = (parts.length > 2 ? '…' + separator : '') + parts.slice(-2).join(separator),
     sources = importSources(row),
-    fields = project.fieldBindings.flatMap((field) => {
-      const text = shown(fieldValue(row, field.attributeId), field)
+    stored = [
+      ...(row.record?.projectOverrides[row.projectId] ?? []),
+      ...(row.record?.attributes ?? []),
+    ],
+    bound = new Set(project.fieldBindings.map((field) => field.attributeId)),
+    plain = importedFieldLabels(),
+    fields = [
+      ...project.fieldBindings.map((field) => ({
+        attributeId: field.attributeId,
+        label: field.alias,
+        binding: field as { trueLabel?: string; falseLabel?: string } | undefined,
+      })),
+      ...(all
+        ? [...new Map(stored.map((a) => [a.attributeId, a])).values()]
+            .filter((a) => !bound.has(a.attributeId))
+            .map((a) => ({
+              attributeId: a.attributeId,
+              label: plain[a.key] ?? a.key,
+              binding: undefined,
+            }))
+        : []),
+    ].flatMap((field) => {
+      const text = shown(fieldValue(row, field.attributeId), field.binding)
       return text === undefined
         ? []
-        : [{ attributeId: field.attributeId, label: field.alias, text }]
+        : [
+            {
+              attributeId: field.attributeId,
+              label: field.label,
+              text,
+              // A website value the user changed afterwards.
+              edited:
+                all && stored.find((a) => a.attributeId === field.attributeId)?.source === 'manual',
+            },
+          ]
     })
   return (
-    <details className="folder-details">
+    <details className={'folder-details' + (all ? ' folder-details-full' : '')}>
       <summary>{tr('資料夾詳情')}</summary>
       <dl>
         <div className="folder-details-row">
@@ -129,6 +164,9 @@ export function FolderDetails({
                 <dt title={field.label}>{field.label}</dt>
                 <dd>
                   <span>{field.text}</span>
+                  {field.edited && source !== tr('自建') && (
+                    <small className="muted">{tr('已手動修改')}</small>
+                  )}
                 </dd>
               </div>
             ))}

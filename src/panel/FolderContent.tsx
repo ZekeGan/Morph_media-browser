@@ -3,6 +3,7 @@ import { BookShelf, FilePage } from './FilePage'
 import { MediaViewer } from '../media/MediaViewer'
 import { isGameFolder, visibleFile } from '../../shared/media'
 import { effectiveKind, sampleOf, templateKind } from '../../shared/kind'
+import { savedPlace } from '../../shared/reader'
 import { PanelSkeleton } from './PanelSkeleton'
 import { useFileVisibility } from '../files/useFileVisibility'
 import { DocumentViewer } from '../documents/DocumentViewer'
@@ -279,6 +280,10 @@ export function FolderContent({
     // R-362: only an edited book template from before the cover became a component still has it drawn beside it.
     legacyCover =
       kind === 'book' && project.contentCells?.book !== undefined && !project.contentCover
+  // The pictures the reader will show, and the saved place among them once the whole folder is listed.
+  const pages = visibleEntries.filter((entry) => entry.kind === 'image'),
+    firstPage = pages[0],
+    place = content.nextCursor ? undefined : savedPlace(row.record?.details?.reading, pages.length)
   // The book page (R-389: the fill-ins of the shared folder page).
   return (
     <FolderPage
@@ -379,6 +384,21 @@ export function FolderContent({
             />
           ) : null}
         </div>
+      }
+      actions={
+        // R-390: where the manga was left and the button to read on. The reader decides the page itself (R-253), so
+        // this opens it at the first picture like a click on the first thumbnail.
+        firstPage && (
+          <div className="book-actions">
+            <Button size="compact-sm" onClick={() => setGalleryFile(firstPage)}>
+              {(place?.resumes ??
+              (!!content.nextCursor && (row.record?.details?.reading?.page ?? 0) > 0))
+                ? tr('繼續閱讀')
+                : tr('開始閱讀')}
+            </Button>
+            {place && <small>{tr('讀到 {0} / {1} 頁', place.page, place.total)}</small>}
+          </div>
+        )
       }
       list={
         // R-338: a folder of books only has no picture list to show.

@@ -1295,12 +1295,6 @@
     "en": "Source",
     "es": "Origen"
   },
-  "檔案系統": {
-    "ja": "ファイルシステム",
-    "zh-CN": "文件系统",
-    "en": "File system",
-    "es": "Sistema de archivos"
-  },
   "未設定": {
     "ja": "未設定",
     "zh-CN": "未设定",
@@ -12028,5 +12022,17 @@
     "en": "Music / video",
     "ja": "音楽／動画",
     "es": "Música / vídeo"
+  },
+  "讀到 {0} / {1} 頁": {
+    "zh-CN": "读到 {0} / {1} 页",
+    "en": "Page {0} of {1}",
+    "ja": "{0} / {1} ページまで",
+    "es": "Página {0} de {1}"
+  },
+  "分冊": {
+    "zh-CN": "分册",
+    "en": "Volumes",
+    "ja": "巻",
+    "es": "Volúmenes"
   }
 }
