@@ -743,12 +743,22 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .reader-progress-preview { position:absolute; bottom:calc(100% + 8px); display:grid; justify-items:center; gap:4px; padding:4px; border:1px solid var(--line); border-radius:var(--radius); background:var(--panel); transform:translateX(-50%); pointer-events:none; font-size:11px; color:var(--muted); }
 .reader-progress-preview img { display:block; width:auto; height:120px; max-width:160px; object-fit:contain; }
 /* R-270: a page turn slides the new page in from the side it comes from while the old one leaves the other way. */
+/* R-392: the new page comes in from right beside the page on screen (--peek-base), continuing a drag (--drag-x). */
 @keyframes reader-enter-right {
-  from { transform:translateX(100%); }
+  from { transform:translateX(calc(var(--peek-right, 100%) + var(--drag-x, 0px))); }
 }
 @keyframes reader-enter-left {
-  from { transform:translateX(-100%); }
+  from { transform:translateX(calc(var(--peek-left, 100%) * -1 + var(--drag-x, 0px))); }
 }
+/* The pages beside the current one wait right next to it (--peek-left/right: half of each width and a gap), hidden,
+   and slide in with a drag. */
+.reader-peek { position:absolute; inset:0; overflow:visible; pointer-events:none; visibility:hidden; z-index:2; }
+.reader-peek-left { transform:translateX(calc(var(--peek-left, 100%) * -1)); }
+.reader-peek-right { transform:translateX(var(--peek-right, 100%)); }
+.reader-peek-spread { position:absolute; inset:0; display:flex; justify-content:center; align-items:center; }
+.reader-peek-spread.rtl { flex-direction:row-reverse; }
+.reader-peek-spread img { display:block; flex-shrink:0; height:100%; width:auto; object-fit:contain; user-select:none; }
+.reader-peek-spread.sized img { max-width:none; max-height:none; }
 @keyframes reader-leave-left {
   from { transform:translateX(var(--drag-x, 0px)); }
   to { transform:translateX(-100%); }

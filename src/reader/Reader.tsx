@@ -194,27 +194,69 @@ export function Reader({
   // a turn continues the slide from where the page was left (--drag-x), anything shorter eases back.
   const activeLayer = () =>
     viewport.current?.querySelector<HTMLElement>('.reader-frame-layer.is-active') ?? null
-  const followDrag = (dx: number) => {
+  // The pages beside the current one (already preloaded) sit just off each side and come into view with the drag,
+  // so the next page is seen while it is pulled in. Without a page on that side the drag meets resistance.
+  const peek = (side: 'left' | 'right') =>
+    viewport.current?.querySelector<HTMLElement>('.reader-peek-' + side) ?? null
+  const dragOffset = (dx: number) =>
+    (dx < 0 ? peek('right') : peek('left')) ? dx : Math.round(dx * 0.3)
+  const placeDrag = (dx: number, transition: string) => {
     const layer = activeLayer()
     if (!layer) return
-    layer.style.transition = 'none'
-    layer.style.transform = dx ? `translateX(${dx}px)` : ''
+    // The pages beside sit right next to the page on screen (--peek-base on the surface: its width and a gap).
+    for (const [node, from] of [
+      [layer, ''],
+      [peek('left'), 'var(--peek-left, 100%) * -1 + '],
+      [peek('right'), 'var(--peek-right, 100%) + '],
+    ] as const) {
+      if (!node) continue
+      node.style.transition = transition
+      node.style.transform = dx ? `translateX(calc(${from}${dx}px))` : ''
+      if (node !== layer) node.style.visibility = dx ? 'visible' : ''
+    }
   }
+  const followDrag = (dx: number) => placeDrag(dragOffset(dx), 'none')
+  // A turn keeps everything where the pointer left it until the new page is shown; that page then slides on from
+  // there (--drag-x on the surface, read by the slide keyframes) instead of jumping back first.
+  const pendingDrag = useRef<number | undefined>(undefined)
   const releaseDrag = (turnedBy: number) => {
     const layer = activeLayer()
     if (!layer || !layer.style.transform) return
-    if (turnedBy) {
-      layer.style.setProperty('--drag-x', layer.style.transform.replace(/translateX\((.*)\)/, '$1'))
-      layer.style.transition = ''
-      layer.style.transform = ''
-      window.setTimeout(() => layer.style.removeProperty('--drag-x'), 400)
+    if (turnedBy && (turnedBy < 0 ? peek('right') : peek('left'))) {
+      pendingDrag.current = turnedBy
       return
     }
     const animate = turnMotion && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    layer.style.transition = animate ? 'transform 150ms ease-out' : 'none'
-    layer.style.transform = ''
-    if (animate) window.setTimeout(() => (layer.style.transition = ''), 180)
+    placeDrag(0, animate ? 'transform 150ms ease-out' : 'none')
+    // The peeks stay visible while they slide back out, then hide.
+    for (const side of ['left', 'right'] as const) {
+      const node = peek(side)
+      if (node) node.style.visibility = animate ? 'visible' : ''
+    }
+    if (animate)
+      window.setTimeout(() => {
+        for (const side of ['left', 'right'] as const) {
+          const node = peek(side)
+          if (node) node.style.visibility = ''
+        }
+      }, 180)
   }
+  useLayoutEffect(() => {
+    const dx = pendingDrag.current,
+      surface = viewport.current?.querySelector<HTMLElement>('.reader-surface')
+    if (dx === undefined || !surface) return
+    pendingDrag.current = undefined
+    for (const node of surface.querySelectorAll<HTMLElement>('.reader-frame-layer, .reader-peek')) {
+      node.style.transition = ''
+      node.style.transform = ''
+      node.style.visibility = ''
+    }
+    surface.style.setProperty('--drag-x', dx + 'px')
+    const timer = window.setTimeout(() => surface.style.removeProperty('--drag-x'), 400)
+    return () => window.clearTimeout(timer)
+  }, [activeKey])
+  // The size of every picture loaded so far, by address (R-392 places the pages beside with it).
+  const sizes = useRef(new Map<string, ImageSize>())
   const cache = useRef(new Map<string, CachedImage>()),
     sequence = useRef(0),
     activeRef = useRef(''),
@@ -313,6 +355,27 @@ export function Reader({
     group = groups[groupIndex] ?? []
   const active = frames.find((frame) => frame.key === activeKey),
     geometry = spreadGeometry(active?.sizes ?? [], fit, box, zoom)
+  // R-392: the groups beside the one on screen (not the one being turned to), drawn at their own size right next to
+  // it while a page is dragged. A group whose picture sizes are not known yet sits a whole window away.
+  const peeks = (['left', 'right'] as const).flatMap((side) => {
+    if (!manga || webtoon || !active) return []
+    const shownAt = groups.findIndex((item) => item.includes(active.indices[0])),
+      forward = (side === 'right') !== rtl,
+      indices = shownAt < 0 ? undefined : groups[shownAt + (forward ? 1 : -1)]
+    if (!indices) return []
+    const known = indices.map((index) => sizes.current.get(images[index]?.url))
+    const size = known.every(Boolean)
+      ? spreadGeometry(known as ImageSize[], fit, box, 1)
+      : undefined
+    return [
+      {
+        side,
+        indices,
+        size,
+        offset: Math.round(size ? geometry.width / 2 + size.width / 2 + 16 : box.width),
+      },
+    ]
+  })
   const surface = {
     width: Math.max(box.width, geometry.width),
     height: Math.max(box.height, geometry.height),
@@ -365,6 +428,7 @@ export function Reader({
     })
     void promise
       .then((size) => {
+        sizes.current.set(entry.url, size)
         if (mounted.current && isWidePage(size))
           setWide((known) => (known.has(entry.url) ? known : new Set(known).add(entry.url)))
       })
@@ -1249,7 +1313,15 @@ export function Reader({
           >
             <div
               className="reader-surface"
-              style={{ width: surface.width, height: surface.height }}
+              style={
+                {
+                  width: surface.width,
+                  height: surface.height,
+                  '--peek-left': (peeks.find((p) => p.side === 'left')?.offset ?? box.width) + 'px',
+                  '--peek-right':
+                    (peeks.find((p) => p.side === 'right')?.offset ?? box.width) + 'px',
+                } as React.CSSProperties
+              }
             >
               {frames.map((frame) => {
                 const size = spreadGeometry(frame.sizes, fit, box, zoom),
@@ -1303,6 +1375,29 @@ export function Reader({
                   </div>
                 )
               })}
+              {peeks.map(({ side, indices, size }) => (
+                <div
+                  key={side + indices.join('-')}
+                  className={'reader-peek reader-peek-' + side}
+                  aria-hidden="true"
+                >
+                  <div
+                    className={'reader-peek-spread' + (rtl ? ' rtl' : '') + (size ? ' sized' : '')}
+                  >
+                    {indices.map((index, position) => (
+                      <img
+                        key={images[index].id}
+                        src={images[index].url}
+                        alt=""
+                        draggable={false}
+                        style={
+                          size ? { width: size.widths[position], height: size.height } : undefined
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
               {!frames.length && (
                 <div className="reader-loading">
                   {images.length ? tr('載入圖片…') : tr('沒有圖片')}

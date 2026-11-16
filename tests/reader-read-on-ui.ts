@@ -129,6 +129,26 @@ try {
   assert.equal(await shown(), '3')
   await page.mouse.click(stage.x + stage.width / 2, stage.y + stage.height / 2)
   await page.locator('.reader-toolbar').waitFor()
+  // R-392: dragging part of the way shows the page beside it coming in; letting go short puts both back.
+  const middle = { x: stage.x + stage.width / 2, y: stage.y + stage.height / 2 }
+  await page.mouse.move(middle.x, middle.y)
+  await page.mouse.down()
+  await page.mouse.move(middle.x - 40, middle.y, { steps: 4 })
+  await page.mouse.move(middle.x - 80, middle.y, { steps: 4 })
+  const peek = page.locator('.reader-peek-right')
+  assert.equal(await peek.evaluate((node) => getComputedStyle(node).visibility), 'visible')
+  assert.ok((await peek.locator('img').count()) >= 1, 'the next page is drawn beside')
+  const offset = await peek.evaluate((node) => node.getBoundingClientRect().left)
+  assert.ok(offset < middle.x * 2 - 40, 'the next page has come into view: ' + offset)
+  await page.mouse.move(middle.x - 300, middle.y, { steps: 6 })
+  await page.screenshot({ path: path.join(base, 'shot', 'r392-drag-peek.png') })
+  await page.mouse.move(middle.x - 80, middle.y, { steps: 6 })
+  // Held for a moment, so the release is not a quick flick (which turns the page).
+  await page.waitForTimeout(300)
+  await page.mouse.up()
+  await page.waitForTimeout(400)
+  assert.equal(await peek.evaluate((node) => getComputedStyle(node).visibility), 'hidden')
+  assert.equal(await shown(), '3', 'a short drag does not turn')
   // R-378: with the page-turn transition off (A, or its toolbar button) the new page just appears.
   const transition = reader().getByRole('button', { name: '翻頁過渡', exact: true })
   assert.equal(await transition.getAttribute('aria-pressed'), 'true')
