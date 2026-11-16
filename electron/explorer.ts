@@ -75,6 +75,8 @@ export interface DesktopOperations {
   // R-320: the program that plays .swf games, from the app settings, and setting it.
   flashPlayer?(): string | undefined
   setFlashPlayer?(file: string | undefined): Promise<void>
+  // R-381: the languages external sources are read in, first choice first (app settings).
+  sourceLanguages?(): string[]
   // R-285: the encrypted website keys (main only).
   keyStore?: KeyStore
   // R-308: a session of a game started from M:orph ended.

@@ -168,6 +168,7 @@ else {
         setLocaleEmulator: async (file) => {
           await workspace.setLocaleEmulator(file)
         },
+        sourceLanguages: () => workspace.sourceLanguages(),
         flashPlayer: () => workspace.flashPlayerPath(),
         setFlashPlayer: async (file) => {
           await workspace.setFlashPlayer(file)

@@ -1,6 +1,14 @@
 import { SourceError } from '../metadata-common'
 import { clean, type Adapter } from './site'
 
+// R-381: AniList has the romaji, English and native titles; only English and Japanese are languages.
+const titleFor = (title: Record<string, unknown> | undefined, languages: readonly string[]) => {
+  for (const language of languages) {
+    const value = language === 'en' ? title?.english : language === 'ja' ? title?.native : undefined
+    if (typeof value === 'string' && value.trim()) return value
+  }
+}
+
 export const anilist: Adapter = async (site) => {
   const parts = site.match(/^\/(anime|manga)\/([1-9]\d{0,11})(?:\/[^/]*)?\/?$/),
     id = Number(parts[2])
@@ -33,7 +41,12 @@ export const anilist: Adapter = async (site) => {
       ].join('-')
     )
   return {
-    title: clean(data.title?.native || data.title?.english || data.title?.romaji),
+    title: clean(
+      titleFor(data.title, site.languages) ||
+        data.title?.native ||
+        data.title?.english ||
+        data.title?.romaji
+    ),
     canonical: 'https://anilist.co/' + parts[1] + '/' + id + '/',
     image: data.coverImage?.large,
   }

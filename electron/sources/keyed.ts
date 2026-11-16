@@ -1,5 +1,6 @@
 import { SourceError } from '../metadata-common'
 import { clean, type Adapter } from './site'
+import { tmdbLanguage } from './language'
 
 // R-285–R-290, R-321: sources that need the user's own key, kept where no keyless source does the job (site.keys, read by main only). Each validates the work ID from
 // the pasted address and asks only its fixed API host. Written against the sites' public API documentation; until
@@ -16,7 +17,8 @@ export const tmdb: Adapter = async (site) => {
       kind +
       '/' +
       id +
-      '?language=en-US' +
+      '?language=' +
+      tmdbLanguage(site.languages[0]) +
       (bearer ? '' : '&api_key=' + encodeURIComponent(token)),
     undefined,
     bearer ? { headers: { Authorization: 'Bearer ' + token } } : {}

@@ -18,6 +18,8 @@ export const sourceConfig: Record<
     // R-359: hosts given by a pattern (a site that serves each account on its own subdomain).
     requestHostPattern?: RegExp
     coverHosts: string[]
+    // R-393: hosts a cover request may be redirected to (at most 3 hops, HTTPS only); without it any redirect fails.
+    coverRedirectHosts?: RegExp
     referer?: boolean
     accept?: string
     // R-285: the key site (shared/keys.ts) and whether the source works without it.
@@ -33,8 +35,14 @@ export const sourceConfig: Record<
     keyNeed: 'optional',
   },
   anilist: { requestHosts: ['graphql.anilist.co'], coverHosts: ['s4.anilist.co'] },
-  vndb: { requestHosts: ['api.vndb.org'], coverHosts: [] },
-  musicbrainz: { requestHosts: ['musicbrainz.org'], coverHosts: [] },
+  // R-393: work pictures come from VNDB's image host. MusicBrainz has no pictures; album covers come from the Cover
+  // Art Archive, which answers with redirects to archive.org (followed only there, see coverRedirectHosts).
+  vndb: { requestHosts: ['api.vndb.org'], coverHosts: ['t.vndb.org'] },
+  musicbrainz: {
+    requestHosts: ['musicbrainz.org'],
+    coverHosts: ['coverartarchive.org'],
+    coverRedirectHosts: /^(?:[a-z0-9-]{1,40}\.){0,3}archive\.org$/,
+  },
   openlibrary: { requestHosts: ['openlibrary.org'], coverHosts: ['covers.openlibrary.org'] },
   commons: { requestHosts: ['commons.wikimedia.org'], coverHosts: ['upload.wikimedia.org'] },
   dlsite: { requestHosts: ['www.dlsite.com'], coverHosts: ['img.dlsite.jp'] },

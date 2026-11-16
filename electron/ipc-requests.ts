@@ -198,6 +198,7 @@ const workspace: Record<WorkspaceCommand['action'], Shape> = {
   playOrder: { value: oneOf('stop', 'next', 'all', 'one') },
   fileVisibility: { value: object },
   appearance: { theme: ref, locale: ref },
+  sourceLanguages: { value: list(ref, 10) },
   createGroup: { name: text },
   renameGroup: { id: ref, name: text },
   removeGroup: { id: ref },

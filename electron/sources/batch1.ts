@@ -1,5 +1,6 @@
 import { SourceError } from '../metadata-common'
 import { clean, type Adapter } from './site'
+import { pickByLanguage, pickFromMap } from './language'
 
 // R-284: public JSON APIs that need no key. Each adapter validates the work ID from the pasted address and asks only
 // its own fixed host (see config.ts); covers must come from the site's image host.
@@ -28,7 +29,11 @@ export const mangadex: Adapter = async (site) => {
       }[]
   const alt = (a.altTitles ?? []) as Strings[]
   site.text('TITLE_ORIGINAL', alt.map((t) => pick(t, 'ja', 'ko', 'zh')).find(Boolean))
-  site.text('DESCRIPTION', pick(a.description, 'en', 'ja', 'zh-hk', 'zh'))
+  // R-381: the preferred languages first (title, then its alternative titles), else the site's own order.
+  site.text(
+    'DESCRIPTION',
+    pickFromMap(a.description, site.languages) ?? pick(a.description, 'en', 'ja', 'zh-hk', 'zh')
+  )
   site.list(
     'AUTHORS',
     related('author').map((r) => r.attributes?.name)
@@ -46,7 +51,16 @@ export const mangadex: Adapter = async (site) => {
   site.text('AGE_CATEGORY', a.contentRating)
   const file = related('cover_art')[0]?.attributes?.fileName
   return {
-    title: clean(pick(a.title, 'en', 'ja-ro', 'ja') ?? Object.values(a.title ?? {})[0]),
+    title: clean(
+      pickFromMap(a.title, site.languages) ??
+        pickByLanguage(
+          alt.flatMap((t) => Object.entries(t ?? {}).map(([code, value]) => ({ code, value }))),
+          (entry) => entry.code,
+          site.languages
+        )?.value ??
+        pick(a.title, 'en', 'ja-ro', 'ja') ??
+        Object.values(a.title ?? {})[0]
+    ),
     canonical: 'https://mangadex.org/title/' + id,
     image:
       typeof file === 'string' && /^[\w.-]+$/.test(file)
@@ -79,7 +93,17 @@ export const kitsu: Adapter = async (site) => {
       .map((item: { attributes?: { title?: string } }) => item.attributes?.title)
   )
   return {
-    title: clean(a.canonicalTitle ?? pick(a.titles, 'en', 'en_jp')),
+    // R-381: Kitsu names its titles en, en_jp (romaji), ja_jp, zh_cn…
+    title: clean(
+      pickFromMap(a.titles, site.languages, {
+        ja_jp: 'ja',
+        en_us: 'en',
+        zh_cn: 'zh-cn',
+        zh_tw: 'zh-tw',
+      }) ??
+        a.canonicalTitle ??
+        pick(a.titles, 'en', 'en_jp')
+    ),
     canonical: 'https://kitsu.app/' + kind.toLowerCase() + '/' + (a.slug ?? data.id),
     image: a.posterImage?.medium ?? a.posterImage?.original,
   }

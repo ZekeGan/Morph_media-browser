@@ -26,7 +26,16 @@ export const bangumi: Adapter = async (site) => {
     data.tags?.map((tag: { name?: unknown }) => tag?.name)
   )
   return {
-    title: clean(data.name_cn || data.name),
+    // R-381: name_cn is the Chinese title and name the original (Japanese); the first preferred language that has one wins.
+    title: clean(
+      site.languages
+        .map((language) =>
+          language.startsWith('zh') ? data.name_cn : language === 'ja' ? data.name : undefined
+        )
+        .find((value) => typeof value === 'string' && value.trim()) ||
+        data.name_cn ||
+        data.name
+    ),
     canonical: 'https://bgm.tv/subject/' + id,
     image: data.images?.medium,
   }

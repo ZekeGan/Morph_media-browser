@@ -305,3 +305,25 @@ test('table visibility preserves names and saves independently of column order',
     assert.equal(await fs.readFile(store.file, 'utf8'), before)
   }
 })
+
+test('R-381: the source language order is local, follows the interface when empty, and rejects bad lists', async (t) => {
+  const { root, store } = await fixture(t),
+    ids = ['p1']
+  await store.read(ids)
+  await store.update({ action: 'appearance', theme: 'glass', locale: 'ja' }, ids)
+  assert.deepEqual(store.sourceLanguages(), ['ja'])
+  await store.update({ action: 'sourceLanguages', value: ['en', 'zh-TW'] }, ids)
+  const reopened = new WorkspaceStore(root)
+  await reopened.init()
+  assert.deepEqual((await reopened.read(ids)).prefs.sourceLanguages, ['en', 'zh-TW'])
+  assert.deepEqual(reopened.sourceLanguages(), ['en', 'zh-TW'])
+  const before = await fs.readFile(store.file)
+  for (const value of [undefined, 'en', ['fr'], ['en', 'en'], [1]])
+    await assert.rejects(
+      reopened.update({ action: 'sourceLanguages', value } as WorkspaceCommand, ids)
+    )
+  assert.deepEqual(await fs.readFile(store.file), before)
+  await reopened.update({ action: 'sourceLanguages', value: [] }, ids)
+  assert.equal((await reopened.read(ids)).prefs.sourceLanguages, undefined)
+  assert.deepEqual(reopened.sourceLanguages(), ['ja'])
+})

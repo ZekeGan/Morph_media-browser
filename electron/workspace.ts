@@ -13,7 +13,7 @@ import {
   type WorkspaceState,
 } from '../shared/workspace'
 import { isThemeId } from '../shared/themes'
-import { isLocaleId, systemLocale } from '../shared/locales'
+import { isLocaleId, systemLocale, type LocaleId } from '../shared/locales'
 import { exportSettings, importSettings, mergeSettings } from './settings-package'
 import { checkNotNewer, FORMAT_VERSION, isNewerFormat, upgradeFormat } from '../shared/upgrade'
 
@@ -25,6 +25,9 @@ const integer = (v: unknown, min: number, max = Number.MAX_SAFE_INTEGER) =>
   Number.isInteger(v) && Number(v) >= min && Number(v) <= max
 const object = (v: unknown): v is Record<string, any> =>
   !!v && typeof v === 'object' && !Array.isArray(v)
+// R-381: one to five different interface languages, no repeats (an empty list means "follow the interface").
+const validLanguages = (v: unknown): v is LocaleId[] =>
+  Array.isArray(v) && v.length <= 5 && v.every(isLocaleId) && new Set(v).size === v.length
 function groupName(v: unknown): string {
   if (typeof v !== 'string' || !v.trim() || v.trim().length > 60 || /[\x00-\x1f]/.test(v))
     throw new Error('群組名稱需為 1～60 個字，不能含控制字元')
@@ -58,6 +61,8 @@ export function validateWorkspace(v: unknown): asserts v is WorkspacePrefs {
     throw new Error('側欄設定格式不合法')
   if (v.theme !== undefined && !isThemeId(v.theme)) throw new Error('主題設定不合法')
   if (v.locale !== undefined && !isLocaleId(v.locale)) throw new Error('語言設定不合法')
+  if (v.sourceLanguages !== undefined && !validLanguages(v.sourceLanguages))
+    throw new Error('來源語言設定不合法')
   if (
     v.fileVisibility !== undefined &&
     (!object(v.fileVisibility) ||
@@ -423,6 +428,12 @@ export class WorkspaceStore {
   flashPlayerPath() {
     return this.prefs.flashPlayer
   }
+  // R-381: the order external sources are read in: the chosen list, or the interface language alone.
+  sourceLanguages(): LocaleId[] {
+    return this.prefs.sourceLanguages?.length
+      ? [...this.prefs.sourceLanguages]
+      : [this.prefs.locale ?? 'zh-TW']
+  }
   update(command: WorkspaceCommand, ids: string[]): Promise<WorkspaceState> {
     return this.run(async () => {
       if (this.error) throw new Error(this.error)
@@ -559,6 +570,12 @@ export class WorkspaceStore {
         case 'playOrder':
           if (!isPlayOrder(command.value)) throw new Error('播放順序設定不合法')
           next.playOrder = command.value
+          break
+        case 'sourceLanguages':
+          if (!validLanguages(command.value)) throw new Error('來源語言設定不合法')
+          // An empty list goes back to following the interface language.
+          if (command.value.length) next.sourceLanguages = [...command.value]
+          else delete next.sourceLanguages
           break
         case 'appearance':
           if (!isThemeId(command.theme) || !isLocaleId(command.locale))

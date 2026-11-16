@@ -193,8 +193,8 @@ test('R-395: MusicBrainz recording and artist addresses read their own fixed API
   assert.equal(value(person, 'END_DATE'), undefined)
   assert.equal(value(person, 'DISAMBIGUATION'), 'the one')
   assert.deepEqual(asked, [
-    `https://musicbrainz.org/ws/2/recording/${rec}?inc=artist-credits+releases&fmt=json`,
-    `https://musicbrainz.org/ws/2/artist/${art}?fmt=json`,
+    `https://musicbrainz.org/ws/2/recording/${rec}?inc=artist-credits+releases+genres+tags&fmt=json`,
+    `https://musicbrainz.org/ws/2/artist/${art}?inc=aliases+genres+tags&fmt=json`,
   ])
   // An id that is not a UUID never reaches the network.
   await assert.rejects(
