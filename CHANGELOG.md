@@ -18,6 +18,8 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Book folders: comic archives are a list under the folder details (no tiles), in file name order with numbers as numbers, each with its progress bar, 讀到 N / M 頁 and 繼續閱讀; the whole folder shares the spread, direction and webtoon settings, and every archive remembers its own page (new tentative `volumes` field in the folder record) (R-407).
+- CBR (RAR) and CB7 (7z) comic archives can be read, in memory only, through 7-Zip compiled to WebAssembly (7z-wasm); the format is taken from the file's content, so a ZIP named .cbr works too (R-407, replaces R-403).
 - Webtoon reading: changing the column width keeps the page on screen, the width can go down to 10%, the bottom of the last page shows the end notice with 前往下一本, and the progress bar always runs left to right (R-414).
 - A comic archive (CBZ) opened from a book folder continues with the next archive of the folder at its last page, like a text book (R-415).
 - Markdown files (.md) open in the text reader typeset (headings, lists, tables, code blocks) with a toolbar button back to the plain text; HTML in them is shown as text, pictures are not loaded, and only http(s) links open, in the system browser (R-399).

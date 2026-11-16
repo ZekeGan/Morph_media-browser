@@ -24,6 +24,9 @@ export interface ArchiveIndex {
   images: ArchiveImage[]
   // Text entries (EPUB chapters, package and table of contents), only when asked for (R-282).
   texts?: ArchiveImage[]
+  // R-407: RAR and 7z archives are read from an in-memory copy (archive-foreign.ts) instead of by file offsets.
+  format?: 'rar' | '7z'
+  memory?: string
 }
 const crcTable = Array.from({ length: 256 }, (_, index) => {
   let value = index

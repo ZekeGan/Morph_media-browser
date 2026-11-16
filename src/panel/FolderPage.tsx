@@ -22,7 +22,7 @@ export interface FolderPageSpec {
   notice: 'top' | 'list'
   // Viewers that open over the page are kept at its start or its end.
   overlay: 'first' | 'last'
-  // Whether the page may show something above the details (the book page lists its book files there).
+  // Whether the page may show something under the details (R-407: the book page lists its book files there, under the folder's details).
   lead: boolean
 }
 export const folderPages: Record<FolderPageKind, FolderPageSpec> = {
@@ -121,9 +121,9 @@ export function FolderPage({
   return (
     <div className={spec.className}>
       {spec.overlay === 'first' && overlay}
-      {spec.lead && lead}
       {spec.notice === 'top' && notice}
       <FolderDetails row={row} project={project} openFolder={openFolder} all={spec.allFields} />
+      {spec.lead && lead}
       {spec.subfolders && folders && onChild && (
         <SubfolderList folders={folders} childNames={childNames} busy={busy} onChild={onChild} />
       )}

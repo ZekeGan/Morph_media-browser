@@ -166,6 +166,7 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
   clearKey: { site: ref },
   testKey: { site: ref },
   novelProgress: { rowId: ref, fileId: ref, progress: object },
+  volumeProgress: { rowId: ref, fileId: ref, page: int, total: int, prefs: opt(object) },
   subtitle: {
     rowId: ref,
     fileId: opt(ref),

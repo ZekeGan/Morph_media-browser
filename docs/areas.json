@@ -185,8 +185,8 @@
       "name": "ZIP／CBZ／PDF",
       "docs": ["DOCUMENT_VIEWER_DESIGN.md#zipcbz", "DOCUMENT_VIEWER_DESIGN.md#pdf"],
       "code": ["src/documents/DocumentViewer*", "electron/archive*"],
-      "ui": ["reader-ui", "reader-cbz-next-ui", "novel-ui", "decided-ui"],
-      "tests": ["decided-media.test.ts"]
+      "ui": ["reader-ui", "reader-cbz-next-ui", "book-volumes-ui", "novel-ui", "decided-ui"],
+      "tests": ["decided-media.test.ts", "archive-foreign.test.ts"]
     },
     {
       "id": "editor",

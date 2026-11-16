@@ -36,7 +36,7 @@ const shown = () =>
   page.evaluate(() => document.querySelector('.reader-info strong')?.textContent ?? '')
 try {
   await page.getByRole('button', { name: '開啟專案 Cbz next test', exact: true }).first().click()
-  await page.getByRole('button', { name: '開啟 vol1.cbz', exact: true }).click()
+  await page.getByRole('button', { name: '開始閱讀 vol1.cbz', exact: true }).click()
   await reader().waitFor()
   await page.waitForFunction(() =>
     /\/ 2 頁/.test(document.querySelector('.reader-info strong')?.textContent ?? '')

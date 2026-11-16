@@ -1,6 +1,7 @@
 import { fmt } from '../shared/message'
 import { isFolderKind } from '../shared/kind'
 import { archiveIndex, type ArchiveIndex } from './archive'
+import { foreignDispose, openArchive } from './archive-foreign'
 import { dateOrText, httpUrl, validFieldValue } from '../shared/fields'
 import { type MetadataSourceId, metadataSources } from '../shared/sources'
 import fs from 'node:fs/promises'
@@ -83,6 +84,22 @@ export interface DesktopOperations {
 export class Explorer {
   readonly index: SearchIndex
   archives = new Map<string, { file: string; index: ArchiveIndex }>()
+  // At most four opened archives are kept; the oldest goes first, and a RAR/7z one gives its in-memory copy back.
+  // Only one RAR/7z copy (up to 512 MiB) stays in the WebAssembly memory at a time, so several never add up.
+  remember(token: string, value: { file: string; index: ArchiveIndex }) {
+    if (value.index.memory)
+      for (const [key, kept] of [...this.archives])
+        if (kept.index.memory) {
+          void foreignDispose(kept.index)
+          this.archives.delete(key)
+        }
+    while (this.archives.size >= 4) {
+      const oldest = this.archives.keys().next().value!
+      void foreignDispose(this.archives.get(oldest)!.index)
+      this.archives.delete(oldest)
+    }
+    this.archives.set(token, value)
+  }
   overviewPages = new Map<
     string,
     {
@@ -321,11 +338,17 @@ export class Explorer {
     switch (req.action) {
       case 'archive': {
         const file = await this.file(req.rowId, req.fileId)
-        if (file.mime !== 'application/zip') throw new Error('不是 ZIP／CBZ')
-        const index = await archiveIndex(file.file),
+        if (
+          ![
+            'application/zip',
+            'application/vnd.comicbook-rar',
+            'application/x-7z-compressed',
+          ].includes(file.mime)
+        )
+          throw new Error('不是漫畫壓縮檔（ZIP／CBZ、RAR／CBR、7z／CB7）')
+        const index = await openArchive(file.file),
           token = randomUUID()
-        while (this.archives.size >= 4) this.archives.delete(this.archives.keys().next().value!)
-        this.archives.set(token, { file: file.file, index })
+        this.remember(token, { file: file.file, index })
         return {
           content: {
             entries: index.images.map((entry, i) => ({
@@ -905,8 +928,7 @@ export class Explorer {
           (number) => `media://archive/${req.rowId}/${req.fileId}/${token}/${number}`
         )
         if (novel.format === 'epub' && (!req.summary || novel.cover)) {
-          while (this.archives.size >= 4) this.archives.delete(this.archives.keys().next().value!)
-          this.archives.set(token, { file: file.file, index: await archiveIndex(file.file) })
+          this.remember(token, { file: file.file, index: await archiveIndex(file.file) })
         }
         // R-338: the file page only needs the title, author, cover and chapter names.
         if (req.summary)
@@ -944,6 +966,36 @@ export class Explorer {
                     }
                   : {}),
               },
+            }
+          })
+        )
+      }
+      case 'volumeProgress': {
+        const file = await this.file(req.rowId, req.fileId),
+          row = await this.library.checkedRow(req.rowId, true),
+          current = await readFolder(row.path)
+        if (!/\.(cbz|cbr|cb7|zip)$/i.test(file.file)) throw new Error('不是漫畫壓縮檔')
+        if (!Number.isInteger(req.page) || !Number.isInteger(req.total) || req.total < 1)
+          throw new Error('閱讀頁碼不合法')
+        const page = Math.min(Math.max(req.page, 0), req.total - 1)
+        return this.after(
+          await this.details(req.rowId, current.revision, (d) => {
+            d.volumes = {
+              ...d.volumes,
+              [path.basename(file.file)]: {
+                page,
+                total: req.total,
+                updated: new Date().toISOString(),
+              },
+            }
+            // The settings are the folder's, shared by every archive in it; the page is this archive's own.
+            if (req.prefs) {
+              const { page: _page, mode: _mode, ...settings } = req.prefs
+              d.reading = {
+                ...settings,
+                ...(d.reading?.page !== undefined ? { page: d.reading.page } : {}),
+                ...(d.reading?.mode !== undefined ? { mode: d.reading.mode } : {}),
+              }
             }
           })
         )

@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, lazy, Suspense } from 'react'
 import { Button, FocusTrap, Group } from '@mantine/core'
 import type { ExplorerRequest, ExplorerResponse, MediaEntry } from '../../shared/explorer'
 import type { FolderRow } from '../../shared/model'
+import type { ReadingPrefs } from '../../shared/explorer'
 import { t as tr, useLocale } from '../i18n'
 const Reader = lazy(() => import('../reader/Reader').then((module) => ({ default: module.Reader })))
 const NovelReader = lazy(() =>
@@ -79,6 +80,35 @@ export function DocumentViewer({
         />
       </Suspense>
     )
+  // R-407: a comic archive of a book folder reads with the folder's shared reading settings and remembers its own page.
+  const comic = file.kind === 'archive' && /\.(cbz|cbr|cb7)$/i.test(file.name) && !!row && !!run,
+    reading = comic ? row?.record?.details?.reading : undefined,
+    volume = comic ? row?.record?.details?.volumes?.[file.name] : undefined
+  const saveReading = (prefs: ReadingPrefs) => {
+    if (!comic || !row?.record || !run || !images || row.readonly || row.stopped || row.error)
+      return
+    const { page, ...settings } = prefs,
+      keys = ['spread', 'rtl', 'firstSingle', 'webtoon', 'webtoonWidth', 'webtoonAsked'] as const,
+      sameSettings = keys.every(
+        (key) =>
+          // A direction nobody chose reads right to left, as the reader assumes.
+          (key === 'rtl'
+            ? (settings.rtl ?? true) === (reading?.rtl ?? true)
+            : !!settings[key] === !!reading?.[key]) &&
+          (key !== 'webtoonWidth' || settings[key] === reading?.[key])
+      )
+    // Just looking (still on the first page, nothing changed) writes nothing.
+    if (sameSettings && (volume ? volume.page === page && volume.total === images.length : !page))
+      return
+    void run({
+      action: 'volumeProgress',
+      rowId: row.rowId,
+      fileId: file.id,
+      page: page ?? 0,
+      total: images.length,
+      ...(sameSettings ? {} : { prefs: settings }),
+    })
+  }
   if (images)
     return (
       <Suspense fallback={<p>{tr('載入內容…')}</p>}>
@@ -88,9 +118,9 @@ export function DocumentViewer({
           images={images}
           start={0}
           manga
-          prefs={undefined}
+          prefs={comic ? { ...reading, page: volume?.page } : undefined}
           close={close}
-          save={() => {}}
+          save={saveReading}
           // R-415: past the last page the reader offers the next book of the folder, as the text reader does.
           nextBook={next && { name: next.name, open: () => next.open() }}
         />

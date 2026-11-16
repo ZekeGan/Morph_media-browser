@@ -53,6 +53,13 @@ export interface ReadingPrefs {
   webtoonWidth?: number
   webtoonAsked?: boolean
 }
+// R-407 (tentative): the page a comic archive (CBZ, CBR, CB7) in the folder was left on, counted from 0, the number of
+// pages it had, and when it was last read.
+export interface VolumeProgress {
+  page: number
+  total: number
+  updated: string
+}
 // R-282: the place in a text book (chapter, and the share of that chapter read), the share of the whole book, when
 // it was last read, and the user's bookmarks.
 export interface NovelProgress {
@@ -120,6 +127,9 @@ export interface FolderDetails {
   >
   // R-282: where each text book in the folder was left, by file name.
   novels?: Record<string, NovelProgress>
+  // R-407 (tentative): where each comic archive in the folder was left, by file name. The reading settings (spread,
+  // direction, webtoon…) are shared by the whole folder and stay in `reading`.
+  volumes?: Record<string, VolumeProgress>
   // R-305: the save folder the user picked when it could not be worked out from the engine.
   saveFolder?: { path: string; relative: boolean }
   subtitles?: { id: string; name: string; relativePath: string }[]
@@ -348,6 +358,15 @@ export type ExplorerRequest =
   | { action: 'audioTags'; rowId: string; fileIds: string[] }
   // Only this book's place changes, so main writes it against the record's current revision.
   | { action: 'novelProgress'; rowId: string; fileId: string; progress: NovelProgress }
+  // R-407: the place in a comic archive, and (when the reader changed them) the folder's shared reading settings.
+  | {
+      action: 'volumeProgress'
+      rowId: string
+      fileId: string
+      page: number
+      total: number
+      prefs?: ReadingPrefs
+    }
   | {
       action: 'subtitle'
       rowId: string

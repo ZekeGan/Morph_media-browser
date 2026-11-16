@@ -56,3 +56,56 @@ export function zipFixture(
   end.writeUInt32LE(offset, 16)
   return Buffer.concat([...files, directory, end])
 }
+
+// R-407: a RAR 4 archive with stored (uncompressed) files, written by hand: the marker, main header, one file header
+// with its data per entry and the end block. Enough for the reader's RAR support without a RAR compressor.
+export function rarFixture(entries: { name: string; bytes: Buffer; crc?: number }[]) {
+  const withCrc = (body: Buffer) => {
+    const crc = Buffer.alloc(2)
+    crc.writeUInt16LE(crc32(body) & 0xffff)
+    return Buffer.concat([crc, body])
+  }
+  const main = Buffer.alloc(11)
+  main.writeUInt8(0x73, 0)
+  main.writeUInt16LE(13, 3)
+  const parts: Buffer[] = [Buffer.from([0x52, 0x61, 0x72, 0x21, 0x1a, 0x07, 0x00]), withCrc(main)]
+  for (const entry of entries) {
+    const name = Buffer.from(entry.name),
+      body = Buffer.alloc(30 + name.length)
+    body.writeUInt8(0x74, 0)
+    body.writeUInt16LE(0x8000, 1)
+    body.writeUInt16LE(32 + name.length, 3)
+    body.writeUInt32LE(entry.bytes.length, 5)
+    body.writeUInt32LE(entry.bytes.length, 9)
+    body.writeUInt8(2, 13)
+    body.writeUInt32LE(entry.crc ?? crc32(entry.bytes), 14)
+    body.writeUInt32LE(0x5a21_0000, 18)
+    body.writeUInt8(20, 22)
+    body.writeUInt8(0x30, 23)
+    body.writeUInt16LE(name.length, 24)
+    body.writeUInt32LE(0x20, 26)
+    name.copy(body, 30)
+    parts.push(withCrc(body), entry.bytes)
+  }
+  parts.push(Buffer.from([0xc4, 0x3d, 0x7b, 0x00, 0x40, 0x07, 0x00]))
+  return Buffer.concat(parts)
+}
+
+// A 7z archive made by the same 7-Zip build the reader uses, in its own in-memory file system.
+export async function sevenZipFixture(entries: { name: string; bytes: Buffer }[]) {
+  const { default: SevenZip } = await import('7z-wasm')
+  const module = await SevenZip({ print: () => {}, printErr: () => {} })
+  module.FS.mkdir('/w')
+  module.FS.chdir('/w')
+  for (const entry of entries) {
+    const parts = entry.name.split('/')
+    for (let i = 1; i < parts.length; i++) {
+      try {
+        module.FS.mkdir(parts.slice(0, i).join('/'))
+      } catch {}
+    }
+    module.FS.writeFile(entry.name, entry.bytes)
+  }
+  module.callMain(['a', '-bd', 'book.7z', ...entries.map((entry) => entry.name.split('/')[0])])
+  return Buffer.from(module.FS.readFile('book.7z'))
+}

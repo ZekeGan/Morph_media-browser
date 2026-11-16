@@ -3,7 +3,7 @@ import { BookCard, BookShelf, FilePage } from './FilePage'
 import { MediaViewer } from '../media/MediaViewer'
 import { isGameFolder, visibleFile } from '../../shared/media'
 import { effectiveKind, sampleOf, templateKind } from '../../shared/kind'
-import { savedPlace } from '../../shared/reader'
+import { savedPlace, sortVolumes } from '../../shared/reader'
 import { PanelSkeleton } from './PanelSkeleton'
 import { useFileVisibility } from '../files/useFileVisibility'
 import { DocumentViewer } from '../documents/DocumentViewer'
@@ -97,7 +97,7 @@ export function FolderContent({
   // R-282: after the last page of a text book, the next text book in this folder. R-415: a comic archive (CBZ) goes on
   // to the next archive the same way.
   const nextText = (file: ContentResult['entries'][number]) => {
-    const books = (content?.entries ?? []).filter((entry) => entry.kind === file.kind),
+    const books = sortVolumes((content?.entries ?? []).filter((entry) => entry.kind === file.kind)),
       following = books[books.findIndex((entry) => entry.id === file.id) + 1]
     return following && following.id !== file.id
       ? { name: following.name, open: () => setDocumentFile(following) }

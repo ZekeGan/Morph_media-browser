@@ -60,3 +60,9 @@ export function savedPlace(
     resumes: page < images - (prefs.spread ? 2 : 1),
   }
 }
+
+// R-407: books of one folder in file name order, numbers counted as numbers (vol2 before vol10). The book list and
+// "the next book" use the same order.
+const volumeNames = new Intl.Collator('zh-Hant', { numeric: true })
+export const sortVolumes = <T extends { name: string }>(entries: readonly T[]): T[] =>
+  [...entries].sort((a, b) => volumeNames.compare(a.name, b.name))

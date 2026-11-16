@@ -1,4 +1,4 @@
-import { archiveImage } from './archive'
+import { readArchiveImage } from './archive-foreign'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
@@ -213,7 +213,12 @@ export async function archiveStream(
       cached = ex.archives.get(token),
       index = cached?.index
     if (
-      !['application/zip', 'application/epub+zip'].includes(file.mime) ||
+      ![
+        'application/zip',
+        'application/epub+zip',
+        'application/vnd.comicbook-rar',
+        'application/x-7z-compressed',
+      ].includes(file.mime) ||
       !index ||
       cached?.file !== file.file ||
       !/^\d{1,5}$/.test(number)
@@ -221,7 +226,7 @@ export async function archiveStream(
       throw new Error('壓縮頁面已失效')
     const entry = index.images[Number(number)]
     if (!entry) throw new Error('壓縮頁面不存在')
-    const bytes = await archiveImage(file.file, index, entry)
+    const bytes = await readArchiveImage(file.file, index, entry)
     return new globalThis.Response(new Uint8Array(bytes), {
       headers: {
         'Content-Type': entry.mime,

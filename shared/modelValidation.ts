@@ -265,6 +265,20 @@ function validTargetEntry([k, t]: [string, unknown]): boolean {
   )
 }
 
+// R-407: a comic archive's page, kept under its file name inside the folder.
+function validVolumeEntry(name: string, p: unknown): boolean {
+  return (
+    text(name, 255) &&
+    !/[\\/\0]/.test(name) &&
+    obj(p) &&
+    Object.keys(p).every((k) => ['page', 'total', 'updated'].includes(k)) &&
+    integer(p.total, 1, 1000000) &&
+    integer(p.page, 0, 1000000) &&
+    p.page < (p.total as number) &&
+    typeof p.updated === 'string' &&
+    !Number.isNaN(Date.parse(p.updated))
+  )
+}
 // R-282: a text book's place, kept under its file name inside the folder.
 function validNovelEntry(name: string, p: unknown): boolean {
   const ratio = (value: unknown) => typeof value === 'number' && value >= 0 && value <= 1
@@ -406,6 +420,13 @@ export function validateDetails(v: unknown): asserts v is FolderDetails {
       !Object.entries(v.novels).every(([name, p]) => validNovelEntry(name, p)))
   )
     throw new Error('小說閱讀紀錄不合法')
+  if (
+    v.volumes !== undefined &&
+    (!obj(v.volumes) ||
+      Object.keys(v.volumes).length > 10000 ||
+      !Object.entries(v.volumes).every(([name, p]) => validVolumeEntry(name, p)))
+  )
+    throw new Error('漫畫壓縮檔閱讀紀錄不合法')
   if (
     v.saveFolder !== undefined &&
     (!obj(v.saveFolder) ||

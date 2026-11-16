@@ -8999,12 +8999,6 @@
     "ja": "無効な操作です",
     "es": "Operación no válida"
   },
-  "不是 ZIP／CBZ": {
-    "zh-CN": "不是 ZIP／CBZ",
-    "en": "Not a ZIP / CBZ",
-    "ja": "ZIP／CBZ ではありません",
-    "es": "No es un ZIP / CBZ"
-  },
   "只能用系統預設程式開啟影音檔案": {
     "zh-CN": "只能用系统默认程序打开影音文件",
     "en": "Only video and audio files open with the system's default app",
@@ -12011,12 +12005,6 @@
     "ja": "{0} / {1} ページまで",
     "es": "Página {0} de {1}"
   },
-  "分冊": {
-    "zh-CN": "分册",
-    "en": "Volumes",
-    "ja": "巻",
-    "es": "Volúmenes"
-  },
   "全部播放": {
     "zh-CN": "全部播放",
     "en": "Play all",
@@ -12178,5 +12166,77 @@
     "en": "Go to next book",
     "ja": "次の本へ",
     "es": "Ir al siguiente libro"
+  },
+  "RAR／7z 壓縮檔超過大小上限（512 MiB）": {
+    "zh-CN": "RAR／7z 压缩档超过大小上限（512 MiB）",
+    "en": "The RAR / 7z archive is over the size limit (512 MiB)",
+    "ja": "RAR／7z アーカイブがサイズ上限（512 MiB）を超えています",
+    "es": "El archivo RAR / 7z supera el límite de tamaño (512 MiB)"
+  },
+  "不是支援的漫畫壓縮檔（ZIP／CBZ、RAR／CBR、7z／CB7）": {
+    "zh-CN": "不是支持的漫画压缩档（ZIP／CBZ、RAR／CBR、7z／CB7）",
+    "en": "Not a supported comic archive (ZIP / CBZ, RAR / CBR, 7z / CB7)",
+    "ja": "対応していない漫画アーカイブです（ZIP／CBZ、RAR／CBR、7z／CB7）",
+    "es": "No es un archivo de cómic compatible (ZIP / CBZ, RAR / CBR, 7z / CB7)"
+  },
+  "不是漫畫壓縮檔（ZIP／CBZ、RAR／CBR、7z／CB7）": {
+    "zh-CN": "不是漫画压缩档（ZIP／CBZ、RAR／CBR、7z／CB7）",
+    "en": "Not a comic archive (ZIP / CBZ, RAR / CBR, 7z / CB7)",
+    "ja": "漫画アーカイブではありません（ZIP／CBZ、RAR／CBR、7z／CB7）",
+    "es": "No es un archivo de cómic (ZIP / CBZ, RAR / CBR, 7z / CB7)"
+  },
+  "不是漫畫壓縮檔": {
+    "zh-CN": "不是漫画压缩档",
+    "en": "Not a comic archive",
+    "ja": "漫画アーカイブではありません",
+    "es": "No es un archivo de cómic"
+  },
+  "壓縮圖片內容或校驗不符": {
+    "zh-CN": "压缩图片内容或校验不符",
+    "en": "The picture's content or checksum does not match",
+    "ja": "画像の内容またはチェックサムが一致しません",
+    "es": "El contenido o la suma de comprobación de la imagen no coincide"
+  },
+  "壓縮圖片大小超出限制": {
+    "zh-CN": "压缩图片大小超出限制",
+    "en": "The picture is over the size limit",
+    "ja": "画像のサイズが上限を超えています",
+    "es": "La imagen supera el límite de tamaño"
+  },
+  "壓縮圖片無法解壓": {
+    "zh-CN": "压缩图片无法解压",
+    "en": "The picture could not be extracted",
+    "ja": "画像を展開できません",
+    "es": "No se pudo extraer la imagen"
+  },
+  "壓縮檔已加密，無法開啟": {
+    "zh-CN": "压缩档已加密，无法打开",
+    "en": "The archive is encrypted and cannot be opened",
+    "ja": "アーカイブが暗号化されていて開けません",
+    "es": "El archivo está cifrado y no se puede abrir"
+  },
+  "壓縮檔格式不符": {
+    "zh-CN": "压缩档格式不符",
+    "en": "The archive format does not match",
+    "ja": "アーカイブの形式が一致しません",
+    "es": "El formato del archivo no coincide"
+  },
+  "無法讀取壓縮檔目錄": {
+    "zh-CN": "无法读取压缩档目录",
+    "en": "The archive's listing could not be read",
+    "ja": "アーカイブの目次を読み取れません",
+    "es": "No se pudo leer el índice del archivo"
+  },
+  "閱讀頁碼不合法": {
+    "zh-CN": "阅读页码不合法",
+    "en": "The reading page is not valid",
+    "ja": "閲覧ページが正しくありません",
+    "es": "La página de lectura no es válida"
+  },
+  "漫畫壓縮檔閱讀紀錄不合法": {
+    "zh-CN": "漫画压缩档阅读记录不合法",
+    "en": "The comic archive reading record is not valid",
+    "ja": "漫画アーカイブの閲覧記録が正しくありません",
+    "es": "El registro de lectura del archivo de cómic no es válido"
   }
 }

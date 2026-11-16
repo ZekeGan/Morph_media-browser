@@ -17,6 +17,9 @@ export const mediaTypes: Record<string, [MediaEntry['kind'], string]> = {
   '.pdf': ['pdf', 'application/pdf'],
   '.zip': ['archive', 'application/zip'],
   '.cbz': ['archive', 'application/zip'],
+  // R-407: RAR and 7z comic archives, read by archive-foreign.ts.
+  '.cbr': ['archive', 'application/vnd.comicbook-rar'],
+  '.cb7': ['archive', 'application/x-7z-compressed'],
   // R-282: text books for the novel reader.
   '.txt': ['text', 'text/plain; charset=utf-8'],
   '.epub': ['text', 'application/epub+zip'],

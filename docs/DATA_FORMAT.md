@@ -56,6 +56,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 - `kind`：使用者手動指定的資料夾類型（`game`、`book`、`music`、`video`、`general`）；沒有時由程式偵測，不寫入記錄（規則見 [UI_RULES](UI_RULES.md) 的資料夾類型）。v1 的 `media`（影音合一）在升級到 v2 時移除。
 - `reading`、`playback`、`subtitles`：漫畫閱讀偏好、影片續播進度與字幕設定。`reading` 的 `webtoon`、`webtoonWidth`（10～100）、`webtoonAsked`（R-256）記條漫模式、寬度與是否已回答過條漫提示。舊記錄的 `reading.mode`（`image`／`manga`）不再寫入也不再讀（R-411），舊值留著不動。
 - `novels`（R-282）：文字書的閱讀位置，以檔名為鍵 `{ chapter, position, percent, updated, bookmarks? }`；`position`、`percent` 是 0～1 的比例，書籤最多 500 個。
+- `volumes`（R-407，**暫定**，選用，不升 `schemaVersion`）：資料夾內漫畫壓縮檔（CBZ、CBR、CB7）各自讀到的頁，以檔名為鍵 `{ page, total, updated }`；`page` 從 0 起算且小於 `total`，`total` 是當時的頁數，`updated` 是 ISO 時間。單雙頁、方向、條漫等閱讀設定整個資料夾共用，仍存在 `reading`，不另存每卷設定。
 
 ### 範例（簡化）
 
