@@ -1,10 +1,11 @@
 # 小說閱讀器
 
-> 最後確認：2026-11-16（R-390）。文字書（TXT、EPUB）的閱讀規則。程式：`src/novel/NovelReader.tsx`、`src/novel/NovelContent.tsx`、`electron/novel.ts`、`shared/novel.ts`；測試：`tests/novel.test.ts`、`tests/novel-ui.ts`。圖片漫畫的閱讀器見 [MANGA_VIEWER_DESIGN](MANGA_VIEWER_DESIGN.md)。
+> 最後確認：2026-11-16（R-399）。文字書（TXT、EPUB）的閱讀規則。程式：`src/novel/NovelReader.tsx`、`src/novel/NovelContent.tsx`、`electron/novel.ts`、`shared/novel.ts`；測試：`tests/novel.test.ts`、`tests/novel-ui.ts`。圖片漫畫的閱讀器見 [MANGA_VIEWER_DESIGN](MANGA_VIEWER_DESIGN.md)。
 
 ## 範圍與分類
 
 - `.txt` 與 `.epub` 是「文字書」（檔案類型 `text`）。不新增資料夾分類：檔案以文字書為主的資料夾判斷為「書籍／漫畫」（R-282 決定不動資料結構）。右側內容頁把文字書列成按鈕，點了開小說閱讀器；媒體大視窗與「檔案」總覽也能開。
+- Markdown（`.md`，R-399）也是檔案類型 `text`、用同一個閱讀器開，但不算文字書：不讓資料夾變成書籍。整份檔案是一章，預設以排版顯示（標題、清單、表格、程式碼區塊、粗斜體、引用），工具列的「Markdown 排版」按鈕切回原始文字。解析用 markdown-it 並關閉 HTML：檔案裡的 HTML 只當文字顯示、不執行；圖片一律不載入（只顯示替代文字，本機與遠端都一樣）；連結只有 http／https 可點，用系統瀏覽器開（`openExternal`），其他連結只顯示文字，視窗本身不會導覽。
 - 只讀檔案，不改寫、不轉檔。EPUB 不執行內含的程式或樣式。
 
 ## 讀取（main）

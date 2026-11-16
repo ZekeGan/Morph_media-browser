@@ -897,7 +897,7 @@ export class Explorer {
         return { audioTags: await streamFns.audioTags(this, req.rowId, req.fileIds) }
       case 'novel': {
         const file = await this.file(req.rowId, req.fileId)
-        if (!/\.(txt|epub)$/i.test(file.file)) throw new Error('不是文字書（TXT／EPUB）')
+        if (!/\.(txt|epub|md)$/i.test(file.file)) throw new Error('不是文字書（TXT／EPUB／MD）')
         // EPUB pictures reuse the read-only archive stream, registered like a comic archive.
         const token = randomUUID()
         const novel = await readNovel(

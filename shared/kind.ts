@@ -50,7 +50,8 @@ export function countFile(sample: Required<KindSample>, kind: string, name = '')
   if (kind === 'image') sample.images++
   else if (kind === 'video') sample.videos++
   else if (kind === 'audio') sample.audio++
-  else if (kind === 'text') sample.texts++
+  // R-399: Markdown notes are not text books; they do not make a folder a book.
+  else if (kind === 'text' && ext !== '.md') sample.texts++
   if (ext === '.epub') sample.epubs++
   else if (comicTypes.includes(ext)) sample.comics++
   else if (sidecarTypes.includes(ext)) sample.sidecars++

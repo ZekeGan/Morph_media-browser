@@ -239,7 +239,7 @@ export function BookShelf({
               <li key={entry.id}>
                 <Icon name={kindIcon[entry.kind] ?? 'file'} size={18} />
                 <div className="book-shelf-name">
-                  <span title={entry.name}>{entry.name.replace(/\.(txt|epub)$/i, '')}</span>
+                  <span title={entry.name}>{entry.name.replace(/\.(txt|epub|md)$/i, '')}</span>
                   {entry.kind === 'text' && (
                     <Progress value={percent} size="xs" aria-label={tr('閱讀進度')} />
                   )}

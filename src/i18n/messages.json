@@ -8213,12 +8213,6 @@
     "ja": "アーカイブの内容が上限を超えています",
     "es": "El contenido del archivo supera el límite"
   },
-  "不是文字書（TXT／EPUB）": {
-    "zh-CN": "不是文字书（TXT／EPUB）",
-    "en": "Not a text book (TXT / EPUB)",
-    "ja": "テキスト本（TXT／EPUB）ではありません",
-    "es": "No es un libro de texto (TXT / EPUB)"
-  },
   "EPUB 缺少 container.xml 或套件檔": {
     "zh-CN": "EPUB 缺少 container.xml 或包文件",
     "en": "The EPUB has no container.xml or package file",
@@ -12166,5 +12160,17 @@
     "en": "Continue watching: {0} ({1})",
     "ja": "続きから再生：{0}（{1}）",
     "es": "Seguir viendo: {0} ({1})"
+  },
+  "Markdown 排版": {
+    "zh-CN": "Markdown 排版",
+    "en": "Typeset Markdown",
+    "ja": "Markdown 表示",
+    "es": "Markdown con formato"
+  },
+  "不是文字書（TXT／EPUB／MD）": {
+    "zh-CN": "不是文字书（TXT／EPUB／MD）",
+    "en": "Not a text book (TXT / EPUB / MD)",
+    "ja": "テキスト本（TXT／EPUB／MD）ではありません",
+    "es": "No es un libro de texto (TXT / EPUB / MD)"
   }
 }

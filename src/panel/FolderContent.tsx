@@ -409,7 +409,7 @@ export function FolderContent({
             <Button size="compact-sm" onClick={() => setDocumentFile(lastRead)}>
               {tr('繼續閱讀')}
             </Button>
-            <small>{lastRead.name.replace(/\.(txt|epub)$/i, '')}</small>
+            <small>{lastRead.name.replace(/\.(txt|epub|md)$/i, '')}</small>
           </div>
         ) : (
           firstPage && (

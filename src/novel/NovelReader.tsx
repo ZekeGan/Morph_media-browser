@@ -28,6 +28,7 @@ import { t as tr, useLocale } from '../i18n'
 import { Icon, type IconName } from '../common/icons'
 import { consume, focusNextFrame, useCapturedKeys, useWheel } from '../common/readerInput'
 import { describeError } from '../notices/errors'
+import { MarkdownChapter } from './MarkdownChapter'
 import { chapterText, HtmlChapter, TextChapter } from './NovelContent'
 import './novel.css'
 
@@ -89,6 +90,8 @@ export function NovelReader({
     [bookmarks, setBookmarks] = useState(saved?.bookmarks ?? []),
     [panel, setPanel] = useState<'toc' | 'marks' | 'search'>(),
     [settingsOpen, setSettingsOpen] = useState(false),
+    // R-399: a Markdown file is shown typeset until switched to its plain text.
+    [plainText, setPlainText] = useState(false),
     [query, setQuery] = useState(''),
     [hits, setHits] =
       useState<{ chapter: number; at: number; before: string; match: string; after: string }[]>(),
@@ -685,7 +688,7 @@ export function NovelReader({
     ])
     setPanel('marks')
   }
-  const nextName = next?.name.replace(/\.(txt|epub)$/i, '')
+  const nextName = next?.name.replace(/\.(txt|epub|md)$/i, '')
   const tool = (label: string, icon: IconName, action: () => void, pressed?: boolean, key = '') => (
     <Tooltip zIndex={510} label={label + (key ? ' · ' + key : '')}>
       <ActionIcon
@@ -884,6 +887,8 @@ export function NovelReader({
               </Stack>
             </Popover.Dropdown>
           </Popover>
+          {book?.markdown &&
+            tool(tr('Markdown 排版'), 'eye', () => setPlainText((value) => !value), !plainText)}
           {tool(tr('沉浸閱讀'), 'focus', () => void toggleImmersive(), immersive, 'F11 / T')}
           {tool(tr('退出 · ESC'), 'close', exit)}
         </div>
@@ -1050,6 +1055,8 @@ export function NovelReader({
                             images={book.images ?? {}}
                             vertical={vertical}
                           />
+                        ) : book.markdown && !plainText ? (
+                          <MarkdownChapter text={part.text ?? ''} />
                         ) : (
                           <TextChapter
                             title={part.title}
@@ -1127,7 +1134,7 @@ export function NovelReader({
             <strong>{tr('已讀完')}</strong>
             {next && (
               <span>
-                {tr('下一本：{0}', next.name.replace(/\.(txt|epub)$/i, ''))} ·{' '}
+                {tr('下一本：{0}', next.name.replace(/\.(txt|epub|md)$/i, ''))} ·{' '}
                 {tr('再按一次下一頁開啟')}
               </span>
             )}

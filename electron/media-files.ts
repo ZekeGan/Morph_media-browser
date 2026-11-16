@@ -20,6 +20,8 @@ export const mediaTypes: Record<string, [MediaEntry['kind'], string]> = {
   // R-282: text books for the novel reader.
   '.txt': ['text', 'text/plain; charset=utf-8'],
   '.epub': ['text', 'application/epub+zip'],
+  // R-399: Markdown opens in the same reader, shown typeset (no HTML, no pictures) with a switch back to plain text.
+  '.md': ['text', 'text/markdown; charset=utf-8'],
   '.png': ['image', 'image/png'],
   '.jpg': ['image', 'image/jpeg'],
   '.jpeg': ['image', 'image/jpeg'],

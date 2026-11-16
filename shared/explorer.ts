@@ -65,6 +65,8 @@ export interface NovelProgress {
 // A text book as the novel reader gets it: plain text chapters (TXT) or chapter XHTML with image addresses (EPUB).
 export interface NovelBook {
   format: 'txt' | 'epub'
+  // R-399: a .md file (format is still 'txt'): shown typeset, with a switch to the plain text.
+  markdown?: boolean
   title: string
   // R-338: from the EPUB package (dc:creator, the cover image); a summary leaves the chapters' text out.
   author?: string

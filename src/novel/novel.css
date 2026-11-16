@@ -479,3 +479,86 @@ button.novel-end-card:focus-visible {
     opacity: 0.6;
     letter-spacing: 0.2em;
 }
+
+/* R-399: typeset Markdown */
+.novel-md h1,
+.novel-md h2,
+.novel-md h3,
+.novel-md h4 {
+    margin: 1.4em 0 0.6em;
+    line-height: 1.4;
+}
+
+.novel-md h1 {
+    font-size: 1.6em;
+}
+
+.novel-md h4 {
+    font-size: 1em;
+}
+
+.novel-md > :first-child {
+    margin-block-start: 0;
+}
+
+.novel-md p {
+    margin: 0 0 1em;
+}
+
+.novel-md ul,
+.novel-md ol {
+    margin: 0 0 1em;
+    padding-inline-start: 1.6em;
+}
+
+.novel-md blockquote {
+    margin: 0 0 1em;
+    padding-inline-start: 1em;
+    border-inline-start: 3px solid currentColor;
+    opacity: 0.8;
+}
+
+.novel-md code {
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+    background: rgba(128, 128, 128, 0.2);
+    font-family: Consolas, 'Cascadia Mono', monospace;
+    font-size: 0.9em;
+}
+
+.novel-md pre {
+    margin: 0 0 1em;
+    padding: 0.7em 0.9em;
+    overflow-x: auto;
+    border-radius: 4px;
+    background: rgba(128, 128, 128, 0.2);
+}
+
+.novel-md pre code {
+    padding: 0;
+    background: none;
+    white-space: pre;
+}
+
+.novel-md table {
+    margin: 0 0 1em;
+    border-collapse: collapse;
+}
+
+.novel-md th,
+.novel-md td {
+    padding: 0.3em 0.7em;
+    border: 1px solid rgba(128, 128, 128, 0.5);
+}
+
+.novel-md hr {
+    margin: 1.4em 0;
+    border: 0;
+    border-top: 1px solid rgba(128, 128, 128, 0.5);
+}
+
+.novel-md .novel-md-link {
+    color: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}

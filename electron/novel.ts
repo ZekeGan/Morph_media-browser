@@ -233,6 +233,15 @@ export async function readNovel(
   const stat = await fs.stat(file)
   if (stat.size > MAX_TEXT) throw new Error('文字檔超過 32 MB，無法開啟')
   const { text, encoding } = decodeText(await fs.readFile(file))
+  if (/\.md$/i.test(file))
+    // R-399: one chapter holding the whole file; headings and lists are the Markdown's own, not chapter titles.
+    return {
+      format: 'txt',
+      markdown: true,
+      title: path.basename(file).replace(/\.md$/i, ''),
+      encoding,
+      chapters: [{ title: '', text: text.replace(/\r\n?/g, '\n') }],
+    }
   return {
     format: 'txt',
     title: path.basename(file).replace(/\.txt$/i, ''),
