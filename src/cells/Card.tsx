@@ -22,6 +22,7 @@ import { formatLastPlayed, formatPlayTime, usePlaytime } from '../game/playtime'
 import { latestNovel } from '../../shared/novel'
 import { cellColors } from './cellStyle'
 import { folderCoverAsset, folderCoverPicture } from './folderCover'
+import { PanelPart, panelPartKinds } from './PanelParts'
 import './cells.css'
 import { yesNo } from '../editor/fieldTypes'
 import { useIsWork } from '../browse/folderKind'
@@ -314,6 +315,8 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
     )
   }
   if (cell.kind === 'divider') return <hr className="cell-divider" />
+  if ((panelPartKinds as readonly string[]).includes(cell.kind))
+    return <PanelPart cell={cell} row={row} project={project} />
   if (cell.kind === 'game-cover') {
     const cover = folderCoverPicture(row)
     return cover ? (

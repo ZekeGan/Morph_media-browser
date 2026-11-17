@@ -12964,5 +12964,47 @@
     "en": "Right-panel layouts…",
     "ja": "右側のレイアウト配置…",
     "es": "Diseños del panel derecho…"
+  },
+  "專輯資訊": {
+    "zh-CN": "专辑信息",
+    "en": "Album info",
+    "ja": "アルバム情報",
+    "es": "Información del álbum"
+  },
+  "影片數與播放": {
+    "zh-CN": "视频数与播放",
+    "en": "Video count and play",
+    "ja": "動画数と再生",
+    "es": "Número de vídeos y reproducir"
+  },
+  "書籍資訊（EPUB）": {
+    "zh-CN": "书籍信息（EPUB）",
+    "en": "Book info (EPUB)",
+    "ja": "書籍情報（EPUB）",
+    "es": "Información del libro (EPUB)"
+  },
+  "右側：專輯封面、名稱、演出者與曲數": {
+    "zh-CN": "右侧：专辑封面、名称、艺人与曲数",
+    "en": "Right panel: album cover, title, artist and track count",
+    "ja": "右側：アルバムのカバー、タイトル、アーティストと曲数",
+    "es": "Panel derecho: portada, título, artista y número de pistas"
+  },
+  "右側：影片數與播放／繼續觀看": {
+    "zh-CN": "右侧：视频数与播放／继续观看",
+    "en": "Right panel: video count and play / continue watching",
+    "ja": "右側：動画数と再生／続きを見る",
+    "es": "Panel derecho: número de vídeos y reproducir / seguir viendo"
+  },
+  "右側：只有一本 EPUB 的資料夾顯示它的封面、書名與作者": {
+    "zh-CN": "右侧：只有一本 EPUB 的文件夹显示它的封面、书名与作者",
+    "en": "Right panel: a folder with a single EPUB shows its cover, title and author",
+    "ja": "右側：EPUB が 1 冊だけのフォルダーはそのカバー、書名、著者を表示",
+    "es": "Panel derecho: una carpeta con un solo EPUB muestra su portada, título y autor"
+  },
+  "右側主視覺": {
+    "zh-CN": "右侧主视觉",
+    "en": "Right-panel visuals",
+    "ja": "右側のメイン表示",
+    "es": "Elementos del panel derecho"
   }
 }

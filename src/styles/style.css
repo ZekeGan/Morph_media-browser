@@ -99,8 +99,6 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .column-resizer { position: absolute; right: 0; top: 0; height: 100%; width: 6px; cursor: col-resize; touch-action: none; }
 .column-resizer:hover { background: var(--accent); }
 .media-info-template { display: grid; grid-template-columns: minmax(0,1fr); gap: 10px; margin-bottom: 20px; }
-.media-info-template:has(.manga-cover) { grid-template-columns: minmax(70px,30%) minmax(0,1fr); }
-.manga-cover { width: 100%; max-height: 220px; object-fit: contain; }
 .masonry-gallery { columns: 140px; column-gap: 10px; }
 .manga-gallery { display: grid; grid-template-columns: repeat(auto-fill,minmax(105px,1fr)); gap: 8px; }
 .media-thumbnail { break-inside: avoid; display: block; width: 100%; padding: 0; margin: 0 0 10px; background: var(--surface); border: 0; border-radius: 6px; overflow: hidden; text-align: left; color: inherit; }

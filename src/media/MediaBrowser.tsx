@@ -9,12 +9,13 @@ import type {
   OverviewEntry,
 } from '../../shared/explorer'
 import type { FolderRow, Project, Request, Response } from '../../shared/model'
+import { builtinPanelFor } from '../../shared/explorer'
 import { canPreviewMedia, matchesMedia, visibleFile, type MediaFilter } from '../../shared/media'
 import { Gallery } from '../gallery/Gallery'
 import { MediaViewer } from './MediaViewer'
-import { FolderAlbumCover } from './FolderAlbumCover'
-import { AlbumActions, AlbumHeader, AlbumTracks, useAlbum } from './AlbumView'
-import { VideoHeader } from './VideoHeader'
+import { AlbumActions, AlbumTracks, useAlbum } from './AlbumView'
+import { PanelCard } from '../cells/PanelContent'
+import type { FolderKind } from '../../shared/kind'
 import { usePlayback } from './Playback'
 import { podcastFolder } from './podcast'
 import { placeProgress, useVideoPlaces, videoPlace } from './videoPlace'
@@ -43,6 +44,7 @@ export function MediaBrowser({
   onPrefs,
   album = false,
   video = false,
+  kind,
 }: {
   row: FolderRow
   project: Project
@@ -50,6 +52,8 @@ export function MediaBrowser({
   album?: boolean
   // A video folder: its header offers to play the videos (R-390).
   video?: boolean
+  // The folder's kind, whose right-panel layout the page shows (R-409).
+  kind: FolderKind
   entries: ContentResult['entries']
   loading: boolean
   error: string
@@ -219,16 +223,20 @@ export function MediaBrowser({
       busy={busy}
       onChild={onChild}
       visual={
-        album ? (
-          <AlbumHeader row={row} entries={own} album={albumData} />
-        ) : video ? (
-          <>
-            <FolderAlbumCover row={row} files={own} />
-            <VideoHeader row={row} project={project} entries={own} />
-          </>
-        ) : (
-          <FolderAlbumCover row={row} files={own} />
-        )
+        <PanelCard
+          project={project}
+          row={row}
+          kind={kind}
+          content={{ entries: own, album: album ? albumData : undefined }}
+          builtin={(k) =>
+            builtinPanelFor(
+              project,
+              k,
+              own.some((entry) => entry.kind === 'audio')
+            )
+          }
+          open={() => void act({ action: 'open', rowId: row.rowId })}
+        />
       }
       actions={
         album && <AlbumActions row={row} project={project} entries={own} album={albumData} />

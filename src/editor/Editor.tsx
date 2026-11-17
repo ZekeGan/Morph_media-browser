@@ -114,6 +114,9 @@ export function Editor({
     'open-folder': tr('開啟資料夾'),
     'game-cover': tr('遊戲封面'),
     'game-launch': tr('啟動遊戲'),
+    'album-info': tr('專輯資訊'),
+    'video-info': tr('影片數與播放'),
+    'book-card': tr('書籍資訊（EPUB）'),
   }
   // One line saying what each component is for; shown as palette tooltips and under the inspector title.
   const hints: Record<CellKind, string> = {
@@ -135,6 +138,9 @@ export function Editor({
     'open-folder': tr('一鍵開啟這個資料夾'),
     'game-cover': tr('顯示這個遊戲資料夾的封面'),
     'game-launch': tr('一鍵啟動這個遊戲（使用資料夾綁定的啟動檔）'),
+    'album-info': tr('右側：專輯封面、名稱、演出者與曲數'),
+    'video-info': tr('右側：影片數與播放／繼續觀看'),
+    'book-card': tr('右側：只有一本 EPUB 的資料夾顯示它的封面、書名與作者'),
   }
 
   useLocale()
@@ -1121,6 +1127,7 @@ export function Editor({
           groupRequest={groupRequest}
           fieldRequest={fieldRequest}
           rows={rows.filter((row) => row.projectId === project.projectId)}
+          panel={presetTools}
           reference={(source) =>
             change({ ...draft, fieldBindings: withSourceBinding(draft.fieldBindings, source) })
           }

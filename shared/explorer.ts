@@ -554,12 +554,48 @@ export const cellType = (kind: string) =>
     'field-url': 'url',
     'field-date-only': 'date',
   })[kind] ?? 'string'
-// R-409: the right panel a kind shows until a layout is chosen for it: a book starts with its template, the other
-// kinds with the name and path (shown only when a layout is chosen, since the panel header already says both).
-export const builtinPanel = (project: { cells: Cell[] }, kind: string) =>
+// R-409: the right panel a kind shows until a layout is chosen for it: a book its template (cover and the card's
+// fields), music the album (cover and facts), video the video count with 播放; the others nothing, since the panel
+// header already names the folder. The editor starts an empty one with the name and path.
+const panelPart = (kind: Cell['kind'], h: number): Cell => ({
+  cellId: kind,
+  kind,
+  grid: { x: 0, y: 0, w: 12, h },
+  style: { textColor: '#e4e6e8', backgroundColor: 'transparent' },
+})
+export const builtinPanel = (project: { cells: Cell[] }, kind: string): Cell[] =>
   kind === 'book'
     ? bookTemplate(project)
+    : kind === 'music'
+      ? [panelPart('album-info', 4)]
+      : kind === 'video'
+        ? [panelPart('video-info', 2)]
+        : []
+// The built-in panel of a page that has listed the folder: a video or other folder holding audio also shows the album
+// cover (R-294), as music does in its album info.
+export const builtinPanelFor = (
+  project: { cells: Cell[] },
+  kind: string,
+  hasAudio: boolean
+): Cell[] => {
+  const cells = builtinPanel(project, kind)
+  if (!hasAudio || kind === 'music' || kind === 'book') return cells
+  return [
+    panelPart('album-info', 4),
+    ...cells.map((cell) => ({ ...cell, grid: { ...cell.grid, y: cell.grid.y + 4 } })),
+  ]
+}
+export const panelEditorStart = (project: { cells: Cell[] }, kind: string): Cell[] => {
+  const cells = builtinPanel(project, kind)
+  return cells.length
+    ? cells
     : visibleCells(project).filter((c) => ['name', 'path'].includes(c.kind))
+}
+// A folder of text books with one EPUB (and no pictures) shows its book card above the book template.
+export const withBookCard = (cells: Cell[]): Cell[] => [
+  panelPart('book-card', 4),
+  ...cells.map((cell) => ({ ...cell, grid: { ...cell.grid, y: cell.grid.y + 4 } })),
+]
 
 // The template a book starts with: the cover on the left and, on the right, the fields the project's cards show.
 export function bookTemplate(project: { cells: Cell[] }): Cell[] {

@@ -1,5 +1,5 @@
 import { MediaBrowser } from '../media/MediaBrowser'
-import { BookCard, BookShelf, FilePage } from './FilePage'
+import { BookShelf, FilePage } from './FilePage'
 import { MediaViewer } from '../media/MediaViewer'
 import { isGameFolder, visibleFile } from '../../shared/media'
 import { effectiveKind, sampleOf, templateKind } from '../../shared/kind'
@@ -14,12 +14,12 @@ import { t as tr, useLocale } from '../i18n'
 import { useRefreshNonce } from '../browse/refresh'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Button } from '@mantine/core'
-import { panelChoice, panelCells } from '../../shared/layouts'
-import { Card } from '../cells/Card'
+import { PanelCard } from '../cells/PanelContent'
 import { FolderPage, folderPageKind } from './FolderPage'
 import { Gallery } from '../gallery/Gallery'
 import {
   builtinPanel,
+  withBookCard,
   type ContentResult,
   type ExplorerRequest,
   type ExplorerResponse,
@@ -203,6 +203,7 @@ export function FolderContent({
         project={project}
         album={folderKind === 'music'}
         video={folderKind === 'video'}
+        kind={folderKind}
         entries={visibleEntries}
         loading={!!content.nextCursor && !error}
         error={[error, ...new Set(content.notices)].filter(Boolean).join('\n')}
@@ -287,12 +288,6 @@ export function FolderContent({
     return (
       <GamePage row={row} project={project} run={run} act={act} busy={busy} configure={configure} />
     )
-  // R-409: the right panel's layout; without one chosen a book shows its built-in template and other kinds nothing
-  // (the built-in name and path repeat the panel header).
-  const panel =
-    kind === 'book' || panelChoice(project, row, folderKind)
-      ? panelCells(project, row, folderKind, (k) => builtinPanel(project, k))
-      : undefined
   // The pictures the reader will show, and the saved place among them once the whole folder is listed.
   const pages = visibleEntries.filter((entry) => entry.kind === 'image'),
     firstPage = pages[0],
@@ -300,6 +295,7 @@ export function FolderContent({
   // R-390: a folder of text books: one EPUB gets a book card; 繼續閱讀 goes back to the book read most recently.
   const books = content.entries.filter((entry) => entry.kind === 'text'),
     epubs = books.filter((entry) => /\.epub$/i.test(entry.name)),
+    bookCard = !firstPage && epubs.length === 1 ? epubs[0] : undefined,
     novels = row.record?.details?.novels ?? {},
     lastRead = books
       .filter((entry) => {
@@ -352,15 +348,6 @@ export function FolderContent({
           )}
         </>
       }
-      lead={
-        <BookShelf
-          row={row}
-          entries={content.entries.filter((entry) =>
-            ['archive', 'pdf', 'text'].includes(entry.kind)
-          )}
-          open={setDocumentFile}
-        />
-      }
       notice={
         error && (
           <p role="alert" className="media-content-error">
@@ -377,24 +364,18 @@ export function FolderContent({
         )
       }
       visual={
-        <div className="media-info-template">
-          {!firstPage && epubs.length === 1 && <BookCard row={row} file={epubs[0]} />}
-          {panel?.length ? (
-            <Card
-              project={{
-                ...project,
-                // The panel shows these cells, never a card layout the rules would pick (R-413).
-                layoutPresets: undefined,
-                layoutRules: {},
-                cells: panel,
-              }}
-              row={row}
-              open={() => {
-                void window.media.request({ action: 'open', rowId: row.rowId })
-              }}
-            />
-          ) : null}
-        </div>
+        // R-409: the right panel's layout, else the built-in one; a folder of text books with one EPUB starts with
+        // its book card.
+        <PanelCard
+          project={project}
+          row={row}
+          kind={folderKind}
+          content={{ entries: content.entries, epub: bookCard }}
+          builtin={(k) =>
+            bookCard ? withBookCard(builtinPanel(project, k)) : builtinPanel(project, k)
+          }
+          open={() => void window.media.request({ action: 'open', rowId: row.rowId })}
+        />
       }
       actions={
         // R-390: where the manga was left and the button to read on. The reader decides the page itself (R-253), so
@@ -421,28 +402,42 @@ export function FolderContent({
         )
       }
       list={
-        // R-338: a folder of books only has no picture list to show.
-        (content.entries.some((entry) => entry.kind === 'image') ||
-          !content.entries.some((entry) => ['archive', 'pdf', 'text'].includes(entry.kind))) && (
-          <Gallery
-            entries={content.entries}
-            loading={!!content.nextCursor && !error}
-            manga={kind === 'book'}
-            prefs={row.record?.details?.reading}
-            onReader={setReader}
-            suspended={!!galleryFile}
-            onOpen={(entry) => setGalleryFile(entry)}
-            save={(prefs) => {
-              if (row.record && !row.readonly && !row.stopped && !row.error)
-                void run({
-                  action: 'reading',
-                  rowId: row.rowId,
-                  revision: row.record.revision,
-                  prefs,
-                })
-            }}
+        <>
+          {/* R-407, R-429: the book files, right under the actions like every page's content. */}
+          <BookShelf
+            row={row}
+            entries={content.entries.filter((entry) =>
+              ['archive', 'pdf', 'text'].includes(entry.kind)
+            )}
+            open={setDocumentFile}
           />
-        )
+          {
+            // R-338: a folder of books only has no picture list to show.
+            (content.entries.some((entry) => entry.kind === 'image') ||
+              !content.entries.some((entry) =>
+                ['archive', 'pdf', 'text'].includes(entry.kind)
+              )) && (
+              <Gallery
+                entries={content.entries}
+                loading={!!content.nextCursor && !error}
+                manga={kind === 'book'}
+                prefs={row.record?.details?.reading}
+                onReader={setReader}
+                suspended={!!galleryFile}
+                onOpen={(entry) => setGalleryFile(entry)}
+                save={(prefs) => {
+                  if (row.record && !row.readonly && !row.stopped && !row.error)
+                    void run({
+                      action: 'reading',
+                      rowId: row.rowId,
+                      revision: row.record.revision,
+                      prefs,
+                    })
+                }}
+              />
+            )
+          }
+        </>
       }
     />
   )

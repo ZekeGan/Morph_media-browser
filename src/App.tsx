@@ -28,7 +28,7 @@ import {
 } from '../shared/layouts'
 import { isFolderKind, type FolderKind } from '../shared/kind'
 import { BrowseWorkspace } from './browse/BrowseWorkspace'
-import { builtinPanel, type ExplorerRequest, type ExplorerResponse } from '../shared/explorer'
+import { panelEditorStart, type ExplorerRequest, type ExplorerResponse } from '../shared/explorer'
 import type { WorkspacePrefs } from '../shared/workspace'
 import { describeError } from './notices/errors'
 import type { Notice } from '../shared/notifications'
@@ -276,7 +276,7 @@ export function App() {
     ? templateCategory
     : undefined
   const panelProject = (p: Project) =>
-    panelEditorProject(p, panelKind!, builtinPanel(p, panelKind!), templatePreset)
+    panelEditorProject(p, panelKind!, panelEditorStart(p, panelKind!), templatePreset)
   const saveEdited = async (p: Project, preset?: { name: string; asNew: boolean }) => {
     try {
       const next = panelKind

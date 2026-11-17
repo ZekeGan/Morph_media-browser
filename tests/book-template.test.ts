@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { bookTemplate, builtinPanel } from '../shared/explorer'
+import { bookTemplate, builtinPanel, panelEditorStart, withBookCard } from '../shared/explorer'
 import type { Cell } from '../shared/model'
 import { modelProject } from './support/model-fixtures'
 import { projectImageCells } from '../shared/layouts'
@@ -30,9 +30,26 @@ test('R-362: a book starts with its cover on the left and the card fields on the
     bookTemplate({ cells: [card[0]] }).map((c) => c.cellId),
     ['book-cover']
   )
+  // Music and video start with their main visual; other kinds show nothing, and the editor starts them with the name.
   assert.deepEqual(
-    builtinPanel({ cells: card }, 'game').map((c) => c.cellId),
+    builtinPanel({ cells: card }, 'music').map((c) => c.kind),
+    ['album-info']
+  )
+  assert.deepEqual(builtinPanel({ cells: card }, 'game'), [])
+  assert.deepEqual(
+    panelEditorStart({ cells: card }, 'game').map((c) => c.cellId),
     ['name']
+  )
+  // One EPUB: the book card comes first and the template moves below it.
+  const carded = withBookCard(builtinPanel({ cells: card }, 'book'))
+  assert.deepEqual(
+    carded.map((c) => [c.kind, c.grid.y]),
+    [
+      ['book-card', 0],
+      ['image', 4],
+      ['field-tags', 4],
+      ['field-tags', 5],
+    ]
   )
 })
 

@@ -238,6 +238,9 @@
       "code": [
         "src/cells/Card*",
         "src/cells/folderCover*",
+        "src/cells/PanelContent*",
+        "src/cells/PanelParts*",
+        "src/cells/panelContext*",
         "src/cells/CellStyleEditor*",
         "src/cells/TagList*",
         "src/cells/EnumColors*",

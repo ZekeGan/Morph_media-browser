@@ -5,7 +5,8 @@ import { isGameFolder } from '../../shared/media'
 import { FolderDetails, SubfolderList } from './FolderParts'
 
 // R-389: every folder page in the right panel is the same skeleton of blocks, always in this order:
-//   details › subfolders › main visual › sort/filter/view controls › the kind's own actions › book list › content list.
+//   details › subfolders › main visual › sort/filter/view controls › the kind's own actions › content list (a book
+//   page's list starts with its book files, R-407, R-429). R-409: the main visual is the folder's right-panel layout.
 // A page only says which blocks it shows (the table below) and what fills them (the props of FolderPage), so a
 // kind's defaults change here and in its fill-ins, without another code path.
 export type FolderPageKind = 'game' | 'book' | 'media' | 'music'
@@ -22,8 +23,6 @@ export interface FolderPageSpec {
   notice: 'top' | 'list'
   // Viewers that open over the page are kept at its start or its end.
   overlay: 'first' | 'last'
-  // Whether the page lists its book files (R-407), right under its actions like every page's content (R-429).
-  lead: boolean
 }
 export const folderPages: Record<FolderPageKind, FolderPageSpec> = {
   // A game main folder: its inside is protected, so no subfolders or files are offered; its fields are all in the
@@ -37,7 +36,6 @@ export const folderPages: Record<FolderPageKind, FolderPageSpec> = {
     actions: true,
     notice: 'top',
     overlay: 'first',
-    lead: false,
   },
   // Books and manga: the picture list brings its own reading controls. Its action bar is the place a manga was left
   // and the button to read on (R-390).
@@ -50,7 +48,6 @@ export const folderPages: Record<FolderPageKind, FolderPageSpec> = {
     actions: true,
     notice: 'top',
     overlay: 'first',
-    lead: true,
   },
   // Music, video and general folders share the unified file page.
   media: {
@@ -62,7 +59,6 @@ export const folderPages: Record<FolderPageKind, FolderPageSpec> = {
     actions: false,
     notice: 'list',
     overlay: 'last',
-    lead: false,
   },
   // A music folder is the file page shown as an album: the cover and album facts, 全部播放／隨機播放, then the
   // tracks (R-390).
@@ -75,7 +71,6 @@ export const folderPages: Record<FolderPageKind, FolderPageSpec> = {
     actions: true,
     notice: 'list',
     overlay: 'last',
-    lead: false,
   },
 }
 // The page a folder gets. Only a game main folder (or a possible one) has the game page; a folder merely set to
@@ -92,7 +87,6 @@ export function FolderPage({
   childNames,
   busy,
   onChild,
-  lead,
   notice,
   visual,
   controls,
@@ -109,7 +103,6 @@ export function FolderPage({
   childNames?: string[]
   busy: boolean
   onChild?: (name: string) => void
-  lead?: ReactNode
   notice?: ReactNode
   visual?: ReactNode
   controls?: ReactNode
@@ -129,7 +122,6 @@ export function FolderPage({
       {spec.visual && visual}
       {spec.controls && controls}
       {spec.actions && actions}
-      {spec.lead && lead}
       {spec.notice === 'list' && notice}
       {list}
       {spec.overlay === 'last' && overlay}

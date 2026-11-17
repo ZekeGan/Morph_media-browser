@@ -17,7 +17,7 @@ import { Icon } from '../common/icons'
 import { Card } from '../cells/Card'
 import { isLayoutWork, KindIcon, LayoutWorksContext } from './folderKind'
 import { cardPresets, cardRule } from '../../shared/layouts'
-import { builtinPanel } from '../../shared/explorer'
+import { builtinPanel, panelEditorStart } from '../../shared/explorer'
 import {
   chooseLayout,
   choosePanel,
@@ -249,9 +249,7 @@ export function LayoutConfig({
   const panelPreview = (row: FolderRow) => {
     const { id } = choice(row),
       kind = kindOf(row),
-      cells =
-        presets.find((p) => p.id === id)?.cells ??
-        (kind === 'book' ? builtinPanel(project, 'book') : undefined)
+      cells = presets.find((p) => p.id === id)?.cells ?? builtinPanel(project, kind)
     return { kind, cells }
   }
   // The project with both drafts; `extra` adds right-panel layouts made in this window.
@@ -294,7 +292,11 @@ export function LayoutConfig({
     for (let n = 2; used.has(label.toLocaleLowerCase()); n++) label = first + ' (' + n + ')'
     const id = crypto.randomUUID()
     const next = drafted([
-      { id, name: label, cells: structuredClone(cells ?? builtinPanel(project, kind)) },
+      {
+        id,
+        name: label,
+        cells: structuredClone(cells.length ? cells : panelEditorStart(project, kind)),
+      },
     ])
     next.layoutRules = {
       ...next.layoutRules,

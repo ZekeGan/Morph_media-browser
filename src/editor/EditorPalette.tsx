@@ -62,6 +62,9 @@ const kindIcons: Partial<Record<CellKind, IconName>> = {
   divider: 'minus',
   'game-cover': 'image',
   'game-launch': 'play',
+  'album-info': 'music',
+  'video-info': 'video',
+  'book-card': 'book',
 }
 
 // The left-hand materials panel: find something and put it on the card. Four sections share one heading style
@@ -81,6 +84,8 @@ export type EditorPaletteProps = {
   preview?: FolderRow
   // The game section is shown only in a project with games (or when game components are already on the card).
   hasGames: boolean
+  // The right-panel editor (R-409) also offers the panel's main visuals.
+  panel?: boolean
   dragImage: (event: React.DragEvent<HTMLDivElement>) => void
   act: (request: Request) => Promise<Response | undefined>
   add: (
@@ -158,6 +163,7 @@ export function EditorPalette(props: EditorPaletteProps) {
     reference,
     preview,
     hasGames,
+    panel,
     dragImage,
     act,
     add,
@@ -682,6 +688,8 @@ export function EditorPalette(props: EditorPaletteProps) {
       </Section>
       {componentSection('layout', tr('排版'), ['static-text', 'spacer', 'divider'])}
       {hasGames && componentSection('game', tr('遊戲'), ['game-cover', 'game-launch'])}
+      {panel &&
+        componentSection('panel', tr('右側主視覺'), ['album-info', 'video-info', 'book-card'])}
       <Modal
         opened={adding}
         onClose={() => setAdding(false)}

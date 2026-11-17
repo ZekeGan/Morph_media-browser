@@ -21,6 +21,10 @@ export type CellKind =
   | 'open-folder'
   | 'game-cover'
   | 'game-launch'
+  // R-409 (provisional): the right panel's main visuals; on a card or in the editor they only name themselves.
+  | 'album-info'
+  | 'video-info'
+  | 'book-card'
 export interface Cell {
   cellId: string
   kind: CellKind

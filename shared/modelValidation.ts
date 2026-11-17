@@ -156,6 +156,9 @@ function validCell(c: unknown): boolean {
       'open-folder',
       'game-cover',
       'game-launch',
+      'album-info',
+      'video-info',
+      'book-card',
     ].includes(c.kind) &&
     (c.text === undefined || text(c.text, 10000)) &&
     (c.systemInfo === undefined ||
