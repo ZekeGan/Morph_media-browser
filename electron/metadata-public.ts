@@ -31,7 +31,7 @@ import {
 
 // A cover request. Redirects are refused unless the site names the hosts they may go to (the Cover Art Archive
 // hands out its images from archive.org); each hop is checked the same way as the first address.
-async function coverResponse(
+export async function coverResponse(
   fetcher: typeof fetch,
   first: URL,
   allowed: RegExp | undefined,

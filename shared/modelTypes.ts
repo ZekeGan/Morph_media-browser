@@ -116,11 +116,14 @@ export interface Attribute {
   source: string
   sourceRecord?: SourceRecord
 }
+// R-422 (provisional): what a source-imported picture is for. Only stored; no page uses it yet.
+export type AssetRole = 'screenshot' | 'hero' | 'logo' | 'icon'
 export interface Asset {
   assetId: string
   relativePath: string
   originalName: string
   mediaType: string
+  role?: AssetRole
 }
 export interface FolderRecord {
   kind: 'media-viewer.folder'

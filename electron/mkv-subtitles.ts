@@ -1,11 +1,14 @@
 import fs from 'node:fs/promises'
 import { inflateSync } from 'node:zlib'
 import { assText, type Cue } from '../shared/subtitles'
+import { parseVobsubHeader, vobsubTiming, type VobsubHeader } from '../shared/vobsub'
 
 // R-412: the subtitle tracks of a Matroska file (.mkv, .webm), read in plain JavaScript. The file is untrusted, so
 // the reader only walks element headers: video and audio blocks are skipped by their size without being read, only
 // the Tracks list and the blocks of text subtitle tracks are read. Everything is bounded (see LIMITS); a file that
 // breaks a bound or is cut short gives an error or the cues read so far, never an unbounded read.
+// R-421: VobSub picture tracks are read too. A picture cue keeps only where its packet is in the file (the packets
+// of a film add up to far more than its text), and the packets near the playback time are read when asked for.
 export type EmbeddedFormat = 'srt' | 'ass' | 'ssa' | 'vtt'
 export interface EmbeddedTrack {
   number: number
@@ -13,10 +16,25 @@ export interface EmbeddedTrack {
   name?: string
   default?: boolean
   forced?: boolean
-  // PGS, VobSub and other picture subtitles: listed, but there is nothing to read as text.
+  // PGS, VobSub and other picture subtitles: nothing to read as text.
   graphic: boolean
   format?: EmbeddedFormat
   cues: Cue[]
+  // R-421: a VobSub track whose pictures can be shown, and its cues.
+  picture?: PictureInfo
+  pictures?: PictureCue[]
+}
+export interface PictureInfo extends VobsubHeader {
+  // How the track's blocks are stored: zlib, and the leading bytes stripped from each (base64).
+  zlib: boolean
+  strip?: string
+}
+// One picture cue: its time and where its (still compressed) packet is in the file.
+export interface PictureCue {
+  start: number
+  end: number
+  at: number
+  size: number
 }
 export const LIMITS = {
   // Longest read of one file, in milliseconds.
@@ -30,6 +48,8 @@ export const LIMITS = {
   blockPayload: 64 * 1024,
   cuesPerTrack: 100_000,
   textTotal: 16 * 1024 * 1024,
+  // R-421: picture cues across all tracks (a real film has about 10 tracks of 1–2 thousand).
+  picturesTotal: 200_000,
   tracks: 64,
 }
 const WINDOW = 8192
@@ -53,6 +73,7 @@ const ID = {
   contentCompression: 0x5034,
   contentCompAlgo: 0x4254,
   contentCompSettings: 0x4255,
+  codecPrivate: 0x63a2,
   seekHead: 0x114d9b74,
   seek: 0x4dbb,
   seekId: 0x53ab,
@@ -154,6 +175,8 @@ interface Track extends EmbeddedTrack {
   zlib: boolean
   strip?: Buffer
 }
+// A track with something to read: text, or pictures that can be shown (R-421).
+const readable = (track: EmbeddedTrack) => !track.graphic || !!track.picture
 function parseTracks(b: Buffer): Map<number, Track> {
   const found = new Map<number, Track>()
   for (const entry of children(b)) {
@@ -168,6 +191,7 @@ function parseTracks(b: Buffer): Map<number, Track> {
       forced = false,
       zlib = false,
       strip: Buffer | undefined,
+      header: string | undefined,
       unusable = false
     for (const field of children(entry.data)) {
       const text = () => field.data.toString('utf8').replace(/\0.*$/s, '').slice(0, 200)
@@ -179,6 +203,8 @@ function parseTracks(b: Buffer): Map<number, Track> {
       else if (field.id === ID.name) name = text()
       else if (field.id === ID.flagDefault) isDefault = uint(field.data) !== 0
       else if (field.id === ID.flagForced) forced = uint(field.data) !== 0
+      else if (field.id === ID.codecPrivate)
+        header = field.data.subarray(0, 64 * 1024).toString('latin1')
       else if (field.id === ID.contentEncodings)
         for (const encoding of children(field.data))
           if (encoding.id === ID.contentEncoding)
@@ -203,7 +229,9 @@ function parseTracks(b: Buffer): Map<number, Track> {
     const format = textFormats[codec],
       graphic = graphicCodecs.has(codec)
     if (!format && !graphic) continue
-    const code = bcp47 || language
+    const code = bcp47 || language,
+      // R-421: a VobSub track can be shown when its header gives the palette.
+      vobsub = codec === 'S_VOBSUB' && header ? parseVobsubHeader(header) : undefined
     found.set(number, {
       number,
       ...(code && code !== 'und' ? { language: code } : {}),
@@ -213,6 +241,12 @@ function parseTracks(b: Buffer): Map<number, Track> {
       graphic,
       ...(format ? { format } : {}),
       cues: [],
+      ...(vobsub
+        ? {
+            picture: { ...vobsub, zlib, ...(strip ? { strip: strip.toString('base64') } : {}) },
+            pictures: [],
+          }
+        : {}),
       zlib,
       ...(strip ? { strip } : {}),
     })
@@ -357,6 +391,7 @@ export async function readMkvSubtitles(
       scale = 1_000_000,
       elements = 0,
       text = 0,
+      pictureTotal = 0,
       reported = -1
     const tick = () => {
       if (++elements > LIMITS.elements || Date.now() > deadline) throw new Error('讀取內嵌字幕逾時')
@@ -380,19 +415,20 @@ export async function readMkvSubtitles(
       for (let i = 1; i < length; i++) number = number * 256 + b[i]
       const track = tracks.get(number)
       // No lacing: a subtitle block is one cue.
-      if (!track || track.graphic || b[length + 2] & 0x06) return undefined
+      if (!track || !readable(track) || b[length + 2] & 0x06) return undefined
       const payloadSize = size - length - 3
       if (payloadSize <= 0 || payloadSize > LIMITS.blockPayload) return undefined
       return {
         track,
         offset: (b.readInt16BE(length) * scale) / 1e9,
+        at: at + length + 3,
         payload: Buffer.from(await source.bytes(at + length + 3, payloadSize)),
       }
     }
     const addCue = (
       track: Track,
       cluster: number,
-      block: { offset: number; payload: Buffer },
+      block: { offset: number; at: number; payload: Buffer },
       duration: number
     ) => {
       let body = track.strip ? Buffer.concat([track.strip, block.payload]) : block.payload
@@ -403,6 +439,24 @@ export async function readMkvSubtitles(
           // A damaged or oversized block is left out; the other cues stay.
           return
         }
+      if (track.pictures) {
+        // R-421: a block that is not a picture packet is left out. A cue with no duration of its own shows for as
+        // long as the packet says, or a few seconds (the next cue replaces it earlier).
+        const timing = vobsubTiming(body)
+        if (!timing) return
+        if (track.pictures.length >= LIMITS.cuesPerTrack || ++pictureTotal > LIMITS.picturesTotal)
+          throw new Error('內嵌字幕過大')
+        const start = (cluster * scale) / 1e9 + block.offset,
+          length =
+            duration > 0 ? duration : timing.stop !== undefined && timing.stop > 0 ? timing.stop : 8
+        track.pictures.push({
+          start,
+          end: start + length,
+          at: block.at,
+          size: block.payload.length,
+        })
+        return
+      }
       const words = cueText(track, body)
       if (!words) return
       if (track.cues.length >= LIMITS.cuesPerTrack || (text += words.length) > LIMITS.textTotal)
@@ -478,8 +532,8 @@ export async function readMkvSubtitles(
     // R-417: read only the blocks the cue index points at, nearest the playback time first. False when the index
     // does not cover every text track or points at blocks that are not there; the whole file is read instead.
     const fromIndex = async (entries: IndexEntry[]) => {
-      const textTracks = [...tracks!.values()].filter((track) => !track.graphic)
-      if (!textTracks.every((track) => entries.some((entry) => entry.track === track.number)))
+      const wantedTracks = [...tracks!.values()].filter(readable)
+      if (!wantedTracks.every((track) => entries.some((entry) => entry.track === track.number)))
         return false
       const seen = new Set<number>()
       let left = entries.slice(),
@@ -557,13 +611,11 @@ export async function readMkvSubtitles(
         if (h.size < 0 || h.size > LIMITS.tracksElement) throw new Error('字幕軌資料過大')
         tracks = parseTracks(Buffer.from(await source.bytes(h.data, h.size)))
         options.onTracks?.([...tracks.values()])
-        // Nothing to read in the rest of the file when no track has text.
-        if (![...tracks.values()].some((track) => !track.graphic)) break
+        // Nothing to read in the rest of the file when no track has text or pictures that can be shown.
+        if (![...tracks.values()].some(readable)) break
       } else if (h.id === ID.cluster) {
         if (tracks && cuesAt !== undefined) {
-          const wanted = new Set(
-            [...tracks.values()].filter((track) => !track.graphic).map((track) => track.number)
-          )
+          const wanted = new Set([...tracks.values()].filter(readable).map((track) => track.number))
           // A damaged or oversized index is not used: the file is then read whole.
           let entries: IndexEntry[] | undefined
           try {
@@ -578,8 +630,12 @@ export async function readMkvSubtitles(
           if (entries) {
             if (await fromIndex(entries)) break
             // The index could not be trusted: start over from the clusters with nothing kept.
-            for (const track of tracks.values()) track.cues.length = 0
+            for (const track of tracks.values()) {
+              track.cues.length = 0
+              if (track.pictures) track.pictures.length = 0
+            }
             text = 0
+            pictureTotal = 0
           }
           cuesAt = undefined
         }
@@ -594,7 +650,48 @@ export async function readMkvSubtitles(
     return [...tracks.values()].map(({ zlib: _zlib, strip: _strip, ...track }) => ({
       ...track,
       cues: track.cues.sort((a, b) => a.start - b.start || a.end - b.end),
+      ...(track.pictures
+        ? { pictures: track.pictures.sort((a, b) => a.start - b.start || a.at - b.at) }
+        : {}),
     }))
+  } finally {
+    await handle.close()
+  }
+}
+
+// R-421: the packets of some picture cues, read from the places noted while the file was read and unpacked the way
+// the track says. A place that no longer holds a packet (or lies outside the file) gives undefined for that cue.
+export async function readPicturePackets(
+  file: string,
+  picture: PictureInfo,
+  cues: PictureCue[]
+): Promise<(Buffer | undefined)[]> {
+  const handle = await fs.open(file, 'r')
+  try {
+    const strip = picture.strip ? Buffer.from(picture.strip, 'base64') : undefined,
+      found: (Buffer | undefined)[] = []
+    for (const cue of cues) {
+      let body: Buffer | undefined
+      if (
+        Number.isSafeInteger(cue.at) &&
+        cue.at >= 0 &&
+        Number.isSafeInteger(cue.size) &&
+        cue.size > 0 &&
+        cue.size <= LIMITS.blockPayload
+      )
+        try {
+          const stored = Buffer.allocUnsafe(cue.size),
+            { bytesRead } = await handle.read(stored, 0, cue.size, cue.at)
+          if (bytesRead === cue.size) {
+            body = strip ? Buffer.concat([strip, stored]) : stored
+            if (picture.zlib) body = inflateSync(body, { maxOutputLength: LIMITS.blockPayload })
+          }
+        } catch {
+          body = undefined
+        }
+      found.push(body && body.length <= LIMITS.blockPayload ? body : undefined)
+    }
+    return found
   } finally {
     await handle.close()
   }

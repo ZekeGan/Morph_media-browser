@@ -3,7 +3,7 @@ export { bookCover }
 import type { MetadataSourceId } from './sources'
 import type { StableQuery } from './query'
 import type { Notice } from './notifications'
-import type { Attribute, Cell, Snapshot } from './model'
+import type { Attribute, AssetRole, Cell, Snapshot } from './model'
 export type BrowseMode = 'CARD' | 'TREE' | 'TABLE'
 // The file list's own choices in the right panel, kept per project so they survive closing the panel or the project.
 export interface MediaPrefs {
@@ -247,6 +247,9 @@ export interface MetadataPreview {
   image?: string
   // R-359: the same work on another source, offered for a separate preview (never merged into this one).
   related?: { provider: MetadataSourceId; url: string; title: string }
+  // R-422: the source's pictures (screenshots, hero, logo, icon) as data addresses, in the order main keeps them;
+  // the import names the ones to keep by position. n is the screenshot's number.
+  images?: { role: AssetRole; n?: number; image: string }[]
 }
 export type ExplorerRequest =
   | { action: 'archive'; rowId: string; fileId: string }
@@ -388,6 +391,15 @@ export type ExplorerRequest =
       early?: boolean
       time?: number
     }
+  // R-421: the picture cues of a VobSub track around a playback time.
+  | {
+      action: 'embeddedPictures'
+      rowId: string
+      fileId: string
+      track: number
+      early?: boolean
+      time?: number
+    }
   | { action: 'imageUrlPreview'; url: string }
   | { action: 'imageUrlApply'; rowId: string; revision: number; token: string; cover: boolean }
   | { action: 'metadataPreview'; source: string; provider?: MetadataSourceId }
@@ -400,6 +412,8 @@ export type ExplorerRequest =
       keys: string[]
       image: boolean
       mode?: 'fill' | 'replace'
+      // R-422: positions in the preview's images to keep.
+      images?: number[]
     }
   | { action: 'rebuildIndex' }
 export interface ExplorerResponse {
@@ -411,6 +425,7 @@ export interface ExplorerResponse {
   subtitle?: { token: string; name: string; text: string; portable: boolean; partial?: boolean }
   // R-417: reading = the tracks' cues are still being read (early answer).
   embedded?: { fileId: string; tracks: EmbeddedSubtitleInfo[]; reading?: boolean }
+  pictures?: EmbeddedPictures
   shortcuts?: string[]
   extras?: GameExtras
   novel?: NovelBook
@@ -467,7 +482,23 @@ export interface EmbeddedSubtitleInfo {
   default?: boolean
   forced?: boolean
   graphic: boolean
+  // R-421: a graphic track whose pictures can be shown (VobSub).
+  picture?: boolean
   cues: number
+}
+// R-421: a stretch of a picture track. Cues are placed in a frame of width × height and drawn with the palette
+// (0xRRGGBB); data is one VobSub packet in base64, decoded by the window. The stretch covers from–until seconds
+// (no until: to the end of the track); partial = the track is still being read.
+export interface EmbeddedPictures {
+  token: string
+  name: string
+  width: number
+  height: number
+  palette: number[]
+  from: number
+  until?: number
+  cues: { start: number; end: number; data: string }[]
+  partial?: boolean
 }
 export interface SubtitleProgress {
   rowId: string

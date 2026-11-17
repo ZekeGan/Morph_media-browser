@@ -12736,5 +12736,59 @@
     "en": "the engine names differ; please check",
     "ja": "エンジン名が異なります。確認してください",
     "es": "los nombres del motor difieren; compruébalo"
+  },
+  "截圖 {0}": {
+    "zh-CN": "截图 {0}",
+    "en": "Screenshot {0}",
+    "ja": "スクリーンショット {0}",
+    "es": "Captura {0}"
+  },
+  "橫幅": {
+    "zh-CN": "横幅",
+    "en": "Banner",
+    "ja": "バナー",
+    "es": "Banner"
+  },
+  "標誌": {
+    "zh-CN": "标志",
+    "en": "Logo",
+    "ja": "ロゴ",
+    "es": "Logotipo"
+  },
+  "圖示": {
+    "zh-CN": "图标",
+    "en": "Icon",
+    "ja": "アイコン",
+    "es": "Icono"
+  },
+  "同時保存來源的圖片": {
+    "zh-CN": "同时保存来源的图片",
+    "en": "Also save pictures from the source",
+    "ja": "ソースの画像も保存",
+    "es": "Guardar también las imágenes de la fuente"
+  },
+  "匯入圖片不合法": {
+    "zh-CN": "导入图片不合法",
+    "en": "The imported pictures are invalid",
+    "ja": "取り込む画像が正しくありません",
+    "es": "Las imágenes importadas no son válidas"
+  },
+  "圖形字幕是影片附的圖片，無法調整大小、位置與顏色。": {
+    "zh-CN": "图形字幕是影片附带的图片，无法调整大小、位置与颜色。",
+    "en": "Picture subtitles are images that come with the video, so their size, position and colours can't be changed.",
+    "ja": "画像字幕は動画に付属する画像のため、サイズ・位置・色は変更できません。",
+    "es": "Los subtítulos gráficos son imágenes incluidas en el vídeo; no se puede cambiar su tamaño, posición ni colores."
+  },
+  "這個字幕軌不是圖形字幕": {
+    "zh-CN": "这个字幕轨不是图形字幕",
+    "en": "This subtitle track is not a picture track",
+    "ja": "この字幕トラックは画像字幕ではありません",
+    "es": "Esta pista de subtítulos no es gráfica"
+  },
+  "這個字幕軌沒有可顯示的圖片": {
+    "zh-CN": "这个字幕轨没有可显示的图片",
+    "en": "This subtitle track has no pictures to show",
+    "ja": "この字幕トラックには表示できる画像がありません",
+    "es": "Esta pista de subtítulos no tiene imágenes que mostrar"
   }
 }

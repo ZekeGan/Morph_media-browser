@@ -7,7 +7,9 @@ import { promisify } from 'node:util'
 import { deflateSync } from 'node:zlib'
 import { Library } from '../electron/library'
 import { Explorer, type DesktopOperations } from '../electron/explorer'
-import { LIMITS, readMkvSubtitles } from '../electron/mkv-subtitles'
+import { LIMITS, readMkvSubtitles, readPicturePackets } from '../electron/mkv-subtitles'
+import { isExplorerRequest } from '../electron/ipc-requests'
+import { decodeVobsub, parseVobsubHeader, vobsubTiming } from '../shared/vobsub'
 import { assText, cuesToSrt, parseSubtitles } from '../shared/subtitles'
 
 // R-412: subtitle tracks inside MKV files. The files here are built byte by byte (and, when ffmpeg is installed, by
@@ -350,17 +352,24 @@ test('the explorer lists and returns embedded tracks through a cache that follow
 // Segment's data; every element here has a 4-byte size, so they are known before the bytes are joined.
 const u32 = (n: number) =>
   Buffer.from([(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255])
-function indexed(options: { lie?: boolean } = {}) {
+interface IndexedCluster {
+  time: number
+  children: Buffer[]
+  subs: { track: number; at: number }[]
+}
+function indexed(options: { lie?: boolean; list?: Buffer; clusters?: IndexedCluster[] } = {}) {
   const info = el(0x1549a966, el(0x2ad7b1, [0x0f, 0x42, 0x40]))
-  const list = tracks(
-    entry(1, 1, 'V_MPEG4/ISO/AVC', 'und'),
-    entry(2, 0x11, 'S_TEXT/UTF8', 'eng', 'English'),
-    // Header stripping (algorithm 3): every block lost the same leading bytes.
-    entry(3, 0x11, 'S_TEXT/UTF8', 'jpn', 'Stripped', [
-      el(0x6d80, el(0x6240, el(0x5034, Buffer.concat([num(0x4254, 3), el(0x4255, 'Hel')])))),
-    ])
-  )
-  const clusters: { time: number; children: Buffer[]; subs: { track: number; at: number }[] }[] = [
+  const list =
+    options.list ??
+    tracks(
+      entry(1, 1, 'V_MPEG4/ISO/AVC', 'und'),
+      entry(2, 0x11, 'S_TEXT/UTF8', 'eng', 'English'),
+      // Header stripping (algorithm 3): every block lost the same leading bytes.
+      entry(3, 0x11, 'S_TEXT/UTF8', 'jpn', 'Stripped', [
+        el(0x6d80, el(0x6240, el(0x5034, Buffer.concat([num(0x4254, 3), el(0x4255, 'Hel')])))),
+      ])
+    )
+  const clusters: IndexedCluster[] = options.clusters ?? [
     { time: 0, children: [video(0), subtitle(2, 100, 'first')], subs: [{ track: 2, at: 1 }] },
     {
       time: 30000,
@@ -526,4 +535,433 @@ test('the explorer answers early with the track list and the cues read so far', 
     parseSubtitles(full.subtitle!.text).map((cue) => cue.text),
     ['first', 'second', 'third']
   )
+})
+
+// R-421: VobSub picture subtitles. A packet is built here from rows of 2-bit pixel values: two interlaced fields of
+// run-length codes, then the control sequences (colours, opacity, area, field offsets, start and stop).
+const palette16 = Array.from({ length: 16 }, (_, index) => index * 0x101010 + (15 - index))
+function spu(
+  rows: number[][],
+  options: { x?: number; y?: number; colours?: number[]; alpha?: number[]; stop?: number } = {}
+) {
+  const width = rows[0].length,
+    { x = 0, y = 0, colours = [0, 1, 2, 3], alpha = [0, 15, 15, 15] } = options
+  const encode = (lines: number[][]) => {
+    const nibbles: number[] = []
+    for (const line of lines) {
+      let at = 0
+      while (at < width) {
+        let run = 1
+        while (at + run < width && line[at + run] === line[at]) run++
+        // A long run that reaches the end of the line is written as "to the end" (count 0, four nibbles).
+        const toEnd = at + run === width && run > 3
+        if (!toEnd) run = Math.min(run, 255)
+        const code = toEnd ? line[at] : (run << 2) | line[at],
+          digits = toEnd ? 4 : run < 4 ? 1 : run < 16 ? 2 : run < 64 ? 3 : 4
+        for (let digit = digits - 1; digit >= 0; digit--) nibbles.push((code >> (4 * digit)) & 15)
+        at += run
+      }
+      if (nibbles.length & 1) nibbles.push(0)
+    }
+    const bytes: number[] = []
+    for (let i = 0; i < nibbles.length; i += 2) bytes.push((nibbles[i] << 4) | nibbles[i + 1])
+    return bytes
+  }
+  const top = encode(rows.filter((_, index) => index % 2 === 0)),
+    bottom = encode(rows.filter((_, index) => index % 2 === 1)),
+    control = 4 + top.length + bottom.length,
+    x2 = x + width - 1,
+    y2 = y + rows.length - 1,
+    two = (value: number) => [value >> 8, value & 255],
+    four = (values: number[]) => [(values[3] << 4) | values[2], (values[1] << 4) | values[0]]
+  const commands = [
+    ...[0x03, ...four(colours), 0x04, ...four(alpha)],
+    ...[0x05, x >> 4, ((x & 15) << 4) | (x2 >> 8), x2 & 255],
+    ...[y >> 4, ((y & 15) << 4) | (y2 >> 8), y2 & 255],
+    ...[0x06, ...two(4), ...two(4 + top.length), 0x01, 0xff],
+  ]
+  const second = control + 4 + commands.length,
+    sequences = [
+      ...[0, 0, ...two(options.stop === undefined ? control : second), ...commands],
+      ...(options.stop === undefined ? [] : [...two(options.stop), ...two(second), 0x02, 0xff]),
+    ],
+    size = control + sequences.length
+  return Buffer.from([...two(size), ...two(control), ...top, ...bottom, ...sequences])
+}
+const pictureRows = () => {
+  const rows: number[][] = []
+  for (let line = 0; line < 9; line++) {
+    const row = new Array<number>(150).fill(0)
+    // Runs of every code length: 1–3, 4–15, 16–63 and 64 or more pixels, and one that ends the line.
+    row.fill(1, 2, 3 + (line % 3))
+    row.fill(2, 10, 15 + line)
+    row.fill(3, 30, 50 + line * 4)
+    if (line % 2) row.fill(1, 70, 150)
+    else row.fill(2, 149, 150)
+    rows.push(row)
+  }
+  return rows
+}
+
+test('a VobSub packet decodes to its exact pixels, place and timing', () => {
+  const rows = pictureRows(),
+    colours = [4, 9, 2, 15],
+    alpha = [0, 15, 8, 3],
+    packet = spu(rows, { x: 300, y: 400, colours, alpha, stop: 176 }),
+    image = decodeVobsub(packet, palette16)
+  assert.ok(image)
+  assert.deepEqual(
+    [image.x, image.y, image.width, image.height, image.forced, image.start],
+    [300, 400, 150, 9, false, 0]
+  )
+  assert.equal(image.stop, (176 * 1024) / 90000)
+  const expected = new Uint8ClampedArray(150 * 9 * 4)
+  rows.forEach((row, line) =>
+    row.forEach((value, column) => {
+      if (!alpha[value]) return
+      const rgb = palette16[colours[value]]
+      expected.set(
+        [(rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255, alpha[value] * 17],
+        (line * 150 + column) * 4
+      )
+    })
+  )
+  assert.deepEqual(image.rgba, expected)
+  assert.deepEqual(vobsubTiming(packet), { start: 0, stop: (176 * 1024) / 90000 })
+  // No stop command: the cue has no end of its own.
+  assert.equal(decodeVobsub(spu(rows), palette16)?.stop, undefined)
+  // The track header: frame size and 16 colours; no palette means nothing can be drawn.
+  const header = parseVobsubHeader(
+    '# VobSub index file, v7\r\nsize: 1920x1080\r\npalette: ' +
+      palette16.map((colour) => colour.toString(16).padStart(6, '0')).join(', ') +
+      '\r\nlangidx: 0\r\n'
+  )
+  assert.deepEqual(header, { width: 1920, height: 1080, palette: palette16 })
+  assert.equal(parseVobsubHeader('size: 720x480\n'), undefined)
+  assert.equal(parseVobsubHeader('size: 99999x480\npalette: ' + '000000,'.repeat(16)), undefined)
+})
+
+test('hostile VobSub packets give undefined quickly, never a read outside the packet', () => {
+  const good = spu(pictureRows(), { stop: 100 }),
+    control = good.readUInt16BE(2),
+    changed = (edit: (copy: Buffer) => void) => {
+      const copy = Buffer.from(good)
+      edit(copy)
+      return decodeVobsub(copy, palette16)
+    }
+  const began = Date.now()
+  assert.equal(decodeVobsub(Buffer.alloc(0), palette16), undefined)
+  assert.equal(decodeVobsub(Buffer.from([0, 4, 0, 4]), palette16), undefined)
+  assert.equal(decodeVobsub(Buffer.alloc(70_000, 1), palette16), undefined, 'over 64 KiB')
+  assert.equal(decodeVobsub(good, palette16.slice(0, 4)), undefined, 'a palette of 16 is needed')
+  // The control offset points outside the packet, or before the picture data.
+  assert.equal(
+    changed((copy) => copy.writeUInt16BE(0xfff0, 2)),
+    undefined
+  )
+  assert.equal(
+    changed((copy) => copy.writeUInt16BE(1, 2)),
+    undefined
+  )
+  // The 32-bit layout (stated size 0) is not read.
+  assert.equal(
+    changed((copy) => copy.writeUInt16BE(0, 0)),
+    undefined
+  )
+  // An area far larger than a frame: nothing is allocated for it.
+  assert.equal(
+    changed((copy) => copy.set([0x00, 0x0f, 0xff, 0x00, 0x0f, 0xff], control + 11)),
+    undefined
+  )
+  // An area whose end is before its start.
+  assert.equal(
+    changed((copy) => copy.set([0x10, 0x00, 0x05, 0x10, 0x00, 0x05], control + 11)),
+    undefined
+  )
+  // Field offsets outside the picture data.
+  assert.equal(
+    changed((copy) => copy.writeUInt16BE(0xffff, control + 18)),
+    undefined
+  )
+  assert.equal(
+    changed((copy) => copy.writeUInt16BE(2, control + 20)),
+    undefined
+  )
+  // A command cut off by the end of the packet.
+  assert.equal(decodeVobsub(good.subarray(0, control + 13), palette16), undefined)
+  // Control sequences that point at each other for ever: reading stops at the first step backwards.
+  const loop = Buffer.from([
+    ...[0, 20, 0, 4],
+    ...[0, 0, 0, 12, 0xff, 0, 0, 0],
+    ...[0, 0, 0, 4, 0xff, 0, 0, 0],
+  ])
+  assert.equal(decodeVobsub(loop, palette16), undefined)
+  // A colour-change command with an impossible size, and one that runs past the packet.
+  assert.equal(
+    decodeVobsub(Buffer.from([0, 12, 0, 4, 0, 0, 0, 4, 7, 0, 0, 0xff]), palette16),
+    undefined
+  )
+  assert.equal(
+    decodeVobsub(Buffer.from([0, 12, 0, 4, 0, 0, 0, 4, 7, 0xff, 0xff, 0xff]), palette16),
+    undefined
+  )
+  // The largest area with almost no data: the picture is empty, and it does not take long.
+  const empty = spu([
+    [1, 1, 1, 1],
+    [1, 1, 1, 1],
+  ])
+  empty.set([0x00, 0x07, 0x7f, 0x00, 0x04, 0x3f], empty.readUInt16BE(2) + 11)
+  const large = decodeVobsub(empty, palette16)
+  assert.deepEqual([large?.width, large?.height], [1920, 1088])
+  // Random bytes, and a good packet with random damage: no throw, and any picture stays inside the limits.
+  let seed = 12345
+  const random = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff
+  for (let round = 0; round < 3000; round++) {
+    const packet =
+      round % 2
+        ? Buffer.from(Array.from({ length: 8 + Math.floor(random() * 300) }, () => random() * 256))
+        : Buffer.from(good)
+    if (round % 2 === 0)
+      for (let i = 0; i < 4; i++) packet[Math.floor(random() * packet.length)] = random() * 256
+    const image = decodeVobsub(packet, palette16)
+    if (image) {
+      assert.ok(
+        image.width >= 1 && image.width <= 1920 && image.height >= 1 && image.height <= 1088
+      )
+      assert.equal(image.rgba.length, image.width * image.height * 4)
+    }
+    vobsubTiming(packet)
+  }
+  assert.ok(Date.now() - began < 5000, 'bounded work')
+})
+
+const pictureHeader =
+  '# VobSub index file, v7 (do not modify this line!)\nsize: 720x480\npalette: ' +
+  palette16.map((colour) => colour.toString(16).padStart(6, '0')).join(', ') +
+  '\n'
+const zipped = el(0x6d80, el(0x6240, el(0x5034, num(0x4254, 0))))
+const pictureTracks = () =>
+  tracks(
+    entry(1, 1, 'V_MPEG4/ISO/AVC', 'und'),
+    entry(2, 0x11, 'S_TEXT/UTF8', 'eng', 'English'),
+    entry(4, 0x11, 'S_VOBSUB', 'chi', 'Pictures', [el(0x63a2, pictureHeader), zipped]),
+    // No palette in its header: listed, but it cannot be drawn.
+    entry(5, 0x11, 'S_VOBSUB', 'jpn', 'No palette', [el(0x63a2, 'size: 720x480\n')]),
+    entry(6, 0x11, 'S_HDMV/PGS', 'kor', 'PGS')
+  )
+const firstPicture = () => spu(pictureRows(), { x: 100, y: 380, stop: 176 }),
+  secondPicture = () => spu(pictureRows().reverse(), { x: 120, y: 400 })
+const pictureClusters = (): IndexedCluster[] => [
+  {
+    time: 0,
+    // No duration of its own: the packet's stop time is used.
+    children: [
+      video(0),
+      subtitle(2, 100, 'first'),
+      subtitle(4, 200, deflateSync(firstPicture()), 0),
+      subtitle(5, 200, firstPicture()),
+    ],
+    subs: [
+      { track: 2, at: 1 },
+      { track: 4, at: 2 },
+    ],
+  },
+  {
+    time: 30000,
+    children: [
+      video(0),
+      subtitle(4, 0, deflateSync(secondPicture()), 1500),
+      // Not a picture packet, and not zlib at all: both are left out.
+      subtitle(4, 500, deflateSync(Buffer.from('not a packet'))),
+      subtitle(4, 700, 'not zlib'),
+    ],
+    subs: [
+      { track: 4, at: 1 },
+      { track: 4, at: 2 },
+      { track: 4, at: 3 },
+    ],
+  },
+]
+
+test('a VobSub track is read with and without the index; its packets are read from their place in the file', async (t) => {
+  const { write } = await fixture(t)
+  const withIndex = await write(
+      'pictures.mkv',
+      indexed({ list: pictureTracks(), clusters: pictureClusters() })
+    ),
+    walked = await write(
+      'walked.mkv',
+      matroska(
+        pictureTracks(),
+        ...pictureClusters().map((item) => cluster(item.time, ...item.children))
+      )
+    )
+  for (const file of [withIndex, walked]) {
+    const found = await readMkvSubtitles(file)
+    assert.deepEqual(
+      found.map((track) => [track.number, track.graphic, !!track.picture, track.cues.length]),
+      [
+        [2, false, false, 1],
+        [4, true, true, 0],
+        [5, true, false, 0],
+        [6, true, false, 0],
+      ]
+    )
+    const pictures = found[1]
+    assert.deepEqual(
+      [pictures.picture?.width, pictures.picture?.height, pictures.picture?.zlib],
+      [720, 480, true]
+    )
+    assert.deepEqual(pictures.picture?.palette, palette16)
+    assert.deepEqual(
+      pictures.pictures?.map((cue) => [cue.start, cue.end]),
+      [
+        [0.2, 0.2 + (176 * 1024) / 90000],
+        [30, 31.5],
+      ]
+    )
+    assert.equal(found[2].pictures, undefined)
+    const packets = await readPicturePackets(file, pictures.picture!, pictures.pictures!)
+    assert.deepEqual(packets, [firstPicture(), secondPicture()])
+    assert.equal(decodeVobsub(packets[0]!, pictures.picture!.palette)?.x, 100)
+    // A place outside the file, or one that holds something else, gives no packet instead of an error.
+    assert.deepEqual(
+      await readPicturePackets(file, pictures.picture!, [
+        { start: 0, end: 1, at: 1e12, size: 100 },
+        { start: 0, end: 1, at: 0, size: 40 },
+        { start: 0, end: 1, at: 0, size: 1e9 },
+      ]),
+      [undefined, undefined, undefined]
+    )
+  }
+  // Reading from 30 s with the index: the picture there is read before the one at the start.
+  let live: { pictures?: { start: number }[] }[] = [],
+    firstRead: number | undefined
+  await readMkvSubtitles(withIndex, {
+    focus: () => 30,
+    onTracks: (found) => (live = found),
+    onProgress: () => {
+      firstRead ??= live[1]?.pictures?.[0]?.start
+    },
+  })
+  assert.equal(firstRead, 30)
+})
+
+test('the explorer answers with the picture cues around a time, from a cache that holds no packets', async (t) => {
+  const { root, closers } = await fixture(t)
+  const media = path.join(root, 'media'),
+    local = path.join(root, 'local')
+  await fs.mkdir(media)
+  await fs.writeFile(
+    path.join(media, 'film.mkv'),
+    indexed({ list: pictureTracks(), clusters: pictureClusters() })
+  )
+  // 100 cues, 0.3 s apart, each 0.2 s long.
+  const packet = deflateSync(firstPicture())
+  await fs.writeFile(
+    path.join(media, 'many.mkv'),
+    matroska(
+      pictureTracks(),
+      cluster(
+        0,
+        ...Array.from({ length: 100 }, (_, index) => subtitle(4, index * 300, packet, 200))
+      )
+    )
+  )
+  const library = new Library(local, undefined, false)
+  await library.init()
+  const progress: number[] = []
+  const desktop: DesktopOperations = {
+    choose: async () => undefined,
+    open: async () => {},
+    launch: async () => {},
+    thumbnail: async () => Buffer.from('x'),
+    subtitleProgress: (value) => progress.push(value.fraction),
+  }
+  const explorer = new Explorer(library, local, desktop)
+  closers.push(() => explorer.index.close())
+  const snapshot = await library.create(media, { name: 'P', depth: { mode: 'through', level: 1 } }),
+    row = snapshot.rows[0],
+    entries = (await explorer.content(row.rowId)).entries,
+    film = entries.find((entry) => entry.name === 'film.mkv')!,
+    many = entries.find((entry) => entry.name === 'many.mkv')!
+  const ask = (fileId: string, track: number, time?: number) =>
+    explorer.request({ action: 'embeddedPictures', rowId: row.rowId, fileId, track, time })
+  const check = async () => {
+    const list = await explorer.request({
+      action: 'embeddedSubtitles',
+      rowId: row.rowId,
+      fileId: film.id,
+    })
+    assert.deepEqual(
+      list.embedded?.tracks.map((track) => [
+        track.number,
+        track.graphic,
+        !!track.picture,
+        track.cues,
+      ]),
+      [
+        [2, false, false, 1],
+        [4, true, true, 2],
+        [5, true, false, 0],
+        [6, true, false, 0],
+      ]
+    )
+    const { pictures } = await ask(film.id, 4, 0)
+    assert.deepEqual(
+      [pictures?.token, pictures?.width, pictures?.height, pictures?.from, pictures?.until],
+      ['emb-4', 720, 480, 0, undefined]
+    )
+    assert.deepEqual(pictures?.palette, palette16)
+    assert.deepEqual(
+      pictures?.cues.map((cue) => [cue.start, cue.end, Buffer.from(cue.data, 'base64')]),
+      [
+        [0.2, 0.2 + (176 * 1024) / 90000, firstPicture()],
+        [30, 31.5, secondPicture()],
+      ]
+    )
+  }
+  await check()
+  // Later in the film only the cues that have not ended yet; past the last one, none.
+  assert.deepEqual(
+    (await ask(film.id, 4, 35)).pictures?.cues.map((cue) => cue.start),
+    [30]
+  )
+  assert.deepEqual((await ask(film.id, 4, 100)).pictures?.cues, [])
+  await assert.rejects(ask(film.id, 5), /圖形字幕，目前無法顯示/)
+  await assert.rejects(ask(film.id, 6), /圖形字幕，目前無法顯示/)
+  await assert.rejects(ask(film.id, 2), /不是圖形字幕/)
+  await assert.rejects(ask(film.id, 99), /找不到/)
+  await assert.rejects(
+    explorer.request({ action: 'embeddedSubtitle', rowId: row.rowId, fileId: film.id, track: 4 }),
+    /圖形字幕/
+  )
+  // A long track is answered a stretch at a time: 80 cues, and where the stretch stops.
+  const start = await ask(many.id, 4, 0)
+  assert.equal(start.pictures?.cues.length, 80)
+  assert.equal(start.pictures?.until, 24)
+  const later = await ask(many.id, 4, 25)
+  assert.deepEqual(
+    [later.pictures?.from, later.pictures?.cues[0].start, later.pictures?.cues.length],
+    [15, 15, 50]
+  )
+  assert.equal(later.pictures?.until, undefined)
+  // The cache file holds times and places only, and a later session answers from it without reading the tracks.
+  const cacheDir = path.join(local, 'subtitle-cache'),
+    cacheFiles = (await fs.readdir(cacheDir)).filter((name) => name.endsWith('.json'))
+  assert.equal(cacheFiles.length, 2)
+  for (const name of cacheFiles) {
+    const text = await fs.readFile(path.join(cacheDir, name), 'utf8')
+    assert.ok(text.length < 20_000 && !text.includes('"data"'))
+  }
+  explorer.embeddedSubtitles.clear()
+  progress.length = 0
+  await check()
+  assert.deepEqual(progress, [], 'served from the cache file')
+  // The request's fields are checked before any work.
+  const request = { action: 'embeddedPictures', rowId: row.rowId, fileId: film.id, track: 4 }
+  assert.ok(isExplorerRequest(request))
+  assert.ok(!isExplorerRequest({ ...request, track: '4' }))
+  assert.ok(!isExplorerRequest({ ...request, fileId: '' }))
+  assert.ok(!isExplorerRequest({ ...request, time: 'now' }))
 })

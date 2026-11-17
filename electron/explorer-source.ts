@@ -7,6 +7,7 @@ import { DATA_DIR, validateDetails, type Attribute } from '../shared/model'
 import { newDetails, type ExplorerRequest, type MetadataPreview } from '../shared/explorer'
 import { metadata } from './metadata'
 import { fetchImageUrl } from './image-url'
+import { sourceImageName } from './source-images'
 import type { Explorer } from './explorer'
 import { parseDate } from '../shared/fields'
 
@@ -48,10 +49,21 @@ export async function metadataPreview(
   for (const [id, p] of ex.previews) if (p.expires < Date.now()) ex.previews.delete(id)
   if (ex.previews.size >= 10) ex.previews.delete(ex.previews.keys().next().value!)
   ex.previews.set(preview.token, {
-    preview,
+    preview: { ...preview },
     cover: item.cover,
+    images: item.images,
     expires: Date.now() + 15 * 60 * 1000,
   })
+  // R-422: pictures take memory (up to 60 MiB a preview), so only the latest three previews keep theirs.
+  const held = [...ex.previews.values()].filter((p) => p.images)
+  for (const p of held.slice(0, Math.max(0, held.length - 3))) p.images = undefined
+  // The window gets the pictures as data addresses and names the ones to keep by position (never by address).
+  if (item.images?.length)
+    preview.images = item.images.map((i) => ({
+      role: i.role,
+      ...(i.n ? { n: i.n } : {}),
+      image: 'data:' + i.mime + ';base64,' + i.bytes.toString('base64'),
+    }))
   return preview
 }
 
@@ -102,12 +114,25 @@ export async function applyMetadata(
   req: Extract<ExplorerRequest, { action: 'metadataApply' }>
 ) {
   const item = ex.previews.get(req.token)
-  if (!item || item.expires < Date.now()) throw new Error('候選已過期，請重新取得')
+  if (!item || item.expires < Date.now()) {
+    // An expired preview's pictures are let go now, not at the next preview.
+    ex.previews.delete(req.token)
+    throw new Error('候選已過期，請重新取得')
+  }
   if (
     !Array.isArray(req.keys) ||
     !req.keys.every((k) => item.preview.values.some((v) => v.key === k))
   )
     throw new Error('匯入欄位不合法')
+  // R-422: pictures are named by position in what main kept for this preview; anything else is refused.
+  const picked = req.images ?? [],
+    pool = item.images ?? []
+  if (
+    !Array.isArray(picked) ||
+    new Set(picked).size !== picked.length ||
+    !picked.every((i) => Number.isInteger(i) && i >= 0 && i < pool.length)
+  )
+    throw new Error('匯入圖片不合法')
   const { row, record } = await ex.record(req.rowId, req.revision)
   const bindings = ex.library.snapshot().projects.find((p) => p.projectId === row.projectId)
     ?.project?.fieldBindings
@@ -150,7 +175,8 @@ export async function applyMetadata(
     )
     record.attributes.push(attribute)
   }
-  let added: string | undefined
+  const added: string[] = [],
+    provider = item.preview.provider ?? 'eh'
   if (
     req.image &&
     item.cover &&
@@ -161,22 +187,51 @@ export async function applyMetadata(
   ) {
     const { bytes, ext, mime } = item.cover,
       assetId = randomUUID(),
-      relativePath = `assets/${assetId}.${ext}`
-    added = path.join(row.path, DATA_DIR, relativePath)
-    await safePath(row.path, added)
-    await fs.mkdir(path.dirname(added), { recursive: true })
-    await fs.writeFile(added, bytes, { flag: 'wx' })
+      relativePath = `assets/${assetId}.${ext}`,
+      target = path.join(row.path, DATA_DIR, relativePath)
+    await safePath(row.path, target)
+    await fs.mkdir(path.dirname(target), { recursive: true })
+    try {
+      await fs.writeFile(target, bytes, { flag: 'wx' })
+    } catch (error) {
+      // A cover cut short is removed (wx: the name is new, so it is ours).
+      await fs.unlink(target).catch(() => {})
+      throw error
+    }
+    added.push(target)
     record.assets.push({
       assetId,
       relativePath,
-      originalName: (item.preview.provider ?? 'eh') + '-cover.' + ext,
+      originalName: provider + '-cover.' + ext,
       mediaType: mime,
     })
   }
   try {
+    // R-422: the chosen pictures, each kept with its role; one that was imported before (same name) is not added twice.
+    for (const index of picked) {
+      const image = pool[index],
+        originalName = sourceImageName(provider, image)
+      if (record.assets.some((asset) => asset.originalName === originalName)) continue
+      const assetId = randomUUID(),
+        relativePath = `assets/${assetId}.${image.ext}`,
+        target = path.join(row.path, DATA_DIR, relativePath)
+      await safePath(row.path, target)
+      await fs.mkdir(path.dirname(target), { recursive: true })
+      // Listed before writing, so a write cut short (a full disk) is cleaned up too.
+      added.push(target)
+      await fs.writeFile(target, image.bytes, { flag: 'wx' })
+      record.assets.push({
+        assetId,
+        relativePath,
+        originalName,
+        mediaType: image.mime,
+        role: image.role,
+      })
+    }
     await saveFolder(row.path, record, req.revision)
   } catch (e) {
-    if (added) await fs.unlink(added)
+    for (const file of added) await fs.unlink(file).catch(() => {})
     throw e
   }
+  item.images = undefined
 }

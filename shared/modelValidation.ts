@@ -82,7 +82,8 @@ function validAsset(a: unknown): boolean {
     relative(a.relativePath) &&
     /^assets\/[a-zA-Z0-9_-]+\.(png|jpg|webp|gif|bmp|avif|ico)$/.test(a.relativePath) &&
     text(a.originalName, 255) &&
-    Object.values(imageTypes).includes(a.mediaType)
+    Object.values(imageTypes).includes(a.mediaType) &&
+    (a.role === undefined || ['screenshot', 'hero', 'logo', 'icon'].includes(a.role))
   )
 }
 

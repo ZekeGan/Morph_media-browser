@@ -31,6 +31,7 @@ import { SearchIndex } from './search-index'
 import { completionNotice } from '../shared/notifications'
 import { projectImageCells } from '../shared/layouts'
 import { type ImageUrlOptions, type RemoteImage } from './image-url'
+import type { SourceImage } from './source-images'
 import { parseSubtitles } from '../shared/subtitles'
 import { key, probeFile } from './media-files'
 import * as contentFns from './explorer-content'
@@ -135,6 +136,8 @@ export class Explorer {
     {
       preview: MetadataPreview
       cover?: { bytes: Buffer; mime: string; ext: string }
+      // R-422: the source's downloaded pictures; the preview names them by position.
+      images?: SourceImage[]
       expires: number
     }
   >()
@@ -1082,6 +1085,15 @@ export class Explorer {
         return embeddedFns.embeddedList(this, req.rowId, req.fileId, req.early)
       case 'embeddedSubtitle':
         return embeddedFns.embeddedText(this, req.rowId, req.fileId, req.track, req.early, req.time)
+      case 'embeddedPictures':
+        return embeddedFns.embeddedPictures(
+          this,
+          req.rowId,
+          req.fileId,
+          req.track,
+          req.early,
+          req.time
+        )
       case 'subtitle': {
         let file: string,
           portable = false,

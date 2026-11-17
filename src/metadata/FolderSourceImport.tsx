@@ -24,6 +24,8 @@ export function useSourceImport() {
     [preview, setPreview] = useState<MetadataPreview>(),
     [keys, setKeys] = useState<string[]>([]),
     [cover, setCover] = useState(true),
+    // R-422: positions of the source's pictures picked for import (none by default).
+    [images, setImages] = useState<number[]>([]),
     [result, setResult] = useState(''),
     [replace, setReplace] = useState(false)
   return {
@@ -35,6 +37,8 @@ export function useSourceImport() {
     setKeys,
     cover,
     setCover,
+    images,
+    setImages,
     result,
     setResult,
     replace,
@@ -84,7 +88,16 @@ export function FolderSourceImport({
   setError: (error: string) => void
 }) {
   const sourceLabels = importedFieldLabels()
-  const { source, setSource, preview, setPreview, keys, setKeys, cover, setCover } = importer
+  const { source, setSource, preview, setPreview, keys, setKeys, cover, setCover } = importer,
+    { images, setImages } = importer
+  const imageLabel = (image: { role: string; n?: number }) =>
+    image.role === 'screenshot'
+      ? tr('截圖 {0}', image.n ?? 0)
+      : image.role === 'hero'
+        ? tr('橫幅')
+        : image.role === 'logo'
+          ? tr('標誌')
+          : tr('圖示')
   // R-418: search the sources by the folder's name (editable); picking a candidate previews its address.
   const [query, setQuery] = useState(row.name),
     [searching, setSearching] = useState(false),
@@ -154,6 +167,7 @@ export function FolderSourceImport({
       importer.setReplace(false)
       setPreview(result.preview)
       setKeys(result.preview.values.filter((v) => !noteKeys.includes(v.key)).map((v) => v.key))
+      setImages([])
     }
   }
   return (
@@ -446,12 +460,40 @@ export function FolderSourceImport({
               onChange={(e) => setCover(e.currentTarget.checked)}
             />
           )}
+          {!!preview.images?.length && (
+            <fieldset className="source-images">
+              <legend>{tr('同時保存來源的圖片')}</legend>
+              <ul>
+                {preview.images.map((image, index) => (
+                  <li key={index}>
+                    <img src={image.image} alt="" />
+                    <Checkbox
+                      size="xs"
+                      label={imageLabel(image)}
+                      checked={images.includes(index)}
+                      onChange={(e) =>
+                        setImages((list) =>
+                          e.currentTarget.checked
+                            ? [...list, index]
+                            : list.filter((i) => i !== index)
+                        )
+                      }
+                    />
+                  </li>
+                ))}
+              </ul>
+            </fieldset>
+          )}
           <Group justify="flex-end" mt="md" className="settings-savebar">
             <Button variant="default" disabled={busy} onClick={() => setPreview(undefined)}>
               {tr('取消預覽')}
             </Button>
             <Button
-              disabled={disabled || fieldDirty || (!keys.length && !(preview.image && cover))}
+              disabled={
+                disabled ||
+                fieldDirty ||
+                (!keys.length && !(preview.image && cover) && !images.length)
+              }
               onClick={async () => {
                 if (
                   await run({
@@ -462,6 +504,7 @@ export function FolderSourceImport({
                     keys,
                     image: !!preview.image && cover,
                     mode: importer.replace ? 'replace' : 'fill',
+                    ...(images.length ? { images } : {}),
                   })
                 ) {
                   importer.setResult(tr('已匯入選定資料，可至「資料」查看。'))

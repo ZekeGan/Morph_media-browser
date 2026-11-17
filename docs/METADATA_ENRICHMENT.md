@@ -21,7 +21,7 @@
 
 ## Steam
 
-接受官方商店 App 網址或 App ID，預覽名稱、開發商、發行商、類型、簡介、商店日期、截圖網址（只列網址，不匯入圖片）及選用封面；商店文字依第一個偏好語言（`l` 參數：`tchinese`、`schinese`、`japanese`、`english`、`spanish`；沒有偏好時用英文），Steam 沒有該語言時商店自己退回英文；匯入使用 steam- 命名空間，與 E-Hentai／人工值分開。日期保留 Steam 商店原文，不推定為作品首次發行日或購買日。
+接受官方商店 App 網址或 App ID，預覽名稱、開發商、發行商、類型、簡介、商店日期、截圖網址及選用封面（截圖可選匯入為圖片，見「來源圖片清單」）；商店文字依第一個偏好語言（`l` 參數：`tchinese`、`schinese`、`japanese`、`english`、`spanish`；沒有偏好時用英文），Steam 沒有該語言時商店自己退回英文；匯入使用 steam- 命名空間，與 E-Hentai／人工值分開。日期保留 Steam 商店原文，不推定為作品首次發行日或購買日。
 
 目前使用 [Steam 商店公開資料端點](https://store.steampowered.com/api/appdetails?appids=620&l=english)，不宣稱是有相容承諾的 Steamworks API。main 固定請求主機／路徑、限制大小／逾時／重新導向並驗證 App ID；封面只允許指定官方 CDN 與同 App 路徑，失敗可略過。不需要使用者交出帳號憑證。
 
@@ -39,7 +39,7 @@
 | --- | --- | --- |
 | 漫畫／動畫 | E-Hentai、ExHentai、Hitomi.la、nhentai、Bangumi、AniList、MangaDex、Kitsu、MangaUpdates | MangaDex 讀 `/manga/<UUID>`，封面另由 `cover_art` 組成 `uploads.mangadex.org` 網址；Kitsu 的 API 只接受 `Accept: application/vnd.api+json`，類型在 `included`；MangaUpdates 網址是 base36，換成數字 ID 查 API。E-H 系列沿用 [gdata](https://ehwiki.org/wiki/API)，封面縮圖在 `ehgt.org`（JPG、PNG 或 WebP）；Hitomi 僅解析公開 galleryinfo JSON，絕不執行遠端 JS；[Bangumi](https://bangumi.github.io/api/)／[AniList](https://docs.anilist.co/guide/auth/) 讀公開作品條目 |
 | 同人／商店 | DLsite、BOOTH | BOOTH 讀商品頁旁的 `<商品>.json`（社團、分類、標籤、價格、成人標記），封面限 `booth.pximg.net`。DLsite：商品頁的作品 ID（RJ 等）。先讀 `/{站}/api/=/product.json?workno=` 取名稱：社團 `MAKER_NAME`、作品類型名稱、系列、ジャンル（`GENRES`）、作者依職位各成一個標籤欄位（`CREATED_BY`、`SCENARIO_BY`、`ILLUST_BY`、`VOICE_BY`、`MUSIC_BY`…，鍵名照來源）；再讀 `product/info/ajax` 補價格、下載數、評分，這個請求失敗不影響匯入。封面限 `img.dlsite.jp` |
-| 遊戲 | Steam、VNDB；Getchu、批評空間、Melonbooks、虎之穴、FANZA 的遊戲網址經 VNDB | Steam 商店公開資料；[VNDB Kana](https://api.vndb.org/kana) 的公開視覺小說條目。商店網址（R-293）不讀商店頁：從網址取出作品 ID，以 VNDB 發行版本記錄的外部連結（`release` 的 `extlink` 篩選，例如 `["getchu", 36221]`、`["egs", 3193]`、`["dmm", "dlsoft.dmm.co.jp/detail/…/"]`）找出作品，以 VNDB 資料預覽；不需要年齡確認、金鑰，也不受地區限制。VNDB 沒有該連結時提示改貼 VNDB 或 DLsite 網址。只涵蓋遊戲，同人誌不在 VNDB。作品網址 `/v…` 取簡介、開發商與作品圖（`image.url`，不論 sexual／violence 分級都取，不請求分級欄位；圖片只收 `t.vndb.org`）；作品另取：標籤（只留劇透等級 0 且不是「lie」的，依評分取前 30 個）、遊玩時長（`length_minutes`）、評分（10 分制一位小數）與人數、外部連結（Steam 商店、DLsite、官方網站，只當文字存放不請求）、截圖網址（只留沒有性或暴力分級、位於 `t.vndb.org` 的前 12 張，只列網址），另以 release 端點取各版本的遊戲引擎（取最多版本使用的一個，失敗時只少這個欄位；不與本機偵測的引擎對照）；版本網址 `/r…`（R-393）先用 release 端點取該版本自己的標題、發售日、平台、語言，再用它所屬的第一部作品補簡介、封面與開發商（屬於多部作品時預覽加「補充說明」與「取資料的作品」），作品那一步失敗時只保留版本自己的資料 |
+| 遊戲 | Steam、VNDB；Getchu、批評空間、Melonbooks、虎之穴、FANZA 的遊戲網址經 VNDB | Steam 商店公開資料；[VNDB Kana](https://api.vndb.org/kana) 的公開視覺小說條目。商店網址（R-293）不讀商店頁：從網址取出作品 ID，以 VNDB 發行版本記錄的外部連結（`release` 的 `extlink` 篩選，例如 `["getchu", 36221]`、`["egs", 3193]`、`["dmm", "dlsoft.dmm.co.jp/detail/…/"]`）找出作品，以 VNDB 資料預覽；不需要年齡確認、金鑰，也不受地區限制。VNDB 沒有該連結時提示改貼 VNDB 或 DLsite 網址。只涵蓋遊戲，同人誌不在 VNDB。作品網址 `/v…` 取簡介、開發商與作品圖（`image.url`，不論 sexual／violence 分級都取，不請求分級欄位；圖片只收 `t.vndb.org`）；作品另取：標籤（只留劇透等級 0 且不是「lie」的，依評分取前 30 個）、遊玩時長（`length_minutes`）、評分（10 分制一位小數）與人數、外部連結（Steam 商店、DLsite、官方網站，只當文字存放不請求）、截圖網址（只留沒有性或暴力分級、位於 `t.vndb.org` 的前 12 張；網址存成 `SCREENSHOTS`，圖片可選匯入），另以 release 端點取各版本的遊戲引擎（取最多版本使用的一個，失敗時只少這個欄位；不與本機偵測的引擎對照）；版本網址 `/r…`（R-393）先用 release 端點取該版本自己的標題、發售日、平台、語言，再用它所屬的第一部作品補簡介、封面與開發商（屬於多部作品時預覽加「補充說明」與「取資料的作品」），作品那一步失敗時只保留版本自己的資料 |
 | 音樂 | MusicBrainz、Apple Music、Deezer | [公開發行版本資料](https://musicbrainz.org/doc/MusicBrainz_API)，不因此加入音樂播放器。認 `/release/`（專輯版本：曲目、演出者、條碼，R-393 加唱片公司 `LABEL`、型號 `CATALOG_NUMBER`、片數 `DISC_COUNT`、媒體格式 `MEDIA_FORMAT`、曲數 `TRACK_COUNT`、曲目清單 `TRACK_LIST`（碟號-曲號、曲名、長度）、曲風 `GENRES` 與標籤 `TAGS`）、`/release-group/`（R-393，專輯：名稱、演出者、類型 `ALBUM_TYPE`、最早發行日、曲風與標籤）、`/recording/`（R-395，單曲：曲名、演出者、時長 `DURATION` 以 m:ss 文字記、首次發行專輯與日期，R-393 加曲風與標籤）、`/artist/`（歌手：名稱、類型、國家、活動期間 `BEGIN_DATE`／`END_DATE`、辨識說明，R-393 加曲風與標籤；不取歌手照片）；MusicBrainz 沒有圖片，專輯與版本封面請求 Cover Art Archive 的 `front-500`（`coverartarchive.org`），它回應轉址到 `archive.org`：封面請求只在這類封面設定了轉址主機名單（`archive.org` 及其子網域、HTTPS、無埠號與帳密、最多三次）時逐次檢查後跟隨，其餘來源的任何轉址都失敗；沒有封面只在預覽標「封面無法取得」；ID 一律先驗成 UUID 再組成固定的 `ws/2` 請求；Apple Music 用 iTunes Lookup（專輯＋曲目，封面換成 600×600）；Deezer 讀公開專輯 API |
 | 書籍 | Open Library、Google Books、小説家になろう、カクヨム | [公開書目與作者](https://openlibrary.org/developers/api)，作者補讀最多三筆；Google Books 讀 `volumes/<ID>`（不填金鑰時共用匿名額度，常遇到 429，金鑰見 R-285）；なろう用官方小說 API（R18 的 novel18 走 `novel18api`）；カクヨム讀作品頁內嵌的 Next.js 資料，不執行頁面程式 |
 | 網頁 | 其他任何 HTTPS 網址（R-283） | 只讀頁面自己宣告的 JSON-LD、OpenGraph／Twitter、`<title>`：標題、簡介、作者、日期、關鍵字、網站名稱與封面。只接受不含帳號密碼的 HTTPS、不允許本機與內網位址（轉址也逐次檢查，最多三次）、2 MB、15 秒；依標頭或 `<meta charset>` 解碼（含 Shift_JIS、EUC-JP）；以只往前的掃描讀標籤，不執行頁面程式。封面主機無法事先列名單，一律經圖片網址匯入的安全下載（HTTPS、非內網、大小與影像格式檢查）。 |
@@ -68,7 +68,7 @@ itch.io 的官方 API 只能查自己的作品，改讀每個作品頁旁公開�
 | 網站 | 金鑰 | 帶法與特殊處理 |
 | --- | --- | --- |
 | TMDB | API Key 或 Read Access Token | Read Access Token（JWT 格式）放 `Authorization: Bearer`，Key 放查詢參數；海報 `image.tmdb.org/t/p/w500`；影集另取季數（`SEASON_COUNT`）與各集清單（`EPISODES`，「S01E02 集名」，每季一個 `tv/{id}/season/{n}` 請求，最多 30 季、500 集，特別篇第 0 季不取，某季失敗就略過）（R-419）；預覽標示「本產品使用 TMDB API，但未經 TMDB 認可或認證」 |
-| SteamGridDB | API Key | Bearer；取名稱與第一張 600×900 封面；另各取第一張橫幅（`heroes`）、標誌（`logos`）、圖示（`icons`）的網址存成 `HERO_URL`、`LOGO_URL`、`ICON_URL`（只收 `cdn2.steamgriddb.com`，任一項失敗只少那個欄位；不匯入成圖片）（R-419） |
+| SteamGridDB | API Key | Bearer；取名稱與第一張 600×900 封面；另各取第一張橫幅（`heroes`）、標誌（`logos`）、圖示（`icons`）的網址存成 `HERO_URL`、`LOGO_URL`、`ICON_URL`（只收 `cdn2.steamgriddb.com`，任一項失敗只少那個欄位；圖片可選匯入，見「來源圖片清單」）（R-419） |
 | Bangumi | 個人權杖（選填） | Bearer；沒填時 404 改提示「找不到作品，或是需要權杖的成人作品」並可前往設定 |
 | Danbooru | 帳號＋API Key（選填） | 查詢參數 `login`、`api_key`，提高額度 |
 | Google Books | API Key（選填） | 不填時共用匿名額度，常回 429 |
@@ -101,6 +101,14 @@ ExHentai、Hitomi、Pixiv、DLsite 可能因登入、站方限制或公開回應
 | 格式變更 | 回應不是預期的 JSON／galleryinfo，或缺少標題 | 來源資料格式已變更，無法解析；未執行遠端程式 |
 
 Hitomi 的作品資料主機是 `ltn.gold-usergeneratedcontent.net`（2026-11 起取代已沒有 DNS 記錄的 `ltn.hitomi.la`）；這個主機名稱可能再換，Hitomi 出現「連不上」時先查主機是否搬家。
+
+## 來源圖片清單（R-422）
+
+VNDB、Steam 的截圖（`SCREENSHOTS`，各最多 12 張）與 SteamGridDB 的橫幅、標誌、圖示（`HERO_URL`、`LOGO_URL`、`ICON_URL`，各 1 張）可選匯入為資料夾的圖片；封面匯入照舊。
+
+- **下載**：取得預覽時 main 依序下載（`electron/source-images.ts`），只取預覽本身已檢查過的網址：HTTPS、無埠號與帳密，主機須在該來源的圖片主機（`sources/config.ts` 的 `coverHosts`；Steam 用 `metadata.ts` 的 Steam 圖片主機）；不跟轉址（只有該來源設定 `coverRedirectHosts` 的封面路徑除外）、15 秒逾時、單張 ≤ 10 MiB、以 `imageType` 檢查是 JPEG／PNG／WebP；失敗或被拒的略過。整個預覽最多 30 MiB（再放不下一張 10 MiB 就停）。其他來源不下載。
+- **預覽**：視窗收到 `preview.images`（角色、截圖序號 `n`、data URI），縮圖清單預設都不勾，標示「截圖 n」「橫幅」「標誌」「圖示」。視窗不能指定任何網址，下載的圖片只存在 main 的預覽（以 token 對應，最近三個預覽保留圖片，15 分鐘到期即丟棄；匯入後釋放）。
+- **匯入**：`metadataApply` 的 `images` 只帶預覽圖片的位置（整數、不重複、須在範圍內，否則整個請求拒絕、不寫任何檔案）。選中的圖片和封面一樣存進可攜記錄的 `assets/`，`originalName` 為 `<來源>-<角色>[-<n>].<副檔名>`，並帶 `role`（`screenshot`、`hero`、`logo`、`icon`，暫定，見 [DATA_FORMAT](DATA_FORMAT.md)）；已有同名圖片就不重複加入；寫入失敗時清掉本次寫的檔案。橫幅、標誌、圖示用在遊戲頁要等 R-409。
 
 ## 預覽、套用與追溯
 

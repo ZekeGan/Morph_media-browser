@@ -553,3 +553,10 @@
 .player-settings .mantine-Accordion-item{background:transparent;border-color:#626977}.player-settings .mantine-Accordion-control{color:#f6f7f9;padding:9px 10px}.player-settings .mantine-Accordion-control:hover{background:#ffffff12}.player-settings .mantine-Accordion-content{padding:8px}.player-settings .mantine-Input-input{background:#292f3a;color:#fff;border-color:#717987}.player-settings .muted{color:#c1c8d2}.player-settings .player-speed-label select{background:#292f3a;color:#fff;border-color:#717987}.player-settings .mantine-Accordion-control:disabled{opacity:.5}.player-subtitle-group{margin-top:8px}
 
 .player-settings .mantine-Accordion-label{padding-block:2px}
+
+/* R-421: a picture subtitle track, drawn in the track's own frame and stretched over the shown video. */
+.subtitle-picture {
+  position: absolute;
+  pointer-events: none;
+  z-index: 3;
+}

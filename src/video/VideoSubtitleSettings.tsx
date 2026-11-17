@@ -38,6 +38,8 @@ interface Props {
   changeSection: (value: string | null) => void
   error: string
   subtitle: ExplorerResponse['subtitle']
+  // R-421: the chosen subtitle is a picture track: there is no text to size or colour.
+  picture?: boolean
   files: File[]
   subtitles: MediaEntry[]
   embedded?: EmbeddedState
@@ -60,6 +62,7 @@ export function VideoSubtitleSettings({
   changeSection,
   error,
   subtitle,
+  picture,
   files,
   subtitles,
   embedded,
@@ -175,7 +178,7 @@ export function VideoSubtitleSettings({
                   )}
                   <div className="subtitle-list">
                     {embedded.tracks
-                      .filter((track) => !track.graphic)
+                      .filter((track) => !track.graphic || track.picture)
                       .map((track) => (
                         <Button
                           key={track.number}
@@ -189,7 +192,7 @@ export function VideoSubtitleSettings({
                       ))}
                   </div>
                   {embedded.tracks
-                    .filter((track) => track.graphic)
+                    .filter((track) => track.graphic && !track.picture)
                     .map((track) => (
                       <Text key={track.number} size="xs" c="dimmed">
                         {embeddedLabel(track)} · {tr('有圖形字幕，目前無法顯示')}
@@ -248,7 +251,12 @@ export function VideoSubtitleSettings({
         <Accordion.Item value="appearance">
           <Accordion.Control disabled={!subtitle}>{tr('字幕外觀')}</Accordion.Control>
           <Accordion.Panel>
-            <Stack gap="xs">
+            {picture && (
+              <Text size="xs" c="dimmed">
+                {tr('圖形字幕是影片附的圖片，無法調整大小、位置與顏色。')}
+              </Text>
+            )}
+            <Stack gap="xs" display={picture ? 'none' : undefined}>
               <NumberInput
                 label={tr('字幕大小')}
                 min={10}

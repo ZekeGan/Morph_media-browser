@@ -177,6 +177,7 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
   chooseSubtitle: { rowId: ref },
   embeddedSubtitles: { rowId: ref, fileId: ref, early: opt(bool) },
   embeddedSubtitle: { rowId: ref, fileId: ref, track: int, early: opt(bool), time: opt(num) },
+  embeddedPictures: { rowId: ref, fileId: ref, track: int, early: opt(bool), time: opt(num) },
   imageUrlPreview: { url: text },
   imageUrlApply: { ...revisionRow, token: ref, cover: bool },
   metadataPreview: { source: text, provider: opt(ref) },
@@ -187,6 +188,7 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
     keys: list(ref),
     image: bool,
     mode: opt(oneOf('fill', 'replace')),
+    images: opt(list(int, 15)),
   },
   rebuildIndex: {},
 }

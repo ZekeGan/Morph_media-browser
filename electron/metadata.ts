@@ -12,6 +12,7 @@ import { sourceForUrl, type MetadataSourceId } from '../shared/sources'
 import { publicMetadata } from './metadata-public'
 import { steamLanguage } from './sources/language'
 import { webMetadata } from './sources/webSource'
+import { downloadSourceImages, type SourceImage } from './source-images'
 import type { WebOptions } from './sources/web'
 // E-Hentai tags are "namespace:name". Besides the full list, each namespace becomes its own field so that
 // artist, parody, language, characters… can be shown and filtered on their own.
@@ -333,14 +334,29 @@ export async function metadata(
     keyFor?: (site: string) => Promise<Record<string, string> | undefined>
     languages?: string[]
   } = {}
-) {
+): Promise<{
+  preview: Omit<MetadataPreview, 'token'>
+  cover?: { bytes: Buffer; mime: string; ext: string }
+  // R-422: the source's picture lists (screenshots, hero, logo, icon), downloaded for the preview.
+  images?: SourceImage[]
+}> {
   if (typeof source !== 'string' || source.length > 2048) throw new Error('來源網址不合法')
   source = source.trim()
   const provider = sourceForUrl(source)
   if (!provider || (expected && provider !== expected))
     throw new Error('來源網址與選定來源不符或未支援')
-  if (provider === 'steam') return steamMetadata(source, fetcher, options.languages)
   if (provider === 'eh' || provider === 'exh') return ehMetadata(source, fetcher)
   if (provider === 'web') return webMetadata(source, fetcher, options)
-  return publicMetadata(provider, source, fetcher, options)
+  const result =
+    provider === 'steam'
+      ? await steamMetadata(source, fetcher, options.languages)
+      : await publicMetadata(provider, source, fetcher, options)
+  // A DMM/FANZA address without a key is answered by VNDB, so the answering source decides.
+  const images = await downloadSourceImages(
+    result.preview.provider,
+    result.preview.values,
+    fetcher,
+    STEAM_IMAGE_HOSTS
+  )
+  return images.length ? { ...result, images } : result
 }

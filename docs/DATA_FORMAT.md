@@ -29,7 +29,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 | `revision` | 整數 | 每次寫入加一；寫入時要帶上讀到的版本，不符就拒絕（版本衝突，草稿保留） |
 | `attributes` | 陣列 | 共用屬性，見下表 |
 | `projectOverrides` | 物件 | `projectId → 屬性陣列`：只對某個專案有效的私有覆寫，必須刻意建立 |
-| `assets` | 陣列 | `{ assetId, relativePath, originalName, mediaType }`，圖片與資產 |
+| `assets` | 陣列 | `{ assetId, relativePath, originalName, mediaType, role? }`，圖片與資產；`role`（R-422，**暫定**，選用，不升 `schemaVersion`）是從網站匯入的圖片用途：`screenshot`、`hero`、`logo`、`icon`，其他值視為資料不合法；目前只存下，沒有畫面使用 |
 | `details` | 物件（選用） | 遊戲邊界與動作目標、閱讀與播放進度、字幕等，見下 |
 
 **屬性 `Attribute`**

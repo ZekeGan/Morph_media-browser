@@ -181,6 +181,7 @@
         "src/video/embeddedLabel*",
         "src/video/video-player.css",
         "shared/subtitles*",
+        "shared/vobsub*",
         "electron/embedded-subtitles*",
         "electron/mkv-subtitles*"
       ],
@@ -318,6 +319,7 @@
       "docs": ["METADATA_ENRICHMENT.md#分類來源", "METADATA_ENRICHMENT.md#預覽套用與追溯"],
       "code": [
         "electron/metadata*",
+        "electron/source-images*",
         "electron/sources/*",
         "electron/keys*",
         "shared/keys*",

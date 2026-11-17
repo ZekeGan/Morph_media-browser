@@ -5,6 +5,7 @@ import { Video, VideoPlayer } from '@videojs/react/video'
 import type { FolderRow } from '../../shared/model'
 import {
   defaultSubtitle,
+  type EmbeddedPictures,
   type EmbeddedSubtitleInfo,
   type ExplorerRequest,
   type ExplorerResponse,
@@ -16,6 +17,7 @@ import { VideoControls } from './VideoControls'
 import { Accordion, Button } from '@mantine/core'
 import { VideoSubtitleSettings, type EmbeddedState } from './VideoSubtitleSettings'
 import { embeddedLabel } from './embeddedLabel'
+import { VideoPictureSubtitle } from './VideoPictureSubtitle'
 import { describeError } from '../notices/errors'
 import { useVideoAudio } from '../media/useVideoAudio'
 import { podcastFolder } from '../media/podcast'
@@ -66,7 +68,13 @@ export function VideoViewer({
     [embedded, setEmbedded] = useState<EmbeddedState>(),
     // R-417: the embedded track shown while its cues are still being read, and when it was last fetched again.
     partialTrack = useRef<EmbeddedSubtitleInfo | undefined>(undefined),
-    partialRefreshed = useRef(0)
+    partialRefreshed = useRef(0),
+    // R-421: the chosen picture (VobSub) track: the stretch of cues around the playback time, the track it is
+    // from, and the time last asked for.
+    [pictures, setPictures] = useState<EmbeddedPictures>(),
+    pictureTrack = useRef<EmbeddedSubtitleInfo | undefined>(undefined),
+    pictureAsked = useRef(0),
+    offsetLive = useRef(0)
 
   const [settings, setSettings] = useState(defaultSubtitle),
     [error, setError] = useState(''),
@@ -371,6 +379,8 @@ export function VideoViewer({
   const apply = (value: ExplorerResponse['subtitle']) => {
     if (!value) return
     if (!value.partial) partialTrack.current = undefined
+    pictureTrack.current = undefined
+    setPictures(undefined)
 
     try {
       // R-417: an embedded track still being read may have nothing yet near the start.
@@ -413,6 +423,7 @@ export function VideoViewer({
   // R-417: while the video is still being read, main gives the cues read so far (partial) and reads near the
   // playback time first; the track is fetched again as reading goes on (refresh keeps the subtitle settings).
   const loadEmbedded = async (track: EmbeddedSubtitleInfo, refresh = false) => {
+    if (track.picture) return loadPictures(track, refresh)
     const target = currentFile.current
     if (!target) return
     try {
@@ -433,6 +444,46 @@ export function VideoViewer({
         setCues(value.text.trim() ? parseSubtitles(value.text) : [])
         setSubtitle(value)
       }
+    } catch (reason) {
+      if (mounted.current && currentFile.current === target) setError(describeError(reason).message)
+    }
+  }
+  // R-421: a picture (VobSub) track. Main answers with the cues around the asked time only, so this is asked again
+  // as playback moves on (refresh), and while the video is still being read like a text track.
+  const loadPictures = async (track: EmbeddedSubtitleInfo, refresh = false) => {
+    const target = currentFile.current
+    if (!target) return
+    const token = 'emb-' + track.number,
+      saved =
+        latest.current.record?.details?.playback?.[target]?.settings?.[token] ?? defaultSubtitle(),
+      // The cues that show now are the ones timed before the subtitle delay.
+      asked = Math.max(
+        0,
+        (video.current?.currentTime ?? 0) - (refresh ? offsetLive.current : saved.offset)
+      )
+    pictureAsked.current = asked
+    try {
+      const result = await window.explorer.request({
+        action: 'embeddedPictures',
+        rowId: row.rowId,
+        fileId: target,
+        track: track.number,
+        early: true,
+        time: asked,
+      })
+      if (!mounted.current || currentFile.current !== target || !result.pictures) return
+      if (refresh && pictureTrack.current?.number !== track.number) return
+      const value = { ...result.pictures, name: embeddedLabel(track) }
+      partialTrack.current = value.partial ? track : undefined
+      pictureTrack.current = track
+      if (!refresh) {
+        setCues([])
+        setSubtitle({ token, name: value.name, text: '', portable: false })
+        setCaptions(true)
+        setSettings(saved)
+        setError('')
+      }
+      setPictures(value)
     } catch (reason) {
       if (mounted.current && currentFile.current === target) setError(describeError(reason).message)
     }
@@ -568,9 +619,25 @@ export function VideoViewer({
     [row.rowId]
   )
 
+  // R-421: playback left the stretch of picture cues that was fetched (or comes near its end): the next one is
+  // asked for, at most once per five seconds of movement.
+  offsetLive.current = settings.offset
+  useEffect(() => {
+    const track = pictureTrack.current
+    if (!pictures || !track || pictures.partial) return
+    const at = time - settings.offset
+    if (
+      (at < pictures.from || (pictures.until !== undefined && at > pictures.until - 15)) &&
+      Math.abs(Math.max(0, at) - pictureAsked.current) > 5
+    )
+      void loadPictures(track, true)
+  }, [time, pictures, settings.offset])
+
   useEffect(() => {
     setResumed(undefined)
     partialTrack.current = undefined
+    pictureTrack.current = undefined
+    setPictures(undefined)
     setEmbedded(undefined)
     setSubtitle(undefined)
     setCues([])
@@ -817,6 +884,14 @@ export function VideoViewer({
         .join('\n')
     : ''
 
+  // R-421: the picture cue on screen; of two that overlap, the later one.
+  const pictureCue =
+    captions && pictures
+      ? pictures.cues
+          .filter((cue) => time >= cue.start + settings.offset && time < cue.end + settings.offset)
+          .pop()
+      : undefined
+
   const upcoming = videos.find((entry) => entry.id === upNext?.nextId)
 
   if (!file) return <div className="video-empty">{tr('此資料夾沒有直接影片')}</div>
@@ -975,6 +1050,17 @@ export function VideoViewer({
           </div>
         )}
 
+        {pictures && box.width > 0 && (
+          <VideoPictureSubtitle
+            key={pictures.token}
+            width={pictures.width}
+            height={pictures.height}
+            palette={pictures.palette}
+            cue={pictureCue}
+            box={box}
+          />
+        )}
+
         {resumed !== undefined && (
           <div className="reader-notice" role="status">
             <span>{tr('從 {0} 繼續', clockText(resumed))}</span>
@@ -1095,6 +1181,7 @@ export function VideoViewer({
                     changeSection={setSubtitleSection}
                     error={error}
                     subtitle={subtitle}
+                    picture={!!pictures}
                     files={files}
                     subtitles={subtitles}
                     embedded={matroska ? embedded : undefined}
@@ -1103,6 +1190,9 @@ export function VideoViewer({
                     readonly={row.readonly}
                     load={load}
                     clear={() => {
+                      partialTrack.current = undefined
+                      pictureTrack.current = undefined
+                      setPictures(undefined)
                       setSubtitle(undefined)
                       setCues([])
                     }}
