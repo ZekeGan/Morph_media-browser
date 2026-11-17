@@ -560,3 +560,39 @@
   pointer-events: none;
   z-index: 3;
 }
+
+/* R-423 (tentative): the episode label under a file name in the playlist, and the settings section */
+.video-strip.with-episodes {
+  height: 112px;
+}
+
+.video-tile > .video-episode {
+  color: var(--accent);
+}
+
+.player-episode-preview {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 140px;
+  overflow-y: auto;
+  font-size: 11px;
+}
+
+.player-episode-preview li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.player-episode-preview li > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-episode-preview li > span:last-child {
+  flex-shrink: 0;
+  max-width: 55%;
+}

@@ -259,6 +259,7 @@ export function MediaViewer({
                 tiles={file.kind === 'video' || file.kind === 'image'}
                 view={queueView}
                 changeView={setQueueView}
+                episodes={row.record?.details?.episodes}
               />
             )}
           </div>

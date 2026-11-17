@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Episode names: when a series' TMDB episode list is imported, the player's settings can match the folder's video file names (S01E02, 第02話, [02], - 02 and similar; resolutions, years and hashes are ignored; anything unclear is left out) to it, preview the result and save it in one write into the folder's record (new tentative field `details.episodes`) on request, and the play queue shows the episode and title under each file name (R-423).
 - Picture subtitles: VobSub tracks inside MKV or WebM videos can be chosen and are shown over the video, decoded in plain JavaScript (no ffmpeg); only their times and places in the file are kept, and the pictures are read in short stretches around the playback time; PGS stays listed as "can't be shown yet" (R-421).
 - Source pictures: previews from VNDB, Steam and SteamGridDB list their screenshots and the hero, logo and icon as thumbnails; the checked ones are saved into the folder's record with their role (new tentative asset field `role`), never into the folder itself (R-422).
 - Keyed sources: with a TMDB key the name search also lists TMDB movies and series; a TMDB series preview adds the season count and an episode list ("S01E02 Title", up to 30 seasons and 500 episodes, a failed season skipped); SteamGridDB previews add hero, logo and icon picture addresses (R-419).

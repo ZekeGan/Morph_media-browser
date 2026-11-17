@@ -112,6 +112,9 @@ export interface FolderDetails {
     string,
     { time: number; subtitle?: string; settings?: Record<string, SubtitlePrefs> }
   >
+  // R-423 (tentative): the season, episode and title of each video file (by file id), matched from the episode
+  // list imported from TMDB (R-419); written only when the user asks.
+  episodes?: Record<string, { season?: number; episode: number; title?: string }>
   targets?: Record<
     string,
     {
@@ -303,6 +306,13 @@ export type ExplorerRequest =
       time: number
       subtitle?: string
       settings?: SubtitlePrefs
+    }
+  | {
+      // R-423 (tentative): replaces the folder's episode names with these matches (null clears them).
+      action: 'episodes'
+      rowId: string
+      revision: number
+      episodes: Record<string, { season?: number; episode: number; title?: string }> | null
     }
   | {
       action: 'boundary'

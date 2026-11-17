@@ -182,11 +182,12 @@
         "src/video/video-player.css",
         "shared/subtitles*",
         "shared/vobsub*",
+        "shared/episodes*",
         "electron/embedded-subtitles*",
         "electron/mkv-subtitles*"
       ],
       "ui": ["video-player-ui", "video-failure-ui", "video-embedded-ui"],
-      "tests": ["embedded-subtitles.test.ts"]
+      "tests": ["embedded-subtitles.test.ts", "episodes.test.ts"]
     },
     {
       "id": "documents",

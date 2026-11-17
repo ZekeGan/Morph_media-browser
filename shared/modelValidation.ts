@@ -1,3 +1,4 @@
+import { EPISODE_TITLE_MAX } from './episodes'
 import { documentFile, type FolderDetails } from './explorer'
 import { GROW_KINDS, MAX_GROW_ROWS } from './cardGrid'
 import { imageTypes } from './images'
@@ -364,6 +365,18 @@ function validPlaybackEntry([k, p]: [string, unknown]): boolean {
   )
 }
 
+// R-423 (tentative): { season?, episode, title? } of one video file, by file id.
+function validEpisodeEntry([k, e]: [string, unknown]): boolean {
+  return (
+    id(k) &&
+    obj(e) &&
+    Object.keys(e).every((key) => ['season', 'episode', 'title'].includes(key)) &&
+    integer(e.episode, 0, 9999) &&
+    (e.season === undefined || integer(e.season, 0, 999)) &&
+    (e.title === undefined || (text(e.title, EPISODE_TITLE_MAX) && e.title.length > 0))
+  )
+}
+
 export function validateFolder(v: unknown): asserts v is FolderRecord {
   checkNotNewer('folder', v)
   if (
@@ -464,6 +477,13 @@ export function validateDetails(v: unknown): asserts v is FolderDetails {
       (!v.saveFolder.relative && !/^[A-Za-z]:[\\/]/.test(v.saveFolder.path)))
   )
     throw new Error('存檔資料夾設定不合法')
+  if (
+    v.episodes !== undefined &&
+    (!obj(v.episodes) ||
+      Object.keys(v.episodes).length > 10000 ||
+      !Object.entries(v.episodes).every(validEpisodeEntry))
+  )
+    throw new Error('集數記錄不合法')
   if (
     v.subtitles &&
     (!Array.isArray(v.subtitles) ||

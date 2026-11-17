@@ -591,6 +591,20 @@ export class Explorer {
           })
         )
       }
+      case 'episodes': {
+        // R-423 (tentative): one write, with the revision check; every key must be a video of this folder.
+        const names = req.episodes ? Object.keys(req.episodes) : []
+        if (names.length > 10000) throw new Error('集數記錄不合法')
+        for (const fileId of names)
+          if (!(await this.file(req.rowId, fileId)).mime.startsWith('video/'))
+            throw new Error('不是影片')
+        return this.after(
+          await this.details(req.rowId, req.revision, (d) => {
+            if (req.episodes && names.length) d.episodes = req.episodes
+            else delete d.episodes
+          })
+        )
+      }
       case 'boundary': {
         if (
           !['root', 'candidate', 'not-game'].includes(req.state) ||

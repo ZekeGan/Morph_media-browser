@@ -127,6 +127,7 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
     subtitle: opt(text),
     settings: opt(object),
   },
+  episodes: { ...revisionRow, episodes: nullable(record(object, 10_000)) },
   boundary: {
     ...revisionRow,
     state: oneOf('root', 'not-game', 'candidate'),

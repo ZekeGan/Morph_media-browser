@@ -18,6 +18,8 @@ import { Accordion, Button } from '@mantine/core'
 import { VideoSubtitleSettings, type EmbeddedState } from './VideoSubtitleSettings'
 import { embeddedLabel } from './embeddedLabel'
 import { VideoPictureSubtitle } from './VideoPictureSubtitle'
+import { VideoEpisodes, episodeListOf } from './VideoEpisodes'
+import { episodeLabel } from '../../shared/episodes'
 import { describeError } from '../notices/errors'
 import { useVideoAudio } from '../media/useVideoAudio'
 import { podcastFolder } from '../media/podcast'
@@ -41,6 +43,7 @@ export function VideoViewer({
   initialFileId,
   hideStrip = false,
   onSelected,
+  episodeFiles,
 }: {
   background?: boolean
   row: FolderRow
@@ -49,6 +52,8 @@ export function VideoViewer({
   autoplay: boolean
   hideStrip?: boolean
   onSelected?: (id: string) => void
+  // R-423: the videos to name from the episode list when the player itself holds only the playing one.
+  episodeFiles?: MediaEntry[]
   initialFileId?: string
 
   busy: boolean
@@ -86,6 +91,8 @@ export function VideoViewer({
     [audioDragging, setAudioDragging] = useState(false),
     [menuOpen, setMenuOpen] = useState(false),
     [subtitleExpanded, setSubtitleExpanded] = useState(false),
+    // R-423: the episode names section of the settings is open.
+    [episodesExpanded, setEpisodesExpanded] = useState(false),
     // R-405: the second this video resumed from, shown briefly with a way back to the start.
     [resumed, setResumed] = useState<number>()
 
@@ -136,6 +143,10 @@ export function VideoViewer({
 
   const file = videos.find((entry) => entry.id === fileId) ?? videos[0],
     index = videos.findIndex((entry) => entry.id === file?.id)
+
+  // R-423 (tentative): the season, episode and title the folder record holds for each video.
+  const episodeNames = row.record?.details?.episodes,
+    hasEpisodeList = episodeListOf(row).length > 0
 
   latest.current = row
   audioLive.current = audio
@@ -1165,76 +1176,102 @@ export function VideoViewer({
             if (next) selectVideo(next)
           }}
           subtitleSettings={
-            <Accordion
-              className="player-subtitle-group"
-              value={subtitleExpanded ? 'subtitles' : null}
-              onChange={(value) => setSubtitleExpanded(!!value)}
-              transitionDuration={0}
-            >
-              <Accordion.Item value="subtitles">
-                <Accordion.Control>{tr('字幕設定')}</Accordion.Control>
-                <Accordion.Panel>
-                  <VideoSubtitleSettings
-                    captions={captions}
-                    toggleCaptions={toggleCaptions}
-                    section={subtitleSection}
-                    changeSection={setSubtitleSection}
-                    error={error}
-                    subtitle={subtitle}
-                    picture={!!pictures}
-                    files={files}
-                    subtitles={subtitles}
-                    embedded={matroska ? embedded : undefined}
-                    loadEmbedded={loadEmbedded}
-                    settings={settings}
-                    readonly={row.readonly}
-                    load={load}
-                    clear={() => {
-                      partialTrack.current = undefined
-                      pictureTrack.current = undefined
-                      setPictures(undefined)
-                      setSubtitle(undefined)
-                      setCues([])
-                    }}
-                    save={save}
-                    importSubtitle={importSubtitle}
-                    changeEncoding={changeSubtitleEncoding}
-                    setSettings={setSettings}
-                  />
-                </Accordion.Panel>
-              </Accordion.Item>
-            </Accordion>
+            <>
+              <Accordion
+                className="player-subtitle-group"
+                value={subtitleExpanded ? 'subtitles' : null}
+                onChange={(value) => setSubtitleExpanded(!!value)}
+                transitionDuration={0}
+              >
+                <Accordion.Item value="subtitles">
+                  <Accordion.Control>{tr('字幕設定')}</Accordion.Control>
+                  <Accordion.Panel>
+                    <VideoSubtitleSettings
+                      captions={captions}
+                      toggleCaptions={toggleCaptions}
+                      section={subtitleSection}
+                      changeSection={setSubtitleSection}
+                      error={error}
+                      subtitle={subtitle}
+                      picture={!!pictures}
+                      files={files}
+                      subtitles={subtitles}
+                      embedded={matroska ? embedded : undefined}
+                      loadEmbedded={loadEmbedded}
+                      settings={settings}
+                      readonly={row.readonly}
+                      load={load}
+                      clear={() => {
+                        partialTrack.current = undefined
+                        pictureTrack.current = undefined
+                        setPictures(undefined)
+                        setSubtitle(undefined)
+                        setCues([])
+                      }}
+                      save={save}
+                      importSubtitle={importSubtitle}
+                      changeEncoding={changeSubtitleEncoding}
+                      setSettings={setSettings}
+                    />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              </Accordion>
+              {(hasEpisodeList || episodeNames) && (
+                <Accordion
+                  className="player-subtitle-group"
+                  value={episodesExpanded ? 'episodes' : null}
+                  onChange={(value) => setEpisodesExpanded(!!value)}
+                  transitionDuration={0}
+                >
+                  <Accordion.Item value="episodes">
+                    <Accordion.Control>{tr('集名')}</Accordion.Control>
+                    <Accordion.Panel>
+                      <VideoEpisodes row={row} videos={episodeFiles ?? videos} run={run} />
+                    </Accordion.Panel>
+                  </Accordion.Item>
+                </Accordion>
+              )}
+            </>
           }
           full={() => void toggleFullscreen()}
         />
       </div>
 
       {!hideStrip && (
-        <div ref={strip} className="video-strip" aria-label={tr('資料夾影片')}>
-          {videos.map((entry) => (
-            <button
-              key={entry.id}
-              className={'video-tile ' + (entry.id === file.id ? 'active' : '')}
-              aria-label={tr('播放 ') + entry.name}
-              title={entry.name}
-              onClick={() => selectVideo(entry)}
-            >
-              {entry.thumb ? (
-                <img
-                  src={entry.thumb}
-                  alt=""
-                  onError={(event) => {
-                    event.currentTarget.style.display = 'none'
-                  }}
-                />
-              ) : (
-                <span className="video-symbol">
-                  <Icon name="play" size={24} />
-                </span>
-              )}
-              <span>{entry.name}</span>
-            </button>
-          ))}
+        <div
+          ref={strip}
+          className={'video-strip' + (episodeNames ? ' with-episodes' : '')}
+          aria-label={tr('資料夾影片')}
+        >
+          {videos.map((entry) => {
+            const episode = episodeNames?.[entry.id],
+              label = episode ? episodeLabel(episode) : undefined
+            return (
+              <button
+                key={entry.id}
+                className={'video-tile ' + (entry.id === file.id ? 'active' : '')}
+                aria-label={tr('播放 ') + entry.name}
+                title={label ? entry.name + ' · ' + label : entry.name}
+                onClick={() => selectVideo(entry)}
+              >
+                {entry.thumb ? (
+                  <img
+                    src={entry.thumb}
+                    alt=""
+                    onError={(event) => {
+                      event.currentTarget.style.display = 'none'
+                    }}
+                  />
+                ) : (
+                  <span className="video-symbol">
+                    <Icon name="play" size={24} />
+                  </span>
+                )}
+                <span>{entry.name}</span>
+                {label && <span className="video-episode">{label}</span>}
+              </button>
+            )
+          })}
         </div>
       )}
     </div>

@@ -12790,5 +12790,53 @@
     "en": "This subtitle track has no pictures to show",
     "ja": "この字幕トラックには表示できる画像がありません",
     "es": "Esta pista de subtítulos no tiene imágenes que mostrar"
+  },
+  "集名": {
+    "zh-CN": "集名",
+    "en": "Episode names",
+    "ja": "話数タイトル",
+    "es": "Nombres de episodios"
+  },
+  "{0} 個影片可標上集名（共 {1} 個影片，{2} 個無法判斷）": {
+    "zh-CN": "{0} 个视频可标上集名（共 {1} 个视频，{2} 个无法判断）",
+    "en": "{0} videos can be named (of {1} videos, {2} cannot be told)",
+    "ja": "{0} 本に話数タイトルを付けられます（動画 {1} 本中、{2} 本は判別できません）",
+    "es": "{0} vídeos pueden recibir nombre (de {1}; {2} no se pueden determinar)"
+  },
+  "尚未匯入集數清單（用 TMDB 影集網址匯入）": {
+    "zh-CN": "尚未导入集数清单（用 TMDB 剧集网址导入）",
+    "en": "No episode list imported yet (import from a TMDB series address)",
+    "ja": "話数リストが未取り込みです（TMDB のシリーズ URL から取り込み）",
+    "es": "Aún no se importó la lista de episodios (impórtala desde una dirección de serie de TMDB)"
+  },
+  "集名預覽": {
+    "zh-CN": "集名预览",
+    "en": "Episode name preview",
+    "ja": "話数タイトルのプレビュー",
+    "es": "Vista previa de nombres"
+  },
+  "還有 {0} 個": {
+    "zh-CN": "还有 {0} 个",
+    "en": "{0} more",
+    "ja": "ほか {0} 本",
+    "es": "{0} más"
+  },
+  "依集數清單標上集名": {
+    "zh-CN": "按集数清单标上集名",
+    "en": "Name episodes from the list",
+    "ja": "話数リストから話数タイトルを付ける",
+    "es": "Nombrar episodios según la lista"
+  },
+  "清除集名": {
+    "zh-CN": "清除集名",
+    "en": "Clear episode names",
+    "ja": "話数タイトルを消去",
+    "es": "Borrar nombres de episodios"
+  },
+  "集數記錄不合法": {
+    "zh-CN": "集数记录不合法",
+    "en": "The episode record is not valid",
+    "ja": "話数の記録が正しくありません",
+    "es": "El registro de episodios no es válido"
   }
 }

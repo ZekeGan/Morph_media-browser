@@ -58,6 +58,8 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 - `novels`（R-282）：文字書的閱讀位置，以檔名為鍵 `{ chapter, position, percent, updated, bookmarks? }`；`position`、`percent` 是 0～1 的比例，書籤最多 500 個。
 - `volumes`（R-407，**暫定**，選用，不升 `schemaVersion`）：資料夾內漫畫壓縮檔（CBZ、CBR、CB7）各自讀到的頁，以檔名為鍵 `{ page, total, updated }`；`page` 從 0 起算且小於 `total`，`total` 是當時的頁數，`updated` 是 ISO 時間。單雙頁、方向、條漫等閱讀設定整個資料夾共用，仍存在 `reading`，不另存每卷設定。
 
+- `episodes`（R-423，**暫定**，選用，不升 `schemaVersion`）：影片檔各自的集數，以檔案 id（檔名的 SHA-256）為鍵 `{ season?, episode, title? }`；`season` 0～999、`episode` 0～9999 的整數，`title` 1～300 字，最多 10000 筆，不接受其他欄位。只在使用者按「依集數清單標上集名」時，依已匯入的 `tmdb-episodes` 清單（R-419）與檔名比對結果整批寫入（含版本檢查），「清除集名」整欄移除；檔案改名後舊鍵不再對應，無害。
+
 ### 範例（簡化）
 
 ```json

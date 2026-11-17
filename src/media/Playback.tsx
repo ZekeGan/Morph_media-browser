@@ -12,7 +12,8 @@ import {
 import { createPortal } from 'react-dom'
 import { ActionIcon, Button, Slider, Tabs, FocusTrap } from '@mantine/core'
 import type { FolderRow, Project } from '../../shared/model'
-import type { MediaEntry } from '../../shared/explorer'
+import type { ExplorerRequest, MediaEntry } from '../../shared/explorer'
+import { episodeLabel, type FileEpisode } from '../../shared/episodes'
 import { AudioViewer } from './AudioViewer'
 import { VideoViewer } from '../video/VideoViewer'
 import { Icon } from '../common/icons'
@@ -62,6 +63,10 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     [showQueue, setShowQueue] = useState(false),
     [error, setError] = useState(''),
     [pending, setPending] = useState(false),
+    // R-423: the episode names last written for each folder (the rows kept here are older snapshots).
+    [written, setWritten] = useState<
+      Record<string, { revision: number; episodes: Record<string, FileEpisode> }>
+    >({}),
     [queueView, setQueueView] = useState<'list' | 'images'>('list'),
     [picked, setPicked] = useState<string[]>([]),
     [menu, setMenu] = useState<{ x: number; y: number }>()
@@ -118,6 +123,33 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     })
     setItems((list) => [...list, ...added])
   }, [])
+  // R-423: after episode names are written the row is read again, so the queue and the player show them.
+  // What was written here wins only over an older row; a newer record (changed elsewhere) is shown as it is.
+  const episodesOf = (row: FolderRow) => {
+    const mine = written[row.rowId]
+    return mine && mine.revision >= (row.record?.revision ?? 0)
+      ? mine.episodes
+      : row.record?.details?.episodes
+  }
+  const runVideo = async (request: ExplorerRequest) => {
+    const response = await window.explorer.request(request)
+    if (request.action === 'episodes') {
+      const fresh = (response?.snapshot?.structure ?? response?.snapshot?.rows)?.find(
+        (row) => row.rowId === request.rowId
+      )
+      if (fresh?.record) {
+        setWritten((value) => ({
+          ...value,
+          [fresh.rowId]: {
+            revision: fresh.record!.revision,
+            episodes: fresh.record!.details?.episodes ?? {},
+          },
+        }))
+        setCurrent((value) => (value?.row.rowId === fresh.rowId ? { ...value, row: fresh } : value))
+      }
+    }
+    return response
+  }
   const select = async (item: Item) => {
     const token = ++sequence.current
     setPending(true)
@@ -420,7 +452,8 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
                         current.file,
                         ...current.entries.filter((file) => file.kind === 'subtitle'),
                       ]}
-                      run={(request) => window.explorer.request(request)}
+                      run={runVideo}
+                      episodeFiles={current.entries.filter((file) => file.kind === 'video')}
                       busy={false}
                       autoplay
                       autoNext={false}
@@ -518,6 +551,11 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
                                 <span className="playback-item-text">
                                   <small className="playback-item-order">{position + 1}</small>
                                   <strong>{item.file.name}</strong>
+                                  {episodesOf(item.row)?.[item.file.id] && (
+                                    <small className="playback-item-episode">
+                                      {episodeLabel(episodesOf(item.row)![item.file.id])}
+                                    </small>
+                                  )}
                                   <small>
                                     {item.project.name} · {item.row.name}
                                   </small>
@@ -580,6 +618,11 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
                                 </span>
                                 <span className="playback-item-text">
                                   <strong>{file.name}</strong>
+                                  {folder && episodesOf(folder.row)?.[file.id] && (
+                                    <small className="playback-item-episode">
+                                      {episodeLabel(episodesOf(folder.row)![file.id])}
+                                    </small>
+                                  )}
                                 </span>
                               </Button>
                             </div>
