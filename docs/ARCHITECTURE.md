@@ -69,7 +69,7 @@ Renderer 負責畫面、草稿與互動；preload 只暴露受控 API；main 驗
 | 原子檔案／路徑 | [files](../electron/files.ts)、[hidden](../electron/hidden.ts) | safePath/within、atomicJson、記錄備份／指紋、Windows 隱藏目錄 |
 | 媒體／縮圖／字幕／遊戲動作 | [explorer](../electron/explorer.ts) `Explorer` | attributes、request 分派；其餘函式在同層模組並由 `Explorer` 轉呼叫：[內容列表](../electron/explorer-content.ts)、[串流與縮圖](../electron/explorer-stream.ts)、[外部資料與圖片網址](../electron/explorer-source.ts)、[檔案總覽](../electron/explorer-overview.ts)、[圖片網址](../electron/image-url.ts)（對外連線經 [pinned-fetch](../electron/pinned-fetch.ts)：在連線當下查 DNS 並拒絕私有位址，R-334）、[媒體檔案分類](../electron/media-files.ts)；另有 content/overview/stream/thumbnail、目標綁定與執行、外部資料套用 |
 | 遊戲辨識 | [game-detection](../electron/game-detection.ts) | 有限探測、證據與 ROOT 邊界 |
-| 遊戲附加功能 | [game-extras](../electron/game-extras.ts) | Steam App ID、商店網址、依引擎推算存檔資料夾、附帶程式與說明書建議（R-305～R-310），全部唯讀；由 `Explorer` 的 gameExtras／runExtra 等請求呼叫。直接啟動的 EXE 結束時，main 把遊玩時間寫進 `WorkspaceStore`（本機設定，不進可攜記錄） |
+| 遊戲附加功能 | [game-extras](../electron/game-extras.ts) | Steam App ID、商店網址、依引擎推算存檔資料夾、附帶程式與說明書建議（R-305～R-310），全部唯讀；由 `Explorer` 的 gameExtras／gameAvailability（R-409，卡片上多個遊戲的附加按鈕可用性，一次最多 60 筆、不偵測引擎）／runExtra 等請求呼叫。直接啟動的 EXE 結束時，main 把遊玩時間寫進 `WorkspaceStore`（本機設定，不進可攜記錄） |
 | 搜尋索引 | [search-index](../electron/search-index.ts) `SearchIndex` | Node SQLite、Unicode 子字串 grams、分頁；可重建，非資料來源 |
 | 本機 UI 設定 | [workspace](../electron/workspace.ts) `WorkspaceStore` | 群組／排序／窗格／偏好，驗證、保存、尺寸正規化；settings-package／settings-file 處理允許清單、移轉預覽與備份復原 |
 | 外部來源 | [metadata](../electron/metadata.ts) | [sources](../shared/sources.ts) 分類註冊、metadata（E-Hentai、Steam）與 metadata-public（共用請求、主機檢查、封面）固定端點；[sources/](../electron/sources/config.ts) 一站一個轉接器加共用來源設定；[metadata-common](../electron/metadata-common.ts) 大小限制與錯誤分類、來源預覽與追溯 |

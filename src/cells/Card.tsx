@@ -23,6 +23,7 @@ import { latestNovel } from '../../shared/novel'
 import { cellColors } from './cellStyle'
 import { folderCoverAsset, folderCoverPicture } from './folderCover'
 import { PanelPart, panelPartKinds } from './PanelParts'
+import { GameExtraCell } from './GameExtraCell'
 import './cells.css'
 import { yesNo } from '../editor/fieldTypes'
 import { useIsWork } from '../browse/folderKind'
@@ -195,6 +196,12 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
     return <span style={{ whiteSpace: 'pre-wrap' }}>{ruleText(cell, row, project)}</span>
   if (cell.kind === 'spacer')
     return preview ? <span className="spacer-preview" aria-label={tr('空白間距')} /> : null
+  if (cell.kind === 'system-info' && cell.systemInfo === 'engine')
+    return (
+      <span>
+        {row?.boundary?.engines.length ? row.boundary.engines.join('／') : tr('未偵測到')}
+      </span>
+    )
   if (
     cell.kind === 'system-info' &&
     (cell.systemInfo === 'playTime' || cell.systemInfo === 'lastPlayed')
@@ -315,6 +322,8 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
     )
   }
   if (cell.kind === 'divider') return <hr className="cell-divider" />
+  if (cell.kind === 'game-extra')
+    return <GameExtraCell extra={cell.gameExtra ?? 'save'} row={row} preview={preview} />
   if ((panelPartKinds as readonly string[]).includes(cell.kind))
     return <PanelPart cell={cell} row={row} project={project} />
   if (cell.kind === 'game-cover') {

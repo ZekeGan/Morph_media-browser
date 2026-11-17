@@ -149,6 +149,7 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
   listShortcuts: { rowId: ref },
   runTarget: { rowId: ref, templateId: ref },
   gameExtras: { rowId: ref },
+  gameAvailability: { rowIds: list(ref, 60) },
   runExtra: { rowId: ref, extra: oneOf('steam', 'store', 'save') },
   chooseSaveFolder: { ...revisionRow, clear: opt(bool) },
   addSuggestion: { ...revisionRow, name: text },

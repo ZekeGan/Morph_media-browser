@@ -159,12 +159,20 @@ function validCell(c: unknown): boolean {
       'album-info',
       'video-info',
       'book-card',
+      'game-extra',
     ].includes(c.kind) &&
     (c.text === undefined || text(c.text, 10000)) &&
     (c.systemInfo === undefined ||
-      ['category', 'files', 'size', 'playTime', 'lastPlayed', 'readProgress', 'lastRead'].includes(
-        c.systemInfo
-      )) &&
+      [
+        'category',
+        'files',
+        'size',
+        'playTime',
+        'lastPlayed',
+        'readProgress',
+        'lastRead',
+        'engine',
+      ].includes(c.systemInfo)) &&
     (c.presentation === undefined ||
       (c.presentation === 'badge' && ['field-enum', 'field-boolean'].includes(c.kind)) ||
       (['rating', 'progress'].includes(c.presentation) && c.kind === 'field-number')) &&
@@ -181,6 +189,8 @@ function validCell(c: unknown): boolean {
     (c.groupId === undefined ||
       (c.kind.startsWith('field-') && id(c.groupId) && c.fallbackIds === undefined)) &&
     (c.actionId === undefined || (c.kind === 'game-launch' && id(c.actionId))) &&
+    (c.gameExtra === undefined ||
+      (c.kind === 'game-extra' && ['save', 'steam', 'store'].includes(c.gameExtra))) &&
     (c.imageIndex === undefined || (c.kind === 'image' && integer(c.imageIndex, 1, 999))) &&
     (c.imageCover === undefined ||
       (c.kind === 'image' && c.imageCover === true && c.imageIndex === undefined)) &&

@@ -25,7 +25,7 @@ import {
   type FolderRow,
   type Project,
 } from '../../shared/model'
-import { isFieldKind, launchTemplates } from '../../shared/explorer'
+import { gameActionTemplates, isFieldKind } from '../../shared/explorer'
 import { GROW_KINDS, MAX_GROW_ROWS } from '../../shared/cardGrid'
 import { DisplaySource } from './DisplaySource'
 import { yesNo } from './fieldTypes'
@@ -33,6 +33,7 @@ import { ConditionEditor } from './ConditionEditor'
 import { CellStyleEditor } from '../cells/CellStyleEditor'
 import { EnumColors } from '../cells/EnumColors'
 import { FallbackActions } from '../cells/FallbackActions'
+import { gameExtraLabels } from '../cells/GameExtraCell'
 
 export type InspectorTab = 'content' | 'style'
 
@@ -578,6 +579,18 @@ export function EditorInspector(props: EditorInspectorProps) {
                         onChange={(event) => updateCell({ text: event.currentTarget.value })}
                       />
                     )}
+                    {selectedCell.kind === 'game-extra' && (
+                      <Select
+                        label={tr('按鈕')}
+                        allowDeselect={false}
+                        value={selectedCell.gameExtra ?? 'save'}
+                        data={(['save', 'steam', 'store'] as const).map((value) => ({
+                          value,
+                          label: tr(gameExtraLabels[value]),
+                        }))}
+                        onChange={(value) => updateCell({ gameExtra: value as Cell['gameExtra'] })}
+                      />
+                    )}
                     {selectedCell.kind === 'system-info' && (
                       <Select
                         label={tr('系統資訊')}
@@ -589,6 +602,7 @@ export function EditorInspector(props: EditorInspectorProps) {
                           { value: 'size', label: tr('容量') },
                           { value: 'playTime', label: tr('遊玩時間') },
                           { value: 'lastPlayed', label: tr('最後遊玩') },
+                          { value: 'engine', label: tr('遊戲引擎') },
                           { value: 'readProgress', label: tr('閱讀進度') },
                           { value: 'lastRead', label: tr('最後閱讀') },
                         ]}
@@ -650,19 +664,21 @@ export function EditorInspector(props: EditorInspectorProps) {
                       />
                     )}
                     {selectedCell.kind === 'game-launch' &&
-                      (launchTemplates(draft).length ? (
+                      (gameActionTemplates(draft).length ? (
                         <>
                           <Select
                             label={
                               <HelpLabel
                                 label={tr('啟動動作')}
-                                help={tr('卡片按鈕要啟動哪一個遊戲操作；未指定時用預設啟動遊戲。')}
+                                help={tr(
+                                  '卡片按鈕要執行哪一個遊戲操作（啟動、開資料夾、網頁或說明書都可以）；未指定時用預設啟動遊戲。'
+                                )}
                               />
                             }
                             placeholder={tr('自動（預設啟動遊戲）')}
                             clearable
                             value={selectedCell.actionId ?? null}
-                            data={launchTemplates(draft).map((t) => ({
+                            data={gameActionTemplates(draft).map((t) => ({
                               value: t.id,
                               label: tr(t.label),
                             }))}

@@ -25,6 +25,8 @@ export type CellKind =
   | 'album-info'
   | 'video-info'
   | 'book-card'
+  // R-409 (provisional): one of a game's extra buttons (`gameExtra`).
+  | 'game-extra'
 export interface Cell {
   cellId: string
   kind: CellKind
@@ -71,12 +73,22 @@ export interface Cell {
   decimals?: number
   // playTime / lastPlayed: games started from M:orph (R-308), from the local play record.
   // readProgress / lastRead: the text book read most recently in the folder (R-282).
+  // engine (R-409): the game engines the scan found.
   systemInfo?:
-    'category' | 'files' | 'size' | 'playTime' | 'lastPlayed' | 'readProgress' | 'lastRead'
+    | 'category'
+    | 'files'
+    | 'size'
+    | 'playTime'
+    | 'lastPlayed'
+    | 'readProgress'
+    | 'lastRead'
+    | 'engine'
   presentation?: 'badge' | 'rating' | 'progress'
   // 'blur': the whole picture, with its own blurred copy filling the leftover space.
   imageFit?: 'contain' | 'cover' | 'blur'
   maximum?: number
+  // Game extra cell only (R-409, provisional): which button.
+  gameExtra?: 'save' | 'steam' | 'store'
   // Launch cell only: which action template it starts; absent means the default launch action.
   actionId?: string
   // Launch cell only: further actions tried in order when the folder has no target for the ones before.

@@ -176,7 +176,10 @@ export const launchChoice = (
   fallbackIds: string[] | undefined,
   targets: Record<string, { kind: string }> | undefined
 ) => {
-  const main = launchTemplate(project, actionId),
+  // R-409: the cell may name any game action (a folder, a page, a manual), not only one that starts the game.
+  const main =
+      gameActionTemplates(project).find((t) => t.id === actionId) ??
+      launchTemplate(project, actionId),
     all = launchTemplates(project),
     chain = [main, ...(fallbackIds ?? []).map((id) => all.find((t) => t.id === id))].filter(
       (t): t is ActionTemplate => !!t
@@ -345,6 +348,7 @@ export type ExplorerRequest =
   | { action: 'runTarget'; rowId: string; templateId: string }
   // R-305–R-310: what the game folder offers beyond its bound actions, worked out by main.
   | { action: 'gameExtras'; rowId: string }
+  | { action: 'gameAvailability'; rowIds: string[] }
   | { action: 'runExtra'; rowId: string; extra: 'steam' | 'store' | 'save' }
   | { action: 'chooseSaveFolder'; rowId: string; revision: number; clear?: boolean }
   // R-306: bind a suggested file (by its name in the game folder) as an action.
@@ -447,6 +451,7 @@ export interface ExplorerResponse {
   pictures?: EmbeddedPictures
   shortcuts?: string[]
   extras?: GameExtras
+  availability?: Record<string, GameAvailability>
   novel?: NovelBook
   // By file id; a file that cannot be read has an empty entry.
   audioTags?: Record<string, import('./album').AudioTags>
@@ -474,6 +479,8 @@ export interface MetadataCandidate {
   adult?: boolean
 }
 // Game page extras (R-305–R-310). Paths stay in main; the window only learns what can be offered.
+// R-409: whether each extra button of a game can be used now; `reason` (a sentence to translate) says why not.
+export type GameAvailability = Record<GameExtra, { ok: boolean; reason?: string; site?: string }>
 export interface GameExtras {
   // Steam App ID from steam_appid.txt or the folder's Steam source; steamReady is false when no Steam is installed.
   steamAppId?: string

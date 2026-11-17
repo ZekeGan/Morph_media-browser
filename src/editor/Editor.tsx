@@ -117,6 +117,7 @@ export function Editor({
     'album-info': tr('專輯資訊'),
     'video-info': tr('影片數與播放'),
     'book-card': tr('書籍資訊（EPUB）'),
+    'game-extra': tr('遊戲附加按鈕'),
   }
   // One line saying what each component is for; shown as palette tooltips and under the inspector title.
   const hints: Record<CellKind, string> = {
@@ -141,6 +142,7 @@ export function Editor({
     'album-info': tr('右側：專輯封面、名稱、演出者與曲數'),
     'video-info': tr('右側：影片數與播放／繼續觀看'),
     'book-card': tr('右側：只有一本 EPUB 的資料夾顯示它的封面、書名與作者'),
+    'game-extra': tr('開啟存檔資料夾、用 Steam 啟動或在商店開啟；不能用時變灰並說明原因'),
   }
 
   useLocale()
@@ -381,7 +383,7 @@ export function Editor({
   const hasContent =
     !!selectedCell &&
     (isFieldKind(selectedCell.kind) ||
-      ['static-text', 'system-info', 'image', 'game-cover', 'game-launch'].includes(
+      ['static-text', 'system-info', 'image', 'game-cover', 'game-launch', 'game-extra'].includes(
         selectedCell.kind
       ))
   // The last inspector tab is remembered for the next component and the next time the editor opens.
@@ -581,6 +583,9 @@ export function Editor({
     source?: Project['fieldBindings'][number],
     groupId?: string
   ) => {
+    // R-409: a palette row may name a system-info component with its setting ("system-info:playTime").
+    const [base, setting] = String(kind).split(':') as [CellKind, Cell['systemInfo']?]
+    kind = base
     // A group goes on the card as a component showing it, bound to its first member.
     const group = groupId ? draft.fieldGroups?.find((g) => g.groupId === groupId) : undefined
     if (groupId && !group) {
@@ -623,6 +628,7 @@ export function Editor({
       ...(isFieldKind(kind) || kind === 'image' ? { attributeId } : {}),
       // R-409: a new image component shows the folder cover until a picture is chosen for the folder.
       ...(kind === 'image' ? { imageCover: true } : {}),
+      ...(kind === 'system-info' && setting ? { systemInfo: setting } : {}),
       ...(group ? { groupId: group.groupId } : {}),
       grid: grid ?? {
         x: 0,

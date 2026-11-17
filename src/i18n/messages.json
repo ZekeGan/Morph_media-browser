@@ -4475,12 +4475,6 @@
     "ja": "起動アクション",
     "es": "Acción de inicio"
   },
-  "卡片按鈕要啟動哪一個遊戲操作；未指定時用預設啟動遊戲。": {
-    "zh-CN": "卡片按钮要启动哪一个游戏操作；未指定时使用默认启动游戏。",
-    "en": "Which game action the card button starts; the default launch action is used when none is chosen.",
-    "ja": "カードのボタンで起動するゲーム操作。未指定の場合は既定の起動を使います。",
-    "es": "Qué acción de juego inicia el botón de la tarjeta; si no eliges, se usa la de inicio predeterminada."
-  },
   "自動（預設啟動遊戲）": {
     "zh-CN": "自动（默认启动游戏）",
     "en": "Automatic (default launch)",
@@ -13006,5 +13000,83 @@
     "en": "Right-panel visuals",
     "ja": "右側のメイン表示",
     "es": "Elementos del panel derecho"
+  },
+  "在商店開啟": {
+    "zh-CN": "在商店打开",
+    "en": "Open in store",
+    "ja": "ストアで開く",
+    "es": "Abrir en la tienda"
+  },
+  "不是遊戲資料夾": {
+    "zh-CN": "不是游戏文件夹",
+    "en": "Not a game folder",
+    "ja": "ゲームフォルダーではありません",
+    "es": "No es una carpeta de juego"
+  },
+  "無法讀取這個遊戲資料夾": {
+    "zh-CN": "无法读取这个游戏文件夹",
+    "en": "This game folder cannot be read",
+    "ja": "このゲームフォルダーを読み取れません",
+    "es": "No se puede leer esta carpeta de juego"
+  },
+  "沒有 Steam App ID": {
+    "zh-CN": "没有 Steam App ID",
+    "en": "No Steam App ID",
+    "ja": "Steam App ID がありません",
+    "es": "Sin Steam App ID"
+  },
+  "沒有商店網址": {
+    "zh-CN": "没有商店网址",
+    "en": "No store address",
+    "ja": "ストアのアドレスがありません",
+    "es": "Sin dirección de tienda"
+  },
+  "找不到存檔資料夾": {
+    "zh-CN": "找不到存档文件夹",
+    "en": "No save folder found",
+    "ja": "セーブフォルダーが見つかりません",
+    "es": "No se encontró la carpeta de partidas"
+  },
+  "按鈕": {
+    "zh-CN": "按钮",
+    "en": "Button",
+    "ja": "ボタン",
+    "es": "Botón"
+  },
+  "遊戲附加按鈕": {
+    "zh-CN": "游戏附加按钮",
+    "en": "Game extra button",
+    "ja": "ゲームの追加ボタン",
+    "es": "Botón extra del juego"
+  },
+  "開啟存檔資料夾、用 Steam 啟動或在商店開啟；不能用時變灰並說明原因": {
+    "zh-CN": "打开存档文件夹、用 Steam 启动或在商店打开；不能用时变灰并说明原因",
+    "en": "Open the save folder, start through Steam or open the store page; greyed out with the reason when it cannot be used",
+    "ja": "セーブフォルダーを開く、Steam で起動、ストアで開く。使えないときは灰色になり理由を表示",
+    "es": "Abrir la carpeta de partidas, iniciar con Steam o abrir la tienda; en gris con el motivo cuando no se puede usar"
+  },
+  "從 M:orph 啟動的累計遊玩時間": {
+    "zh-CN": "从 M:orph 启动的累计游玩时间",
+    "en": "Total play time of launches from M:orph",
+    "ja": "M:orph から起動した累計プレイ時間",
+    "es": "Tiempo de juego total de los inicios desde M:orph"
+  },
+  "最後一次從 M:orph 啟動的時間": {
+    "zh-CN": "最后一次从 M:orph 启动的时间",
+    "en": "When it was last launched from M:orph",
+    "ja": "最後に M:orph から起動した日時",
+    "es": "Cuándo se inició por última vez desde M:orph"
+  },
+  "掃描時偵測到的遊戲引擎": {
+    "zh-CN": "扫描时检测到的游戏引擎",
+    "en": "The game engine found when scanning",
+    "ja": "スキャン時に検出したゲームエンジン",
+    "es": "El motor de juego detectado al escanear"
+  },
+  "卡片按鈕要執行哪一個遊戲操作（啟動、開資料夾、網頁或說明書都可以）；未指定時用預設啟動遊戲。": {
+    "zh-CN": "卡片按钮要执行哪一个游戏操作（启动、打开文件夹、网页或说明书都可以）；未指定时用默认启动游戏。",
+    "en": "Which game action the card button runs (start, a folder, a page or a manual); without one, the default game launch.",
+    "ja": "カードのボタンが実行するゲーム操作（起動、フォルダー、ページ、説明書のどれでも）。未指定なら既定のゲーム起動。",
+    "es": "Qué acción del juego ejecuta el botón (iniciar, una carpeta, una página o un manual); sin elegir, el inicio predeterminado."
   }
 }

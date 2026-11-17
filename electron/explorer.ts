@@ -24,10 +24,12 @@ import {
   type ContentResult,
   type ExplorerRequest,
   type ExplorerResponse,
+  type GameAvailability,
   type MetadataPreview,
   type OverviewResult,
 } from '../shared/explorer'
 import { SearchIndex } from './search-index'
+import { isGameFolder } from '../shared/media'
 import { completionNotice } from '../shared/notifications'
 import { projectImageCells } from '../shared/layouts'
 import { type ImageUrlOptions, type RemoteImage } from './image-url'
@@ -856,6 +858,38 @@ export class Explorer {
             flashPlayer: !!this.desktop.flashPlayer?.(),
           },
         }
+      }
+      // R-409: whether the extra buttons of several games can be used, for the cards on screen. Read-only and light:
+      // no tools, profiles or engine detection beyond what the scan found; a folder that cannot be read is left out.
+      case 'gameAvailability': {
+        const steamReady = !!this.desktop.protocolReady?.('steam'),
+          out: Record<string, GameAvailability> = {}
+        for (const rowId of [...new Set(req.rowIds)]) {
+          const row = await this.library.checkedRow(rowId).catch(() => undefined)
+          if (!row || !isGameFolder(row)) continue
+          const record = await readFolder(row.path).catch(() => undefined),
+            id = await steamAppId(row.path, record),
+            saved = record?.details?.saveFolder
+              ? undefined
+              : await engineSave(row.path, row.boundary?.engines ?? []).catch(() => undefined)
+          out[rowId] = {
+            steam: !id
+              ? { ok: false, reason: '沒有 Steam App ID' }
+              : steamReady
+                ? { ok: true }
+                : { ok: false, reason: '這台電腦沒有安裝 Steam' },
+            store: store(record)
+              ? { ok: true, site: store(record)!.site }
+              : { ok: false, reason: '沒有商店網址' },
+            save:
+              record?.details?.saveFolder || saved?.state === 'found'
+                ? { ok: true }
+                : saved?.state === 'pending'
+                  ? { ok: false, reason: '還沒有存檔' }
+                  : { ok: false, reason: '找不到存檔資料夾' },
+          }
+        }
+        return { availability: out }
       }
       case 'runExtra': {
         const row = await this.library.checkedRow(req.rowId),

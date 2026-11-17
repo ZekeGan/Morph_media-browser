@@ -48,6 +48,8 @@ import {
 } from './FieldGroupPalette'
 
 type Binding = Project['fieldBindings'][number]
+// A component kind, or a system-info component with its setting chosen (R-409).
+type PaletteKey = CellKind | `system-info:${NonNullable<Cell['systemInfo']>}`
 type Source = ReturnType<typeof editorFields>[number]
 
 // Every palette row starts with a small picture: components use an icon, fields a short glyph of their type.
@@ -62,6 +64,7 @@ const kindIcons: Partial<Record<CellKind, IconName>> = {
   divider: 'minus',
   'game-cover': 'image',
   'game-launch': 'play',
+  'game-extra': 'external',
   'album-info': 'music',
   'video-info': 'video',
   'book-card': 'book',
@@ -428,7 +431,16 @@ export function EditorPalette(props: EditorPaletteProps) {
       </div>
     )
   }
-  const componentRow = (kind: CellKind) => (
+  // R-409: a palette row may be a component with a setting already chosen ("system-info:playTime").
+  const presetLabels: Record<string, [string, string, IconName]> = {
+    'system-info:playTime': [tr('遊玩時間'), tr('從 M:orph 啟動的累計遊玩時間'), 'sliders'],
+    'system-info:lastPlayed': [tr('最後遊玩'), tr('最後一次從 M:orph 啟動的時間'), 'sliders'],
+    'system-info:engine': [tr('遊戲引擎'), tr('掃描時偵測到的遊戲引擎'), 'game'],
+  }
+  const labelOf = (key: PaletteKey) => presetLabels[key]?.[0] ?? labels[key as CellKind],
+    hintOf = (key: PaletteKey) => presetLabels[key]?.[1] ?? hints[key as CellKind],
+    iconOf = (key: PaletteKey) => presetLabels[key]?.[2] ?? kindIcons[key as CellKind] ?? 'grid'
+  const componentRow = (kind: PaletteKey) => (
     <div
       key={kind}
       className="palette-item palette-row"
@@ -439,26 +451,26 @@ export function EditorPalette(props: EditorPaletteProps) {
         dragImage(e)
       }}
     >
-      <Tooltip label={hints[kind]} position="right" openDelay={400} withArrow multiline maw={260}>
+      <Tooltip label={hintOf(kind)} position="right" openDelay={400} withArrow multiline maw={260}>
         <UnstyledButton
           className="palette-row-main"
-          aria-label={labels[kind]}
-          aria-description={hints[kind]}
-          onClick={() => add(kind)}
+          aria-label={labelOf(kind)}
+          aria-description={hintOf(kind)}
+          onClick={() => add(kind as CellKind)}
         >
           <span className="palette-row-icon" aria-hidden>
-            <Icon name={kindIcons[kind] ?? 'grid'} size={14} />
+            <Icon name={iconOf(kind)} size={14} />
           </span>
           <span className="palette-row-text">
-            <span className="palette-field-name">{labels[kind]}</span>
+            <span className="palette-field-name">{labelOf(kind)}</span>
           </span>
         </UnstyledButton>
       </Tooltip>
     </div>
   )
-  const components = (kinds: CellKind[]) =>
-    kinds.filter((kind) => `${labels[kind]} ${hints[kind]}`.toLocaleLowerCase().includes(query))
-  const componentSection = (id: string, title: string, kinds: CellKind[]) => {
+  const components = (kinds: PaletteKey[]) =>
+    kinds.filter((kind) => `${labelOf(kind)} ${hintOf(kind)}`.toLocaleLowerCase().includes(query))
+  const componentSection = (id: string, title: string, kinds: PaletteKey[]) => {
     const shown = components(kinds)
     return (
       (!query || shown.length > 0) && (
@@ -687,7 +699,16 @@ export function EditorPalette(props: EditorPaletteProps) {
         )}
       </Section>
       {componentSection('layout', tr('排版'), ['static-text', 'spacer', 'divider'])}
-      {hasGames && componentSection('game', tr('遊戲'), ['game-cover', 'game-launch'])}
+      {hasGames &&
+        componentSection('game', tr('遊戲'), [
+          'game-cover',
+          'game-launch',
+          'game-extra',
+          'system-info:playTime',
+          'system-info:lastPlayed',
+          'system-info:engine',
+          'open-folder',
+        ])}
       {panel &&
         componentSection('panel', tr('右側主視覺'), ['album-info', 'video-info', 'book-card'])}
       <Modal

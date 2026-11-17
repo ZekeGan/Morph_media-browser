@@ -16,7 +16,14 @@ for (const name of ['Unbound', 'Bound']) {
   await fs.mkdir(path.join(media, name), { recursive: true })
   await fs.writeFile(path.join(media, name, 'Game.exe'), 'x')
   await fs.writeFile(path.join(media, name, 'Game - LE.lnk'), 'fake shortcut')
+  // R-409: an RPG Maker MZ game, so the scan finds its engine; only Bound has saved.
+  await fs.mkdir(path.join(media, name, 'www', 'js'), { recursive: true })
+  await fs.mkdir(path.join(media, name, 'www', 'data'), { recursive: true })
+  await fs.writeFile(path.join(media, name, 'www', 'js', 'rmmz_core.js'), '//')
+  await fs.writeFile(path.join(media, name, 'www', 'data', 'System.json'), '{}')
 }
+await fs.mkdir(path.join(media, 'Bound', 'www', 'save'), { recursive: true })
+await fs.writeFile(path.join(media, 'Bound', 'www', 'save', 'file1.rpgsave'), 'SAVE')
 const lib = new Library(local, undefined, false)
 await lib.init()
 await lib.create(media, {
@@ -30,6 +37,21 @@ const cells: Cell[] = [
   { cellId: 'name', kind: 'name', grid: { x: 0, y: 0, w: 12, h: 1 }, style },
   { cellId: 'launch', kind: 'game-launch', grid: { x: 0, y: 1, w: 6, h: 1 }, style },
   { cellId: 'le', kind: 'game-launch', actionId: 'le', grid: { x: 6, y: 1, w: 6, h: 1 }, style },
+  // R-409: a game's extra button and its engine.
+  {
+    cellId: 'save',
+    kind: 'game-extra',
+    gameExtra: 'save',
+    grid: { x: 0, y: 2, w: 6, h: 1 },
+    style,
+  },
+  {
+    cellId: 'engine',
+    kind: 'system-info',
+    systemInfo: 'engine',
+    grid: { x: 6, y: 2, w: 6, h: 1 },
+    style,
+  },
 ]
 await lib.saveProject({
   ...project,
@@ -70,6 +92,13 @@ try {
   await card('Bound').waitFor()
   assert.equal(await card('Unbound').getByRole('button', { name: '啟動遊戲' }).isDisabled(), true)
   assert.equal(await card('Bound').getByRole('button', { name: '啟動遊戲' }).isDisabled(), false)
+  // R-409: the save-folder button is usable where there are saves; elsewhere it is grey and says why.
+  await card('Bound').getByText('RPG Maker', { exact: false }).first().waitFor()
+  const save = (name: string) => card(name).getByRole('button', { name: /^開啟存檔資料夾/ })
+  for (let i = 0; i < 50 && (await save('Bound').isDisabled()); i++) await page.waitForTimeout(100)
+  assert.equal(await save('Bound').isDisabled(), false)
+  await card('Unbound').getByRole('button', { name: '開啟存檔資料夾（還沒有存檔）' }).waitFor()
+  assert.equal(await save('Unbound').isDisabled(), true)
   // A second launch cell starts another action (the shortcut) under that action's own name.
   assert.equal(await card('Bound').getByRole('button', { name: '用 LE 啟動' }).isDisabled(), false)
   assert.equal(await card('Unbound').getByRole('button', { name: '用 LE 啟動' }).isDisabled(), true)
@@ -95,6 +124,8 @@ try {
     .locator('.basic-palette')
     .getByRole('button', { name: '啟動遊戲', exact: true })
     .waitFor()
+  for (const name of ['遊戲附加按鈕', '遊玩時間', '遊戲引擎'])
+    await page.locator('.basic-palette').getByRole('button', { name, exact: true }).waitFor()
   assert.deepEqual(errors, [])
   passed = true
   console.log(

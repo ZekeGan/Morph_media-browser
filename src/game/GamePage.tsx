@@ -13,6 +13,8 @@ import { t as tr, useLocale } from '../i18n'
 import './game-actions.css'
 import { useState } from 'react'
 import { folderCoverPicture } from '../cells/folderCover'
+import { PanelCard } from '../cells/PanelContent'
+import { panelChoice } from '../../shared/layouts'
 
 // The page of a game main folder (R-389: the fill-ins of the shared folder page). Main visual: the cover; actions:
 // confirming a possible game and the launch buttons. Its fields are in the folder details (R-390), which list every
@@ -44,71 +46,82 @@ export function GamePage({
       openFolder={() => void act({ action: 'open', rowId: row.rowId })}
       busy={busy}
       visual={
-        <div className="game-banner">
-          {(row.boundary?.state === 'candidate' ||
-            row.record?.details?.boundary?.state === 'candidate') && (
-            <small className="game-candidate" role="status">
-              {tr('候選遊戲，尚未確認')}
-            </small>
-          )}
-          {cover && coverFailed !== cover.src ? (
-            <img src={cover.src} alt={cover.alt} onError={() => setCoverFailed(cover.src)} />
-          ) : (
-            <span>{tr('沒有遊戲封面')}</span>
-          )}
-          <Menu position="bottom-end">
-            <Menu.Target>
-              <ActionIcon
-                className="cover-change"
-                aria-label={tr('更換遊戲封面')}
-                disabled={disabled}
-                variant="default"
-              >
-                <Icon name="edit" />
-              </ActionIcon>
-            </Menu.Target>
-            <Menu.Dropdown>
-              {row.record?.assets.map((a) => (
-                <Menu.Item
-                  key={a.assetId}
-                  onClick={() =>
-                    void run({
-                      action: 'banner',
-                      rowId: row.rowId,
-                      revision: row.record!.revision,
-                      assetId: a.assetId,
-                    })
-                  }
+        // R-409: a right-panel layout chosen for games replaces the built-in cover with its change menu.
+        panelChoice(project, row, 'game') ? (
+          <PanelCard
+            project={project}
+            row={row}
+            kind="game"
+            content={{ entries: [] }}
+            open={() => void act({ action: 'open', rowId: row.rowId })}
+          />
+        ) : (
+          <div className="game-banner">
+            {(row.boundary?.state === 'candidate' ||
+              row.record?.details?.boundary?.state === 'candidate') && (
+              <small className="game-candidate" role="status">
+                {tr('候選遊戲，尚未確認')}
+              </small>
+            )}
+            {cover && coverFailed !== cover.src ? (
+              <img src={cover.src} alt={cover.alt} onError={() => setCoverFailed(cover.src)} />
+            ) : (
+              <span>{tr('沒有遊戲封面')}</span>
+            )}
+            <Menu position="bottom-end">
+              <Menu.Target>
+                <ActionIcon
+                  className="cover-change"
+                  aria-label={tr('更換遊戲封面')}
+                  disabled={disabled}
+                  variant="default"
                 >
-                  {a.originalName}
+                  <Icon name="edit" />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                {row.record?.assets.map((a) => (
+                  <Menu.Item
+                    key={a.assetId}
+                    onClick={() =>
+                      void run({
+                        action: 'banner',
+                        rowId: row.rowId,
+                        revision: row.record!.revision,
+                        assetId: a.assetId,
+                      })
+                    }
+                  >
+                    {a.originalName}
+                  </Menu.Item>
+                ))}
+                <Menu.Item
+                  onClick={async () => {
+                    const result = await act({
+                        action: 'image',
+                        rowId: row.rowId,
+                        revision: row.record!.revision,
+                      }),
+                      next =
+                        result && !result.cancelled
+                          ? result.snapshot.structure?.find((r) => r.rowId === row.rowId)?.record
+                          : undefined,
+                      asset = next?.assets.at(-1)
+                    if (next && asset)
+                      await run({
+                        action: 'banner',
+                        rowId: row.rowId,
+                        revision: next.revision,
+                        assetId: asset.assetId,
+                      })
+                  }}
+                >
+                  {tr('匯入封面圖片')}
                 </Menu.Item>
-              ))}
-              <Menu.Item
-                onClick={async () => {
-                  const result = await act({
-                      action: 'image',
-                      rowId: row.rowId,
-                      revision: row.record!.revision,
-                    }),
-                    next =
-                      result && !result.cancelled
-                        ? result.snapshot.structure?.find((r) => r.rowId === row.rowId)?.record
-                        : undefined,
-                    asset = next?.assets.at(-1)
-                  if (next && asset)
-                    await run({
-                      action: 'banner',
-                      rowId: row.rowId,
-                      revision: next.revision,
-                      assetId: asset.assetId,
-                    })
-                }}
-              >
-                {tr('匯入封面圖片')}
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
-        </div>
+              </Menu.Dropdown>
+            </Menu>
+          </div>
+        )
       }
       actions={
         <>

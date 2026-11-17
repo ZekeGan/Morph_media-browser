@@ -536,3 +536,30 @@ test('Ren’Py save names come from options.rpyc, loose or inside an .rpa, with 
   )
   assert.deepEqual(await engineSave(packed, ['Ren’Py'], home), { state: 'unknown' })
 })
+
+test('R-409: the extra buttons of several games are checked in one request, read-only, with a reason when not usable', async (t) => {
+  const { explorer, row, media, setSteam, library } = await setup(t, {
+    'Game.exe': 'x',
+    'steam_appid.txt': '620',
+    'www/save/file1.rpgsave': 'SAVE',
+    'www/data/System.json': '{}',
+    'www/js/rmmz_core.js': '//',
+  })
+  const before = await readFolder(media)
+  const ask = async (rowIds: string[]) =>
+    (await explorer.request({ action: 'gameAvailability', rowIds })).availability!
+  let answer = await ask([row().rowId, row().rowId, 'missing-row'])
+  assert.deepEqual(Object.keys(answer), [row().rowId])
+  assert.deepEqual(answer[row().rowId], {
+    steam: { ok: true },
+    store: { ok: false, reason: '沒有商店網址' },
+    save: { ok: true },
+  })
+  setSteam(false)
+  answer = await ask([row().rowId])
+  assert.deepEqual(answer[row().rowId].steam, { ok: false, reason: '這台電腦沒有安裝 Steam' })
+  // Asking writes nothing, and a folder that is not a game is left out.
+  assert.deepEqual(await readFolder(media), before)
+  const other = library.snapshot().rows.find((r) => r.path !== media)
+  if (other) assert.deepEqual(Object.keys(await ask([other.rowId])), [])
+})
