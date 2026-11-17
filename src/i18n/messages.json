@@ -12898,5 +12898,17 @@
     "en": "Set up keys",
     "ja": "キーを設定",
     "es": "Configurar claves"
+  },
+  "資料夾封面": {
+    "zh-CN": "文件夹封面",
+    "en": "Folder cover",
+    "ja": "フォルダーのカバー",
+    "es": "Portada de la carpeta"
+  },
+  "資料夾指定的封面；沒有指定時用資料夾內第一張圖片。": {
+    "zh-CN": "文件夹指定的封面；没有指定时使用文件夹内第一张图片。",
+    "en": "The cover chosen for the folder; without one, the first image in the folder.",
+    "ja": "フォルダーに指定したカバー。指定がなければフォルダー内の最初の画像。",
+    "es": "La portada elegida para la carpeta; si no hay, la primera imagen de la carpeta."
   }
 }

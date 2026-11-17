@@ -11,6 +11,8 @@ import { FolderPage } from '../panel/FolderPage'
 import { GameExtraButtons } from './GameExtras'
 import { t as tr, useLocale } from '../i18n'
 import './game-actions.css'
+import { useState } from 'react'
+import { folderCoverPicture } from '../cells/folderCover'
 
 // The page of a game main folder (R-389: the fill-ins of the shared folder page). Main visual: the cover; actions:
 // confirming a possible game and the launch buttons. Its fields are in the folder details (R-390), which list every
@@ -31,9 +33,8 @@ export function GamePage({
   configure: (tab?: 'game') => void
 }) {
   useLocale()
-  const cover =
-    row.record?.assets.find((a) => a.assetId === row.record?.details?.bannerAssetId) ??
-    row.record?.assets[0]
+  const cover = folderCoverPicture(row),
+    [coverFailed, setCoverFailed] = useState('')
   const disabled = busy || !row.record || row.readonly || row.stopped || !!row.error
   return (
     <FolderPage
@@ -50,8 +51,8 @@ export function GamePage({
               {tr('候選遊戲，尚未確認')}
             </small>
           )}
-          {cover ? (
-            <img src={`media://asset/${row.rowId}/${cover.assetId}`} alt={cover.originalName} />
+          {cover && coverFailed !== cover.src ? (
+            <img src={cover.src} alt={cover.alt} onError={() => setCoverFailed(cover.src)} />
           ) : (
             <span>{tr('沒有遊戲封面')}</span>
           )}

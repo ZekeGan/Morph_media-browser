@@ -21,6 +21,7 @@ import { useFolderStats } from '../browse/folderStats'
 import { formatLastPlayed, formatPlayTime, usePlaytime } from '../game/playtime'
 import { latestNovel } from '../../shared/novel'
 import { cellColors } from './cellStyle'
+import { folderCoverAsset, folderCoverPicture } from './folderCover'
 import './cells.css'
 import { yesNo } from '../editor/fieldTypes'
 import { useIsWork } from '../browse/folderKind'
@@ -75,14 +76,16 @@ function CellPicture({
   src,
   alt,
   fit,
+  empty,
 }: {
   src: string
   alt: string
   fit: 'contain' | 'cover' | 'blur'
+  empty?: string
 }) {
   const [failed, setFailed] = useState(false)
   useEffect(() => setFailed(false), [src])
-  if (failed) return <span className="cell-image-placeholder">{tr('沒有圖片')}</span>
+  if (failed) return <span className="cell-image-placeholder">{empty ?? tr('沒有圖片')}</span>
   if (fit !== 'blur')
     return (
       <img
@@ -312,14 +315,13 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
   }
   if (cell.kind === 'divider') return <hr className="cell-divider" />
   if (cell.kind === 'game-cover') {
-    const asset =
-      row?.record?.assets.find((a) => a.assetId === row.record?.details?.bannerAssetId) ??
-      row?.record?.assets[0]
-    return asset ? (
+    const cover = folderCoverPicture(row)
+    return cover ? (
       <CellPicture
-        src={`media://asset/${row!.rowId}/${asset.assetId}`}
-        alt={asset.originalName}
+        src={cover.src}
+        alt={cover.alt}
         fit={cell.imageFit ?? 'blur'}
+        empty={tr('尚無封面')}
       />
     ) : (
       <span className="cell-image-placeholder">{tr('尚無封面')}</span>
@@ -331,21 +333,27 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
         ? row?.record?.assets.find((a) => a.assetId === selected)
         : cell.attributeId
           ? undefined
-          : (row?.record?.assets.find((a) => a.assetId === row.record?.details?.bannerAssetId) ??
-            row?.record?.assets[0])
+          : folderCoverAsset(row),
+      // No picture chosen for this folder: the folder cover (R-409) or its n-th image file, when it has one.
+      fallback =
+        asset || !row
+          ? undefined
+          : cell.imageCover
+            ? folderCoverPicture(row)
+            : cell.imageIndex
+              ? {
+                  src: `media://nth/${row.rowId}/${cell.imageIndex}`,
+                  alt: tr('資料夾內第 {0} 張圖片', cell.imageIndex),
+                }
+              : undefined
     return asset ? (
       <CellPicture
         src={`media://asset/${row!.rowId}/${asset.assetId}`}
         alt={asset.originalName}
         fit={cell.imageFit ?? 'contain'}
       />
-    ) : row && cell.imageIndex ? (
-      // No picture chosen for this folder: its n-th image file, when it has one.
-      <CellPicture
-        src={`media://nth/${row.rowId}/${cell.imageIndex}`}
-        alt={tr('資料夾內第 {0} 張圖片', cell.imageIndex)}
-        fit={cell.imageFit ?? 'contain'}
-      />
+    ) : fallback ? (
+      <CellPicture src={fallback.src} alt={fallback.alt} fit={cell.imageFit ?? 'contain'} />
     ) : preview ? (
       <span>{tr('選用圖片 · 可留空')}</span>
     ) : null

@@ -179,6 +179,8 @@ function validCell(c: unknown): boolean {
       (c.kind.startsWith('field-') && id(c.groupId) && c.fallbackIds === undefined)) &&
     (c.actionId === undefined || (c.kind === 'game-launch' && id(c.actionId))) &&
     (c.imageIndex === undefined || (c.kind === 'image' && integer(c.imageIndex, 1, 999))) &&
+    (c.imageCover === undefined ||
+      (c.kind === 'image' && c.imageCover === true && c.imageIndex === undefined)) &&
     (c.fallbackActionIds === undefined ||
       (c.kind === 'game-launch' &&
         Array.isArray(c.fallbackActionIds) &&

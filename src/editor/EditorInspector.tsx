@@ -691,15 +691,30 @@ export function EditorInspector(props: EditorInspectorProps) {
                         <Select
                           label={tr('沒有手動選圖時')}
                           allowDeselect={false}
-                          value={selectedCell.imageIndex ? 'nth' : 'none'}
+                          value={
+                            selectedCell.imageCover
+                              ? 'cover'
+                              : selectedCell.imageIndex
+                                ? 'nth'
+                                : 'none'
+                          }
                           data={[
-                            { value: 'none', label: tr('留空') },
+                            { value: 'cover', label: tr('資料夾封面') },
                             { value: 'nth', label: tr('顯示資料夾內第 N 張圖片') },
+                            { value: 'none', label: tr('留空') },
                           ]}
                           onChange={(value) =>
-                            updateCell({ imageIndex: value === 'nth' ? 1 : undefined })
+                            updateCell({
+                              imageCover: value === 'cover' || undefined,
+                              imageIndex: value === 'nth' ? 1 : undefined,
+                            })
                           }
                         />
+                        {selectedCell.imageCover && (
+                          <Text size="xs" c="dimmed">
+                            {tr('資料夾指定的封面；沒有指定時用資料夾內第一張圖片。')}
+                          </Text>
+                        )}
                         {selectedCell.imageIndex && (
                           <NumberInput
                             label={

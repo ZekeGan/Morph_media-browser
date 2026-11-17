@@ -7,7 +7,7 @@ import { chooseLayout, dropLayout, legacyLayoutRules } from './layoutRules'
 export const bookCover = (grid: Cell['grid'] = { x: 0, y: 0, w: 4, h: 4 }): Cell => ({
   cellId: 'book-cover',
   kind: 'image',
-  imageIndex: 1,
+  imageCover: true,
   grid,
   style: { textColor: '#e4e6e8', backgroundColor: 'transparent' },
 })

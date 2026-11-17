@@ -79,6 +79,9 @@ export interface Cell {
   fallbackActionIds?: string[]
   // Image cell only: without a picture chosen for the folder, show its n-th image file (by name, 1-based).
   imageIndex?: number
+  // Image cell only (R-409, provisional): without a picture chosen for the folder, show the folder cover (the chosen cover,
+  // else its first image file). Takes the place of imageIndex.
+  imageCover?: boolean
   copyValue?: boolean
   condition?: CellCondition
   // More conditions (R-239): with `condition` they must all hold, or any one with conditionMode 'any'.

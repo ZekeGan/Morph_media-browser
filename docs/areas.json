@@ -236,6 +236,7 @@
       "docs": ["CELL_CATALOG.md#現行契約", "CELL_CATALOG.md#新增組件與型別"],
       "code": [
         "src/cells/Card*",
+        "src/cells/folderCover*",
         "src/cells/CellStyleEditor*",
         "src/cells/TagList*",
         "src/cells/EnumColors*",
@@ -259,6 +260,7 @@
         "editor-fields-ui"
       ],
       "tests": [
+        "folder-cover.test.ts",
         "cells.test.ts",
         "cell-fallback.test.ts",
         "card-grid.test.ts",

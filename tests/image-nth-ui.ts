@@ -67,6 +67,15 @@ const project = lib.snapshot().projects[0].project!,
       grid: { x: 6, y: 1, w: 6, h: 3 },
       style,
     },
+    // R-409: the folder cover; without a chosen cover, the first image file.
+    {
+      cellId: 'cover',
+      kind: 'image',
+      attributeId: 'pic4',
+      imageCover: true,
+      grid: { x: 0, y: 4, w: 6, h: 3 },
+      style,
+    },
   ]
 await lib.saveProject({
   ...project,
@@ -92,15 +101,32 @@ try {
     const img = document.querySelector('.folder-card img.cell-image') as HTMLImageElement | null
     return !!img && img.complete && img.naturalWidth > 0
   })
-  assert.equal(await card('Pictures').locator('img.cell-image').count(), 1)
+  await page.waitForFunction(
+    () =>
+      [...document.querySelectorAll('.folder-card img.cell-image')].filter(
+        (img) => (img as HTMLImageElement).complete && (img as HTMLImageElement).naturalWidth > 0
+      ).length === 2
+  )
+  assert.equal(await card('Pictures').locator('img.cell-image').count(), 2)
+  assert.equal(
+    await card('Pictures').locator('img.cell-image[src*="media://nth/"][src$="/1"]').count(),
+    1
+  )
   assert.equal(await card('Pictures').getByText('沒有圖片').count(), 1)
   // A folder without any image file shows nothing broken in both cells.
   await card('Empty').waitFor()
   await card('Empty').getByText('沒有圖片').first().waitFor()
-  assert.equal(await card('Empty').getByText('沒有圖片').count(), 2)
+  await page.waitForFunction(() =>
+    [...document.querySelectorAll('.folder-card')].some(
+      (c) => c.textContent?.includes('Empty') && c.textContent.split('沒有圖片').length === 4
+    )
+  )
   assert.deepEqual(errors, [])
   passed = true
-  console.log('PASS image cell by position: n-th image, missing image placeholder. ' + root)
+  console.log(
+    'PASS image cell by position and folder cover: n-th image, first image as cover, missing image placeholder. ' +
+      root
+  )
 } catch (error) {
   await reportFailure(page, root)
   throw error

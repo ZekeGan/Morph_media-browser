@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Image components can show the folder cover when no picture is chosen (the chosen cover, else the first picture of the record that is not a source extra, else the first image file), and new image components start with it; the game cover component, the game page and the book cover follow the same rule (R-409, stage 1; new tentative cell field `imageCover`).
 - Embedded subtitles read fast with fansub effects: lines shorter than 0.1 s (karaoke and signs drawn frame by frame) are skipped, straight from the index where it gives lengths; a track past the limits keeps what was read and says "partly read" instead of failing the whole video; one video is read at a time (opening another stops the read before), a file that cannot be read is remembered, and a file whose index has no subtitle places is read from the playback time first (R-425).
 - Videos can always be opened in an external player from the player's controls; application settings can name the program (PotPlayer and mpv also get the current position), otherwise the system default opens it (R-431).
 - A subtitle track chosen in one episode is chosen again for the other videos of the folder, by its name or else its language; otherwise the track the file marks as default (new tentative folder field `subtitleTrack`) (R-432).

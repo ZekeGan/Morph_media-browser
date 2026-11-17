@@ -24,7 +24,7 @@ test('R-362: a book starts with its cover on the left and the card fields on the
       ['tags', 'field-tags', 4, 1, 8, 2],
     ]
   )
-  assert.equal(cells[0].imageIndex, 1)
+  assert.equal(cells[0].imageCover, true)
   // Without fields the cover is all there is; other kinds keep their name and path default.
   assert.deepEqual(
     bookTemplate({ cells: [card[0]] }).map((c) => c.cellId),

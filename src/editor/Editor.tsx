@@ -614,6 +614,8 @@ export function Editor({
       cellId: crypto.randomUUID(),
       kind,
       ...(isFieldKind(kind) || kind === 'image' ? { attributeId } : {}),
+      // R-409: a new image component shows the folder cover until a picture is chosen for the folder.
+      ...(kind === 'image' ? { imageCover: true } : {}),
       ...(group ? { groupId: group.groupId } : {}),
       grid: grid ?? {
         x: 0,
