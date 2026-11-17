@@ -109,7 +109,6 @@ const withField = (type: string, cells: Cell[]): Project => {
       },
     ],
     activeLayoutId: 'preset',
-    contentCells: undefined,
   }
 }
 const row = (value: unknown): FolderRow =>

@@ -4,7 +4,7 @@ import { imageTypes } from './images'
 import { compatibleFieldTypes, httpUrl, validFieldValue } from './fields'
 import { validStableQuery } from './query'
 import { checkNotNewer, FORMAT_VERSION } from './upgrade'
-import { isFolderKind, templateKinds } from './kind'
+import { isFolderKind } from './kind'
 import { withOnlyCells } from './cellLists'
 import {
   MAX_MORE_CONDITIONS,
@@ -582,21 +582,6 @@ export function validateProject(v: unknown): asserts v is Project {
       )
         throw new Error('組件顯示條件不合法')
     }
-  if (
-    v.folderLayouts !== undefined &&
-    (!obj(v.folderLayouts) ||
-      Object.keys(v.folderLayouts).length > 50000 ||
-      !Object.entries(v.folderLayouts).every(([folder, preset]) => id(folder) && id(preset)))
-  )
-    throw new Error('資料夾版面指定不合法')
-  if (
-    v.kindLayouts !== undefined &&
-    (!obj(v.kindLayouts) ||
-      !Object.entries(v.kindLayouts).every(
-        ([kind, preset]) => (templateKinds as string[]).includes(kind) && id(preset)
-      ))
-  )
-    throw new Error('類型版面指定不合法')
   if (v.layoutRules !== undefined && !validLayoutRules(v.layoutRules))
     throw new Error('版面配置規則不合法')
   if (
@@ -632,36 +617,23 @@ export function validateProject(v: unknown): asserts v is Project {
       throw new Error('作用中方案不存在')
     for (const preset of v.layoutPresets) validateProject(withOnlyCells(v, preset.cells))
   } else if (v.activeLayoutId !== undefined) throw new Error('方案清單不存在')
-  if (v.contentCover !== undefined && typeof v.contentCover !== 'boolean')
-    throw new Error('內容模板封面設定不合法')
-  if (v.bookPresets !== undefined) {
+  // R-409: the right-panel layouts (up to 40: the 30 book templates of a v1 project and the other kinds' templates).
+  if (v.panelPresets !== undefined) {
     if (
-      !Array.isArray(v.bookPresets) ||
-      !v.bookPresets.length ||
-      v.bookPresets.length > 30 ||
-      new Set(v.bookPresets.map((p) => p?.id)).size !== v.bookPresets.length ||
+      !Array.isArray(v.panelPresets) ||
+      !v.panelPresets.length ||
+      v.panelPresets.length > 40 ||
+      new Set(v.panelPresets.map((p) => p?.id)).size !== v.panelPresets.length ||
       new Set(
-        v.bookPresets.map((p) => (typeof p?.name === 'string' ? p.name.toLocaleLowerCase() : p))
-      ).size !== v.bookPresets.length ||
-      !v.bookPresets.every((p) => obj(p) && id(p.id) && text(p.name, 100) && p.name.trim())
+        v.panelPresets.map((p) => (typeof p?.name === 'string' ? p.name.toLocaleLowerCase() : p))
+      ).size !== v.panelPresets.length ||
+      !v.panelPresets.every((p) => obj(p) && id(p.id) && text(p.name, 100) && p.name.trim())
     )
-      throw new Error('漫畫模板不合法或名稱重複')
-    if (!id(v.bookPresetId) || !v.bookPresets.some((p) => p.id === v.bookPresetId))
-      throw new Error('漫畫預設模板不存在')
-    for (const preset of v.bookPresets) validateProject(withOnlyCells(v, preset.cells))
-  } else if (v.bookPresetId !== undefined) throw new Error('漫畫模板清單不存在')
-  if (
-    v.folderBookPresets !== undefined &&
-    (!obj(v.folderBookPresets) ||
-      Object.keys(v.folderBookPresets).length > 50000 ||
-      !Object.entries(v.folderBookPresets).every(([folder, preset]) => id(folder) && id(preset)))
-  )
-    throw new Error('資料夾漫畫模板指定不合法')
-  if (v.contentCells !== undefined) {
-    if (!obj(v.contentCells) || !Object.keys(v.contentCells).every((k) => /^[a-z]{2,20}$/.test(k)))
-      throw new Error('內容模板不合法')
-    for (const cells of Object.values(v.contentCells)) validateProject(withOnlyCells(v, cells))
-  }
+      throw new Error('右側版面不合法或名稱重複')
+    if (v.panelPresetId !== undefined && !v.panelPresets.some((p) => p.id === v.panelPresetId))
+      throw new Error('右側預設版面不存在')
+    for (const preset of v.panelPresets) validateProject(withOnlyCells(v, preset.cells))
+  } else if (v.panelPresetId !== undefined) throw new Error('右側版面清單不存在')
   if (
     v.traversal !== undefined &&
     (!obj(v.traversal) ||

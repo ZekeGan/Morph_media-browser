@@ -14,12 +14,12 @@ import { t as tr, useLocale } from '../i18n'
 import { useRefreshNonce } from '../browse/refresh'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Button } from '@mantine/core'
-import { bookCellsFor } from '../../shared/layouts'
+import { panelChoice, panelCells } from '../../shared/layouts'
 import { Card } from '../cells/Card'
 import { FolderPage, folderPageKind } from './FolderPage'
 import { Gallery } from '../gallery/Gallery'
 import {
-  contentCells,
+  builtinPanel,
   type ContentResult,
   type ExplorerRequest,
   type ExplorerResponse,
@@ -287,10 +287,12 @@ export function FolderContent({
     return (
       <GamePage row={row} project={project} run={run} act={act} busy={busy} configure={configure} />
     )
-  const first = content.entries.find((e) => e.kind === 'image'),
-    // R-362: only an edited book template from before the cover became a component still has it drawn beside it.
-    legacyCover =
-      kind === 'book' && project.contentCells?.book !== undefined && !project.contentCover
+  // R-409: the right panel's layout; without one chosen a book shows its built-in template and other kinds nothing
+  // (the built-in name and path repeat the panel header).
+  const panel =
+    kind === 'book' || panelChoice(project, row, folderKind)
+      ? panelCells(project, row, folderKind, (k) => builtinPanel(project, k))
+      : undefined
   // The pictures the reader will show, and the saved place among them once the whole folder is listed.
   const pages = visibleEntries.filter((entry) => entry.kind === 'image'),
     firstPage = pages[0],
@@ -377,32 +379,14 @@ export function FolderContent({
       visual={
         <div className="media-info-template">
           {!firstPage && epubs.length === 1 && <BookCard row={row} file={epubs[0]} />}
-          {legacyCover && first && (
-            <img
-              className="manga-cover"
-              src={first.thumb ?? first.url}
-              onError={(e) => {
-                if (e.currentTarget.src !== first.url) e.currentTarget.src = first.url
-                else e.currentTarget.style.display = 'none'
-              }}
-              alt={first.name}
-            />
-          )}
-          {/* The default template (name and path) repeats the panel header and folder details, so only a user-edited one is
-            shown; a book always shows its template, which starts with the cover (R-362). */}
-          {kind === 'book' || project.contentCells?.[kind]?.length ? (
+          {panel?.length ? (
             <Card
               project={{
                 ...project,
                 // The panel shows these cells, never a card layout the rules would pick (R-413).
                 layoutPresets: undefined,
                 layoutRules: {},
-                folderLayouts: undefined,
-                kindLayouts: undefined,
-                cells:
-                  kind === 'book'
-                    ? bookCellsFor(project, row.record?.folderId, contentCells(project, kind))
-                    : contentCells(project, kind),
+                cells: panel,
               }}
               row={row}
               open={() => {

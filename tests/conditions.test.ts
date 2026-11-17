@@ -38,7 +38,6 @@ const project = (cells: Cell[]): Project => ({
   cells,
   layoutPresets: undefined,
   activeLayoutId: undefined,
-  contentCells: undefined,
 })
 const now = Date.parse('2026-11-10T12:00:00Z')
 

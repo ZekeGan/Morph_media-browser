@@ -20,15 +20,15 @@ import { ApplicationSettings } from './settings/ApplicationSettings'
 import { DesktopShell } from './shell/DesktopShell'
 import { RefreshContext } from './browse/refresh'
 import { Toasts } from './notices/Toasts'
-import { bookEditorProject, fromBookEditor, saveCardPreset, visibleCells } from '../shared/layouts'
-import { BrowseWorkspace } from './browse/BrowseWorkspace'
-import { settleGrid } from './editor/settleGrid'
 import {
-  contentCells,
-  withBookCover,
-  type ExplorerRequest,
-  type ExplorerResponse,
-} from '../shared/explorer'
+  fromPanelEditor,
+  panelEditorProject,
+  saveCardPreset,
+  visibleCells,
+} from '../shared/layouts'
+import { isFolderKind, type FolderKind } from '../shared/kind'
+import { BrowseWorkspace } from './browse/BrowseWorkspace'
+import { builtinPanel, type ExplorerRequest, type ExplorerResponse } from '../shared/explorer'
 import type { WorkspacePrefs } from '../shared/workspace'
 import { describeError } from './notices/errors'
 import type { Notice } from '../shared/notifications'
@@ -271,28 +271,24 @@ export function App() {
       }
     }
   }
-  // The book template a project starts the editor with: an older edited one gets its cover component (R-362).
-  const bookStart = (p: Project) =>
-    p.contentCover ? contentCells(p, 'book') : settleGrid(withBookCover(contentCells(p, 'book')))
+  // R-409: the panel editor works on the right-panel layouts of one kind.
+  const panelKind: FolderKind | undefined = isFolderKind(templateCategory)
+    ? templateCategory
+    : undefined
+  const panelProject = (p: Project) =>
+    panelEditorProject(p, panelKind!, builtinPanel(p, panelKind!), templatePreset)
   const saveEdited = async (p: Project, preset?: { name: string; asNew: boolean }) => {
     try {
-      const next =
-        templateCategory === 'book'
-          ? fromBookEditor(project!, p, !!templatePreset)
-          : templateCategory
-            ? {
-                ...p,
-                cells: project!.cells,
-                contentCells: { ...project!.contentCells, [templateCategory]: p.cells },
-              }
-            : p.layoutPresets
-              ? syncPresetDraft(p)
-              : saveCardPreset(
-                  p,
-                  preset ?? { name: tr('預設版面'), asNew: false },
-                  () => crypto.randomUUID(),
-                  project!
-                )
+      const next = panelKind
+        ? fromPanelEditor(project!, p, panelKind, !!templatePreset)
+        : p.layoutPresets
+          ? syncPresetDraft(p)
+          : saveCardPreset(
+              p,
+              preset ?? { name: tr('預設版面'), asNew: false },
+              () => crypto.randomUUID(),
+              project!
+            )
       return !!(await act({ action: 'saveProject', project: next }))
     } catch (e) {
       notifyError(String(e))
@@ -375,37 +371,26 @@ export function App() {
             <Editor
               key={`${project.projectId}:${templateCategory ?? 'card'}`}
               act={act}
-              presets={!templateCategory}
-              presetTools={templateCategory === 'book'}
-              fromSaved={
-                templateCategory === 'book'
-                  ? (saved) => bookEditorProject(saved, bookStart(saved), templatePreset)
-                  : templateCategory
-                    ? (saved) => ({ ...saved, cells: contentCells(saved, templateCategory) })
-                    : undefined
-              }
+              presets={!panelKind}
+              presetTools={!!panelKind}
+              fromSaved={panelKind ? panelProject : undefined}
               targetLabel={
-                templateCategory
+                panelKind
                   ? tr(
                       '{0}資訊版面',
-                      (
-                        {
-                          book: tr('書籍／漫畫'),
-                          game: tr('遊戲'),
-                          media: tr('音樂／影片'),
-                          general: tr('一般'),
-                        } as Record<string, string>
-                      )[templateCategory] ?? tr('一般')
+                      {
+                        book: tr('書籍／漫畫'),
+                        game: tr('遊戲'),
+                        music: tr('音樂'),
+                        video: tr('影片'),
+                        general: tr('一般'),
+                      }[panelKind]
                     )
                   : tr('卡片')
               }
               onDirty={setEditorDirty}
               project={
-                templateCategory === 'book'
-                  ? bookEditorProject(project, bookStart(project), templatePreset)
-                  : templateCategory
-                    ? { ...project, cells: contentCells(project, templateCategory) }
-                    : { ...project, cells: visibleCells(project) }
+                panelKind ? panelProject(project) : { ...project, cells: visibleCells(project) }
               }
               rows={(snapshot.structure ?? snapshot.rows).filter(
                 (r) => r.projectId === selected && !r.readonly

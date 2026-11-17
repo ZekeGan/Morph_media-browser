@@ -155,7 +155,7 @@ test('new portable fields save through real library paths without changing schem
   assert.equal(await fs.readFile(path.join(media, 'original.bin'), 'utf8'), 'ORIGINAL')
   const assigned = {
     ...presetDraft(project),
-    folderLayouts: { [row.record!.folderId]: 'other' },
+    layoutRules: { card: { folders: { [row.record!.folderId]: 'other' } } },
     layoutPresets: [
       ...presetDraft(project).layoutPresets!,
       { id: 'other', name: 'Other', cells: [] },

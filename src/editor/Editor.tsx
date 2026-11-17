@@ -1,5 +1,6 @@
 import { Icon } from '../common/icons'
 import { t as tr, useLocale } from '../i18n'
+import { layoutName } from './layoutName'
 import { cellColors } from '../cells/cellStyle'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -750,10 +751,7 @@ export function Editor({
               value={draft.activeLayoutId}
               data={draft.layoutPresets!.map((preset) => ({
                 value: preset.id,
-                label:
-                  preset.id === 'default' && preset.name === '預設版面'
-                    ? tr('預設版面')
-                    : preset.name,
+                label: layoutName(preset),
               }))}
               onChange={(id) => id && switchTo(id)}
             />

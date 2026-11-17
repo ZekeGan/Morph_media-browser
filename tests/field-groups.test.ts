@@ -40,7 +40,6 @@ const base = (cells: Cell[] = []): Project => ({
   cells,
   layoutPresets: [{ id: 'preset', name: 'Default', cells: structuredClone(cells) }],
   activeLayoutId: 'preset',
-  contentCells: undefined,
 })
 const row = (values: Record<string, unknown>, folderId = 'folder-1'): FolderRow => ({
   rowId: folderId,

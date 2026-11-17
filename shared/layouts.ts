@@ -1,7 +1,8 @@
 import { fieldValue, type Attribute, type Cell, type FolderRow, type Project } from './model'
 import { settleCells } from './fieldGroups'
 import { cellLists } from './cellLists'
-import { chooseLayout, dropLayout, legacyLayoutRules } from './layoutRules'
+import { chooseLayout, choosePanel, dropLayout } from './layoutRules'
+import type { FolderKind } from './kind'
 // R-362: a book's cover is a component of its template (the folder's cover picture, else its first image), so it can
 // be moved, resized or left out like any other.
 export const bookCover = (grid: Cell['grid'] = { x: 0, y: 0, w: 4, h: 4 }): Cell => ({
@@ -16,8 +17,8 @@ export function projectImageCells(project: Project): Cell[] {
     ...new Map(
       [
         ...cellLists(project).flatMap((list) => list.cells),
-        // A book template never saved still shows the default cover, which can be given a picture of its own.
-        ...(project.contentCells?.book === undefined ? [bookCover()] : []),
+        // Without a book layout the built-in one shows the default cover, which can be given a picture of its own.
+        ...(project.layoutRules?.panel?.types?.book ? [] : [bookCover()]),
       ]
         .filter((c) => c.kind === 'image')
         .map((c) => [c.cellId, c])
@@ -127,8 +128,7 @@ export function saveCardPreset(
 // R-413: the card rules of the project (or those its older fields imply) pick the layout; layout 0 is the project's
 // active layout. `work` says whether the folder counts as a work (where unknown, it is taken as one, which matches
 // the older rule that applied kind layouts to every folder).
-export const cardRule = (project: Project) =>
-  project.layoutRules ? project.layoutRules.card : legacyLayoutRules(project).card
+export const cardRule = (project: Project) => project.layoutRules?.card
 export function cardChoice(project: Project, row: FolderRow, work = true) {
   const presets = cardPresets(project)
   return chooseLayout(cardRule(project), row, work, project.activeLayoutId ?? presets[0].id, (id) =>
@@ -203,28 +203,19 @@ export function removePreset(project: Project): Project {
     throw new Error('至少保留一個方案')
   const presets = project.layoutPresets.filter((preset) => preset.id !== project.activeLayoutId),
     first = presets[0]
-  if (project.layoutRules)
-    return {
-      ...project,
-      layoutPresets: presets,
-      activeLayoutId: first.id,
-      cells: structuredClone(first.cells),
-      layoutRules: {
-        ...project.layoutRules,
-        card: dropLayout(project.layoutRules.card, project.activeLayoutId!),
-      },
-    }
   return {
     ...project,
     layoutPresets: presets,
     activeLayoutId: first.id,
     cells: structuredClone(first.cells),
-    folderLayouts: Object.fromEntries(
-      Object.entries(project.folderLayouts ?? {}).filter(([, id]) => id !== project.activeLayoutId)
-    ),
-    kindLayouts: Object.fromEntries(
-      Object.entries(project.kindLayouts ?? {}).filter(([, id]) => id !== project.activeLayoutId)
-    ),
+    ...(project.layoutRules
+      ? {
+          layoutRules: {
+            ...project.layoutRules,
+            card: dropLayout(project.layoutRules.card, project.activeLayoutId!),
+          },
+        }
+      : {}),
   }
 }
 
@@ -378,85 +369,99 @@ export function samplePreviewRow(
   return { ...base, record: { ...base.record, attributes, projectOverrides: {} } }
 }
 
-// R-363: book templates are kept as presets like card layouts, so the editor's preset tools serve them too. In the
-// editor they stand where the card presets are; the folder choices stand where folderLayouts are.
-export function bookEditorProject(project: Project, defaultCells: Cell[], start?: string): Project {
-  const presets = project.bookPresets?.length
-      ? project.bookPresets
-      : [{ id: 'default', name: '預設版面', cells: defaultCells }],
-    has = (id?: string) => !!id && presets.some((preset) => preset.id === id),
-    active = has(start) ? start! : has(project.bookPresetId) ? project.bookPresetId! : presets[0].id
+// R-409: the right-panel layouts. Each kind has a built-in panel (shared/explorer.ts builtinPanel) shown until a
+// layout is chosen for it; a layout made from it is named "<kind> 預設" (translated where it is shown).
+export const panelKindNames: Record<FolderKind, string> = {
+  book: '書籍',
+  game: '遊戲',
+  music: '音樂',
+  video: '影片',
+  general: '一般',
+}
+export const panelDefaultName = (kind: string) => kind + ' 預設'
+export function panelChoice(project: Project, row: FolderRow, kind: FolderKind) {
+  const presets = project.panelPresets ?? []
+  return choosePanel(project.layoutRules?.panel, row, kind, project.panelPresetId, (id) =>
+    presets.some((preset) => preset.id === id)
+  )
+}
+// The cells a folder's right panel shows: its chosen layout, else the built-in one of its kind.
+export function panelCells(
+  project: Project,
+  row: FolderRow,
+  kind: FolderKind,
+  builtin: (kind: FolderKind) => Cell[]
+): Cell[] {
+  const choice = panelChoice(project, row, kind)
+  return (
+    (choice && project.panelPresets?.find((preset) => preset.id === choice.id)?.cells) ??
+    builtin(kind)
+  )
+}
+// The layout the panel editor opens for a kind: the one asked for, the kind's layout, the panel default; without
+// any, a new "<kind> 預設" made from the built-in panel. In the editor the panel layouts stand where the card layouts
+// are, so its layout tools serve them.
+export function panelEditorProject(
+  project: Project,
+  kind: FolderKind,
+  builtin: Cell[],
+  start?: string,
+  makeId: () => string = () => crypto.randomUUID()
+): Project {
+  let presets = structuredClone(project.panelPresets ?? [])
+  const has = (id?: string) => !!id && presets.some((preset) => preset.id === id)
+  let active = [start, project.layoutRules?.panel?.types?.[kind], project.panelPresetId].find(has)
+  if (!active) {
+    const name = panelDefaultName(panelKindNames[kind]),
+      taken = new Set(presets.map((preset) => preset.name.toLocaleLowerCase()))
+    let unique = name
+    for (let n = 2; taken.has(unique.toLocaleLowerCase()); n++) unique = name + ' (' + n + ')'
+    active = has('panel-' + kind) ? makeId() : 'panel-' + kind
+    presets = [...presets, { id: active, name: unique, cells: structuredClone(builtin) }]
+  }
   return {
     ...project,
     cells: structuredClone(presets.find((preset) => preset.id === active)!.cells),
-    layoutPresets: structuredClone(presets),
+    layoutPresets: presets,
     activeLayoutId: active,
-    folderLayouts: project.layoutRules
-      ? project.layoutRules.panel?.folders
-      : project.folderBookPresets,
-    kindLayouts: undefined,
     layoutRules: undefined,
+    // The editor's layout list is the panel layouts; fromPanelEditor puts them back.
+    panelPresets: undefined,
+    panelPresetId: undefined,
   }
 }
-// Back from the editor: the card layouts stay as they were. The template chosen when saving becomes the project's
-// default, unless the editor was opened for one folder's template (keepDefault), which leaves the default alone.
-export function fromBookEditor(original: Project, edited: Project, keepDefault: boolean): Project {
+// Back from the panel editor: the card layouts stay as they were. The layout chosen when saving becomes the kind's
+// layout, unless the editor was opened for one folder's layout (keepDefault). Rules pointing at a deleted layout drop it.
+export function fromPanelEditor(
+  original: Project,
+  edited: Project,
+  kind: FolderKind,
+  keepDefault: boolean
+): Project {
   const synced = syncPresetDraft(edited),
     presets = synced.layoutPresets!,
-    fallback = synced.activeLayoutId!,
-    chosen =
-      keepDefault && presets.some((preset) => preset.id === original.bookPresetId)
-        ? original.bookPresetId!
-        : fallback,
-    // A folder choice whose template was deleted is dropped.
-    kept = Object.entries(synced.folderLayouts ?? {}).filter(([, id]) =>
-      presets.some((preset) => preset.id === id)
-    ),
-    folders = kept.length ? Object.fromEntries(kept) : undefined
-  // Field groups changed in this editor were settled in its draft (book templates and other content templates); the
-  // card layouts restored here are settled against them the same way.
+    kept = new Set(presets.map((preset) => preset.id))
+  let panel = original.layoutRules?.panel
+  for (const preset of original.panelPresets ?? [])
+    if (!kept.has(preset.id)) panel = dropLayout(panel, preset.id)
+  if (!keepDefault) panel = { ...panel, types: { ...panel?.types, [kind]: synced.activeLayoutId! } }
+  const rules = { ...original.layoutRules, panel }
+  if (!Object.keys(panel ?? {}).length) delete rules.panel
+  // Field groups changed in this editor were settled in its draft; the card layouts restored here are settled
+  // against them the same way.
   return settleCells(
     {
       ...synced,
       cells: original.cells,
       layoutPresets: original.layoutPresets,
       activeLayoutId: original.activeLayoutId,
-      folderLayouts: original.folderLayouts,
-      kindLayouts: original.kindLayouts,
-      // R-413: with layout rules the folders' templates live in the panel rule.
-      layoutRules: original.layoutRules && {
-        ...original.layoutRules,
-        panel: (() => {
-          const { folders: _old, ...rest } = original.layoutRules.panel ?? {},
-            panel = { ...rest, ...(folders ? { folders } : {}) }
-          return Object.keys(panel).length ? panel : undefined
-        })(),
-      },
-      contentCells: {
-        ...synced.contentCells,
-        book: structuredClone(presets.find((preset) => preset.id === chosen)!.cells),
-      },
-      contentCover: true,
-      bookPresets: presets,
-      bookPresetId: chosen,
-      folderBookPresets: original.layoutRules ? undefined : folders,
+      layoutRules: rules,
+      panelPresets: presets,
+      panelPresetId:
+        original.panelPresetId && kept.has(original.panelPresetId)
+          ? original.panelPresetId
+          : undefined,
     },
     original.fieldGroups ?? []
   )
-}
-// The template a book folder shows: its own choice, else the project's.
-// R-413: with layout rules, the panel rule's folder and book entries take the place of folderBookPresets/bookPresetId.
-export function bookCellsFor(
-  project: Pick<Project, 'bookPresets' | 'bookPresetId' | 'folderBookPresets' | 'layoutRules'>,
-  folderId: string | undefined,
-  projectCells: Cell[]
-): Cell[] {
-  const panel = project.layoutRules?.panel,
-    chosen = folderId
-      ? project.layoutRules
-        ? panel?.folders?.[folderId]
-        : project.folderBookPresets?.[folderId]
-      : undefined,
-    find = (id?: string) => project.bookPresets?.find((preset) => preset.id === id)?.cells
-  return find(chosen) ?? find(panel?.types?.book) ?? find(project.bookPresetId) ?? projectCells
 }

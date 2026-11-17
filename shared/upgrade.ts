@@ -11,7 +11,7 @@ export type FormatKind = 'folder' | 'details' | 'project' | 'workspace' | 'setti
 export const FORMAT_VERSION: Record<FormatKind, number> = {
   folder: 2,
   details: 1,
-  project: 1,
+  project: 2,
   workspace: 1,
   settings: 1,
 }
@@ -29,7 +29,11 @@ export const UPGRADE_STEPS: Record<FormatKind, Partial<Record<number, Step>>> = 
     },
   },
   details: {},
-  project: {},
+  project: {
+    // 1 -> 2 (R-409): the right-panel layouts. Book templates, content templates and the older layout fields become
+    // panel layouts and layout rules; see projectV1 below.
+    1: (value) => projectV1(value),
+  },
   workspace: {},
   settings: {},
 }
@@ -174,4 +178,145 @@ export function settleFieldGroups(value: unknown): unknown {
   }
   const cells = (list: unknown) => (Array.isArray(list) ? list.map(cell) : list)
   return mapRawCellLists(next, cells)
+}
+
+// Project 1 -> 2 (R-409). What a folder showed stays what it shows:
+// - book templates (bookPresets) become panel layouts with their ids and names; the project's chosen one
+//   (bookPresetId) becomes the book kind's layout; without them an edited book template (contentCells.book) becomes
+//   "書籍 預設", given the cover component an edited template from before R-362 had drawn beside it;
+// - the other edited content templates (game, media, general; an empty one showed nothing) become "<kind> 預設" for
+//   their kinds, music and video sharing the media one;
+// - kindLayouts, folderLayouts and folderBookPresets become layout rules, unless the project already has rules (R-413),
+//   which then replaced them already. Rules already set are never overwritten.
+const panelKinds: [string, string[], string][] = [
+  ['game', ['game'], '遊戲'],
+  ['media', ['music', 'video'], '音樂／影片'],
+  ['general', ['general'], '一般'],
+]
+const cardKinds = ['game', 'book', 'music', 'video', 'general']
+function projectV1(value: Record<string, unknown>): Record<string, unknown> {
+  const {
+    contentCells,
+    contentCover,
+    bookPresets,
+    bookPresetId,
+    folderBookPresets,
+    kindLayouts,
+    folderLayouts,
+    ...rest
+  } = value
+  const rules: Record<string, unknown> = plain(rest.layoutRules)
+    ? structuredClone(rest.layoutRules)
+    : {}
+  if (!plain(rest.layoutRules)) {
+    const types: Record<string, unknown> = {}
+    if (plain(kindLayouts))
+      for (const kind of cardKinds) {
+        const id = kindLayouts[kind === 'music' || kind === 'video' ? 'media' : kind]
+        if (id !== undefined) types[kind] = id
+      }
+    const card: Record<string, unknown> = {
+      ...(Object.keys(types).length ? { types } : {}),
+      ...(plain(folderLayouts) && Object.keys(folderLayouts).length
+        ? { folders: { ...folderLayouts } }
+        : {}),
+    }
+    if (Object.keys(card).length) rules.card = card
+    if (plain(folderBookPresets) && Object.keys(folderBookPresets).length)
+      rules.panel = { folders: { ...folderBookPresets } }
+  }
+  const panel: Record<string, unknown> = plain(rules.panel) ? { ...rules.panel } : {},
+    types: Record<string, unknown> = plain(panel.types) ? { ...panel.types } : {}
+  const presets: unknown[] = [],
+    ids = new Set<string>(),
+    names = new Set<string>()
+  const keep = (preset: unknown) => {
+    presets.push(preset)
+    if (plain(preset)) {
+      ids.add(String(preset.id))
+      names.add(String(preset.name).toLocaleLowerCase())
+    }
+  }
+  const add = (id: string, name: string, cells: unknown) => {
+    let unique = id
+    for (let n = 2; ids.has(unique); n++) unique = id + '-' + n
+    let label = name
+    for (let n = 2; names.has(label.toLocaleLowerCase()); n++) label = name + ' (' + n + ')'
+    keep({ id: unique, name: label, cells })
+    return unique
+  }
+  const templates = plain(contentCells) ? contentCells : {}
+  // A book rule pointing at a template that no longer exists fell back to the project's default before; it is
+  // filled again below instead of being kept.
+  const bookIds = Array.isArray(bookPresets) ? bookPresets.filter(plain).map((p) => p.id) : []
+  if (types.book !== undefined && !bookIds.includes(types.book)) delete types.book
+  if (Array.isArray(bookPresets) && bookPresets.length) {
+    bookPresets.forEach(keep)
+    if (bookPresetId !== undefined && types.book === undefined) types.book = bookPresetId
+  } else if (Array.isArray(templates.book)) {
+    const id = add(
+      'panel-book',
+      '書籍 預設',
+      contentCover === true ? templates.book : withCover(templates.book)
+    )
+    if (types.book === undefined) types.book = id
+  }
+  for (const [key, kinds, name] of panelKinds) {
+    const cells = templates[key]
+    if (!Array.isArray(cells) || !cells.length) continue
+    const id = add('panel-' + key, name + ' 預設', cells)
+    for (const kind of kinds) if (types[kind] === undefined) types[kind] = id
+  }
+  if (Object.keys(types).length) panel.types = types
+  if (Object.keys(panel).length) rules.panel = panel
+  return {
+    ...rest,
+    ...(Object.keys(rules).length ? { layoutRules: rules } : { layoutRules: undefined }),
+    ...(presets.length ? { panelPresets: presets } : {}),
+  }
+}
+// A book template from before R-362 had the cover drawn beside it: the cover becomes a component on the left and the
+// rest moves into the remaining two thirds, components that would meet moving down. When that does not fit the
+// 100 rows (or the list is not as expected), the template is kept as it was, without the cover.
+function withCover(cells: unknown[]): unknown[] {
+  const inside = (n: unknown) => Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 100
+  if (
+    cells.length >= 50 ||
+    !cells.every(
+      (cell) =>
+        plain(cell) &&
+        plain(cell.grid) &&
+        ['x', 'y', 'w', 'h'].every((k) => inside((cell.grid as Record<string, unknown>)[k]))
+    )
+  )
+    return cells
+  const list = cells as {
+    kind?: unknown
+    cellId?: unknown
+    grid: { x: number; y: number; w: number; h: number }
+  }[]
+  if (list.some((cell) => cell.kind === 'image' || cell.cellId === 'book-cover')) return cells
+  const moved = list.map((cell) => {
+    const x = Math.min(11, 4 + Math.round((cell.grid.x * 8) / 12)),
+      end = 4 + Math.round(((cell.grid.x + cell.grid.w) * 8) / 12)
+    return { ...cell, grid: { ...cell.grid, x, w: Math.max(1, Math.min(12, end) - x) } }
+  })
+  const bottom = Math.max(4, ...list.map((cell) => cell.grid.y + cell.grid.h)),
+    // The same component as shared/layouts.ts bookCover (not imported: the format code stays free of layout code).
+    cover = {
+      cellId: 'book-cover',
+      kind: 'image',
+      imageCover: true,
+      grid: { x: 0, y: 0, w: 4, h: Math.min(8, bottom) },
+      style: { textColor: '#e4e6e8', backgroundColor: 'transparent' },
+    },
+    placed: { x: number; y: number; w: number; h: number }[] = [cover.grid]
+  const meets = (a: (typeof placed)[number], b: (typeof placed)[number]) =>
+    a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h
+  for (const cell of [...moved].sort((a, b) => a.grid.y - b.grid.y || a.grid.x - b.grid.x)) {
+    while (placed.some((other) => meets(cell.grid, other))) cell.grid.y++
+    if (cell.grid.y + cell.grid.h > 100) return cells
+    placed.push(cell.grid)
+  }
+  return [cover, ...moved]
 }

@@ -6,7 +6,7 @@ import {
   dropLayout,
   editLayoutRules,
   layoutLevel,
-  legacyLayoutRules,
+  choosePanel,
   type LayoutRule,
 } from '../shared/layoutRules'
 
@@ -72,32 +72,38 @@ test('a rule naming a deleted layout is skipped', () => {
   assert.deepEqual(choice, { id: 'A', source: 'type' })
 })
 
-test("older projects: kind layouts, folder layouts and folders' book templates become rules", () => {
-  const project = {
-    kindLayouts: { media: 'M', game: 'G' },
-    folderLayouts: { f1: 'X' },
-    bookPresets: [{ id: 'bk', name: 'b', cells: [] }],
-    bookPresetId: 'bk',
-    folderBookPresets: { f2: 'bk2' },
-  } as unknown as Project
-  assert.deepEqual(legacyLayoutRules(project), {
-    card: { types: { game: 'G', music: 'M', video: 'M' }, folders: { f1: 'X' } },
-    panel: { folders: { f2: 'bk2' } },
+test('the right panel follows the page kind: folder, kind, level, panel default, else built-in', () => {
+  const panel: LayoutRule = { types: { book: 'B' }, levels: ['L1'], folders: { own: 'O' } }
+  assert.deepEqual(choosePanel(panel, folder('own', 2, 'book'), 'book', 'D', known), {
+    id: 'O',
+    source: 'folder',
   })
-  assert.deepEqual(legacyLayoutRules({} as Project), {})
-  // The first change moves them into layoutRules and removes the older fields; the book default stays.
-  const edited = editLayoutRules(project, (rules) => {
-    rules.card.levels = ['T', '']
-    delete rules.card.folders
+  // Kind before level, whether or not the folder counts as a work.
+  assert.deepEqual(choosePanel(panel, folder('b', 2), 'book', 'D', known), {
+    id: 'B',
+    source: 'type',
   })
-  assert.deepEqual(edited.layoutRules, {
-    card: { types: { game: 'G', music: 'M', video: 'M' }, levels: ['T'] },
-    panel: { folders: { f2: 'bk2' } },
+  assert.deepEqual(choosePanel(panel, folder('g', 2), 'game', 'D', known), {
+    id: 'L1',
+    source: 'level',
   })
-  assert.equal(edited.kindLayouts, undefined)
-  assert.equal(edited.folderLayouts, undefined)
-  assert.equal(edited.folderBookPresets, undefined)
-  assert.equal(edited.bookPresetId, 'bk')
+  assert.deepEqual(choosePanel(panel, folder('g', 3), 'game', 'D', known), {
+    id: 'D',
+    source: 'default',
+  })
+  assert.equal(choosePanel(panel, folder('g', 3), 'game', undefined, known), undefined)
+  assert.equal(choosePanel(panel, folder('b', 2), 'book', undefined, (id) => id !== 'B')?.id, 'L1')
+})
+
+test('editing rules drops emptied parts', () => {
+  const edited = editLayoutRules(
+    { layoutRules: { card: { folders: { f1: 'X' } } } } as unknown as Project,
+    (rules) => {
+      rules.card.levels = ['T', '']
+      delete rules.card.folders
+    }
+  )
+  assert.deepEqual(edited.layoutRules, { card: { levels: ['T'] } })
 })
 
 test('deleting a layout clears it from every rule', () => {

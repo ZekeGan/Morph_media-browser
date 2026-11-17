@@ -14,7 +14,8 @@ import {
   restoreJson,
   saveFolder,
 } from '../electron/files'
-import { validateFolder } from '../shared/model'
+import { validateFolder, validateProject, type Cell, type Project } from '../shared/model'
+import { modelProject } from './support/model-fixtures'
 import {
   FORMAT_VERSION,
   NewerFormatError,
@@ -77,21 +78,21 @@ test('upgrade steps run in order, and a missing step or newer data is refused', 
     a: 1,
   })
   assert.throws(() => upgradeFormat('folder', { schemaVersion: 3 }), NewerFormatError)
-  FORMAT_VERSION.project = 3
+  FORMAT_VERSION.project = 4
   t.after(() => {
-    FORMAT_VERSION.project = 1
-    delete UPGRADE_STEPS.project[1]
+    FORMAT_VERSION.project = 2
     delete UPGRADE_STEPS.project[2]
+    delete UPGRADE_STEPS.project[3]
   })
-  UPGRADE_STEPS.project[1] = (v) => ({ ...v, trail: ['1→2'] })
+  UPGRADE_STEPS.project[2] = (v) => ({ ...v, trail: ['2→3'] })
   assert.throws(
-    () => upgradeFormat('project', { schemaVersion: 1 }),
-    (error) => /v2 → v3/.test(plainMessage(String(error)))
+    () => upgradeFormat('project', { schemaVersion: 2 }),
+    (error) => /v3 → v4/.test(plainMessage(String(error)))
   )
-  UPGRADE_STEPS.project[2] = (v) => ({ ...v, trail: [...(v.trail as string[]), '2→3'] })
-  const input = { schemaVersion: 1 }
-  assert.deepEqual(upgradeFormat('project', input), { schemaVersion: 3, trail: ['1→2', '2→3'] })
-  assert.deepEqual(input, { schemaVersion: 1 }, 'the value read is never changed in place')
+  UPGRADE_STEPS.project[3] = (v) => ({ ...v, trail: [...(v.trail as string[]), '3→4'] })
+  const input = { schemaVersion: 2 }
+  assert.deepEqual(upgradeFormat('project', input), { schemaVersion: 4, trail: ['2→3', '3→4'] })
+  assert.deepEqual(input, { schemaVersion: 2 }, 'the value read is never changed in place')
 })
 
 test('an older folder record is upgraded on read and written in the new format only on save', async (t) => {
@@ -252,7 +253,7 @@ test('app settings are upgraded once at start-up after the old file is kept; new
 
 test('newer-version errors survive the IPC prefix and are classified for the window', () => {
   const text = errorMessage(
-    `Error: Error invoking remote method 'library:request': Error: ${new NewerFormatError('project', 2).message}`
+    `Error: Error invoking remote method 'library:request': Error: ${new NewerFormatError('project', 3).message}`
   )
   assert.equal(classifyError(text), 'newer')
   assert.equal(isNewerFormat(text), true)
@@ -276,4 +277,143 @@ test('a project record from a newer version is not replaced by its backup', asyn
   const linked = again.snapshot().projects[0]
   assert.ok(isNewerFormat(linked.error))
   assert.equal(await fs.readFile(file, 'utf8'), newer)
+})
+
+// R-409: a project as version 1 wrote it: two book templates (one a folder's own), an older edited game template, an
+// empty general template (it showed nothing), kind and folder card layouts, no layout rules yet.
+test('projects v1 -> v2: book and content templates become panel layouts, older layout fields become rules (R-409)', async () => {
+  const v1 = JSON.parse(
+    await fs.readFile(path.resolve('tests/fixtures/project-v1.json'), 'utf8')
+  ) as Record<string, unknown>
+  const next = upgradeStored(v1) as Project
+  validateProject(next)
+  assert.equal(next.schemaVersion, 2)
+  for (const key of [
+    'contentCells',
+    'contentCover',
+    'bookPresets',
+    'bookPresetId',
+    'folderBookPresets',
+    'kindLayouts',
+    'folderLayouts',
+  ])
+    assert.ok(!(key in next), key + ' is gone')
+  assert.deepEqual(
+    next.panelPresets!.map((p) => [p.id, p.name, p.cells.map((c) => c.cellId)]),
+    [
+      ['default', '預設版面', ['book-cover', 'title']],
+      ['own', 'Folder A', ['book-cover']],
+      ['panel-game', '遊戲 預設', ['game-name']],
+    ]
+  )
+  assert.deepEqual(next.layoutRules, {
+    card: {
+      types: { game: 'card-game', music: 'card-media', video: 'card-media' },
+      folders: { 'folder-b': 'card-main' },
+    },
+    panel: { folders: { 'folder-a': 'own' }, types: { book: 'default', game: 'panel-game' } },
+  })
+  // Everything else is kept as it was, unknown fields too, and upgrading again changes nothing.
+  assert.deepEqual(next.cells, v1.cells)
+  assert.deepEqual(next.layoutPresets, v1.layoutPresets)
+  assert.deepEqual((next as unknown as Record<string, unknown>).futureNote, { kept: true })
+  assert.deepEqual(upgradeStored(next), next)
+})
+
+test('an older project record is upgraded on read and written in the new format only on save (R-409)', async (t) => {
+  const root = await sandbox(t, 'upgrade-project-v1'),
+    media = path.join(root, 'media')
+  await fs.mkdir(media, { recursive: true })
+  await fs.writeFile(path.join(media, 'clip.mp4'), 'ORIGINAL')
+  const lib = new Library(path.join(root, 'local'), undefined, false)
+  await lib.init()
+  await lib.create(media, { name: 'P', scanAll: true, depth: { mode: 'through', level: 1 } })
+  const created = lib.snapshot().projects[0].project!
+  await lib.saveProject({ ...created, name: 'P2' })
+  const file = path.join(media, '.media-viewer', 'projects', `${created.projectId}.json`)
+  const fixture = JSON.parse(
+    await fs.readFile(path.resolve('tests/fixtures/project-v1.json'), 'utf8')
+  ) as Record<string, unknown>
+  const current = (await readJson(file)) as Record<string, unknown>
+  const before = JSON.stringify({
+    ...fixture,
+    projectId: current.projectId,
+    rootFolderId: current.rootFolderId,
+    revision: current.revision,
+  })
+  await fs.writeFile(file, before)
+  const again = new Library(path.join(root, 'local'), undefined, false)
+  await again.init()
+  const project = again.snapshot().projects[0].project!
+  assert.equal(project.schemaVersion, 2)
+  assert.equal(project.panelPresets?.length, 3)
+  assert.equal(await fs.readFile(file, 'utf8'), before, 'reading never writes')
+  await again.saveProject({ ...project, name: 'Saved' })
+  const saved = (await readJson(file)) as Record<string, unknown>
+  assert.equal(saved.schemaVersion, 2)
+  assert.equal('bookPresets' in saved, false)
+  assert.equal(await fs.readFile(file + '.bak', 'utf8'), before, 'the v1 file stays as the backup')
+  assert.equal(await fs.readFile(path.join(media, 'clip.mp4'), 'utf8'), 'ORIGINAL')
+})
+
+test('projects v1 -> v2: an edited book template from before R-362 gets the cover component; rules already set win', () => {
+  const style = { textColor: '#e4e6e8', backgroundColor: 'transparent' }
+  const cell = (cellId: string, grid: Cell['grid']) =>
+    ({ cellId, kind: 'field-text', attributeId: 'title', grid, style }) as Cell
+  const base = {
+    ...modelProject(),
+    schemaVersion: 1,
+    panelPresets: undefined,
+    contentCells: {
+      book: [
+        cell('a', { x: 0, y: 0, w: 3, h: 1 }),
+        cell('b', { x: 3, y: 0, w: 3, h: 1 }),
+        cell('c', { x: 0, y: 2, w: 12, h: 2 }),
+      ],
+      media: [cell('m', { x: 0, y: 0, w: 12, h: 1 })],
+    },
+    layoutRules: { panel: { types: { music: 'kept' } } },
+    folderLayouts: { ignored: 'x' },
+  }
+  const next = upgradeStored(base) as Project
+  const book = next.panelPresets!.find((p) => p.id === 'panel-book')!
+  assert.equal(book.name, '書籍 預設')
+  assert.deepEqual(
+    book.cells.map((c) => [c.cellId, c.grid.x, c.grid.y, c.grid.w, c.grid.h]),
+    [
+      ['book-cover', 0, 0, 4, 4],
+      ['a', 4, 0, 2, 1],
+      ['b', 6, 0, 2, 1],
+      ['c', 4, 2, 8, 2],
+    ]
+  )
+  assert.equal(book.cells[0].imageCover, true)
+  // Existing rules are kept (the older card fields were already replaced by them) and not overwritten.
+  assert.deepEqual(next.layoutRules, {
+    panel: { types: { music: 'kept', book: 'panel-book', video: 'panel-media' } },
+  })
+  assert.equal(next.panelPresets!.find((p) => p.id === 'panel-media')!.name, '音樂／影片 預設')
+  // Grids outside the canvas (left to validation) and a component already named book-cover get no cover.
+  for (const odd of [
+    cell('a', { x: 0, y: -1e308, w: 1, h: 1.7e308 }),
+    { ...cell('book-cover', { x: 0, y: 0, w: 12, h: 1 }), kind: 'name' },
+  ]) {
+    const kept = upgradeStored({ ...base, contentCells: { book: [odd] } }) as Project
+    assert.deepEqual(kept.panelPresets![0].cells, [odd])
+  }
+  // A book rule naming a template that is gone takes the project's default again.
+  const stale = upgradeStored({
+    ...base,
+    contentCells: undefined,
+    bookPresets: [{ id: 'bk', name: 'B', cells: [] }],
+    bookPresetId: 'bk',
+    layoutRules: { panel: { types: { book: 'gone' } } },
+  }) as Project
+  assert.deepEqual(stale.layoutRules, { panel: { types: { book: 'bk' } } })
+  // A cover template already holding its cover (contentCover) is kept as it is.
+  const covered = upgradeStored({ ...base, contentCover: true }) as Project
+  assert.deepEqual(
+    covered.panelPresets![0].cells.map((c) => c.cellId),
+    ['a', 'b', 'c']
+  )
 })

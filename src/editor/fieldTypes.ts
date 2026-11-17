@@ -105,7 +105,7 @@ function cellUses(
     // A content template editor has its own list as the draft, so that list's saved copy is not counted again.
     return from(
       'content',
-      cardEditor || list.where === 'book'
+      cardEditor
         ? list.cells
         : list.cells.filter((cell) => !project.cells.some((own) => own.cellId === cell.cellId)),
       list.name

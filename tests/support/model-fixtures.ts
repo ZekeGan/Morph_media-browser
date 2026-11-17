@@ -45,7 +45,7 @@ export function modelProject(): Project {
   const cells = defaultCells(() => 'cell-' + id++, 'title')
   return {
     kind: 'media-viewer.project',
-    schemaVersion: 1,
+    schemaVersion: 2,
     projectId: 'project',
     rootFolderId: 'folder',
     revision: 1,
@@ -59,7 +59,7 @@ export function modelProject(): Project {
     cardView: { mode: 'multi', level: 'all' },
     layoutPresets: [{ id: 'preset', name: 'Default', cells: structuredClone(cells) }],
     activeLayoutId: 'preset',
-    contentCells: { manga: structuredClone(cells) },
+    panelPresets: [{ id: 'manga', name: 'Manga', cells: structuredClone(cells) }],
     traversal: { folder: true },
     actionTemplates: [{ id: 'play', label: 'Play', kind: 'exe', color: '#ffffff' }],
     savedSearches: [{ id: 'search', name: 'Saved', query: 'name:作品' }],

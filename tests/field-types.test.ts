@@ -28,7 +28,6 @@ const project = (cells: Cell[], fields: Project['fieldBindings'] = []): Project 
   cells,
   layoutPresets: [{ id: 'preset', name: 'Default', cells: structuredClone(cells) }],
   activeLayoutId: 'preset',
-  contentCells: undefined,
 })
 const switched = (result: ReturnType<typeof switchTextType>) => {
   assert.ok('project' in result, JSON.stringify(result))
@@ -54,7 +53,7 @@ test('fixed options take their options from stored values and move components to
           { id: 'preset', name: 'Default', cells: [layout] },
           { id: 'second', name: 'Second', cells: [other] },
         ],
-        contentCells: { book: [cell({ cellId: 'book' })] },
+        panelPresets: [{ id: 'book', name: 'book', cells: [cell({ cellId: 'book' })] }],
       },
       'note',
       'enum',
@@ -66,7 +65,7 @@ test('fixed options take their options from stored values and move components to
   assert.equal(p.cells[0].wrap, undefined)
   assert.equal(p.layoutPresets![1].cells[0].kind, 'field-enum')
   assert.equal(p.layoutPresets![1].cells[0].tagPrefix, undefined)
-  assert.equal(p.contentCells!.book[0].kind, 'field-enum')
+  assert.equal(p.panelPresets![0].cells[0].kind, 'field-enum')
 })
 
 test('leaving fixed options keeps the options for later but drops their colours', () => {
@@ -187,16 +186,20 @@ test('a field lists its uses once per layout, and only choice changes alter comp
       { id: 'preset', name: 'Default', cells: [main] },
       { id: 'second', name: 'Second', cells: [cell({ cellId: 'second' })] },
     ],
-    contentCells: {
-      book: [
-        cell({
-          cellId: 'when',
-          kind: 'static-text',
-          attributeId: undefined,
-          condition: { attributeId: 'note', operator: 'set' },
-        }),
-      ],
-    },
+    panelPresets: [
+      {
+        id: 'book',
+        name: 'book',
+        cells: [
+          cell({
+            cellId: 'when',
+            kind: 'static-text',
+            attributeId: undefined,
+            condition: { attributeId: 'note', operator: 'set' },
+          }),
+        ],
+      },
+    ],
   }
   assert.deepEqual(
     fieldUses(start, 'note', true).map((use) => [use.where, use.name, use.role, use.cell.cellId]),
@@ -214,7 +217,7 @@ test('a field lists its uses once per layout, and only choice changes alter comp
   )
   assert.deepEqual(
     fieldUses(
-      { ...start, cells: [start.contentCells!.book[0]], layoutPresets: undefined },
+      { ...start, cells: [start.panelPresets![0].cells[0]], layoutPresets: undefined },
       'note',
       false
     ).map((use) => [use.where, use.cell.cellId]),

@@ -93,14 +93,14 @@ test('field deletion removes condition references from all template scopes witho
     })
   project.cells.push(conditional)
   project.layoutPresets![0].cells.push(conditional)
-  project.contentCells!.manga.push(conditional)
+  project.panelPresets![0].cells.push(conditional)
   const clean = withoutField(project, 'flag')
   assert.equal(
     clean.cells.some((c) => c.condition?.attributeId === 'flag'),
     false
   )
   assert.equal(clean.layoutPresets![0].cells.length, project.cells.length - 1)
-  assert.equal(clean.contentCells!.manga.length, project.cells.length - 1)
+  assert.equal(clean.panelPresets![0].cells.length, project.cells.length - 1)
   assert.equal(project.cells.at(-1)?.cellId, 'conditional')
 })
 test('canvas drag uses local coordinates after scroll and scaling', () => {
@@ -138,7 +138,7 @@ test('conditional templates persist across reopening and field removal previews 
     ...project,
     fieldBindings: [{ attributeId: 'flag', alias: 'Flag', type: 'boolean' }],
     cells: [conditional],
-    contentCells: { manga: [conditional] },
+    panelPresets: [{ id: 'manga', name: 'Manga', cells: [conditional] }],
   })
   const reopened = new Library(local, undefined, false)
   await reopened.init()
@@ -148,7 +148,7 @@ test('conditional templates persist across reopening and field removal previews 
   await reopened.deleteField(preview.token)
   const next = reopened.snapshot().projects[0].project!
   assert.deepEqual(next.cells, [])
-  assert.deepEqual(next.contentCells!.manga, [])
+  assert.deepEqual(next.panelPresets![0].cells, [])
   assert.deepEqual(await fs.readFile(folderFile(media)), record)
   assert.equal(await fs.readFile(path.join(media, 'original.txt'), 'utf8'), 'ORIGINAL')
 })

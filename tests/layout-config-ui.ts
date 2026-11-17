@@ -88,7 +88,6 @@ try {
   const artist = lib.snapshot().rows.find((r) => r.name === 'Artist')
   assert.equal(saved.layoutRules?.card?.folders?.[artist?.record?.folderId ?? ''], 'albums')
   assert.deepEqual(saved.layoutRules?.card?.levels, ['top'])
-  assert.equal(saved.kindLayouts, undefined)
   await page.screenshot({ path: path.join(root, 'layout-config.png') })
   assert.deepEqual(errors, [])
   passed = true

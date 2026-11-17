@@ -10,6 +10,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { t as tr, useLocale } from '../i18n'
+import { layoutName } from '../editor/layoutName'
 import { Icon } from '../common/icons'
 import { Card } from '../cells/Card'
 import { isLayoutWork, KindIcon, LayoutWorksContext } from './folderKind'
@@ -90,7 +91,7 @@ export function LayoutConfig({ opened, close, project, rows, start, busy, save }
   }, [opened])
   const name = (id: string) => {
     const preset = presets.find((p) => p.id === id) ?? presets[0]
-    return preset.id === 'default' && preset.name === '預設版面' ? tr('預設版面') : preset.name
+    return layoutName(preset)
   }
   const choices = presets.map((p) => ({ value: p.id, label: name(p.id) }))
   const inherit = (label: string) => [{ value: '', label }, ...choices]

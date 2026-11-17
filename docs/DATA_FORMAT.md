@@ -78,24 +78,20 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 
 ## 專案檔 `projects/<projectId>.json`
 
-`kind: "media-viewer.project"`、`schemaVersion: 1`。
+`kind: "media-viewer.project"`、`schemaVersion: 2`（v1 讀取時升級，見下方「已有的升級步驟」）。
 
 | 欄位 | 說明 |
 | --- | --- |
 | `projectId`、`rootFolderId`、`revision`、`name` | 身分與版本；`rootFolderId` 指向根資料夾的記錄 |
-| `contentCells` | 內容模板，以模板類型為鍵（`book`、`game`、`media`、`general`；音樂與影片資料夾共用 `media`；舊鍵 `manga`、`album`、`video`、`music`、`other` 仍可讀取）；舊 `mediaCategory`／`mediaSourceCategory` 已移除，讀到時忽略 |
-| `kindLayouts` | 各模板類型（`book`、`game`、`media`、`general`；音樂與影片資料夾共用 `media`）套用的 CELL 版面方案 ID（資料夾自選的版面優先） |
-| `layoutRules`（暫定，R-413） | 版面配置規則 `{ card?, panel? }`，各是 `{ types?, levels?, folders? }`（值為版面方案 ID，`levels[0]` 是第 1 層、未設定的層為空字串）；有它時取代 `kindLayouts`、`folderLayouts`、`folderBookPresets` 決定版面，第一次在版面配置視窗保存時把舊欄位換算進來並移除。規則見 [LAYOUT_RULES](LAYOUT_RULES.md) |
+| `layoutRules`（暫定，R-413） | 版面配置規則 `{ card?, panel? }`，各是 `{ types?, levels?, folders? }`（`types` 以資料夾類型 `game`、`book`、`music`、`video`、`general` 為鍵；值為版面 ID，`levels[0]` 是第 1 層、未設定的層為空字串）；`card` 指向 `layoutPresets`、`panel` 指向 `panelPresets`。規則見 [LAYOUT_RULES](LAYOUT_RULES.md) |
 | `depth` | `{ mode: 'through' | 'exact', level }` 掃描層級 |
 | `fieldBindings` | 專案的欄位清單：`{ alias, attributeId, type, options?, optionColors?, trueLabel?, falseLabel? }`；`trueLabel`／`falseLabel`（R-234）只用於是／否欄位，各 1～20 字的顯示文字 |
 | `fieldGroups`（選用） | 欄位群組：`{ groupId, name, memberIds }`，最多 100 個；成員 1～20 個、須在 `fieldBindings`、型別相同（文字與標籤可混用）、一個欄位只屬一個群組；名稱 1～100 字，不分大小寫不可與其他群組或欄位別名重複 |
 | `groupSources`（選用） | 資料夾指定的群組來源：`{ <folderId>: { <groupId>: <attributeId> } }`，值須是該群組成員；只在本專案有效，成員移出或刪除時清除。讀取時（`shared/upgrade.ts` 的 `settleFieldGroups`）先整理舊版程式留下的不一致：已不存在、重複或型別不合的成員移出，空群組移除，與欄位同名的群組名稱加編號，指定來源與組件跟著調整，不因此拒絕整個專案 |
 | `cells` | 預設卡片版面：組件陣列，見下 |
-| `layoutPresets`、`activeLayoutId`、`folderLayouts` | 多個命名版面、目前使用的版面、各資料夾指定的版面 |
+| `layoutPresets`、`activeLayoutId` | 卡片的多個命名版面（最多 30 個）、專案的預設卡片版面 |
+| `panelPresets`、`panelPresetId`（R-409） | 右側版面清單 `{ id, name, cells }`（最多 40 個，名稱不分大小寫不重複，各類型共用）與右側的預設版面（選用，須在清單內）。資料夾沒有規則選到右側版面時，顯示它類型的內建右側（書籍是封面加卡片欄位，其他類型不顯示） |
 | `stylePresets`（選用） | 此專案的命名樣式：`{ id, name, style }`，最多 20 個、名稱不分大小寫不可重複；`style` 與組件的 `style` 同規則 |
-| `contentCells` | 依內容類型的右側版面 |
-| `bookPresets`、`bookPresetId`、`folderBookPresets` | R-363：漫畫模板清單（最多 30 個，名稱不重複）、專案預設模板（`contentCells.book` 同步存它的內容），以及資料夾自選的模板（資料夾 ID → 模板 ID，指向已刪除的模板時改用專案預設） |
-| `contentCover` | R-362：`true` 表示書籍模板自己含封面組件；沒有時，已編輯過的書籍模板在旁邊另畫封面（舊行為） |
 | `actionTemplates` | 遊戲動作版型 `{ id, label, kind, color }` |
 | `list`、`cardView`、`excludedRelativePaths`、`scanAll`、`traversal` | 列表、顯示範圍、排除與掃描設定；`cardView.works`（R-340）為 `true` 時是「所有作品」，舊版讀到時依 `mode: multi` 顯示全部層 |
 | `savedSearches` | 儲存的搜尋 |
@@ -184,6 +180,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 
 | 格式 | 步驟 | 內容 |
 | --- | --- | --- |
+| 專案記錄 | v1 → v2（R-409） | 右側版面獨立成 `panelPresets`：`bookPresets` 照原 ID 與名稱搬入，`bookPresetId` 成為 `layoutRules.panel.types.book`；沒有 `bookPresets` 時，編輯過的 `contentCells.book` 成為「書籍 預設」（沒有 `contentCover` 的 R-362 前模板補上左側封面組件，其餘縮進右側三分之二，放不下時維持原樣）；非空的 `contentCells.game`／`media`／`general` 成為「遊戲 預設」「音樂／影片 預設」「一般 預設」並指定給對應類型（`media` 給音樂與影片，空清單原本就不顯示，捨棄）。沒有 `layoutRules` 時，`kindLayouts`（`media` 給音樂與影片）、`folderLayouts`、`folderBookPresets` 換算成卡片與右側規則；已有的規則一律不覆蓋。移除 `contentCells`、`contentCover`、`bookPresets`、`bookPresetId`、`folderBookPresets`、`kindLayouts`、`folderLayouts`；其他欄位與不認得的欄位不變。名稱重複時加「 (2)」。舊版程式讀到 v2 專案時唯讀 |
 | 資料夾記錄 | v1 → v2（R-387） | 資料夾類型的「影音」拆成 `music` 與 `video`。`details.kind` 是 `media` 時移除這個鍵（之後依內容自動判斷）；其他欄位、其他類型值與不認得的欄位都不變。`details` 自己的 `schemaVersion` 仍是 `1`。舊版程式讀到 v2 的記錄時依「較新版本的資料」處理（唯讀）。專案匯出包的 `EXPORT_VERSION` 不變：包內的 v1 記錄匯入時走同一個步驟；舊版程式匯入這一版的匯出包時，包裝版本檢查會通過，但包內的 v2 記錄在寫入前的驗證就被判定為「較新版本的資料」，整份匯入拒絕、什麼都不寫 |
 
 ### 每次升格式版本的必備項目

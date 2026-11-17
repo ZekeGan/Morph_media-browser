@@ -140,7 +140,7 @@ export interface FolderRecord {
 }
 export interface Project {
   kind: 'media-viewer.project'
-  schemaVersion: 1
+  schemaVersion: 2
   projectId: string
   rootFolderId: string
   revision: number
@@ -160,25 +160,16 @@ export interface Project {
   cells: Cell[]
   list: { itemsPerRow: number; pageSize: number }
   excludedRelativePaths: string[]
-  contentCells?: Record<string, Cell[]>
-  // R-362: the book template holds its own cover; without it an older edited template is shown with the
-  // cover drawn beside it, as before.
-  contentCover?: boolean
-  // R-363: several book templates; the project default is bookPresetId (contentCells.book holds its
-  // cells too), and a folder may use another one (folderBookPresets, by folder ID).
-  bookPresets?: { id: string; name: string; cells: Cell[] }[]
-  bookPresetId?: string
-  folderBookPresets?: Record<string, string>
+  // R-409: the right-panel layouts, shared by every folder kind; layoutRules.panel picks one per folder and
+  // panelPresetId is the panel's default layout. Without either a folder shows its kind's built-in panel.
+  panelPresets?: { id: string; name: string; cells: Cell[] }[]
+  panelPresetId?: string
   actionTemplates?: ActionTemplate[]
   layoutPresets?: { id: string; name: string; cells: Cell[] }[]
   // Styles saved by name in this project: applied to a component they replace its whole style.
   stylePresets?: { id: string; name: string; style: Cell['style'] }[]
   activeLayoutId?: string
-  folderLayouts?: Record<string, string>
-  // Card layout preset applied to every folder of a kind (book, game, media, general) unless the folder picks its own.
-  kindLayouts?: Record<string, string>
-  // R-413 (provisional): one set of rules for card and right-panel layouts (shared/layoutRules.ts); when present it
-  // replaces kindLayouts, folderLayouts, bookPresetId and folderBookPresets for choosing a layout.
+  // R-413: one set of rules for card and right-panel layouts (shared/layoutRules.ts).
   layoutRules?: import('./layoutRules').LayoutRules
   scanAll?: boolean
   // R-340: works shows every work below the current folder (category folders passed through); level then limits depth.

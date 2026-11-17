@@ -13,6 +13,8 @@
 3. **一般資料夾依層級**：不是作品的資料夾，用它所在層級的版面；第 1 層是專案根目錄底下那一層。
 4. **預設版面**：以上都沒有（含沒設定的層級、之後新建出的更深層、根目錄本身），用專案的預設版面。
 
+**右側版面**（R-409）的規則形狀相同，但依頁面的類型決定，不看資料夾算不算作品：資料夾專屬 → 該類型的版面 → 所在層級的版面 → 右側預設版面；都沒有時顯示該類型的內建右側（書籍是左側封面加卡片欄位，其他類型不顯示）。編輯器保存時選中的右側版面成為該類型的版面；為單一資料夾開啟時不改類型的版面。
+
 規則指向的版面被刪除時跳過該條，從下一條繼續；刪除版面時同時從所有規則移除。
 
 ## 版面配置視窗
@@ -25,4 +27,4 @@
 
 ## 資料
 
-專案記錄的 `layoutRules`（暫定）：`{ card?, panel? }`，各是 `{ types?, levels?, folders? }`：`types` 以資料夾類型為鍵、`levels[0]` 是第 1 層、`folders` 以資料夾 ID 為鍵，值都是版面 ID。舊欄位 `kindLayouts`（音樂與影片共用 `media`）、`folderLayouts`、`bookPresetId`、`folderBookPresets` 讀取時換算成同樣的規則，格式升級時移除，見 [DATA_FORMAT](DATA_FORMAT.md)。
+專案記錄的 `layoutRules`（暫定）：`{ card?, panel? }`，各是 `{ types?, levels?, folders? }`：`types` 以資料夾類型為鍵、`levels[0]` 是第 1 層、`folders` 以資料夾 ID 為鍵，值都是版面 ID；`card` 指向卡片版面（`layoutPresets`），`panel` 指向右側版面（`panelPresets`）。專案格式 v1 的 `kindLayouts`、`folderLayouts`、`bookPresetId`、`folderBookPresets` 與內容模板在升到 v2 時換算成這些規則，見 [DATA_FORMAT](DATA_FORMAT.md)。

@@ -11003,18 +11003,6 @@
     "ja": "コンポーネントの表示条件が正しくありません",
     "es": "Condición de visualización del componente no válida"
   },
-  "資料夾版面指定不合法": {
-    "zh-CN": "文件夹版面指定不合法",
-    "en": "Invalid folder layout assignment",
-    "ja": "フォルダーのレイアウト指定が正しくありません",
-    "es": "Asignación de diseño de carpeta no válida"
-  },
-  "類型版面指定不合法": {
-    "zh-CN": "类型版面指定不合法",
-    "en": "Invalid kind layout assignment",
-    "ja": "種類ごとのレイアウト指定が正しくありません",
-    "es": "Asignación de diseño por tipo no válida"
-  },
   "自訂樣式不合法或名稱重複": {
     "zh-CN": "自定义样式不合法或名称重复",
     "en": "Invalid custom style or duplicate name",
@@ -11038,12 +11026,6 @@
     "en": "The layout list doesn't exist",
     "ja": "レイアウトの一覧がありません",
     "es": "La lista de diseños no existe"
-  },
-  "內容模板不合法": {
-    "zh-CN": "内容模板不合法",
-    "en": "Invalid content template",
-    "ja": "コンテンツのテンプレートが正しくありません",
-    "es": "Plantilla de contenido no válida"
   },
   "遍歷偏好不合法": {
     "zh-CN": "遍历偏好不合法",
@@ -11753,12 +11735,6 @@
     "ja": "VNDB の情報を見る",
     "es": "Ver los datos de VNDB"
   },
-  "內容模板封面設定不合法": {
-    "zh-CN": "内容模板封面设置不合法",
-    "en": "Invalid content template cover setting",
-    "ja": "内容テンプレートの表紙設定が正しくありません",
-    "es": "Ajuste de portada de la plantilla no válido"
-  },
   "統一成日期…": {
     "zh-CN": "统一成日期…",
     "en": "Make all dates…",
@@ -11902,30 +11878,6 @@
     "en": "This folder",
     "ja": "このフォルダー",
     "es": "Esta carpeta"
-  },
-  "漫畫模板不合法或名稱重複": {
-    "zh-CN": "漫画模板不合法或名称重复",
-    "en": "Invalid manga templates or a repeated name",
-    "ja": "漫画テンプレートが正しくないか名前が重複しています",
-    "es": "Plantillas de manga no válidas o con nombre repetido"
-  },
-  "漫畫預設模板不存在": {
-    "zh-CN": "漫画默认模板不存在",
-    "en": "The default manga template does not exist",
-    "ja": "既定の漫画テンプレートがありません",
-    "es": "La plantilla de manga predeterminada no existe"
-  },
-  "漫畫模板清單不存在": {
-    "zh-CN": "漫画模板列表不存在",
-    "en": "There is no list of manga templates",
-    "ja": "漫画テンプレートの一覧がありません",
-    "es": "No hay lista de plantillas de manga"
-  },
-  "資料夾漫畫模板指定不合法": {
-    "zh-CN": "文件夹漫画模板指定不合法",
-    "en": "Invalid manga template choice for a folder",
-    "ja": "フォルダーの漫画テンプレート指定が正しくありません",
-    "es": "Elección de plantilla de manga no válida para una carpeta"
   },
   "滾輪翻頁 · Ctrl＋滾輪縮放 · F11 沉浸閱讀 · ESC 返回": {
     "zh-CN": "滚轮翻页 · Ctrl＋滚轮缩放 · F11 沉浸阅读 · ESC 返回",
@@ -12910,5 +12862,59 @@
     "en": "The cover chosen for the folder; without one, the first image in the folder.",
     "ja": "フォルダーに指定したカバー。指定がなければフォルダー内の最初の画像。",
     "es": "La portada elegida para la carpeta; si no hay, la primera imagen de la carpeta."
+  },
+  "書籍 預設": {
+    "zh-CN": "书籍 默认",
+    "en": "Books default",
+    "ja": "書籍 既定",
+    "es": "Libros predeterminado"
+  },
+  "遊戲 預設": {
+    "zh-CN": "游戏 默认",
+    "en": "Games default",
+    "ja": "ゲーム 既定",
+    "es": "Juegos predeterminado"
+  },
+  "音樂 預設": {
+    "zh-CN": "音乐 默认",
+    "en": "Music default",
+    "ja": "音楽 既定",
+    "es": "Música predeterminado"
+  },
+  "影片 預設": {
+    "zh-CN": "视频 默认",
+    "en": "Video default",
+    "ja": "動画 既定",
+    "es": "Vídeo predeterminado"
+  },
+  "一般 預設": {
+    "zh-CN": "一般 默认",
+    "en": "General default",
+    "ja": "一般 既定",
+    "es": "General predeterminado"
+  },
+  "音樂／影片 預設": {
+    "zh-CN": "音乐／视频 默认",
+    "en": "Music/video default",
+    "ja": "音楽／動画 既定",
+    "es": "Música/vídeo predeterminado"
+  },
+  "右側版面不合法或名稱重複": {
+    "zh-CN": "右侧版面不合法或名称重复",
+    "en": "Right-panel layouts are invalid or have duplicate names",
+    "ja": "右側レイアウトが不正か、名前が重複しています",
+    "es": "Los diseños del panel derecho no son válidos o tienen nombres repetidos"
+  },
+  "右側預設版面不存在": {
+    "zh-CN": "右侧默认版面不存在",
+    "en": "The default right-panel layout does not exist",
+    "ja": "右側の既定レイアウトがありません",
+    "es": "El diseño predeterminado del panel derecho no existe"
+  },
+  "右側版面清單不存在": {
+    "zh-CN": "右侧版面列表不存在",
+    "en": "There is no list of right-panel layouts",
+    "ja": "右側レイアウトの一覧がありません",
+    "es": "No hay lista de diseños del panel derecho"
   }
 }

@@ -43,16 +43,11 @@ function fixture(): Project {
       { id: 'layoutB', name: 'B', cells: [field('b')] },
     ],
     activeLayoutId: 'layoutA',
-    contentCells: {
-      book: [field('book-default')],
-      game: [field('game'), image('game-image')],
-    },
-    contentCover: true,
-    bookPresets: [
-      { id: 'default', name: '預設版面', cells: [field('book-default')] },
+    panelPresets: [
+      { id: 'default', name: '書籍 預設', cells: [field('book-default')] },
       { id: 'short', name: 'Short', cells: [field('short'), image('short-image')] },
     ],
-    bookPresetId: 'default',
+    panelPresetId: 'default',
   }
   validateProject(project)
   return project
@@ -76,15 +71,14 @@ test('R-368: one change reaches every list, and absent holders stay absent', () 
     cells: [field('only')],
     layoutPresets: undefined,
     activeLayoutId: undefined,
-    contentCells: undefined,
-    bookPresets: undefined,
-    bookPresetId: undefined,
+    panelPresets: undefined,
+    panelPresetId: undefined,
   }
   const bare = mapCellLists(base as unknown as Project, (cells) => cells) as unknown as Record<
     string,
     unknown
   >
-  for (const key of ['layoutPresets', 'contentCells', 'bookPresets'])
+  for (const key of ['layoutPresets', 'panelPresets'])
     assert.ok(!(key in bare) || bare[key] === undefined, key + ' stays absent')
 })
 
@@ -92,10 +86,8 @@ test('R-368: validation checks each saved list without its own holders', () => {
   const only = withOnlyCells(fixture() as unknown as Record<string, unknown>, [field('x')])
   assert.equal(only.layoutPresets, undefined)
   assert.equal(only.activeLayoutId, undefined)
-  assert.equal(only.contentCells, undefined)
-  assert.equal(only.bookPresets, undefined)
-  assert.equal(only.bookPresetId, undefined)
-  assert.equal(only.folderBookPresets, undefined)
+  assert.equal(only.panelPresets, undefined)
+  assert.equal(only.panelPresetId, undefined)
 })
 
 test('R-368: removing a field empties it from every list', () => {
@@ -156,6 +148,5 @@ test('R-368: settling on read remaps dissolved group members in every list', () 
 
 test('R-368: image components of every list can hold a picture', () => {
   const ids = new Set(projectImageCells(fixture()).map((cell) => cell.cellId))
-  for (const name of ['card-image', 'a-image', 'game-image', 'short-image'])
-    assert.ok(ids.has(name), name)
+  for (const name of ['card-image', 'a-image', 'short-image']) assert.ok(ids.has(name), name)
 })

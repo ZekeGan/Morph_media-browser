@@ -5,6 +5,7 @@ import { FileOverview } from '../files/FileOverview'
 import type { OverviewEntry } from '../../shared/explorer'
 import type { FolderNavigation } from '../../shared/workspace'
 import { t as tr, useLocale, currentLocale } from '../i18n'
+import { layoutName } from '../editor/layoutName'
 import { Icon } from '../common/icons'
 import { BrowseToolbar } from './BrowseToolbar'
 import { BrowsePanel } from './BrowsePanel'
@@ -718,7 +719,7 @@ function BrowseWorkspaceBody({
         ? cardChoice(project, currentFolder, isLayoutWork(works, currentFolder.rowId)).id
         : (project.activeLayoutId ?? presets[0].id),
       preset = presets.find((p) => p.id === id) ?? presets[0]
-    return preset.id === 'default' && preset.name === '預設版面' ? tr('預設版面') : preset.name
+    return layoutName(preset)
   })()
   const switchMode = async (mode: BrowseMode) => {
     if (busy || !ready) return

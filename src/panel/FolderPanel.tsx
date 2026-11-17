@@ -7,7 +7,6 @@ import {
   effectiveKind,
   folderKinds,
   sampleOf,
-  templateKind,
   type KindSample,
 } from '../../shared/kind'
 import { GameActionEditor, GameActionTargets } from '../game/GameActions'
@@ -18,6 +17,7 @@ import {
   cardPresets,
   cardRule,
   presetDraft,
+  panelCells,
   rowCells,
   syncPresetDraft,
 } from '../../shared/layouts'
@@ -25,6 +25,7 @@ import { commonFieldNames } from '../editor/commonFields'
 import { useIsWork, useParentKind } from '../browse/folderKind'
 import { editLayoutRules } from '../../shared/layoutRules'
 import { t as tr, useLocale } from '../i18n'
+import { layoutName as presetName } from '../editor/layoutName'
 import { HelpLabel, HelpTip } from '../common/HelpTip'
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import {
@@ -45,7 +46,7 @@ import { FolderFieldInput } from './FolderFieldInput'
 import { FolderImages } from './FolderImages'
 import { FolderSourceImport, useSourceImport } from '../metadata/FolderSourceImport'
 import {
-  contentCells,
+  builtinPanel,
   gameActionTemplates,
   type ActionTemplate,
   type ExplorerRequest,
@@ -53,8 +54,6 @@ import {
   launchGap,
 } from '../../shared/explorer'
 import { fieldValue } from '../../shared/model'
-import { withBookCover } from '../../shared/explorer'
-import { settleGrid } from '../editor/settleGrid'
 import type { Attribute, FolderRow, Project, Request, Response } from '../../shared/model'
 import { groupValue, isFilled } from '../../shared/cells'
 import { groupOfField, setGroupSource } from '../../shared/fieldGroups'
@@ -145,7 +144,7 @@ export function FolderPanel({
   }
   const layoutName = (id?: string) => {
     const preset = cardPresets(project).find((p) => p.id === id) ?? cardPresets(project)[0]
-    return preset.id === 'default' && preset.name === '預設版面' ? tr('預設版面') : preset.name
+    return presetName(preset)
   }
   // R-413: what the rules give this folder without its own choice.
   const effectiveLayout = layoutName(
@@ -191,7 +190,9 @@ export function FolderPanel({
     ...new Map(
       [
         ...rowCells(project, row, isWork),
-        ...contentCells(project, templateKind(effectiveKind(row, sample, parentKind))),
+        ...panelCells(project, row, effectiveKind(row, sample, parentKind), (k) =>
+          builtinPanel(project, k)
+        ),
       ]
         .filter((c) => c.kind === 'image')
         .map((c) => [c.cellId, c])
@@ -882,10 +883,7 @@ export function FolderPanel({
                   { value: '', label: tr('遵循類型與專案設定（目前：{0}）', effectiveLayout) },
                   ...cardPresets(project).map((preset) => ({
                     value: preset.id,
-                    label:
-                      preset.id === 'default' && preset.name === '預設版面'
-                        ? tr('預設版面')
-                        : preset.name,
+                    label: presetName(preset),
                   })),
                 ]}
                 disabled={busy || fieldDirty}
@@ -1004,8 +1002,6 @@ export function FolderPanel({
 
 // R-363: which book template this folder shows. "Its own" copies the template it shows now into a new one used by this
 // folder only and opens it in the editor; it is an ordinary template from then on.
-const presetLabel = (preset: { id: string; name: string }) =>
-  preset.id === 'default' && preset.name === '預設版面' ? tr('預設版面') : preset.name
 function BookLayoutChoice({
   project,
   folderId,
@@ -1021,15 +1017,12 @@ function BookLayoutChoice({
   act: Act
   onEdit?: (preset?: string) => void
 }) {
-  // The project's default cells, an older edited template getting its cover component as the editor would (R-362).
-  const defaultCells = project.contentCover
-    ? contentCells(project, 'book')
-    : settleGrid(withBookCover(contentCells(project, 'book')))
-  const presets = project.bookPresets ?? [{ id: 'default', name: '預設版面', cells: defaultCells }]
-  const current = presets.find((preset) => preset.id === (project.bookPresetId ?? presets[0].id))
-  const own = (
-    project.layoutRules ? project.layoutRules.panel?.folders : project.folderBookPresets
-  )?.[folderId]
+  // R-409: the book layouts are panel layouts; without one for books the built-in template is the default.
+  const defaultCells = builtinPanel(project, 'book')
+  const presets = project.panelPresets ?? []
+  const kindId = project.layoutRules?.panel?.types?.book ?? project.panelPresetId
+  const current = presets.find((preset) => preset.id === kindId)
+  const own = project.layoutRules?.panel?.folders?.[folderId]
   // R-413: the folder's template is kept in the panel layout rules.
   const setOwn = <P extends Project>(base: P, id: string | null) =>
     editLayoutRules(base, (rules) => {
@@ -1050,13 +1043,7 @@ function BookLayoutChoice({
       const saved = await act({
         action: 'saveProject',
         project: setOwn(
-          {
-            ...project,
-            contentCells: { ...project.contentCells, book: current?.cells ?? defaultCells },
-            contentCover: true,
-            bookPresets: [...presets, { id, name, cells: structuredClone(shown) }],
-            bookPresetId: current?.id ?? presets[0].id,
-          },
+          { ...project, panelPresets: [...presets, { id, name, cells: structuredClone(shown) }] },
           id
         ),
       })
@@ -1080,9 +1067,9 @@ function BookLayoutChoice({
       data={[
         {
           value: '',
-          label: tr('遵循專案預設（目前：{0}）', current ? presetLabel(current) : tr('預設版面')),
+          label: tr('遵循專案預設（目前：{0}）', current ? presetName(current) : tr('預設版面')),
         },
-        ...presets.map((preset) => ({ value: preset.id, label: presetLabel(preset) })),
+        ...presets.map((preset) => ({ value: preset.id, label: presetName(preset) })),
         // Templates are limited to 30, as card layouts are.
         { value: '__own', label: tr('另做一份給這個資料夾…'), disabled: presets.length >= 30 },
       ]}

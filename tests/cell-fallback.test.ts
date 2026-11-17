@@ -66,7 +66,6 @@ test('fallback fields are validated and follow field deletion', () => {
       ...base,
       layoutPresets: undefined,
       activeLayoutId: undefined,
-      contentCells: undefined,
       fieldBindings: [...base.fieldBindings, ...extra],
       cells: [{ ...base.cells.find((c) => c.kind === 'field-text')!, fallbackIds }],
     })
@@ -114,7 +113,6 @@ test('text and tags share fallback displays without changing source values', () 
       ...base,
       layoutPresets: undefined,
       activeLayoutId: undefined,
-      contentCells: undefined,
       fieldBindings: [
         { alias: '文字', attributeId: 'dlsite', type: 'string' },
         { alias: '標籤', attributeId: 'steam', type: 'tags' },
@@ -182,7 +180,6 @@ test('launch cells validate their fallback actions', () => {
       ...base,
       layoutPresets: undefined,
       activeLayoutId: undefined,
-      contentCells: undefined,
       cells: [
         {
           ...cell({ kind: 'game-launch', attributeId: undefined, fallbackIds: undefined }),
@@ -206,7 +203,6 @@ test('only long text and tag cells can scroll', () => {
       ...base,
       layoutPresets: undefined,
       activeLayoutId: undefined,
-      contentCells: undefined,
       fieldBindings: [...base.fieldBindings, { alias: 'TAGS', attributeId: 'steam', type: 'tags' }],
       cells: [c],
     })
@@ -236,7 +232,6 @@ test('growMax is a bounded option for tall-content kinds and excludes scroll (R-
       ...base,
       layoutPresets: undefined,
       activeLayoutId: undefined,
-      contentCells: undefined,
       cells: [c],
     }),
     text = (patch: Partial<Cell>) => cell({ fallbackIds: undefined, ...patch })
@@ -260,7 +255,6 @@ test('optional text, box and colour styles are validated', () => {
       ...base,
       layoutPresets: undefined,
       activeLayoutId: undefined,
-      contentCells: undefined,
       cells: [
         {
           ...base.cells.find((c) => c.kind === 'name')!,
@@ -308,7 +302,6 @@ test('optional text, box and colour styles are validated', () => {
     ...base,
     layoutPresets: undefined,
     activeLayoutId: undefined,
-    contentCells: undefined,
     fieldBindings: [
       ...base.fieldBindings,
       { alias: 'S', attributeId: 's', type, options: ['A', 'B'], optionColors },
@@ -329,7 +322,7 @@ test('a folder takes the layout set for its kind unless it picks its own', () =>
     ],
     activeLayoutId: 'a',
     cells: [],
-    kindLayouts: { book: 'b' },
+    layoutRules: { card: { types: { book: 'b' } } },
   } as Project
   const folder = (kind?: string, folderId = 'f1') =>
     ({
@@ -341,7 +334,13 @@ test('a folder takes the layout set for its kind unless it picks its own', () =>
     ['only-b']
   )
   assert.deepEqual(rowCells(project, folder('media')), [])
-  assert.deepEqual(rowCells({ ...project, folderLayouts: { f1: 'a' } }, folder('book')), [])
+  assert.deepEqual(
+    rowCells(
+      { ...project, layoutRules: { card: { types: { book: 'b' }, folders: { f1: 'a' } } } },
+      folder('book')
+    ),
+    []
+  )
 })
 
 test('common fields are added with matching cells, skipping names already in use', () => {

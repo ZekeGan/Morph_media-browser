@@ -325,7 +325,6 @@ test('searching a field also looks in the fallback fields its cells list, and no
     cells,
     layoutPresets: undefined,
     activeLayoutId: undefined,
-    contentCells: undefined,
   })
   const values: Record<string, [string, string]> = {
     A: ['title', 'manual-name'],

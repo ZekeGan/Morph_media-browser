@@ -1,0 +1,105 @@
+{
+  "kind": "media-viewer.project",
+  "schemaVersion": 1,
+  "projectId": "fixture-project-v1",
+  "rootFolderId": "fixture-root",
+  "revision": 7,
+  "name": "Fixture v1",
+  "depth": { "mode": "through", "level": 3 },
+  "fieldBindings": [{ "alias": "TITLE", "attributeId": "title", "type": "string" }],
+  "cells": [
+    {
+      "cellId": "name",
+      "kind": "name",
+      "grid": { "x": 0, "y": 0, "w": 12, "h": 1 },
+      "style": { "textColor": "#e4e6e8", "backgroundColor": "transparent" }
+    }
+  ],
+  "list": { "itemsPerRow": 3, "pageSize": 100 },
+  "excludedRelativePaths": [],
+  "layoutPresets": [
+    {
+      "id": "card-main",
+      "name": "預設版面",
+      "cells": [
+        {
+          "cellId": "name",
+          "kind": "name",
+          "grid": { "x": 0, "y": 0, "w": 12, "h": 1 },
+          "style": { "textColor": "#e4e6e8", "backgroundColor": "transparent" }
+        }
+      ]
+    },
+    { "id": "card-game", "name": "Game", "cells": [] },
+    { "id": "card-media", "name": "Media", "cells": [] }
+  ],
+  "activeLayoutId": "card-main",
+  "kindLayouts": { "game": "card-game", "media": "card-media" },
+  "folderLayouts": { "folder-b": "card-main" },
+  "contentCells": {
+    "book": [
+      {
+        "cellId": "book-cover",
+        "kind": "image",
+        "imageIndex": 1,
+        "grid": { "x": 0, "y": 0, "w": 4, "h": 4 },
+        "style": { "textColor": "#e4e6e8", "backgroundColor": "transparent" }
+      },
+      {
+        "cellId": "title",
+        "kind": "field-text",
+        "attributeId": "title",
+        "grid": { "x": 4, "y": 0, "w": 8, "h": 1 },
+        "style": { "textColor": "#e4e6e8", "backgroundColor": "transparent" }
+      }
+    ],
+    "game": [
+      {
+        "cellId": "game-name",
+        "kind": "name",
+        "grid": { "x": 0, "y": 0, "w": 12, "h": 1 },
+        "style": { "textColor": "#e4e6e8", "backgroundColor": "transparent" }
+      }
+    ],
+    "general": []
+  },
+  "contentCover": true,
+  "bookPresets": [
+    {
+      "id": "default",
+      "name": "預設版面",
+      "cells": [
+        {
+          "cellId": "book-cover",
+          "kind": "image",
+          "imageIndex": 1,
+          "grid": { "x": 0, "y": 0, "w": 4, "h": 4 },
+          "style": { "textColor": "#e4e6e8", "backgroundColor": "transparent" }
+        },
+        {
+          "cellId": "title",
+          "kind": "field-text",
+          "attributeId": "title",
+          "grid": { "x": 4, "y": 0, "w": 8, "h": 1 },
+          "style": { "textColor": "#e4e6e8", "backgroundColor": "transparent" }
+        }
+      ]
+    },
+    {
+      "id": "own",
+      "name": "Folder A",
+      "cells": [
+        {
+          "cellId": "book-cover",
+          "kind": "image",
+          "imageIndex": 1,
+          "grid": { "x": 0, "y": 0, "w": 4, "h": 4 },
+          "style": { "textColor": "#e4e6e8", "backgroundColor": "transparent" }
+        }
+      ]
+    }
+  ],
+  "bookPresetId": "default",
+  "folderBookPresets": { "folder-a": "own" },
+  "futureNote": { "kept": true }
+}
