@@ -435,6 +435,8 @@ export interface MetadataCandidate {
   // Year, artist or type: whatever helps tell candidates apart.
   detail?: string
   url: string
+  // C-143: the source says the work is adult.
+  adult?: boolean
 }
 // Game page extras (R-305–R-310). Paths stay in main; the window only learns what can be offered.
 export interface GameExtras {

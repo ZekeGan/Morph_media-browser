@@ -181,7 +181,7 @@ export function FolderSourceImport({
                 <HelpLabel
                   label={tr('用名稱搜尋')}
                   help={tr(
-                    '用資料夾名稱（可修改）搜尋 VNDB、MusicBrainz、AniList、Bangumi 與 Steam，從候選中選一個再預覽；不會自動配對。'
+                    '用資料夾名稱（可修改）搜尋 VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite 與 nhentai；設定了金鑰時也搜尋 TMDB 與 FANZA。成人作品會標示「成人」。從候選中選一個再預覽，不會自動配對。'
                   )}
                 />
               }
@@ -225,6 +225,11 @@ export function FolderSourceImport({
                     >
                       <span className="candidate-title">{item.title}</span>
                       {item.detail && <span className="candidate-detail">{item.detail}</span>}
+                      {item.adult && (
+                        <Badge variant="light" size="sm" color="red">
+                          {tr('成人')}
+                        </Badge>
+                      )}
                       <Badge variant="light" size="sm">
                         {sourceName(item.provider)}
                       </Badge>

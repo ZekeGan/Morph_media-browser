@@ -6,7 +6,7 @@ import { pickByLanguage, steamLanguage, tmdbLanguage } from './language'
 
 // R-418: search by a folder's name. The five sources below are asked in parallel at fixed hosts (the same hosts as
 // their address adapters); every candidate address is built from an ID checked here, and picking one runs the
-// ordinary preview. No automatic matching, and sources for adult works only (decision still open) are left out.
+// ordinary preview. No automatic matching. Adult sources are included (C-143); a candidate known to be adult says so.
 export const SEARCH_QUERY_MAX = 200
 export const SEARCH_RESULTS_MAX = 10
 const TIMEOUT = 15000
@@ -73,7 +73,7 @@ const musicbrainz: Searcher = async (ask, query) => {
 const anilist: Searcher = async (ask, query, languages) => {
   const found = await ask('https://graphql.anilist.co', {
     query:
-      'query($s:String,$n:Int){Page(perPage:$n){media(search:$s,isAdult:false){id type title{romaji english native} startDate{year}}}}',
+      'query($s:String,$n:Int){Page(perPage:$n){media(search:$s){id type isAdult title{romaji english native} startDate{year}}}}',
     variables: { s: query, n: SEARCH_RESULTS_MAX },
   })
   return rows(found?.data?.Page?.media).flatMap((item) => {
@@ -91,16 +91,20 @@ const anilist: Searcher = async (ask, query, languages) => {
         title: text(own) || text(title.romaji) || text(title.english) || text(title.native),
         detail: detail(item.startDate?.year ? String(item.startDate.year) : undefined),
         url: `https://anilist.co/${item.type === 'ANIME' ? 'anime' : 'manga'}/${item.id}/`,
+        ...(item.isAdult === true ? { adult: true } : {}),
       },
     ]
   })
 }
 
-const bangumi: Searcher = async (ask, query, languages) => {
-  const found = await ask('https://api.bgm.tv/v0/search/subjects?limit=' + SEARCH_RESULTS_MAX, {
-    keyword: query,
-    filter: { nsfw: false },
-  })
+// With the user's token NSFW subjects are included (and marked); without it they are filtered out, as the site does.
+const bangumi: Searcher = async (ask, query, languages, keys) => {
+  const token = keys.token ?? '',
+    found = await ask(
+      'https://api.bgm.tv/v0/search/subjects?limit=' + SEARCH_RESULTS_MAX,
+      token ? { keyword: query } : { keyword: query, filter: { nsfw: false } },
+      token ? { Authorization: 'Bearer ' + token } : {}
+    )
   return rows(found?.data).flatMap((item) => {
     if (!Number.isSafeInteger(item?.id) || item.id < 1) return []
     const chinese = languages.some((language) => language.startsWith('zh'))
@@ -110,6 +114,7 @@ const bangumi: Searcher = async (ask, query, languages) => {
         title: (chinese ? text(item.name_cn) : '') || text(item.name) || text(item.name_cn),
         detail: year(item.date),
         url: 'https://bgm.tv/subject/' + item.id,
+        ...(item.nsfw === true ? { adult: true } : {}),
       },
     ]
   })
@@ -168,6 +173,87 @@ const tmdb: Searcher = async (ask, query, languages, keys) => {
   })
 }
 
+// C-143 adult sources. DLsite has no documented search; its product.json answers a keyword with work records (JSON,
+// not ranked: roughly the newest 50 that match), so titles holding the query come first. The shop comes from the
+// record and must be one the DLsite adapter accepts.
+const DLSITE_SHOPS =
+  /^(?:maniax|home|girls|girls-drama|bl|bl-drama|comic|books|ai|soft|app|appx|pro)$/
+const dlsite: Searcher = async (ask, query) => {
+  const found = await ask(
+      'https://www.dlsite.com/maniax/api/=/product.json?keyword=' + encodeURIComponent(query)
+    ),
+    lower = query.toLowerCase(),
+    list = rows(found, 50).flatMap((item) => {
+      const shop = item?.site_id === 'aix' ? 'ai' : item?.site_id
+      if (typeof item?.workno !== 'string' || !/^[A-Z]{2}\d{5,8}$/.test(item.workno)) return []
+      if (typeof shop !== 'string' || !DLSITE_SHOPS.test(shop)) return []
+      const title = text(item.work_name)
+      return [
+        {
+          hit: title.toLowerCase().includes(lower),
+          candidate: {
+            provider: 'dlsite' as const,
+            title,
+            detail: detail(year(item.regist_date), text(item.maker_name, 100)),
+            url: `https://www.dlsite.com/${shop}/work/=/product_id/${item.workno}.html`,
+            ...(Number(item.age_category) === 3 ? { adult: true } : {}),
+          } as MetadataCandidate,
+        },
+      ]
+    })
+  return [...list.filter((entry) => entry.hit), ...list.filter((entry) => !entry.hit)].map(
+    (entry) => entry.candidate
+  )
+}
+
+// FANZA / DMM: the ItemList web service, only with the user's own API ID and affiliate ID.
+const fanza: Searcher = async (ask, query, _languages, keys) => {
+  const found = await ask(
+    'https://api.dmm.com/affiliate/v3/ItemList?output=json&site=FANZA&hits=' +
+      SEARCH_RESULTS_MAX +
+      '&keyword=' +
+      encodeURIComponent(query) +
+      '&api_id=' +
+      encodeURIComponent(keys.apiId ?? '') +
+      '&affiliate_id=' +
+      encodeURIComponent(keys.affiliateId ?? '')
+  )
+  if (found?.result?.status !== undefined && Number(found.result.status) !== 200)
+    throw new Error('FANZA refused the request')
+  return rows(found?.result?.items).flatMap((item) => {
+    const cid = String(item?.content_id ?? '')
+    if (!/^[a-z0-9_]{3,40}$/i.test(cid)) return []
+    return [
+      {
+        provider: 'fanza' as const,
+        title: text(item.title),
+        detail: detail(year(item.date)),
+        url: 'https://www.dmm.co.jp/dc/doujin/-/detail/=/cid=' + cid.toLowerCase() + '/',
+        adult: true,
+      },
+    ]
+  })
+}
+
+// nhentai's v2 search (the old /api/galleries/search answers 403); gallery IDs are plain numbers.
+const nhentai: Searcher = async (ask, query, languages) => {
+  const found = await ask('https://nhentai.net/api/v2/search?query=' + encodeURIComponent(query))
+  return rows(found?.result).flatMap((item) => {
+    if (!Number.isSafeInteger(item?.id) || item.id < 1 || item.id > 9999999999) return []
+    const english = text(item.english_title),
+      japanese = text(item.japanese_title)
+    return [
+      {
+        provider: 'nhentai' as const,
+        title: languages[0] === 'ja' ? japanese || english : english || japanese,
+        detail: Number.isSafeInteger(item.num_pages) ? item.num_pages + ' p' : undefined,
+        url: 'https://nhentai.net/g/' + item.id + '/',
+        adult: true,
+      },
+    ]
+  })
+}
+
 const searchers: [MetadataSourceId, Searcher, string[]][] = [
   ['vndb', vndb, ['api.vndb.org']],
   ['musicbrainz', musicbrainz, ['musicbrainz.org']],
@@ -175,6 +261,9 @@ const searchers: [MetadataSourceId, Searcher, string[]][] = [
   ['bangumi', bangumi, ['api.bgm.tv']],
   ['steam', steam, ['store.steampowered.com']],
   ['tmdb', tmdb, ['api.themoviedb.org']],
+  ['dlsite', dlsite, ['www.dlsite.com']],
+  ['fanza', fanza, ['api.dmm.com']],
+  ['nhentai', nhentai, ['nhentai.net']],
 ]
 
 export async function searchSources(
@@ -185,10 +274,25 @@ export async function searchSources(
 ): Promise<{ candidates: MetadataCandidate[]; failedSources: MetadataSourceId[] }> {
   const query = text(rawQuery, SEARCH_QUERY_MAX)
   if (!query) throw new Error('請輸入要搜尋的名稱')
-  // A keyed source is left out, with no failure note, when the user has no key for it.
-  const tmdbKeys = (await options.keyFor?.('tmdb').catch(() => undefined)) ?? {},
-    active = searchers.filter(([id]) => id !== 'tmdb' || Object.keys(tmdbKeys).length > 0),
-    keysOf = (id: MetadataSourceId) => (id === 'tmdb' ? tmdbKeys : {})
+  // A keyed source is left out, with no failure note, when the user has no key for it (Bangumi's token is optional).
+  const keyed = ['tmdb', 'fanza', 'bangumi'] as const,
+    keys: Record<string, Record<string, string>> = {}
+  await Promise.all(
+    keyed.map(async (id) => {
+      keys[id] =
+        (await Promise.resolve()
+          .then(() => options.keyFor?.(id))
+          .catch(() => undefined)) ?? {}
+    })
+  )
+  const active = searchers.filter(
+      // FANZA needs both its API ID and affiliate ID; half a key is no key.
+      ([id]) =>
+        id === 'fanza'
+          ? !!keys.fanza.apiId && !!keys.fanza.affiliateId
+          : id !== 'tmdb' || Object.keys(keys[id]).length > 0
+    ),
+    keysOf = (id: MetadataSourceId) => keys[id] ?? {}
   const settled = await Promise.allSettled(
     active.map(async ([id, search, hosts]) => {
       const ask: Ask = async (url, body, extra = {}) => {

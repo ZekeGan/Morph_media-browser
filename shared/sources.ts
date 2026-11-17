@@ -97,7 +97,7 @@ export const metadataSources = [
   {
     id: 'wikidata',
     name: 'Wikidata',
-    group: '圖片／插畫',
+    group: '網頁',
     categories: ['album', 'music', 'other'],
     hint: 'https://www.wikidata.org/wiki/Q123',
   },

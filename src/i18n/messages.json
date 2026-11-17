@@ -12665,12 +12665,6 @@
     "ja": "名前で検索",
     "es": "Buscar por nombre"
   },
-  "用資料夾名稱（可修改）搜尋 VNDB、MusicBrainz、AniList、Bangumi 與 Steam，從候選中選一個再預覽；不會自動配對。": {
-    "zh-CN": "用文件夹名称（可修改）搜索 VNDB、MusicBrainz、AniList、Bangumi 与 Steam，从候选中选一个再预览；不会自动匹配。",
-    "en": "Search VNDB, MusicBrainz, AniList, Bangumi and Steam with the folder name (editable), then pick one candidate to preview. Nothing is matched automatically.",
-    "ja": "フォルダー名（変更可）で VNDB、MusicBrainz、AniList、Bangumi、Steam を検索し、候補から 1 つ選んでプレビューします。自動で照合はしません。",
-    "es": "Busca en VNDB, MusicBrainz, AniList, Bangumi y Steam con el nombre de la carpeta (editable) y elige un candidato para la vista previa. Nada se asocia automáticamente."
-  },
   "{0} 搜尋失敗": {
     "zh-CN": "{0} 搜索失败",
     "en": "{0}: search failed",
@@ -12718,5 +12712,29 @@
     "en": "Enter a name to search for",
     "ja": "検索する名前を入力してください",
     "es": "Escribe un nombre para buscar"
+  },
+  "用資料夾名稱（可修改）搜尋 VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite 與 nhentai；設定了金鑰時也搜尋 TMDB 與 FANZA。成人作品會標示「成人」。從候選中選一個再預覽，不會自動配對。": {
+    "zh-CN": "用文件夹名称（可修改）搜索 VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite 与 nhentai；设置了密钥时也搜索 TMDB 与 FANZA。成人作品会标示“成人”。从候选中选一个再预览，不会自动匹配。",
+    "en": "Searches VNDB, MusicBrainz, AniList, Bangumi, Steam, DLsite and nhentai by the folder name (editable), plus TMDB and FANZA when you have set a key. Adult works are marked \"Adult\". Pick a candidate to preview it; nothing is matched automatically.",
+    "ja": "フォルダー名（編集可）で VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai を検索します。キーを設定していれば TMDB と FANZA も検索します。成人向け作品には「成人」と表示されます。候補を選んでプレビューします。自動では照合しません。",
+    "es": "Busca por el nombre de la carpeta (editable) en VNDB, MusicBrainz, AniList, Bangumi, Steam, DLsite y nhentai, y también en TMDB y FANZA si has puesto una clave. Las obras para adultos llevan la etiqueta «Adultos». Elige un candidato para la vista previa; nada se asocia automáticamente."
+  },
+  "{0}：{1}｜本機：{2}": {
+    "zh-CN": "{0}：{1}｜本机：{2}",
+    "en": "{0}: {1} | This computer: {2}",
+    "ja": "{0}：{1}｜このPC：{2}",
+    "es": "{0}: {1} | Este equipo: {2}"
+  },
+  "未偵測到": {
+    "zh-CN": "未检测到",
+    "en": "not detected",
+    "ja": "検出なし",
+    "es": "no detectado"
+  },
+  "兩邊的引擎名稱不同，請確認": {
+    "zh-CN": "两边的引擎名称不同，请确认",
+    "en": "the engine names differ; please check",
+    "ja": "エンジン名が異なります。確認してください",
+    "es": "los nombres del motor difieren; compruébalo"
   }
 }
