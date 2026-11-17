@@ -157,7 +157,7 @@
       "name": "漫畫閱讀器",
       "docs": ["MANGA_VIEWER_DESIGN.md#漫畫閱讀器"],
       "code": ["src/reader/Reader*", "src/reader/Webtoon*", "src/common/readerInput*", "shared/reader*"],
-      "ui": ["reader-ui", "reader-read-on-ui", "webtoon-ui", "reader-next-ui", "reader-cbz-next-ui", "media-scope-ui"],
+      "ui": ["reader-ui", "reader-read-on-ui", "webtoon-ui", "reader-next-ui", "reader-carry-ui", "reader-cbz-next-ui", "media-scope-ui"],
       "tests": ["reader.test.ts"]
     },
     {
@@ -165,7 +165,7 @@
       "name": "小說閱讀器",
       "docs": ["NOVEL_READER.md#閱讀", "NOVEL_READER.md#閱讀紀錄"],
       "code": ["src/novel/*", "src/common/readerInput*", "electron/novel*", "shared/novel*"],
-      "ui": ["novel-ui", "markdown-ui"],
+      "ui": ["novel-ui", "novel-short-chapters-ui", "novel-end-center-ui", "markdown-ui"],
       "tests": ["novel.test.ts", "markdown.test.ts"]
     },
     {
@@ -182,12 +182,13 @@
         "src/video/video-player.css",
         "shared/subtitles*",
         "shared/vobsub*",
-        "shared/episodes*",
+        "shared/videoPlayer*",
+        "shared/subtitleTrack*",
         "electron/embedded-subtitles*",
         "electron/mkv-subtitles*"
       ],
       "ui": ["video-player-ui", "video-failure-ui", "video-embedded-ui"],
-      "tests": ["embedded-subtitles.test.ts", "episodes.test.ts"]
+      "tests": ["embedded-subtitles.test.ts", "video-external.test.ts"]
     },
     {
       "id": "documents",
@@ -317,7 +318,11 @@
     {
       "id": "metadata",
       "name": "外部資料預覽與套用",
-      "docs": ["METADATA_ENRICHMENT.md#分類來源", "METADATA_ENRICHMENT.md#預覽套用與追溯"],
+      "docs": [
+        "METADATA_ENRICHMENT.md#分類來源",
+        "METADATA_ENRICHMENT.md#預覽套用與追溯",
+        "METADATA_DECLINED.md"
+      ],
       "code": [
         "electron/metadata*",
         "electron/source-images*",

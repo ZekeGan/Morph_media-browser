@@ -1,6 +1,12 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readingGroups, readerArrowStep, savedPlace, spreadGeometry } from '../shared/reader'
+import {
+  bookFinished,
+  readingGroups,
+  readerArrowStep,
+  savedPlace,
+  spreadGeometry,
+} from '../shared/reader'
 import { defaultTreeCollapsed, visibleTreeRows } from '../shared/browse'
 import type { FolderRow } from '../shared/model'
 test('reader groups preserve first-page and odd-page rules; RTL reverses only arrow navigation', () => {
@@ -106,11 +112,26 @@ test('the saved place of a manga: page out of pictures, and whether the reader c
   // Left on the last page (the last two in spread mode): finished, the reader opens from the start.
   assert.deepEqual(savedPlace({ page: 179 }, 180), { page: 180, total: 180, resumes: false })
   assert.deepEqual(savedPlace({ page: 178 }, 180), { page: 179, total: 180, resumes: true })
+  // R-426: a spread book finished on its last spread shows its last page, not the left page of that spread.
   assert.deepEqual(savedPlace({ page: 178, spread: true }, 180), {
-    page: 179,
+    page: 180,
     total: 180,
     resumes: false,
   })
+  assert.deepEqual(savedPlace({ page: 177, spread: true }, 180), {
+    page: 178,
+    total: 180,
+    resumes: true,
+  })
+  assert.equal(bookFinished(99, 100, true), true)
+  assert.equal(
+    bookFinished(98, 100, true),
+    true,
+    'records that kept the left page of the last spread'
+  )
+  assert.equal(bookFinished(97, 100, true), false)
+  assert.equal(bookFinished(98, 100), false)
+  assert.equal(bookFinished(99, 100), true)
   // Pictures were removed since: never more than there are.
   assert.deepEqual(savedPlace({ page: 500 }, 180), { page: 180, total: 180, resumes: false })
 })

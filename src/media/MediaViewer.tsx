@@ -1,7 +1,12 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ActionIcon, FocusTrap, Tooltip } from '@mantine/core'
-import type { ExplorerRequest, ExplorerResponse, MediaEntry } from '../../shared/explorer'
+import type {
+  ExplorerRequest,
+  ExplorerResponse,
+  MediaEntry,
+  ReadingPrefs,
+} from '../../shared/explorer'
 import type { FolderRow, Project, Request, Response } from '../../shared/model'
 import { canPreviewMedia, mediaQueue } from '../../shared/media'
 import { effectiveKind } from '../../shared/kind'
@@ -34,6 +39,7 @@ export function MediaViewer({
   manga: mangaHint,
   nextBook,
   startImmersive,
+  inheritedPrefs,
 }: {
   row: FolderRow
   project: Project
@@ -47,9 +53,11 @@ export function MediaViewer({
   busy: boolean
   // The folder page already knows the folder's type (it looked at the files); without it only the record is used.
   manga?: boolean
-  nextBook?: { name: string; open: (keepImmersive: boolean) => void }
+  nextBook?: { name: string; open: (keepImmersive: boolean, settings?: ReadingPrefs) => void }
   // Opened as the next book while reading immersively: continue in immersive mode.
   startImmersive?: boolean
+  // R-430: the previous book's reading settings, for a folder that has none of its own yet.
+  inheritedPrefs?: ReadingPrefs
 }) {
   const [queueView, setQueueView] = useState<'list' | 'images'>('list')
   const [selected, setSelected] = useState(file.id),
@@ -169,7 +177,7 @@ export function MediaViewer({
                   manga={manga}
                   nextBook={nextBook}
                   startImmersive={startImmersive}
-                  prefs={row.record?.details?.reading}
+                  prefs={row.record?.details?.reading ?? inheritedPrefs}
                   close={close}
                   save={(prefs) => {
                     if (row.record && !row.readonly && !row.stopped && !row.error)
@@ -259,7 +267,6 @@ export function MediaViewer({
                 tiles={file.kind === 'video' || file.kind === 'image'}
                 view={queueView}
                 changeView={setQueueView}
-                episodes={row.record?.details?.episodes}
               />
             )}
           </div>

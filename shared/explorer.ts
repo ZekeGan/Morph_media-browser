@@ -1,6 +1,6 @@
 import { bookCover, visibleCells } from './layouts'
 export { bookCover }
-import type { MetadataSourceId } from './sources'
+import type { MetadataSourceId, SearchSourceId } from './sources'
 import type { StableQuery } from './query'
 import type { Notice } from './notifications'
 import type { Attribute, AssetRole, Cell, Snapshot } from './model'
@@ -92,6 +92,11 @@ export interface SubtitlePrefs {
   background: string
   encoding: 'utf-8' | 'big5' | 'shift_jis'
 }
+// R-432: a track is known by its own name and language, since its number differs from video to video.
+export interface SubtitleTrackPreference {
+  name?: string
+  language?: string
+}
 export const gameExtras = ['steam', 'store', 'save'] as const
 export type GameExtra = (typeof gameExtras)[number]
 export interface FolderDetails {
@@ -112,9 +117,9 @@ export interface FolderDetails {
     string,
     { time: number; subtitle?: string; settings?: Record<string, SubtitlePrefs> }
   >
-  // R-423 (tentative): the season, episode and title of each video file (by file id), matched from the episode
-  // list imported from TMDB (R-419); written only when the user asks.
-  episodes?: Record<string, { season?: number; episode: number; title?: string }>
+  // R-432 (provisional): the embedded subtitle track last picked in this folder; the other videos open with the track
+  // of the same name, else the same language.
+  subtitleTrack?: SubtitleTrackPreference
   targets?: Record<
     string,
     {
@@ -308,13 +313,6 @@ export type ExplorerRequest =
       settings?: SubtitlePrefs
     }
   | {
-      // R-423 (tentative): replaces the folder's episode names with these matches (null clears them).
-      action: 'episodes'
-      rowId: string
-      revision: number
-      episodes: Record<string, { season?: number; episode: number; title?: string }> | null
-    }
-  | {
       action: 'boundary'
       rowId: string
       revision: number
@@ -353,6 +351,17 @@ export type ExplorerRequest =
   | { action: 'addSuggestion'; rowId: string; revision: number; name: string }
   | { action: 'chooseLocaleEmulator'; clear?: boolean }
   | { action: 'chooseFlashPlayer'; clear?: boolean }
+  // R-431: the external video player (app settings), and opening a video in it (time = where to start, seconds).
+  | { action: 'chooseVideoPlayer'; clear?: boolean }
+  | { action: 'openExternalPlayer'; rowId: string; fileId: string; time?: number }
+  // R-432: remember the embedded subtitle track picked in this folder (no fields = forget it).
+  | {
+      action: 'subtitleTrack'
+      rowId: string
+      revision: number
+      name?: string
+      language?: string
+    }
   | {
       action: 'targetLocale'
       rowId: string
@@ -413,7 +422,7 @@ export type ExplorerRequest =
   | { action: 'imageUrlPreview'; url: string }
   | { action: 'imageUrlApply'; rowId: string; revision: number; token: string; cover: boolean }
   | { action: 'metadataPreview'; source: string; provider?: MetadataSourceId }
-  | { action: 'metadataSearch'; query: string }
+  | { action: 'metadataSearch'; query: string; sources?: SearchSourceId[] }
   | {
       action: 'metadataApply'
       rowId: string
@@ -444,6 +453,7 @@ export interface ExplorerResponse {
   keys?: Record<string, import('./keys').KeyStatus>
   localeEmulator?: string
   flashPlayer?: string
+  videoPlayer?: string
   probe?: { kind: 'zip' | 'rar' | '7z' | 'gzip' | 'html' | 'empty' | 'media' | 'unknown' }
   preview?: MetadataPreview
   // R-418: candidates from a name search, and the sources that could not answer.
@@ -494,6 +504,8 @@ export interface EmbeddedSubtitleInfo {
   graphic: boolean
   // R-421: a graphic track whose pictures can be shown (VobSub).
   picture?: boolean
+  // R-425: the track went past the limits and only part of it was read.
+  truncated?: boolean
   cues: number
 }
 // R-421: a stretch of a picture track. Cues are placed in a frame of width × height and drawn with the palette

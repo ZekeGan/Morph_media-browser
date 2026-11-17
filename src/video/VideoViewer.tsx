@@ -17,9 +17,8 @@ import { VideoControls } from './VideoControls'
 import { Accordion, Button } from '@mantine/core'
 import { VideoSubtitleSettings, type EmbeddedState } from './VideoSubtitleSettings'
 import { embeddedLabel } from './embeddedLabel'
+import { chooseSubtitleTrack, trackPreference } from '../../shared/subtitleTrack'
 import { VideoPictureSubtitle } from './VideoPictureSubtitle'
-import { VideoEpisodes, episodeListOf } from './VideoEpisodes'
-import { episodeLabel } from '../../shared/episodes'
 import { describeError } from '../notices/errors'
 import { useVideoAudio } from '../media/useVideoAudio'
 import { podcastFolder } from '../media/podcast'
@@ -43,7 +42,6 @@ export function VideoViewer({
   initialFileId,
   hideStrip = false,
   onSelected,
-  episodeFiles,
 }: {
   background?: boolean
   row: FolderRow
@@ -52,8 +50,6 @@ export function VideoViewer({
   autoplay: boolean
   hideStrip?: boolean
   onSelected?: (id: string) => void
-  // R-423: the videos to name from the episode list when the player itself holds only the playing one.
-  episodeFiles?: MediaEntry[]
   initialFileId?: string
 
   busy: boolean
@@ -79,7 +75,8 @@ export function VideoViewer({
     [pictures, setPictures] = useState<EmbeddedPictures>(),
     pictureTrack = useRef<EmbeddedSubtitleInfo | undefined>(undefined),
     pictureAsked = useRef(0),
-    offsetLive = useRef(0)
+    offsetLive = useRef(0),
+    subtitleLive = useRef<ExplorerResponse['subtitle']>(undefined)
 
   const [settings, setSettings] = useState(defaultSubtitle),
     [error, setError] = useState(''),
@@ -91,8 +88,6 @@ export function VideoViewer({
     [audioDragging, setAudioDragging] = useState(false),
     [menuOpen, setMenuOpen] = useState(false),
     [subtitleExpanded, setSubtitleExpanded] = useState(false),
-    // R-423: the episode names section of the settings is open.
-    [episodesExpanded, setEpisodesExpanded] = useState(false),
     // R-405: the second this video resumed from, shown briefly with a way back to the start.
     [resumed, setResumed] = useState<number>()
 
@@ -144,11 +139,9 @@ export function VideoViewer({
   const file = videos.find((entry) => entry.id === fileId) ?? videos[0],
     index = videos.findIndex((entry) => entry.id === file?.id)
 
-  // R-423 (tentative): the season, episode and title the folder record holds for each video.
-  const episodeNames = row.record?.details?.episodes,
-    hasEpisodeList = episodeListOf(row).length > 0
-
   latest.current = row
+  // R-432: whether a subtitle is already loaded now, read when the embedded track list arrives.
+  subtitleLive.current = subtitle
   audioLive.current = audio
   speed.current = rate
   filesLive.current = videos
@@ -317,6 +310,24 @@ export function VideoViewer({
     showControls()
     // R-417: a jump while the chosen embedded track is still being read moves the reading there.
     if (partialTrack.current) void loadEmbedded(partialTrack.current, true)
+  }
+
+  // R-431: the external player (app settings; the system default without one) starts at the current position. Only
+  // the row and file ids travel; main resolves the file and the program. The built-in player pauses once it started.
+  const openExternal = async (entry: MediaEntry) => {
+    const node = video.current,
+      at = node && Number.isFinite(node.currentTime) ? node.currentTime : undefined
+    const result = await run({
+      action: 'openExternalPlayer',
+      rowId: row.rowId,
+      fileId: entry.id,
+      ...(at ? { time: at } : {}),
+    })
+    if (result && node === video.current && !node?.paused) {
+      pendingStart.current = false
+      wantsPlayback.current = false
+      node?.pause()
+    }
   }
 
   const changeAudio = (volume: number, muted: boolean) => {
@@ -583,19 +594,51 @@ export function VideoViewer({
     window.explorer
       .request({ action: 'embeddedSubtitles', rowId: row.rowId, fileId: target, early })
       .then((result) => {
-        if (mounted.current && currentFile.current === target)
+        if (mounted.current && currentFile.current === target) {
           setEmbedded((state) => ({
             fileId: target,
             status: result.embedded?.reading ? 'loading' : 'done',
             progress: result.embedded?.reading && state?.fileId === target ? state.progress : 1,
             tracks: result.embedded?.tracks ?? [],
           }))
+          return result.embedded?.tracks
+        }
       })
+  // R-432: the track list has arrived: the track of the name (else language) picked in this folder before opens,
+  // else the file's own default track. A subtitle the user already has for this file wins: one saved for it, or one
+  // loaded now. A track only picked here (not by hand) is not remembered.
+  const autoSelectTrack = (target: string, tracks?: EmbeddedSubtitleInfo[]) => {
+    if (!tracks?.length || !mounted.current || currentFile.current !== target) return
+    const details = latest.current.record?.details
+    if (details?.playback?.[target]?.subtitle || subtitleLive.current) return
+    const track = chooseSubtitleTrack(tracks, details?.subtitleTrack)
+    if (track) void loadEmbedded(track)
+  }
+  // The user picked a track by hand: the folder remembers its name and language for the other videos.
+  const pickEmbedded = async (track: EmbeddedSubtitleInfo) => {
+    const wanted = trackPreference(track),
+      record = latest.current.record,
+      known = record?.details?.subtitleTrack
+    if (
+      wanted &&
+      record &&
+      !row.readonly &&
+      (known?.name !== wanted.name || known?.language !== wanted.language)
+    )
+      void run({
+        action: 'subtitleTrack',
+        rowId: row.rowId,
+        revision: record.revision,
+        ...wanted,
+      })
+    return loadEmbedded(track)
+  }
   useEffect(() => {
     if (!matroska || !file || embedded?.fileId === file.id) return
     const target = file.id
     setEmbedded({ fileId: target, status: 'loading', progress: 0, tracks: [] })
     void listEmbedded(target, true)
+      .then((tracks) => autoSelectTrack(target, tracks))
       // The second answer waits for the whole read: final counts, and the chosen track in full.
       .then(() => listEmbedded(target, false))
       .then(() => {
@@ -1176,102 +1219,77 @@ export function VideoViewer({
             if (next) selectVideo(next)
           }}
           subtitleSettings={
-            <>
-              <Accordion
-                className="player-subtitle-group"
-                value={subtitleExpanded ? 'subtitles' : null}
-                onChange={(value) => setSubtitleExpanded(!!value)}
-                transitionDuration={0}
-              >
-                <Accordion.Item value="subtitles">
-                  <Accordion.Control>{tr('字幕設定')}</Accordion.Control>
-                  <Accordion.Panel>
-                    <VideoSubtitleSettings
-                      captions={captions}
-                      toggleCaptions={toggleCaptions}
-                      section={subtitleSection}
-                      changeSection={setSubtitleSection}
-                      error={error}
-                      subtitle={subtitle}
-                      picture={!!pictures}
-                      files={files}
-                      subtitles={subtitles}
-                      embedded={matroska ? embedded : undefined}
-                      loadEmbedded={loadEmbedded}
-                      settings={settings}
-                      readonly={row.readonly}
-                      load={load}
-                      clear={() => {
-                        partialTrack.current = undefined
-                        pictureTrack.current = undefined
-                        setPictures(undefined)
-                        setSubtitle(undefined)
-                        setCues([])
-                      }}
-                      save={save}
-                      importSubtitle={importSubtitle}
-                      changeEncoding={changeSubtitleEncoding}
-                      setSettings={setSettings}
-                    />
-                  </Accordion.Panel>
-                </Accordion.Item>
-              </Accordion>
-              {(hasEpisodeList || episodeNames) && (
-                <Accordion
-                  className="player-subtitle-group"
-                  value={episodesExpanded ? 'episodes' : null}
-                  onChange={(value) => setEpisodesExpanded(!!value)}
-                  transitionDuration={0}
-                >
-                  <Accordion.Item value="episodes">
-                    <Accordion.Control>{tr('集名')}</Accordion.Control>
-                    <Accordion.Panel>
-                      <VideoEpisodes row={row} videos={episodeFiles ?? videos} run={run} />
-                    </Accordion.Panel>
-                  </Accordion.Item>
-                </Accordion>
-              )}
-            </>
+            <Accordion
+              className="player-subtitle-group"
+              value={subtitleExpanded ? 'subtitles' : null}
+              onChange={(value) => setSubtitleExpanded(!!value)}
+              transitionDuration={0}
+            >
+              <Accordion.Item value="subtitles">
+                <Accordion.Control>{tr('字幕設定')}</Accordion.Control>
+                <Accordion.Panel>
+                  <VideoSubtitleSettings
+                    captions={captions}
+                    toggleCaptions={toggleCaptions}
+                    section={subtitleSection}
+                    changeSection={setSubtitleSection}
+                    error={error}
+                    subtitle={subtitle}
+                    picture={!!pictures}
+                    files={files}
+                    subtitles={subtitles}
+                    embedded={matroska ? embedded : undefined}
+                    loadEmbedded={pickEmbedded}
+                    settings={settings}
+                    readonly={row.readonly}
+                    load={load}
+                    clear={() => {
+                      partialTrack.current = undefined
+                      pictureTrack.current = undefined
+                      setPictures(undefined)
+                      setSubtitle(undefined)
+                      setCues([])
+                    }}
+                    save={save}
+                    importSubtitle={importSubtitle}
+                    changeEncoding={changeSubtitleEncoding}
+                    setSettings={setSettings}
+                  />
+                </Accordion.Panel>
+              </Accordion.Item>
+            </Accordion>
           }
           full={() => void toggleFullscreen()}
+          external={file ? () => void openExternal(file) : undefined}
         />
       </div>
 
       {!hideStrip && (
-        <div
-          ref={strip}
-          className={'video-strip' + (episodeNames ? ' with-episodes' : '')}
-          aria-label={tr('資料夾影片')}
-        >
-          {videos.map((entry) => {
-            const episode = episodeNames?.[entry.id],
-              label = episode ? episodeLabel(episode) : undefined
-            return (
-              <button
-                key={entry.id}
-                className={'video-tile ' + (entry.id === file.id ? 'active' : '')}
-                aria-label={tr('播放 ') + entry.name}
-                title={label ? entry.name + ' · ' + label : entry.name}
-                onClick={() => selectVideo(entry)}
-              >
-                {entry.thumb ? (
-                  <img
-                    src={entry.thumb}
-                    alt=""
-                    onError={(event) => {
-                      event.currentTarget.style.display = 'none'
-                    }}
-                  />
-                ) : (
-                  <span className="video-symbol">
-                    <Icon name="play" size={24} />
-                  </span>
-                )}
-                <span>{entry.name}</span>
-                {label && <span className="video-episode">{label}</span>}
-              </button>
-            )
-          })}
+        <div ref={strip} className="video-strip" aria-label={tr('資料夾影片')}>
+          {videos.map((entry) => (
+            <button
+              key={entry.id}
+              className={'video-tile ' + (entry.id === file.id ? 'active' : '')}
+              aria-label={tr('播放 ') + entry.name}
+              title={entry.name}
+              onClick={() => selectVideo(entry)}
+            >
+              {entry.thumb ? (
+                <img
+                  src={entry.thumb}
+                  alt=""
+                  onError={(event) => {
+                    event.currentTarget.style.display = 'none'
+                  }}
+                />
+              ) : (
+                <span className="video-symbol">
+                  <Icon name="play" size={24} />
+                </span>
+              )}
+              <span>{entry.name}</span>
+            </button>
+          ))}
         </div>
       )}
     </div>

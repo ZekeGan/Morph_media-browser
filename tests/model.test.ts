@@ -138,33 +138,6 @@ test('optional project rules preserve CARD limits, presets and first error order
   )
 })
 
-test('episode names (R-423) accept small whole numbers and a short title, and nothing else', () => {
-  const details = modelDetails(),
-    id = 'a'.repeat(64)
-  for (const episodes of [
-    { [id]: { season: 1, episode: 2, title: 'Title' } },
-    { [id]: { episode: 0 } },
-    {},
-  ])
-    assert.doesNotThrow(() => validateDetails({ ...details, episodes }))
-  for (const episodes of [
-    [],
-    { '../x': { episode: 1 } },
-    { [id]: [] },
-    { [id]: { episode: 1.5 } },
-    { [id]: { episode: -1 } },
-    { [id]: { episode: 10000 } },
-    { [id]: { season: -1, episode: 1 } },
-    { [id]: { season: 1000, episode: 1 } },
-    { [id]: { episode: 1, title: 5 } },
-    { [id]: { episode: 1, title: '' } },
-    { [id]: { episode: 1, title: 'x'.repeat(301) } },
-    { [id]: { episode: 1, path: 'other' } },
-    Object.fromEntries(Array.from({ length: 10001 }, (_, i) => ['f' + i, { episode: 1 }])),
-  ])
-    reject(validateDetails, { ...details, episodes }, '集數記錄不合法')
-})
-
 test('subtitle, playback and launch validation retain numeric and path boundaries', () => {
   const details = modelDetails(),
     playback = details.playback!.video

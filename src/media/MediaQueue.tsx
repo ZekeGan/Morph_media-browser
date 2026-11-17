@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Tooltip } from '@mantine/core'
 import type { MediaEntry } from '../../shared/explorer'
-import { episodeLabel, type FileEpisode } from '../../shared/episodes'
 import { t as tr } from '../i18n'
 import { ViewToggle } from '../browse/ViewToggle'
 import { MediaThumb } from './MediaThumb'
@@ -14,7 +13,6 @@ export function MediaQueue({
   tiles,
   view,
   changeView,
-  episodes,
 }: {
   entries: MediaEntry[]
   selected: string
@@ -24,8 +22,6 @@ export function MediaQueue({
   tiles: boolean
   view: 'list' | 'images'
   changeView: (view: 'list' | 'images') => void
-  // R-423 (tentative): the episode of each video by file id, shown under its name.
-  episodes?: Record<string, FileEpisode>
 }) {
   const root = useRef<HTMLDivElement>(null),
     [viewport, setViewport] = useState({ top: 0, height: 600 })
@@ -72,37 +68,28 @@ export function MediaQueue({
         }}
       >
         <div style={{ height: entries.length * height, position: 'relative' }}>
-          {entries.slice(first, last).map((entry, index) => {
-            const episode = episodes?.[entry.id],
-              label = episode && entry.kind === 'video' ? episodeLabel(episode) : undefined
-            return (
-              <Tooltip
-                key={entry.id}
-                zIndex={450}
-                label={entry.name}
-                disabled={!thumbnails}
-                events={{ hover: true, focus: true, touch: false }}
+          {entries.slice(first, last).map((entry, index) => (
+            <Tooltip
+              key={entry.id}
+              zIndex={450}
+              label={entry.name}
+              disabled={!thumbnails}
+              events={{ hover: true, focus: true, touch: false }}
+            >
+              <button
+                className={entry.id === selected ? 'active' : ''}
+                style={{ top: (first + index) * height, height }}
+                aria-label={entry.name}
+                aria-current={entry.id === selected ? 'true' : undefined}
+                onClick={() => choose(entry)}
               >
-                <button
-                  className={entry.id === selected ? 'active' : ''}
-                  style={{ top: (first + index) * height, height }}
-                  aria-label={label ? entry.name + ' ' + label : entry.name}
-                  aria-current={entry.id === selected ? 'true' : undefined}
-                  onClick={() => choose(entry)}
-                >
-                  <div className="media-queue-preview">
-                    <MediaThumb entry={entry} />
-                  </div>
-                  {!thumbnails && (
-                    <span>
-                      {entry.name}
-                      {label && <small className="media-queue-episode">{label}</small>}
-                    </span>
-                  )}
-                </button>
-              </Tooltip>
-            )
-          })}
+                <div className="media-queue-preview">
+                  <MediaThumb entry={entry} />
+                </div>
+                {!thumbnails && <span>{entry.name}</span>}
+              </button>
+            </Tooltip>
+          ))}
         </div>
       </div>
     </aside>

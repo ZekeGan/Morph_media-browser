@@ -327,3 +327,26 @@ test('R-381: the source language order is local, follows the interface when empt
   assert.equal((await reopened.read(ids)).prefs.sourceLanguages, undefined)
   assert.deepEqual(reopened.sourceLanguages(), ['ja'])
 })
+
+test('R-424: the name-search sources are kept per folder kind on this computer and reject bad lists', async (t) => {
+  const { root, store } = await fixture(t),
+    ids = ['p1']
+  assert.equal((await store.read(ids)).prefs.searchSources, undefined)
+  await store.update({ action: 'searchSources', kind: 'game', value: ['vndb', 'steam'] }, ids)
+  await store.update({ action: 'searchSources', kind: 'video', value: [] }, ids)
+  const reopened = new WorkspaceStore(root)
+  await reopened.init()
+  assert.deepEqual((await reopened.read(ids)).prefs.searchSources, {
+    game: ['vndb', 'steam'],
+    video: [],
+  })
+  const before = await fs.readFile(store.file)
+  for (const command of [
+    { action: 'searchSources', kind: 'game', value: ['eh'] },
+    { action: 'searchSources', kind: 'game', value: ['vndb', 'vndb'] },
+    { action: 'searchSources', kind: 'comic', value: ['vndb'] },
+    { action: 'searchSources', kind: 'game', value: 'vndb' },
+  ])
+    await assert.rejects(reopened.update(command as WorkspaceCommand, ids))
+  assert.deepEqual(await fs.readFile(store.file), before)
+})

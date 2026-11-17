@@ -45,19 +45,25 @@ export function spreadGeometry(
 export const readerArrowStep = (key: string, rtl: boolean) =>
   key === 'ArrowLeft' ? (rtl ? 1 : -1) : key === 'ArrowRight' ? (rtl ? -1 : 1) : 0
 
+// R-426: a book is finished once its last page was on screen. The reader saves the last page for such a spread, but
+// records written before that kept only the left page of the last spread, so in spread mode the second to last counts too.
+export const bookFinished = (page: number, count: number, spread?: boolean) =>
+  count > 0 && page >= count - (spread ? 2 : 1)
+
 // R-390: what the book page says about where a manga was left: the page (counted from 1) out of the pictures it has.
 // `resumes` follows the reader (R-253): it continues from the saved page unless that is the first page or the book
-// was left on its last page (the last two in spread mode), which counts as finished and opens from the start.
+// was finished, which opens from the start. A finished book shows its last page.
 export function savedPlace(
   prefs: { page?: number; spread?: boolean } | undefined,
   images: number
 ): { page: number; total: number; resumes: boolean } | undefined {
   const page = prefs?.page
   if (!page || !Number.isInteger(page) || page <= 0 || images <= 0) return undefined
+  const finished = bookFinished(page, images, prefs.spread)
   return {
-    page: Math.min(page, images - 1) + 1,
+    page: finished ? images : Math.min(page, images - 1) + 1,
     total: images,
-    resumes: page < images - (prefs.spread ? 2 : 1),
+    resumes: !finished,
   }
 }
 

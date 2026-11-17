@@ -13,6 +13,8 @@ import {
   type WorkspaceState,
 } from '../shared/workspace'
 import { isThemeId } from '../shared/themes'
+import { isFolderKind } from '../shared/kind'
+import { isSearchSource, searchableSources, type SearchSourceId } from '../shared/sources'
 import { isLocaleId, systemLocale, type LocaleId } from '../shared/locales'
 import { exportSettings, importSettings, mergeSettings } from './settings-package'
 import { checkNotNewer, FORMAT_VERSION, isNewerFormat, upgradeFormat } from '../shared/upgrade'
@@ -28,6 +30,12 @@ const object = (v: unknown): v is Record<string, any> =>
 // R-381: one to five different interface languages, no repeats (an empty list means "follow the interface").
 const validLanguages = (v: unknown): v is LocaleId[] =>
   Array.isArray(v) && v.length <= 5 && v.every(isLocaleId) && new Set(v).size === v.length
+// R-424: known search sources, no repeats; an empty list is stored (the user ticked nothing).
+const validSearchSources = (v: unknown): v is SearchSourceId[] =>
+  Array.isArray(v) &&
+  v.length <= searchableSources.length &&
+  v.every(isSearchSource) &&
+  new Set(v).size === v.length
 function groupName(v: unknown): string {
   if (typeof v !== 'string' || !v.trim() || v.trim().length > 60 || /[\x00-\x1f]/.test(v))
     throw new Error('群組名稱需為 1～60 個字，不能含控制字元')
@@ -64,6 +72,14 @@ export function validateWorkspace(v: unknown): asserts v is WorkspacePrefs {
   if (v.sourceLanguages !== undefined && !validLanguages(v.sourceLanguages))
     throw new Error('來源語言設定不合法')
   if (
+    v.searchSources !== undefined &&
+    (!object(v.searchSources) ||
+      !Object.entries(v.searchSources).every(
+        ([kind, value]) => isFolderKind(kind) && validSearchSources(value)
+      ))
+  )
+    throw new Error('來源搜尋設定不合法')
+  if (
     v.fileVisibility !== undefined &&
     (!object(v.fileVisibility) ||
       typeof v.fileVisibility.hidden !== 'boolean' ||
@@ -96,6 +112,16 @@ export function validateWorkspace(v: unknown): asserts v is WorkspacePrefs {
       v.flashPlayer.length > 4000)
   )
     throw new Error('Flash 播放器路徑不合法')
+  if (
+    v.videoPlayer !== undefined &&
+    (typeof v.videoPlayer !== 'string' ||
+      !path.isAbsolute(v.videoPlayer) ||
+      // A program on a network share is not taken from the saved settings.
+      /^[\\/]{2}/.test(v.videoPlayer) ||
+      !/\.exe$/i.test(v.videoPlayer) ||
+      v.videoPlayer.length > 4000)
+  )
+    throw new Error('外部影片播放器路徑不合法')
   if (
     v.playtime !== undefined &&
     (!object(v.playtime) ||
@@ -428,6 +454,20 @@ export class WorkspaceStore {
   flashPlayerPath() {
     return this.prefs.flashPlayer
   }
+  // R-431: the external video player's path, set the same way (main-process dialog only) or cleared.
+  setVideoPlayer(file: string | undefined) {
+    return this.run(async () => {
+      if (this.error) throw new Error(this.error)
+      const next = structuredClone(this.prefs)
+      if (file) next.videoPlayer = file
+      else delete next.videoPlayer
+      await this.commit(next)
+      return this.state()
+    })
+  }
+  videoPlayerPath() {
+    return this.prefs.videoPlayer
+  }
   // R-381: the order external sources are read in: the chosen list, or the interface language alone.
   sourceLanguages(): LocaleId[] {
     return this.prefs.sourceLanguages?.length
@@ -576,6 +616,11 @@ export class WorkspaceStore {
           // An empty list goes back to following the interface language.
           if (command.value.length) next.sourceLanguages = [...command.value]
           else delete next.sourceLanguages
+          break
+        case 'searchSources':
+          if (!isFolderKind(command.kind) || !validSearchSources(command.value))
+            throw new Error('來源搜尋設定不合法')
+          next.searchSources = { ...next.searchSources, [command.kind]: [...command.value] }
           break
         case 'appearance':
           if (!isThemeId(command.theme) || !isLocaleId(command.locale))

@@ -186,8 +186,10 @@ export function VideoSubtitleSettings({
                           variant={subtitle?.token === 'emb-' + track.number ? 'light' : 'subtle'}
                           aria-pressed={subtitle?.token === 'emb-' + track.number}
                           onClick={() => void loadEmbedded(track)}
+                          title={track.truncated ? tr('這個字幕軌太大，只讀到一部分') : undefined}
                         >
                           {embeddedLabel(track)}
+                          {track.truncated && ' · ' + tr('只讀到一部分')}
                         </Button>
                       ))}
                   </div>

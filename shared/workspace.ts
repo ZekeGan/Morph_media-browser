@@ -1,6 +1,8 @@
 import type { BrowseState } from './explorer'
 import type { ThemeId } from './themes'
 import type { LocaleId } from './locales'
+import type { FolderKind } from './kind'
+import type { SearchSourceId } from './sources'
 // What a player does when a track or video ends (R-268).
 export const playOrders = ['stop', 'next', 'all', 'one'] as const
 export type PlayOrder = (typeof playOrders)[number]
@@ -31,6 +33,8 @@ export interface WorkspacePrefs {
   locale?: LocaleId
   // R-381: the languages an external source's title and description are taken in, first choice first. Missing = follow the interface language.
   sourceLanguages?: LocaleId[]
+  // R-424: the sources ticked for a name search, per folder kind; a kind that is missing uses the kind's defaults.
+  searchSources?: Partial<Record<FolderKind, SearchSourceId[]>>
   videoAudio?: { volume: number; muted: boolean }
   playOrder?: PlayOrder
   fileVisibility?: { hidden: boolean; dotfiles: boolean }
@@ -38,6 +42,8 @@ export interface WorkspacePrefs {
   localeEmulator?: string
   // R-320: the program that plays .swf games (Flash Player projector or Ruffle), chosen like LEProc.exe.
   flashPlayer?: string
+  // R-431: the program videos open in from the player's "open in external player" button; missing = the system default.
+  videoPlayer?: string
   // Play time of games started from M:orph (R-308), by folder identity. Local only, never in portable records.
   playtime?: Record<string, PlayRecord>
   groups: { id: string; name: string; collapsed: boolean }[]
@@ -73,6 +79,7 @@ export type WorkspaceCommand =
   | { action: 'fileVisibility'; value: { hidden: boolean; dotfiles: boolean } }
   | { action: 'appearance'; theme: ThemeId; locale: LocaleId }
   | { action: 'sourceLanguages'; value: LocaleId[] }
+  | { action: 'searchSources'; kind: FolderKind; value: SearchSourceId[] }
   | { action: 'createGroup'; name: string }
   | { action: 'renameGroup'; id: string; name: string }
   | { action: 'removeGroup'; id: string }

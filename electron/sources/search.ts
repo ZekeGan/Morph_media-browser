@@ -270,10 +270,17 @@ export async function searchSources(
   rawQuery: unknown,
   fetcher: typeof fetch,
   languages: string[] = [],
-  options: { keyFor?: (site: string) => Promise<Record<string, string> | undefined> } = {}
+  options: {
+    keyFor?: (site: string) => Promise<Record<string, string> | undefined>
+    // R-424: ask only these sources (a key-less TMDB or FANZA is still skipped); missing = all of them.
+    sources?: readonly MetadataSourceId[]
+  } = {}
 ): Promise<{ candidates: MetadataCandidate[]; failedSources: MetadataSourceId[] }> {
   const query = text(rawQuery, SEARCH_QUERY_MAX)
   if (!query) throw new Error('請輸入要搜尋的名稱')
+  // An empty choice is rejected rather than read as "all": asking nothing is almost certainly a mistake in the caller.
+  if (options.sources && !options.sources.length) throw new Error('請至少選一個要搜尋的來源')
+  const chosen = options.sources && new Set<string>(options.sources)
   // A keyed source is left out, with no failure note, when the user has no key for it (Bangumi's token is optional).
   const keyed = ['tmdb', 'fanza', 'bangumi'] as const,
     keys: Record<string, Record<string, string>> = {}
@@ -288,9 +295,10 @@ export async function searchSources(
   const active = searchers.filter(
       // FANZA needs both its API ID and affiliate ID; half a key is no key.
       ([id]) =>
-        id === 'fanza'
+        (!chosen || chosen.has(id)) &&
+        (id === 'fanza'
           ? !!keys.fanza.apiId && !!keys.fanza.affiliateId
-          : id !== 'tmdb' || Object.keys(keys[id]).length > 0
+          : id !== 'tmdb' || Object.keys(keys[id]).length > 0)
     ),
     keysOf = (id: MetadataSourceId) => keys[id] ?? {}
   const settled = await Promise.allSettled(

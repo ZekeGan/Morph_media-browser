@@ -176,6 +176,10 @@ else {
         setFlashPlayer: async (file) => {
           await workspace.setFlashPlayer(file)
         },
+        videoPlayer: () => workspace.videoPlayerPath(),
+        setVideoPlayer: async (file) => {
+          await workspace.setVideoPlayer(file)
+        },
         keyStore: new KeyStore(app.getPath('userData'), {
           // Linux without a keyring falls back to plain text; keys are not stored then.
           available: () =>
@@ -224,6 +228,7 @@ else {
           // R-418: a name search only asks websites; it needs neither the library nor the explorer.
           if (request.action === 'metadataSearch')
             return await searchSources(request.query, fetch, workspace.sourceLanguages(), {
+              sources: request.sources,
               keyFor: (site) => explorer.desktop.keyStore?.get(site) ?? Promise.resolve(undefined),
             })
           return await library.run(() => explorer.request(request))

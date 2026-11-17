@@ -12,7 +12,12 @@ import { pathKey } from '../../shared/browse'
 import { effectiveKind, templateKind } from '../../shared/kind'
 import { PanelSkeleton } from '../panel/PanelSkeleton'
 import { type FolderRow, type Project, type Request, type Response } from '../../shared/model'
-import type { BrowseState, ExplorerRequest, ExplorerResponse } from '../../shared/explorer'
+import type {
+  BrowseState,
+  ExplorerRequest,
+  ExplorerResponse,
+  ReadingPrefs,
+} from '../../shared/explorer'
 const FolderContent = lazy(() =>
   import('../panel/FolderContent').then((m) => ({ default: m.FolderContent }))
 )
@@ -54,8 +59,8 @@ type Props = {
   switchDiscard: () => void
   switchStay: () => void
   // R-255: the folder after the shown one in the browse list, and the folder to open straight into reading.
-  nextBook?: { name: string; open: (keepImmersive: boolean) => void }
-  readNext?: { id: string; immersive: boolean }
+  nextBook?: { name: string; open: (keepImmersive: boolean, settings?: ReadingPrefs) => void }
+  readNext?: { id: string; immersive: boolean; settings?: ReadingPrefs }
   readNextDone: () => void
 }
 
@@ -311,6 +316,7 @@ export function BrowsePanel(props: Props) {
                         : 'normal'
                       : undefined
                   }
+                  autoReadSettings={readNext?.id === detail.rowId ? readNext.settings : undefined}
                   onAutoRead={readNextDone}
                   childNames={all
                     .filter(

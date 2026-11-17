@@ -41,6 +41,8 @@ try {
   await page.waitForFunction(() =>
     /\/ 2 頁/.test(document.querySelector('.reader-info strong')?.textContent ?? '')
   )
+  // R-430: the settings of the volume just read carry over to the next one (two pages at a time here).
+  await reader().getByRole('button', { name: '雙頁', exact: true }).click()
   // Right to left: the left arrow reads on. The last page names the next volume; the next press opens it.
   for (let i = 0; i < 6 && !(await reader().locator('.reader-end').count()); i++) {
     await page.keyboard.press('ArrowLeft')
@@ -52,7 +54,7 @@ try {
   await page.waitForFunction(() =>
     /\/ 5 頁/.test(document.querySelector('.reader-info strong')?.textContent ?? '')
   )
-  assert.match(await shown(), /第 1(–2)? \/ 5 頁/)
+  assert.match(await shown(), /第 1–2 \/ 5 頁/)
   // The last volume has no next book: the notice only says the book ends.
   for (let i = 0; i < 8 && !(await reader().locator('.reader-end').count()); i++) {
     await page.keyboard.press('ArrowLeft')

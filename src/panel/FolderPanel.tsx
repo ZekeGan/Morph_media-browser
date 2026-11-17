@@ -699,6 +699,7 @@ export function FolderPanel({
               busy={busy}
               disabled={disabled}
               fieldDirty={fieldDirty}
+              kind={effectiveKind(row, sample, parentKind)}
               run={run}
               setError={setError}
             />

@@ -5261,12 +5261,6 @@
     "en": "Automatic (detected as {0})",
     "es": "Automático (detectado como {0})"
   },
-  "各類型的預設版面": {
-    "zh-CN": "各类型的默认版面",
-    "en": "Default layout per folder type",
-    "ja": "種類ごとの既定レイアウト",
-    "es": "Diseño predeterminado por tipo"
-  },
   "批次指定資料夾類型": {
     "zh-CN": "批量指定文件夹类型",
     "en": "Set folder type in bulk",
@@ -12281,12 +12275,6 @@
     "ja": "階層ごと",
     "es": "Por nivel"
   },
-  "在瀏覽工具列的「版面配置」修改。": {
-    "zh-CN": "在浏览工具栏的「版面配置」修改。",
-    "en": "Change them with Layout setup in the browse toolbar.",
-    "ja": "閲覧ツールバーの「レイアウト設定」で変更します。",
-    "es": "Se cambian en Configuración de diseños, en la barra de navegación."
-  },
   "版面配置規則不合法": {
     "zh-CN": "版面配置规则不合法",
     "en": "The layout rules are not valid",
@@ -12713,12 +12701,6 @@
     "ja": "検索する名前を入力してください",
     "es": "Escribe un nombre para buscar"
   },
-  "用資料夾名稱（可修改）搜尋 VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite 與 nhentai；設定了金鑰時也搜尋 TMDB 與 FANZA。成人作品會標示「成人」。從候選中選一個再預覽，不會自動配對。": {
-    "zh-CN": "用文件夹名称（可修改）搜索 VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite 与 nhentai；设置了密钥时也搜索 TMDB 与 FANZA。成人作品会标示“成人”。从候选中选一个再预览，不会自动匹配。",
-    "en": "Searches VNDB, MusicBrainz, AniList, Bangumi, Steam, DLsite and nhentai by the folder name (editable), plus TMDB and FANZA when you have set a key. Adult works are marked \"Adult\". Pick a candidate to preview it; nothing is matched automatically.",
-    "ja": "フォルダー名（編集可）で VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai を検索します。キーを設定していれば TMDB と FANZA も検索します。成人向け作品には「成人」と表示されます。候補を選んでプレビューします。自動では照合しません。",
-    "es": "Busca por el nombre de la carpeta (editable) en VNDB, MusicBrainz, AniList, Bangumi, Steam, DLsite y nhentai, y también en TMDB y FANZA si has puesto una clave. Las obras para adultos llevan la etiqueta «Adultos». Elige un candidato para la vista previa; nada se asocia automáticamente."
-  },
   "{0}：{1}｜本機：{2}": {
     "zh-CN": "{0}：{1}｜本机：{2}",
     "en": "{0}: {1} | This computer: {2}",
@@ -12791,52 +12773,130 @@
     "ja": "この字幕トラックには表示できる画像がありません",
     "es": "Esta pista de subtítulos no tiene imágenes que mostrar"
   },
-  "集名": {
-    "zh-CN": "集名",
-    "en": "Episode names",
-    "ja": "話数タイトル",
-    "es": "Nombres de episodios"
+  "搜尋的來源": {
+    "zh-CN": "搜索的来源",
+    "en": "Sources to search",
+    "ja": "検索するソース",
+    "es": "Fuentes de búsqueda"
   },
-  "{0} 個影片可標上集名（共 {1} 個影片，{2} 個無法判斷）": {
-    "zh-CN": "{0} 个视频可标上集名（共 {1} 个视频，{2} 个无法判断）",
-    "en": "{0} videos can be named (of {1} videos, {2} cannot be told)",
-    "ja": "{0} 本に話数タイトルを付けられます（動画 {1} 本中、{2} 本は判別できません）",
-    "es": "{0} vídeos pueden recibir nombre (de {1}; {2} no se pueden determinar)"
+  "依資料夾類型記住你的選擇；沒選過時用該類型的預設。": {
+    "zh-CN": "按文件夹类型记住你的选择；没选过时使用该类型的默认值。",
+    "en": "Your choice is remembered per folder type; until you choose, the type's defaults are used.",
+    "ja": "選択はフォルダーの種類ごとに記憶されます。未選択の間は、その種類の既定値を使います。",
+    "es": "Tu elección se recuerda por tipo de carpeta; hasta que elijas, se usan los valores predeterminados del tipo."
   },
-  "尚未匯入集數清單（用 TMDB 影集網址匯入）": {
-    "zh-CN": "尚未导入集数清单（用 TMDB 剧集网址导入）",
-    "en": "No episode list imported yet (import from a TMDB series address)",
-    "ja": "話数リストが未取り込みです（TMDB のシリーズ URL から取り込み）",
-    "es": "Aún no se importó la lista de episodios (impórtala desde una dirección de serie de TMDB)"
+  "{0}（需要金鑰）": {
+    "zh-CN": "{0}（需要密钥）",
+    "en": "{0} (key required)",
+    "ja": "{0}（キーが必要）",
+    "es": "{0} (requiere clave)"
   },
-  "集名預覽": {
-    "zh-CN": "集名预览",
-    "en": "Episode name preview",
-    "ja": "話数タイトルのプレビュー",
-    "es": "Vista previa de nombres"
+  "請至少選一個來源": {
+    "zh-CN": "请至少选择一个来源",
+    "en": "Pick at least one source",
+    "ja": "ソースを1つ以上選んでください",
+    "es": "Elige al menos una fuente"
   },
-  "還有 {0} 個": {
-    "zh-CN": "还有 {0} 个",
-    "en": "{0} more",
-    "ja": "ほか {0} 本",
-    "es": "{0} más"
+  "{0} 需要你自己的金鑰才能搜尋。": {
+    "zh-CN": "{0} 需要你自己的密钥才能搜索。",
+    "en": "{0} needs your own key before it can be searched.",
+    "ja": "{0} を検索するには、自分のキーが必要です。",
+    "es": "{0} necesita tu propia clave para poder buscar."
   },
-  "依集數清單標上集名": {
-    "zh-CN": "按集数清单标上集名",
-    "en": "Name episodes from the list",
-    "ja": "話数リストから話数タイトルを付ける",
-    "es": "Nombrar episodios según la lista"
+  "用資料夾名稱（可修改）搜尋下方勾選的來源（VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai；設定了金鑰時還有 TMDB 與 FANZA）。成人作品會標示「成人」。從候選中選一個再預覽，不會自動配對。": {
+    "zh-CN": "用文件夹名称（可修改）搜索下方勾选的来源（VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai；设置了密钥时还有 TMDB 与 FANZA）。成人作品会标示“成人”。从候选中选一个再预览，不会自动匹配。",
+    "en": "Search the sources ticked below by the folder name (editable): VNDB, MusicBrainz, AniList, Bangumi, Steam, DLsite and nhentai, plus TMDB and FANZA when a key is set. Adult works are marked \"Adult\". Pick one candidate to preview; nothing is matched automatically.",
+    "ja": "フォルダー名（変更可）で、下でチェックしたソース（VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai。キーを設定すると TMDB と FANZA も）を検索します。成人向け作品には「成人向け」と表示されます。候補を1つ選んでプレビューします。自動では照合しません。",
+    "es": "Busca por el nombre de la carpeta (editable) en las fuentes marcadas abajo: VNDB, MusicBrainz, AniList, Bangumi, Steam, DLsite y nhentai, y también TMDB y FANZA si hay clave. Las obras para adultos se marcan como «Adultos». Elige un candidato para previsualizarlo; no se empareja automáticamente."
   },
-  "清除集名": {
-    "zh-CN": "清除集名",
-    "en": "Clear episode names",
-    "ja": "話数タイトルを消去",
-    "es": "Borrar nombres de episodios"
+  "這個字幕軌太大，只讀到一部分": {
+    "zh-CN": "这个字幕轨太大，只读到一部分",
+    "en": "This track is too large; only part of it was read",
+    "ja": "この字幕トラックは大きすぎるため、一部だけ読み込みました",
+    "es": "Esta pista es demasiado grande; solo se leyó una parte"
   },
-  "集數記錄不合法": {
-    "zh-CN": "集数记录不合法",
-    "en": "The episode record is not valid",
-    "ja": "話数の記録が正しくありません",
-    "es": "El registro de episodios no es válido"
+  "只讀到一部分": {
+    "zh-CN": "只读到一部分",
+    "en": "partly read",
+    "ja": "一部のみ",
+    "es": "lectura parcial"
+  },
+  "外部影片播放器": {
+    "zh-CN": "外部视频播放器",
+    "en": "External video player",
+    "ja": "外部ビデオプレーヤー",
+    "es": "Reproductor de vídeo externo"
+  },
+  "播放器的「用外部播放器開啟」會用這個程式開影片；認得 PotPlayer 與 mpv，會從目前的位置開始播放。沒指定時用系統預設播放器。": {
+    "zh-CN": "播放器的“用外部播放器打开”会用这个程序打开视频；认得 PotPlayer 与 mpv，会从当前位置开始播放。没指定时用系统默认播放器。",
+    "en": "The player's \"Open in external player\" button opens the video with this program. PotPlayer and mpv are recognised and start from the current position. Without one, the system default player is used.",
+    "ja": "プレーヤーの「外部プレーヤーで開く」はこのプログラムで動画を開きます。PotPlayer と mpv は現在の位置から再生されます。指定がない場合はシステムの既定のプレーヤーを使います。",
+    "es": "El botón «Abrir en un reproductor externo» abre el vídeo con este programa. Se reconocen PotPlayer y mpv, que empiezan desde la posición actual. Si no hay ninguno, se usa el reproductor predeterminado del sistema."
+  },
+  "用外部播放器開啟": {
+    "zh-CN": "用外部播放器打开",
+    "en": "Open in external player",
+    "ja": "外部プレーヤーで開く",
+    "es": "Abrir en un reproductor externo"
+  },
+  "只能用外部播放器開啟影音檔案": {
+    "zh-CN": "只能用外部播放器打开影音文件",
+    "en": "Only audio and video files can be opened in an external player",
+    "ja": "外部プレーヤーで開けるのは音声・動画ファイルだけです",
+    "es": "Solo se pueden abrir archivos de audio y vídeo en un reproductor externo"
+  },
+  "找不到外部播放器；請到應用程式設定重新指定": {
+    "zh-CN": "找不到外部播放器；请到应用设置重新指定",
+    "en": "The external player was not found; choose it again in the application settings",
+    "ja": "外部プレーヤーが見つかりません。アプリ設定で指定し直してください",
+    "es": "No se encuentra el reproductor externo; vuelve a elegirlo en los ajustes de la aplicación"
+  },
+  "無法設定外部影片播放器": {
+    "zh-CN": "无法设置外部视频播放器",
+    "en": "Cannot set the external video player",
+    "ja": "外部ビデオプレーヤーを設定できません",
+    "es": "No se puede ajustar el reproductor de vídeo externo"
+  },
+  "請選擇播放影片的程式（.exe）": {
+    "zh-CN": "请选择播放视频的程序（.exe）",
+    "en": "Choose a program that plays videos (.exe)",
+    "ja": "動画を再生するプログラム（.exe）を選んでください",
+    "es": "Elige un programa que reproduzca vídeos (.exe)"
+  },
+  "外部影片播放器路徑不合法": {
+    "zh-CN": "外部视频播放器路径不合法",
+    "en": "The external video player path is not valid",
+    "ja": "外部ビデオプレーヤーのパスが正しくありません",
+    "es": "La ruta del reproductor de vídeo externo no es válida"
+  },
+  "字幕軌偏好不合法": {
+    "zh-CN": "字幕轨偏好不合法",
+    "en": "The subtitle track preference is not valid",
+    "ja": "字幕トラックの設定が正しくありません",
+    "es": "La preferencia de pista de subtítulos no es válida"
+  },
+  "已取消讀取內嵌字幕": {
+    "zh-CN": "已取消读取内嵌字幕",
+    "en": "Reading the embedded subtitles was cancelled",
+    "ja": "埋め込み字幕の読み込みを中止しました",
+    "es": "Se canceló la lectura de los subtítulos incrustados"
+  },
+  "請至少選一個要搜尋的來源": {
+    "zh-CN": "请至少选一个要搜索的来源",
+    "en": "Choose at least one source to search",
+    "ja": "検索するソースを少なくとも 1 つ選んでください",
+    "es": "Elige al menos una fuente para buscar"
+  },
+  "來源搜尋設定不合法": {
+    "zh-CN": "来源搜索设置不合法",
+    "en": "The source search settings are not valid",
+    "ja": "ソース検索の設定が正しくありません",
+    "es": "La configuración de búsqueda de fuentes no es válida"
+  },
+  "設定金鑰": {
+    "zh-CN": "设置密钥",
+    "en": "Set up keys",
+    "ja": "キーを設定",
+    "es": "Configurar claves"
   }
 }

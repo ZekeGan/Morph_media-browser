@@ -1,6 +1,24 @@
 import { useEffect, useState } from 'react'
-import { Alert, Badge, Button, Checkbox, Group, Stack, Text, TextInput } from '@mantine/core'
-import { metadataSources, sourceForUrl } from '../../shared/sources'
+import {
+  Alert,
+  Badge,
+  Button,
+  Checkbox,
+  Group,
+  MultiSelect,
+  Stack,
+  Text,
+  TextInput,
+} from '@mantine/core'
+import {
+  defaultSearchSources,
+  isSearchSource,
+  metadataSources,
+  searchableSources,
+  sourceForUrl,
+  type SearchSourceId,
+} from '../../shared/sources'
+import type { FolderKind } from '../../shared/kind'
 import { localeOptions } from '../../shared/locales'
 import { keySite, type KeyStatus } from '../../shared/keys'
 import type {
@@ -76,6 +94,7 @@ export function FolderSourceImport({
   busy,
   disabled,
   fieldDirty,
+  kind,
   run,
   setError,
 }: {
@@ -84,6 +103,7 @@ export function FolderSourceImport({
   busy: boolean
   disabled: boolean
   fieldDirty: boolean
+  kind: FolderKind
   run: Run
   setError: (error: string) => void
 }) {
@@ -107,11 +127,47 @@ export function FolderSourceImport({
     setFound(undefined)
   }, [row.rowId])
   const sourceName = (id: string) => metadataSources.find((item) => item.id === id)?.name ?? id
+  // R-424: which sources a name search asks. The choice is kept per folder kind on this computer (workspace prefs);
+  // until the user has chosen for a kind, the kind's defaults are ticked. TMDB and FANZA need the user's own key.
+  const [saved, setSaved] = useState<SearchSourceId[]>(),
+    [searchKeys, setSearchKeys] = useState<Record<string, KeyStatus>>()
+  useEffect(() => {
+    let alive = true
+    setSaved(undefined)
+    void window.desktop
+      .workspace()
+      .then((state) => alive && setSaved(state.prefs.searchSources?.[kind]))
+      .catch(() => {})
+    void window.explorer
+      .request({ action: 'keyStatus' })
+      .then((result) => alive && setSearchKeys(result.keys ?? {}))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [kind])
+  const needsKey = (id: string) =>
+      (id === 'tmdb' || id === 'fanza') && !!searchKeys && !searchKeys[id]?.set,
+    chosen = (saved ?? defaultSearchSources(kind)).filter((id) => !needsKey(id)),
+    keyless = searchableSources.filter(needsKey)
+  const chooseSources = (value: string[]) => {
+    const next = value.filter(isSearchSource)
+    setSaved(next)
+    void window.desktop
+      .updateWorkspace({ action: 'searchSources', kind, value: next })
+      .catch((error) =>
+        setError(errorMessage(error instanceof Error ? error.message : String(error)))
+      )
+  }
   const search = async () => {
     setError('')
     setSearching(true)
     try {
-      const result = await window.explorer.request({ action: 'metadataSearch', query })
+      const result = await window.explorer.request({
+        action: 'metadataSearch',
+        query,
+        sources: chosen,
+      })
       setFound({ list: result.candidates ?? [], failed: result.failedSources ?? [] })
     } catch (error) {
       setError(errorMessage(error instanceof Error ? error.message : String(error)))
@@ -184,7 +240,8 @@ export function FolderSourceImport({
             className="source-search"
             onSubmit={(event) => {
               event.preventDefault()
-              if (query.trim() && !searching && !disabled && !fieldDirty) void search()
+              if (query.trim() && chosen.length && !searching && !disabled && !fieldDirty)
+                void search()
             }}
           >
             <TextInput
@@ -195,7 +252,7 @@ export function FolderSourceImport({
                 <HelpLabel
                   label={tr('用名稱搜尋')}
                   help={tr(
-                    '用資料夾名稱（可修改）搜尋 VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite 與 nhentai；設定了金鑰時也搜尋 TMDB 與 FANZA。成人作品會標示「成人」。從候選中選一個再預覽，不會自動配對。'
+                    '用資料夾名稱（可修改）搜尋下方勾選的來源（VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai；設定了金鑰時還有 TMDB 與 FANZA）。成人作品會標示「成人」。從候選中選一個再預覽，不會自動配對。'
                   )}
                 />
               }
@@ -207,12 +264,48 @@ export function FolderSourceImport({
                   type="submit"
                   size="compact-xs"
                   loading={searching}
-                  disabled={disabled || fieldDirty || busy || !query.trim()}
+                  disabled={disabled || fieldDirty || busy || !query.trim() || !chosen.length}
                 >
                   {tr('搜尋')}
                 </Button>
               }
             />
+            <MultiSelect
+              mt="xs"
+              size="xs"
+              disabled={busy}
+              label={tr('搜尋的來源')}
+              aria-label={tr('搜尋的來源')}
+              description={tr('依資料夾類型記住你的選擇；沒選過時用該類型的預設。')}
+              data={searchableSources.map((id) => ({
+                value: id,
+                label: needsKey(id) ? tr('{0}（需要金鑰）', sourceName(id)) : sourceName(id),
+                disabled: needsKey(id),
+              }))}
+              value={chosen}
+              onChange={chooseSources}
+              error={chosen.length ? undefined : tr('請至少選一個來源')}
+            />
+            {keyless.length > 0 && (
+              <Group gap={4} mt={4}>
+                <Text size="xs" c="dimmed">
+                  {tr('{0} 需要你自己的金鑰才能搜尋。', keyless.map(sourceName).join('、'))}
+                </Text>
+                <Button
+                  size="compact-xs"
+                  variant="subtle"
+                  onClick={() =>
+                    window.dispatchEvent(
+                      new CustomEvent('morph:open-settings', {
+                        detail: { tab: 'keys', site: keyless[0] },
+                      })
+                    )
+                  }
+                >
+                  {tr('設定金鑰')}
+                </Button>
+              </Group>
+            )}
           </form>
           {found && (
             <div className="source-candidates">

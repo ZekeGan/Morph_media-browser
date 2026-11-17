@@ -55,10 +55,9 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 - 刪除已保存圖片（`deleteImage`）：同一次原子寫入（含版本檢查）移除 `assets` 項目並清掉 `cellImages`／`bannerAssetId` 對它的引用；寫入成功後才刪除 `.media-viewer/assets/` 內的受管檔案（需通過 `safePath`、必須是一般檔案、且無其他項目共用同一路徑）。寫入失敗則檔案與記錄都保留；使用者原始媒體檔不會被觸碰。刪除後不保留副本，但 `.bak` 仍含舊記錄，不會復活檔案。
 - `kind`：使用者手動指定的資料夾類型（`game`、`book`、`music`、`video`、`general`）；沒有時由程式偵測，不寫入記錄（規則見 [UI_RULES](UI_RULES.md) 的資料夾類型）。v1 的 `media`（影音合一）在升級到 v2 時移除。
 - `reading`、`playback`、`subtitles`：漫畫閱讀偏好、影片續播進度與字幕設定。`reading` 的 `webtoon`、`webtoonWidth`（10～100）、`webtoonAsked`（R-256）記條漫模式、寬度與是否已回答過條漫提示。舊記錄的 `reading.mode`（`image`／`manga`）不再寫入也不再讀（R-411），舊值留著不動。
+- `subtitleTrack`（R-432，**暫定**，選用，不升 `schemaVersion`）：資料夾裡最後一次手選的內嵌字幕軌 `{ name?, language? }`，`name` 最多 200 字、`language` 最多 35 字（軌的名稱與語言碼），至少有一項、不得為空字串、不得有其他欄位；同資料夾的其他影片打開時先選同名的軌、沒有再選同語言的軌。每個檔案自己保存的字幕選擇（`playback`）優先，不被它覆蓋。
 - `novels`（R-282）：文字書的閱讀位置，以檔名為鍵 `{ chapter, position, percent, updated, bookmarks? }`；`position`、`percent` 是 0～1 的比例，書籤最多 500 個。
 - `volumes`（R-407，**暫定**，選用，不升 `schemaVersion`）：資料夾內漫畫壓縮檔（CBZ、CBR、CB7）各自讀到的頁，以檔名為鍵 `{ page, total, updated }`；`page` 從 0 起算且小於 `total`，`total` 是當時的頁數，`updated` 是 ISO 時間。單雙頁、方向、條漫等閱讀設定整個資料夾共用，仍存在 `reading`，不另存每卷設定。
-
-- `episodes`（R-423，**暫定**，選用，不升 `schemaVersion`）：影片檔各自的集數，以檔案 id（檔名的 SHA-256）為鍵 `{ season?, episode, title? }`；`season` 0～999、`episode` 0～9999 的整數，`title` 1～300 字，最多 10000 筆，不接受其他欄位。只在使用者按「依集數清單標上集名」時，依已匯入的 `tmdb-episodes` 清單（R-419）與檔名比對結果整批寫入（含版本檢查），「清除集名」整欄移除；檔案改名後舊鍵不再對應，無害。
 
 ### 範例（簡化）
 

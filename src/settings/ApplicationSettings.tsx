@@ -23,6 +23,7 @@ import { t as tr, useLocale } from '../i18n'
 import { SourceLanguageSetting } from './SourceLanguageSetting'
 import { LocaleEmulatorSetting } from '../game/LocaleEmulatorSetting'
 import { FlashPlayerSetting } from '../game/FlashPlayerSetting'
+import { VideoPlayerSetting } from '../video/VideoPlayerSetting'
 import { SiteKeys } from './SiteKeys'
 import { HelpLabel, HelpTip } from '../common/HelpTip'
 import { useEffect, useState } from 'react'
@@ -267,6 +268,7 @@ export function ApplicationSettings({
             <SourceLanguageSetting opened={opened} locale={appearance.savedLocale} />
             <LocaleEmulatorSetting opened={opened} />
             <FlashPlayerSetting opened={opened} />
+            <VideoPlayerSetting opened={opened} />
           </Stack>
         </Tabs.Panel>
         <Tabs.Panel value="data" pt="lg">

@@ -5,7 +5,7 @@ import { isGameFolder } from '../../shared/media'
 import { FolderDetails, SubfolderList } from './FolderParts'
 
 // R-389: every folder page in the right panel is the same skeleton of blocks, always in this order:
-//   details › subfolders › main visual › sort/filter/view controls › the kind's own actions › content list.
+//   details › subfolders › main visual › sort/filter/view controls › the kind's own actions › book list › content list.
 // A page only says which blocks it shows (the table below) and what fills them (the props of FolderPage), so a
 // kind's defaults change here and in its fill-ins, without another code path.
 export type FolderPageKind = 'game' | 'book' | 'media' | 'music'
@@ -22,7 +22,7 @@ export interface FolderPageSpec {
   notice: 'top' | 'list'
   // Viewers that open over the page are kept at its start or its end.
   overlay: 'first' | 'last'
-  // Whether the page may show something under the details (R-407: the book page lists its book files there, under the folder's details).
+  // Whether the page lists its book files (R-407), right under its actions like every page's content (R-429).
   lead: boolean
 }
 export const folderPages: Record<FolderPageKind, FolderPageSpec> = {
@@ -123,13 +123,13 @@ export function FolderPage({
       {spec.overlay === 'first' && overlay}
       {spec.notice === 'top' && notice}
       <FolderDetails row={row} project={project} openFolder={openFolder} all={spec.allFields} />
-      {spec.lead && lead}
       {spec.subfolders && folders && onChild && (
         <SubfolderList folders={folders} childNames={childNames} busy={busy} onChild={onChild} />
       )}
       {spec.visual && visual}
       {spec.controls && controls}
       {spec.actions && actions}
+      {spec.lead && lead}
       {spec.notice === 'list' && notice}
       {list}
       {spec.overlay === 'last' && overlay}

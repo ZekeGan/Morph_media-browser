@@ -1,4 +1,3 @@
-import { EPISODE_TITLE_MAX } from './episodes'
 import { documentFile, type FolderDetails } from './explorer'
 import { GROW_KINDS, MAX_GROW_ROWS } from './cardGrid'
 import { imageTypes } from './images'
@@ -365,18 +364,6 @@ function validPlaybackEntry([k, p]: [string, unknown]): boolean {
   )
 }
 
-// R-423 (tentative): { season?, episode, title? } of one video file, by file id.
-function validEpisodeEntry([k, e]: [string, unknown]): boolean {
-  return (
-    id(k) &&
-    obj(e) &&
-    Object.keys(e).every((key) => ['season', 'episode', 'title'].includes(key)) &&
-    integer(e.episode, 0, 9999) &&
-    (e.season === undefined || integer(e.season, 0, 999)) &&
-    (e.title === undefined || (text(e.title, EPISODE_TITLE_MAX) && e.title.length > 0))
-  )
-}
-
 export function validateFolder(v: unknown): asserts v is FolderRecord {
   checkNotNewer('folder', v)
   if (
@@ -478,13 +465,6 @@ export function validateDetails(v: unknown): asserts v is FolderDetails {
   )
     throw new Error('存檔資料夾設定不合法')
   if (
-    v.episodes !== undefined &&
-    (!obj(v.episodes) ||
-      Object.keys(v.episodes).length > 10000 ||
-      !Object.entries(v.episodes).every(validEpisodeEntry))
-  )
-    throw new Error('集數記錄不合法')
-  if (
     v.subtitles &&
     (!Array.isArray(v.subtitles) ||
       !v.subtitles.every(
@@ -504,6 +484,18 @@ export function validateDetails(v: unknown): asserts v is FolderDetails {
       !Object.entries(v.playback).every(validPlaybackEntry))
   )
     throw new Error('播放設定不合法')
+  // R-432: the remembered embedded subtitle track: a name and/or a language, as short text.
+  if (
+    v.subtitleTrack !== undefined &&
+    (!obj(v.subtitleTrack) ||
+      Object.keys(v.subtitleTrack).some((k) => !['name', 'language'].includes(k)) ||
+      (v.subtitleTrack.name === undefined && v.subtitleTrack.language === undefined) ||
+      (v.subtitleTrack.name !== undefined &&
+        (!text(v.subtitleTrack.name, 200) || !v.subtitleTrack.name)) ||
+      (v.subtitleTrack.language !== undefined &&
+        (!text(v.subtitleTrack.language, 35) || !v.subtitleTrack.language)))
+  )
+    throw new Error('字幕軌偏好不合法')
 }
 export function validateProject(v: unknown): asserts v is Project {
   checkNotNewer('project', v)

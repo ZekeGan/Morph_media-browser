@@ -6,6 +6,8 @@
 import { localeProfileId, type Request } from '../shared/model'
 import type { ExplorerRequest } from '../shared/explorer'
 import type { WorkspaceCommand } from '../shared/workspace'
+import { folderKinds } from '../shared/kind'
+import { isSearchSource, searchableSources } from '../shared/sources'
 
 type Check = (v: unknown) => boolean
 type Shape = Record<string, Check>
@@ -127,7 +129,6 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
     subtitle: opt(text),
     settings: opt(object),
   },
-  episodes: { ...revisionRow, episodes: nullable(record(object, 10_000)) },
   boundary: {
     ...revisionRow,
     state: oneOf('root', 'not-game', 'candidate'),
@@ -153,6 +154,9 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
   addSuggestion: { ...revisionRow, name: text },
   chooseLocaleEmulator: { clear: opt(bool) },
   chooseFlashPlayer: { clear: opt(bool) },
+  chooseVideoPlayer: { clear: opt(bool) },
+  openExternalPlayer: { rowId: ref, fileId: ref, time: opt(num) },
+  subtitleTrack: { ...revisionRow, name: opt(text), language: opt(text) },
   removeSource: { ...revisionRow, provider: ref },
   browseAs: { ...revisionRow, value: (v) => v === null || v === 'work' || v === 'collection' },
   targetLocale: {
@@ -182,7 +186,7 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
   imageUrlPreview: { url: text },
   imageUrlApply: { ...revisionRow, token: ref, cover: bool },
   metadataPreview: { source: text, provider: opt(ref) },
-  metadataSearch: { query: text },
+  metadataSearch: { query: text, sources: opt(list(isSearchSource, searchableSources.length)) },
   metadataApply: {
     ...revisionRow,
     token: ref,
@@ -205,6 +209,10 @@ const workspace: Record<WorkspaceCommand['action'], Shape> = {
   fileVisibility: { value: object },
   appearance: { theme: ref, locale: ref },
   sourceLanguages: { value: list(ref, 10) },
+  searchSources: {
+    kind: oneOf(...folderKinds),
+    value: list(isSearchSource, searchableSources.length),
+  },
   createGroup: { name: text },
   renameGroup: { id: ref, name: text },
   removeGroup: { id: ref },

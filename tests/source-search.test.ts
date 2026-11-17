@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { metadata } from '../electron/metadata'
 import { searchSources, SEARCH_QUERY_MAX, SEARCH_RESULTS_MAX } from '../electron/sources/search'
-import { sourceForUrl } from '../shared/sources'
+import { defaultSearchSources, searchableSources, sourceForUrl } from '../shared/sources'
 import { isExplorerRequest } from '../electron/ipc-requests'
 import { tinyPng } from './support/archive-fixture'
 
@@ -310,4 +310,47 @@ test('R-418: a Wikidata item gives label and description in the preferred langua
     metadata('https://www.wikidata.org/wiki/Q9', (async () =>
       json({ entities: {} })) as typeof fetch)
   )
+})
+
+test('R-424: only the chosen sources are asked; an empty choice is rejected; a key-less TMDB or FANZA is still skipped', async () => {
+  const hosts = (seen: { url: string }[]) => seen.map((r) => new URL(r.url).hostname).sort()
+  const seen: { url: string; body: any }[] = []
+  const some = await searchSources('Ever17', searchFetcher(seen), ['ja'], {
+    sources: ['vndb', 'steam'],
+  })
+  assert.deepEqual(hosts(seen), ['api.vndb.org', 'store.steampowered.com'])
+  assert.deepEqual([...new Set(some.candidates.map((c) => c.provider))].sort(), ['steam', 'vndb'])
+  const keyless: { url: string; body: any }[] = []
+  await searchSources('Ever17', searchFetcher(keyless), ['ja'], {
+    sources: ['vndb', 'tmdb', 'fanza'],
+    keyFor: async () => undefined,
+  })
+  assert.deepEqual(hosts(keyless), ['api.vndb.org'])
+  const keyed: { url: string; body: any }[] = []
+  await searchSources('Ever17', searchFetcher(keyed), ['ja'], {
+    sources: ['tmdb', 'fanza'],
+    keyFor: async () => ({ token: 't', apiId: 'a', affiliateId: 'b' }),
+  })
+  assert.deepEqual(hosts(keyed), ['api.dmm.com', 'api.themoviedb.org'])
+  const none: { url: string; body: any }[] = []
+  await assert.rejects(searchSources('Ever17', searchFetcher(none), ['ja'], { sources: [] }))
+  assert.equal(none.length, 0)
+})
+
+test('R-424: the search request accepts only known source ids', () => {
+  const base = { action: 'metadataSearch', query: 'Ever17' }
+  assert.equal(isExplorerRequest({ ...base, sources: ['vndb', 'dlsite'] }), true)
+  assert.equal(isExplorerRequest({ ...base, sources: [] }), true)
+  assert.equal(isExplorerRequest({ ...base, sources: ['vndb', 'nope'] }), false)
+  assert.equal(isExplorerRequest({ ...base, sources: ['eh'] }), false)
+  assert.equal(isExplorerRequest({ ...base, sources: 'vndb' }), false)
+  assert.equal(isExplorerRequest({ ...base, sources: new Array(10).fill('vndb') }), false)
+})
+
+test('R-424: the default ticks follow the folder kind', () => {
+  assert.deepEqual(defaultSearchSources('game'), ['vndb', 'steam', 'dlsite'])
+  assert.deepEqual(defaultSearchSources('video'), ['tmdb', 'anilist'])
+  assert.deepEqual(defaultSearchSources('music'), ['musicbrainz'])
+  assert.deepEqual(defaultSearchSources('book'), ['anilist', 'bangumi', 'nhentai', 'dlsite'])
+  assert.deepEqual(defaultSearchSources('general'), [...searchableSources])
 })

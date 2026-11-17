@@ -1,7 +1,5 @@
 import { t as tr, useLocale } from '../i18n'
 import { useState } from 'react'
-import { cardPresets, cardRule } from '../../shared/layouts'
-import { folderKinds } from '../../shared/kind'
 import { Alert, Button, Checkbox, Group, Stack, Tabs, Text, TextInput } from '@mantine/core'
 import type {
   Project,
@@ -73,36 +71,6 @@ export function ProjectSettings({
                 maxLength={100}
                 onChange={(event) => change({ ...project, name: event.currentTarget.value })}
               />
-            </section>
-            <section className="settings-section">
-              <Text fw={600}>{tr('各類型的預設版面')}</Text>
-              {/* R-413: layouts are chosen in the layout setup window; here they are only listed. */}
-              <Text size="xs" c="dimmed">
-                {tr('在瀏覽工具列的「版面配置」修改。')}
-              </Text>
-              {folderKinds.map((kind) => {
-                const id = cardRule(project)?.types?.[kind],
-                  preset = cardPresets(project).find((p) => p.id === id)
-                return (
-                  <Text key={kind} size="sm" mt={4}>
-                    {
-                      {
-                        game: tr('遊戲'),
-                        book: tr('書籍／漫畫'),
-                        music: tr('音樂'),
-                        video: tr('影片'),
-                        general: tr('一般'),
-                      }[kind]
-                    }
-                    {'：'}
-                    {!preset
-                      ? tr('沿用預設')
-                      : preset.id === 'default' && preset.name === '預設版面'
-                        ? tr('預設版面')
-                        : preset.name}
-                  </Text>
-                )
-              })}
             </section>
             <div>
               <Text size="xs" c="dimmed">

@@ -16,7 +16,7 @@
 - 標籤是 `命名空間:名稱`。除完整的 `TAGS` 外，每個命名空間另成一個標籤欄位（`LANGUAGE`、`PARODY`、`CHARACTER`、`ARTIST`、`GROUP`、`COSPLAYER`、`FEMALE`、`MALE`、`MIXED`、`OTHER`、`RECLASS`），值不含命名空間前綴；沒有該命名空間的標籤就不產生欄位。未知命名空間只留在 `TAGS`。
 - 取得範圍與公開頁面相同（公開 API；未登入、不讀網頁），登入後才看得到的標籤不會取得。
 
-- **用名稱搜尋**（R-418）：資料夾設定的「從網站補充資訊」上方有搜尋框，預設填入資料夾名稱（可改，上限 200 字）。按搜尋後 main 同時向 VNDB（`kana/vn`）、MusicBrainz（`release-group`）、AniList（GraphQL，含成人作品並依 `isAdult` 標示）、Bangumi（`v0/search/subjects`；有 Bangumi 個人權杖才含 NSFW 並依 `nsfw` 標示，沒有就排除）、Steam 商店搜尋（`api/storesearch`，`l`、`cc` 跟第一個偏好語言）、DLsite（`product.json?keyword=`，無排名、約取最新 50 筆符合者，標題含關鍵字的排前面；店別取自紀錄的 `site_id` 且須是 DLsite 轉接器接受的店，成人分級 `age_category` 3 標示成人）、nhentai（`api/v2/search`，舊的 `api/galleries/search` 回 403，全部標示成人）各要最多 10 筆，每家 15 秒逾時、一家失敗只在候選上方提示「○○ 搜尋失敗」。候選顯示標題（依偏好語言）、年份或藝人與來源；位址由檢查過的 ID 組成，選一個就等於貼上它的網址並走一般預覽，不自動配對。成人向來源列入搜尋（C-143），已知是成人的候選在清單上標「成人」（`MetadataCandidate.adult`）；VNDB 沒有便宜的作品成人旗標，不標示。使用者設定了 TMDB 金鑰時多問 TMDB（`search/multi`，只收電影與影集，`language` 依第一個偏好語言，金鑰與來源轉接器一樣只在 main 讀取），設定了 FANZA 金鑰（API ID 與 Affiliate ID）時多問 FANZA（DMM `ItemList` 的 `keyword`，全部標示成人，位址由 `cid` 組成）；沒有金鑰就不問也不提示失敗（R-419）。搜尋框說明列出這些來源。遊戲設定的「存檔資料夾」下，若資料夾記錄有匯入的引擎欄位（如 VNDB 的 ENGINE），並列「來源：○○｜本機：○○」，名稱在忽略大小寫、空白與標點後不同時加一句提示（R-418）。請求 `metadataSearch` 不經資料庫鎖，只問網站（electron/sources/search.ts）。
+- **用名稱搜尋**（R-418）：資料夾設定的「從網站補充資訊」上方有搜尋框，預設填入資料夾名稱（可改，上限 200 字）。按搜尋後 main 同時向 VNDB（`kana/vn`）、MusicBrainz（`release-group`）、AniList（GraphQL，含成人作品並依 `isAdult` 標示）、Bangumi（`v0/search/subjects`；有 Bangumi 個人權杖才含 NSFW 並依 `nsfw` 標示，沒有就排除）、Steam 商店搜尋（`api/storesearch`，`l`、`cc` 跟第一個偏好語言）、DLsite（`product.json?keyword=`，無排名、約取最新 50 筆符合者，標題含關鍵字的排前面；店別取自紀錄的 `site_id` 且須是 DLsite 轉接器接受的店，成人分級 `age_category` 3 標示成人）、nhentai（`api/v2/search`，舊的 `api/galleries/search` 回 403，全部標示成人）各要最多 10 筆，每家 15 秒逾時、一家失敗只在候選上方提示「○○ 搜尋失敗」。候選顯示標題（依偏好語言）、年份或藝人與來源；位址由檢查過的 ID 組成，選一個就等於貼上它的網址並走一般預覽，不自動配對。成人向來源列入搜尋（C-143），已知是成人的候選在清單上標「成人」（`MetadataCandidate.adult`）；VNDB 沒有便宜的作品成人旗標，不標示。使用者設定了 TMDB 金鑰時多問 TMDB（`search/multi`，只收電影與影集，`language` 依第一個偏好語言，金鑰與來源轉接器一樣只在 main 讀取），設定了 FANZA 金鑰（API ID 與 Affiliate ID）時多問 FANZA（DMM `ItemList` 的 `keyword`，全部標示成人，位址由 `cid` 組成）；沒有金鑰就不問也不提示失敗（R-419）。搜尋框說明列出這些來源。搜尋框下方的「搜尋的來源」多選決定要問哪些來源（R-424）：請求 `metadataSearch` 可帶 `sources`（已知搜尋來源 ID 的清單，最多 9 個，IPC 檢查；未知 ID 整個請求被拒）；`searchSources` 只問清單內的來源，沒帶就問全部，清單是空的就丟錯（不當成全部，避免呼叫端的疏忽變成全搜）。沒金鑰的 TMDB 與 FANZA 即使被選也照舊略過；畫面上它們顯示為停用並提示「需要金鑰」，附前往金鑰設定的按鈕。勾選依資料夾類型記在本機工作區偏好 `searchSources`（`{ game?, book?, music?, video?, general? }`，每個值是來源 ID 清單，不寫進專案或資料夾記錄、不隨設定包匯出）；某類型從沒選過時用預設勾選：遊戲 VNDB、Steam、DLsite；書籍 AniList、Bangumi、nhentai、DLsite；音樂 MusicBrainz；影片 TMDB、AniList；一般全部；使用者改過就記住該類型的選擇。成人向來源可以取消勾選。遊戲設定的「存檔資料夾」下，若資料夾記錄有匯入的引擎欄位（如 VNDB 的 ENGINE），並列「來源：○○｜本機：○○」，名稱在忽略大小寫、空白與標點後不同時加一句提示（R-418）。請求 `metadataSearch` 不經資料庫鎖，只問網站（electron/sources/search.ts）。
 - **只貼網址**：資料夾設定的「資料」分頁上方的「從網站補充資訊」不再先選來源；由網址網域自動辨識（純數字視為 Steam App ID），辨識成功時輸入框右側顯示站名（商店網址顯示「經 VNDB」），才可按「取得預覽」；未知網址就地顯示錯誤。說明提示只有一句與範例，支援的網站依種類列在可展開的「支援的網站」裡（R-329）。不依分類限制來源。
 
 ## Steam
@@ -76,32 +76,6 @@ itch.io 的官方 API 只能查自己的作品，改讀每個作品頁旁公開�
 
 金鑰類來源在使用者填入金鑰前只用固定回應測試（`tests/keys.test.ts`），尚未實站驗證。
 
-### 查證過、不接入的金鑰來源
-
-- **Spotify**：2026-02 起開發模式只允許 5 個指定使用者，延伸額度限有登記的公司與每月 25 萬活躍使用者；個人桌面程式用不了，不接入（音樂已有 MusicBrainz、Apple Music、Deezer、Last.fm、Discogs）。
-- **Gelbooru**：實際需要帳號 ID＋金鑰（不帶時嚴格限流）；用途與免金鑰的 Danbooru 重疊，使用者決定不接入（2026-11-12）。
-- **DeviantArt**：公開資料走 OAuth client credentials；另有免金鑰的 oEmbed，但只拿得到標題、作者、縮圖；使用者決定不接入（2026-11-12）。
-- **MobyGames**：非營利用途可免費申請金鑰（約每小時 720 次）；遊戲已有 Steam、VNDB、DLsite，依 R-321 不接入。
-
-接入規則（[C-134](DECISIONS.md#c-134網站來源改為可用使用者金鑰與有條件解析網頁2026-11-12)）：
-
-- **使用者自備金鑰**：需要 API 憑證的網站只在使用者於應用程式設定填入自己的金鑰後啟用；金鑰只存本機並加密、只有 main 讀取，不寫進可攜記錄或專案。不內建任何金鑰；沒填金鑰時就地提示並連到設定。
-- **網頁解析**：沒有 API 的網站可讀商品頁 HTML，只在使用者按下時請求一次；不執行遠端 JS、不開隱藏瀏覽器視窗；依序讀 JSON-LD、內嵌資料、OpenGraph，最後才用選擇器；依網頁宣告的編碼解碼。遵守 robots.txt 與網站條款，不繞過機器人防護。
-- **年齡確認**：只有使用者對該網站明確勾選「我已成年」後才帶年齡確認 Cookie；不收集或保存登入 Cookie。
-
-ExHentai、Hitomi、Pixiv、DLsite 可能因登入、站方限制或公開回應變更而失敗；失敗保留原資料並顯示原因。公開端點不等於官方提供長期相容承諾，Hitomi、Pixiv、DLsite 的內部端點尤其如此。
-
-失敗原因分四種，各是一句固定訊息（五種語系）：
-
-| 類型 | 判定 | 使用者看到 |
-| --- | --- | --- |
-| 連不上 | 網域解析失敗、連線被拒、逾時、重新導向、HTTP 5xx／429 等 | 無法連線到來源網站；網站可能暫時無法使用或已更換網址 |
-| 找不到作品 | HTTP 404／410，或回應裡沒有這個 ID（含身分不符） | 來源找不到這個作品；請確認網址或 ID 是否正確 |
-| 需要權限 | HTTP 401／403，或來源明確回報需要登入（Pixiv `error`） | 來源需要金鑰、登入或成人內容權限才能取得這個作品 |
-| 格式變更 | 回應不是預期的 JSON／galleryinfo，或缺少標題 | 來源資料格式已變更，無法解析；未執行遠端程式 |
-
-Hitomi 的作品資料主機是 `ltn.gold-usergeneratedcontent.net`（2026-11 起取代已沒有 DNS 記錄的 `ltn.hitomi.la`）；這個主機名稱可能再換，Hitomi 出現「連不上」時先查主機是否搬家。
-
 ## 來源圖片清單（R-422）
 
 VNDB、Steam 的截圖（`SCREENSHOTS`，各最多 12 張）與 SteamGridDB 的橫幅、標誌、圖示（`HERO_URL`、`LOGO_URL`、`ICON_URL`，各 1 張）可選匯入為資料夾的圖片；封面匯入照舊。
@@ -127,21 +101,4 @@ VNDB、Steam 的截圖（`SCREENSHOTS`，各最多 12 張）與 SteamGridDB 的�
 - 再次匯入預設填空、預覽目前值並明確覆寫來源欄位，保護手填值；完整跨來源欄位映射、原始回應封存及批次匯入不在範圍內。
 - 只有來源及使用方式明確可用時保存圖片；不能假設所有網站提供同樣 API、欄位或授權。來源 adapter 彼此隔離，不為加一站重寫整個資料模型。
 
-## 未接入的來源
-
-新增網站前先驗證官方能力、條款與限流。需要年齡確認或沒有 API 的商店（Getchu、批評空間、Melonbooks、虎之穴）不解析網頁，遊戲改經 VNDB（R-293）；只在這些商店賣的同人誌不接入。以下網站不接入：
-
-| 網站 | 原因 |
-| --- | --- |
-| IMDb | 沒有公開 API、條款禁止抓取；改用 TMDB |
-| Twitter／X | API 需付費 |
-| Fanbox、Fantia | 只能用登入 Cookie 取得 |
-| AO3 | 對程式請求一律回 418「暫時拒絕」（2026-11-12 實測），屬擋機器人保護，不繞過 |
-| VGMdb | 回 Cloudflare 驗證頁（2026-11-12 實測），不繞過 |
-| nhentai.io | 與 nhentai.net 無關的轉貼鏡像站，2022-07 後停止更新；WordPress 公開介面讀得到，但標籤混入網站自己的推廣字、沒有原作品編號與日文標題（2026-11-13 實測）。貼它的網址照一般網頁讀；要完整資料改貼原站 |
-
-沿用精確作品網址 → 預覽 → 確認套用；同人動畫可優先查原販售頁，一般動畫／漫畫搭配作品資料庫。保留來源命名空間，區分原版／漢化版、單行本／單話及本體／DLC；不依同名自動合併、覆寫人工資料或下載作品內容。
-
-首次發行日、平台／版本日期與購買日分開。批次／CSV 對照、名稱候選人工審核、galleryinfo.txt／本地線索擷取是候選，尚未自動納入現行流程。批次若選入需可暫停、分別報成功／模糊／失敗，不能繞過寫入安全。
-
-原 Steam／IGDB／E-Hentai 研究、SourceRecord 提案與完整例子見 [原稿](history/agent-docs-before-cleanup.md#metadata-enrichment)，不是現行能力或每輪必讀。新增來源前再驗證官方能力與要求，不依賴歷史研究推斷現況。
+查證過但不接入的來源與理由見 [查證過、未接入的外部來源](METADATA_DECLINED.md)。

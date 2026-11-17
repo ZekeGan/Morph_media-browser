@@ -46,6 +46,7 @@ import type {
   BrowseState,
   ExplorerRequest,
   ExplorerResponse,
+  ReadingPrefs,
 } from '../../shared/explorer'
 const FolderPanel = lazy(() =>
   import('../panel/FolderPanel').then((m) => ({ default: m.FolderPanel }))
@@ -116,7 +117,11 @@ function BrowseWorkspaceBody({
     [layoutsOpen, setLayoutsOpen] = useState(false)
 
   const [browse, setBrowse] = useState(initial),
-    [readNext, setReadNext] = useState<{ id: string; immersive: boolean }>(),
+    [readNext, setReadNext] = useState<{
+      id: string
+      immersive: boolean
+      settings?: ReadingPrefs
+    }>(),
     [ready, setReady] = useState(false),
     [page, setPage] = useState(1)
   const [sort, setSort] = useState({ field: 'name', asc: true }),
@@ -357,14 +362,15 @@ function BrowseWorkspaceBody({
         : undefined
   // The folder to open straight into reading is only good for the switch it was asked for.
   useEffect(() => setReadNext(undefined), [detail?.rowId])
+  // Returns false when the switch was not started (nothing to wait for).
   const previewDetail = (id: string) => {
     const target = all.find((r) => r.rowId === id)
-    if (!ready || !target || id === state.current.detailId) return
+    if (!ready || !target || id === state.current.detailId) return false
     // A folder that can be visited as-is is shown at once; the visit (which refreshes its record) runs behind it.
     // Anything that might be refused (no record, protected, broken) still waits for the answer.
     const healthy = !!target.record && !target.error && !target.stopped && !target.readonly
-    if (!healthy && busy) return
-    if (draftBlocks(id, false)) return
+    if (!healthy && busy) return false
+    if (draftBlocks(id, false)) return false
     const operation = ++navigation.current
     const task = (async () => {
       if (healthy) {
@@ -404,6 +410,7 @@ function BrowseWorkspaceBody({
     void task.finally(() => {
       if (previewing.current === task) previewing.current = undefined
     })
+    return true
   }
   // The panel always shows what is selected; when it is hidden nothing loads until it is opened.
   useEffect(() => {
@@ -987,13 +994,11 @@ function BrowseWorkspaceBody({
         nextBook={
           nextBook && {
             name: nextBook.name,
-            open: (immersive: boolean) => {
-              setReadNext({ id: nextBook.rowId, immersive })
-              previewDetail(nextBook.rowId)
-              setTimeout(
-                () => setReadNext((value) => (value?.id === nextBook.rowId ? undefined : value)),
-                5000
-              )
+            open: (immersive: boolean, settings?: ReadingPrefs) => {
+              // R-430: no fixed time limit. The request stays until the next folder's panel has taken it (it opens
+              // reading when its pictures are listed), and is dropped when the switch is refused or the user goes elsewhere.
+              if (previewDetail(nextBook.rowId))
+                setReadNext({ id: nextBook.rowId, immersive, settings })
             },
           }
         }

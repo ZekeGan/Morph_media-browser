@@ -86,6 +86,9 @@ export function NovelReader({
     [settings, setSettingsState] = useState(loadSettings),
     saved = row.record?.details?.novels?.[file.name],
     [chapter, setChapter] = useState(saved?.chapter ?? 0),
+    // R-427: scroll mode lays out this many chapters before and after the current one; more while the neighbours
+    // are too short to fill the window (see fillWindow).
+    [reach, setReach] = useState({ before: 1, after: 1 }),
     [position, setPosition] = useState(saved?.position ?? 0),
     [bookmarks, setBookmarks] = useState(saved?.bookmarks ?? []),
     [panel, setPanel] = useState<'toc' | 'marks' | 'search'>(),
@@ -276,20 +279,46 @@ export function NovelReader({
     vertical,
     paged,
     box,
+    reach,
     settings.size,
     settings.lineHeight,
     settings.margin,
     settings.chars,
     settings.font,
   ])
+  // R-427: chapters shorter than the window left nothing to scroll (the laid-out neighbours ended above the bottom), so
+  // the wheel did nothing and the reading never crossed into the next chapter. Chapters are added on each side until
+  // there is about a window of text beyond the view, and taken away again when there is plenty more.
+  const fillWindow = () => {
+    if (!book || paged) return
+    const { at, max } = extent(),
+      view = viewSize(),
+      size = (index: number) => sectionBox(index)?.size ?? 0
+    let { before, after } = reach
+    const last = book.chapters.length - 1
+    if (chapter + after < last && max - at < view * 1.5) after++
+    else if (after > 1 && max - at - size(chapter + after) >= view * 2) after--
+    if (chapter - before > 0 && at < view * 1.5) before++
+    else if (before > 1 && at - size(chapter - before) >= view * 2) before--
+    if (before === reach.before && after === reach.after) return
+    const own = sectionBox(chapter)
+    if (!own) return
+    // The view stays where it was in the current chapter while the text around it changes.
+    anchor.current = at - own.start
+    glideRest.current = glide.current ? glide.current.target - at : undefined
+    setReach({ before, after })
+  }
   const track = () => {
     if (!scroller.current) return
     const { at, max } = extent()
     if (paged) return setPosition(max > 0 ? Math.min(1, Math.max(0, at / max)) : 0)
     const view = viewSize(),
       line = at + view * 0.1,
-      shown = [chapter - 1, chapter + 1].find((index) => {
-        const box = sectionBox(index)
+      shown = Array.from(
+        { length: reach.before + reach.after + 1 },
+        (_, k) => chapter - reach.before + k
+      ).find((index) => {
+        const box = index !== chapter && sectionBox(index)
         return box && line >= box.start && line < box.start + box.size
       })
     if (shown !== undefined) {
@@ -301,6 +330,7 @@ export function NovelReader({
     }
     const box = sectionBox(chapter)
     if (!box) return
+    fillWindow()
     const span = box.size - view
     setPosition(
       span > 0 ? Math.min(1, Math.max(0, (at - box.start) / span)) : at >= box.start ? 1 : 0
@@ -1037,7 +1067,13 @@ export function NovelReader({
               <p className="novel-message">{tr('載入內容…')}</p>
             ) : (
               <div className={'novel-content novel-font-' + settings.font} style={contentStyle}>
-                {(paged ? [chapter] : [chapter - 1, chapter, chapter + 1])
+                {(paged
+                  ? [chapter]
+                  : Array.from(
+                      { length: reach.before + reach.after + 1 },
+                      (_, k) => chapter - reach.before + k
+                    )
+                )
                   .filter((index) => index >= 0 && index < book.chapters.length)
                   .map((index) => {
                     const part = book.chapters[index]
@@ -1079,6 +1115,11 @@ export function NovelReader({
                     className="novel-end-page"
                     style={{
                       blockSize: Math.max(1, (vertical ? box.width : box.height) - 2 * edge),
+                      // R-428: the last column has no padding after it, so the scroll range ended a padding short of
+                      // a whole page and the end page stood off centre. Extending the page by that padding
+                      // (and keeping the card in the column) lets the view stop exactly on it.
+                      marginInlineEnd: -inlinePad,
+                      paddingInlineEnd: inlinePad,
                     }}
                   >
                     {chapter < book.chapters.length - 1 ? (
@@ -1113,7 +1154,7 @@ export function NovelReader({
                     )}
                   </div>
                 ) : (
-                  chapter >= book.chapters.length - 2 && (
+                  chapter + reach.after >= book.chapters.length - 1 && (
                     <div className="novel-chapter-end" role="separator">
                       {next ? (
                         <Button variant="outline" onClick={() => next.open()}>

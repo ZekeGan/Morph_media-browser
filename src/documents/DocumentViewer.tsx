@@ -29,7 +29,10 @@ export function DocumentViewer({
 }) {
   useLocale()
   const [images, setImages] = useState<MediaEntry[]>(),
-    [error, setError] = useState('')
+    [error, setError] = useState(''),
+    // R-430: the settings and immersive reading of the volume just finished, which the next volume starts with (the
+    // folder's saved settings may not have come back from the save yet).
+    [carried, setCarried] = useState<{ settings: ReadingPrefs; immersive: boolean }>()
   const returnFocus = useRef(document.activeElement as HTMLElement),
     onClose = useRef(close)
   onClose.current = close
@@ -82,7 +85,7 @@ export function DocumentViewer({
     )
   // R-407: a comic archive of a book folder reads with the folder's shared reading settings and remembers its own page.
   const comic = file.kind === 'archive' && /\.(cbz|cbr|cb7)$/i.test(file.name) && !!row && !!run,
-    reading = comic ? row?.record?.details?.reading : undefined,
+    reading = comic ? (carried?.settings ?? row?.record?.details?.reading) : undefined,
     volume = comic ? row?.record?.details?.volumes?.[file.name] : undefined
   const saveReading = (prefs: ReadingPrefs) => {
     if (!comic || !row?.record || !run || !images || row.readonly || row.stopped || row.error)
@@ -122,7 +125,16 @@ export function DocumentViewer({
           close={close}
           save={saveReading}
           // R-415: past the last page the reader offers the next book of the folder, as the text reader does.
-          nextBook={next && { name: next.name, open: () => next.open() }}
+          startImmersive={carried?.immersive}
+          nextBook={
+            next && {
+              name: next.name,
+              open: (immersive, settings) => {
+                if (settings) setCarried({ settings, immersive })
+                next.open()
+              },
+            }
+          }
         />
       </Suspense>
     )

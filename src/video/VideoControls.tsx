@@ -43,6 +43,8 @@ interface Props {
   previous: () => void
   next: () => void
   full: () => void
+  // R-431: open the playing video in the external player (always offered, not only after a playback failure).
+  external?: () => void
 }
 export function VideoControls(p: Props) {
   useLocale()
@@ -272,6 +274,7 @@ export function VideoControls(p: Props) {
               {p.subtitleSettings}
             </Popover.Dropdown>
           </Popover>
+          {p.external && tool(tr('用外部播放器開啟'), 'external', p.external)}
           {tool(
             p.fullscreen ? tr('退出全螢幕') : tr('全螢幕'),
             p.fullscreen ? 'restore' : 'focus',

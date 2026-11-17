@@ -14,6 +14,7 @@ import { createPortal } from 'react-dom'
 import { ActionIcon, Button, FocusTrap, Group, Select, Slider, Tooltip } from '@mantine/core'
 import type { MediaEntry, ReadingPrefs } from '../../shared/explorer'
 import {
+  bookFinished,
   isWidePage,
   readingGroups,
   readerArrowStep,
@@ -91,7 +92,7 @@ export function Reader({
   // Told when immersive reading starts or ends, so the media viewer can offer its queue on the right edge.
   onImmersive?: (value: boolean) => void
   // The folder after this one in the browse list; offered after the last page (R-255).
-  nextBook?: { name: string; open: (keepImmersive: boolean) => void }
+  nextBook?: { name: string; open: (keepImmersive: boolean, settings?: ReadingPrefs) => void }
   // The window is already in fullscreen from the previous book: start in immersive mode (R-275).
   startImmersive?: boolean
   // R-322: false when the reader opens at an image the user picked even if it is the first one; it then only offers
@@ -108,8 +109,8 @@ export function Reader({
     start <= 0 &&
     prefs?.page &&
     prefs.page > 0 &&
-    // A book left on its last page counts as finished and opens from the start.
-    prefs.page < images.length - (prefs.spread ? 2 : 1)
+    // A book left with its last page on screen counts as finished and opens from the start (R-426).
+    !bookFinished(prefs.page, images.length, prefs.spread)
       ? prefs.page
       : undefined
   )
@@ -122,7 +123,7 @@ export function Reader({
     prefs?.page &&
     prefs.page > 0 &&
     prefs.page !== start &&
-    prefs.page < images.length - (prefs.spread ? 2 : 1)
+    !bookFinished(prefs.page, images.length, prefs.spread)
       ? prefs.page
       : undefined
   )
@@ -565,7 +566,8 @@ export function Reader({
     viewport.current?.scrollTo(0, 0)
   }
   const readingNow = (): ReadingPrefs => ({
-    page,
+    // R-426: the last page on screen (the right page of the last spread) is saved as the last page, which is finished.
+    page: manga && group.includes(images.length - 1) ? images.length - 1 : page,
     ...(!manga ? { fit } : {}),
     spread,
     // R-406: image mode keeps the folder's manga direction untouched.
@@ -622,7 +624,8 @@ export function Reader({
       setEnding(false)
       // Hand the fullscreen window over to the next book instead of leaving it.
       handover.current = immersive
-      nextBook.open(immersive)
+      const { page: _page, ...settings } = readingNow()
+      nextBook.open(immersive, settings)
       // If the switch never happens (for example a draft blocks it), leaving later exits fullscreen as usual.
       setTimeout(() => (handover.current = false), 5000)
     } else setEnding(true)

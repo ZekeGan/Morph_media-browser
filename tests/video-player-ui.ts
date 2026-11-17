@@ -3,12 +3,12 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import assert from 'node:assert/strict'
 import { Library } from '../electron/library'
-import { folderFile, readFolder, saveFolder } from '../electron/files'
+import { folderFile } from '../electron/files'
 
 import { videoFixture } from './support/video-fixture'
 import { closeApp } from './support/app'
 
-const groups = ['controls', 'subtitles', 'appearance', 'episodes'] as const
+const groups = ['controls', 'subtitles', 'appearance'] as const
 type Group = (typeof groups)[number]
 function selection(): Group[] {
   const args = process.argv.slice(2)
@@ -87,20 +87,6 @@ async function runGroup(group: Group, fixture: string) {
     depth: { mode: 'through', level: 1 },
   })
 
-  // R-423: the folder has the episode list imported from TMDB (R-419) and two files named by episode.
-  if (group === 'episodes') {
-    for (const name of ['Show S01E02 [1080p].mp4', 'Show - 03 [ABCD1234].mp4'])
-      await fs.copyFile(path.join(media, '01-first.mp4'), path.join(media, name))
-    const folder = await readFolder(media)
-    folder.attributes.push({
-      attributeId: 'tmdb-episodes',
-      key: 'EPISODES',
-      type: 'tags',
-      value: ['S01E01 Pilot', 'S01E02 The Second', 'S01E03 The Third'],
-      source: 'manual',
-    })
-    await saveFolder(media, folder, folder.revision)
-  }
   const record = await fs.readFile(folderFile(media))
 
   const env: Record<string, string> = Object.fromEntries(
@@ -120,10 +106,7 @@ async function runGroup(group: Group, fixture: string) {
   const open = async () => {
     await page.getByRole('button', { name: '開啟專案 Player QA', exact: true }).first().click()
     await page.locator('.mixed-media-browser').waitFor()
-    await page
-      .locator('.media-thumbnail')
-      .filter({ hasText: group === 'episodes' ? 'Show S01E02' : '01-first.mp4' })
-      .click()
+    await page.locator('.media-thumbnail').filter({ hasText: '01-first.mp4' }).click()
     await page.waitForFunction(() => {
       const video = document.querySelector('video')
       return video && video.readyState >= 1
@@ -396,34 +379,6 @@ async function runGroup(group: Group, fixture: string) {
       await page.waitForFunction(() => !document.fullscreenElement)
     },
 
-    episodes: async () => {
-      // R-423: the settings preview the matches among all the folder's videos, nothing is written until the
-      // button is pressed, and then the play queue shows the episode under the playing file.
-      await openSettings()
-      await settingsPanel.getByRole('button', { name: '集名', exact: true }).click()
-      const preview = settingsPanel.getByRole('list', { name: '集名預覽' })
-      await preview.waitFor()
-      assert.equal(await preview.getByRole('listitem').count(), 2)
-      assert.match((await preview.textContent()) ?? '', /S01E02 · The Second/)
-      assert.match((await preview.textContent()) ?? '', /S01E03 · The Third/)
-      assert.deepEqual(await fs.readFile(folderFile(media)), record)
-      await settingsPanel.getByRole('button', { name: '依集數清單標上集名', exact: true }).click()
-      await settingsPanel.getByRole('button', { name: '清除集名', exact: true }).waitFor()
-      assert.equal(Object.keys((await readFolder(media)).details?.episodes ?? {}).length, 2)
-      await settingsPanel.getByRole('button', { name: '關閉播放設定', exact: true }).click()
-      await page.getByRole('button', { name: '切換媒體佇列', exact: true }).click()
-      await page.getByRole('tab', { name: /目前資料夾/ }).click()
-      await page
-        .locator('.playback-item-episode')
-        .filter({ hasText: 'S01E02 · The Second' })
-        .waitFor()
-      await page.screenshot({ path: path.join(screens, 'episodes.png') })
-      // Clearing removes the label and the field.
-      await tool('更多播放設定').click()
-      await settingsPanel.getByRole('button', { name: '清除集名', exact: true }).click()
-      await page.waitForFunction(() => !document.querySelector('.playback-item-episode'))
-      assert.equal((await readFolder(media)).details?.episodes, undefined)
-    },
     appearance: async () => {
       const styles: Record<string, unknown> = {}
       const captureStyles = async (name: string) => {
@@ -586,7 +541,7 @@ async function runGroup(group: Group, fixture: string) {
     for (const [name, bytes] of originals)
       assert.deepEqual(await fs.readFile(path.join(media, name)), bytes)
 
-    if (group !== 'episodes') assert.deepEqual(await fs.readFile(folderFile(media)), record)
+    assert.deepEqual(await fs.readFile(folderFile(media)), record)
 
     assert.deepEqual(errors, [])
 

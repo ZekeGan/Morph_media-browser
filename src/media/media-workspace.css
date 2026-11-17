@@ -1329,16 +1329,3 @@
 .book-card-cover { flex: none; width: 96px; max-height: 140px; object-fit: contain; border-radius: var(--radius); }
 /* R-405: how far a video was watched, a thin line along the bottom of its thumbnail. */
 .media-thumbnail .video-progress { position: absolute; inset: auto auto 0 0; height: 3px; min-height: 0; background: var(--accent); pointer-events: none; }
-
-/* R-423 (tentative): the episode under a video's name in the queue */
-.media-queue-episode {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: var(--accent);
-    font-size: 11px;
-}
-
-.playback-item-episode {
-    color: var(--accent);
-}

@@ -24,6 +24,7 @@ import {
   type ExplorerRequest,
   type ExplorerResponse,
   type MediaPrefs,
+  type ReadingPrefs,
 } from '../../shared/explorer'
 import { type FolderRow, type Project, type Request, type Response } from '../../shared/model'
 const Reader = lazy(() => import('../reader/Reader').then((module) => ({ default: module.Reader })))
@@ -56,6 +57,7 @@ export function FolderContent({
   onMediaPrefs,
   nextBook,
   autoRead,
+  autoReadSettings,
   onAutoRead,
 }: {
   row: FolderRow
@@ -73,9 +75,11 @@ export function FolderContent({
   selectedFileId?: string
   selectedEntry?: ContentResult['entries'][number]
   // R-255: the next folder in the browse list, and whether this folder was opened as that next book.
-  nextBook?: { name: string; open: (keepImmersive: boolean) => void }
+  nextBook?: { name: string; open: (keepImmersive: boolean, settings?: ReadingPrefs) => void }
   // 'immersive' when the previous book was read in immersive mode, which carries over (R-275).
   autoRead?: 'normal' | 'immersive'
+  // R-430: the reading settings of the previous book, used by this one while it has none of its own.
+  autoReadSettings?: ReadingPrefs
   onAutoRead?: () => void
 }) {
   useLocale()
@@ -156,7 +160,8 @@ export function FolderContent({
   }, [row.rowId, selectedFileId])
   // Opened as the next book: go straight to reading from its first image. Remembered from the first render, since
   // the workspace drops the request as soon as the panel has switched.
-  const readFirst = useRef(autoRead)
+  const readFirst = useRef(autoRead),
+    inherited = useRef(autoReadSettings)
   useEffect(() => {
     if (!readFirst.current || !content) return
     const first = content.entries.find(
@@ -330,6 +335,7 @@ export function FolderContent({
               }}
               nextBook={nextBook}
               startImmersive={galleryImmersive}
+              inheritedPrefs={inherited.current}
             />
           )}
           {documentFile && (

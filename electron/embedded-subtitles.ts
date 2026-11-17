@@ -2,7 +2,13 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
 import type { Explorer } from './explorer'
-import { LIMITS, readMkvSubtitles, readPicturePackets, type EmbeddedTrack } from './mkv-subtitles'
+import {
+  CANCELLED,
+  LIMITS,
+  readMkvSubtitles,
+  readPicturePackets,
+  type EmbeddedTrack,
+} from './mkv-subtitles'
 import { cuesToSrt } from '../shared/subtitles'
 import type { EmbeddedSubtitleInfo, ExplorerResponse } from '../shared/explorer'
 
@@ -11,7 +17,9 @@ import type { EmbeddedSubtitleInfo, ExplorerResponse } from '../shared/explorer'
 // only while the file's size and modified time are the ones it was read at.
 // R-421: a picture (VobSub) track is cached as its header and, per cue, the time and the place of the packet in
 // the video; the packets themselves (tens of MiB a film) stay in the video and are read when the player asks.
-const CACHE_VERSION = 2
+// R-425: version 3 leaves out pieces of effects and marks tracks cut at the limits; a read that failed for good is
+// kept too ({ error }), so the same file is not read again only to fail again.
+const CACHE_VERSION = 3
 const CACHE_FILES = 80
 const CACHE_BYTES = 32 * 1024 * 1024
 const KEPT = 6
@@ -87,25 +95,49 @@ export interface EmbeddedJob {
   done: Promise<EmbeddedTrack[]>
   live?: EmbeddedTrack[]
   focus: number
+  // R-425: one video is read at a time; opening another stops this one.
+  controller: AbortController
 }
 
-async function cached(cache: string, size: number, mtimeMs: number) {
+// Failures that would come out the same next time; a timeout (a busy disk) or a cancelled read is tried again.
+// Only what the file itself says is kept: a system error (locked by a virus scan, still being copied, a busy disk)
+// carries a Node code and is tried again next time.
+const lasting = (error: unknown) =>
+  error instanceof Error &&
+  !(error as NodeJS.ErrnoException).code &&
+  error.message !== CANCELLED &&
+  error.message !== '讀取內嵌字幕逾時'
+
+async function cached(
+  cache: string,
+  size: number,
+  mtimeMs: number
+): Promise<EmbeddedTrack[] | { error: string } | undefined> {
   try {
     const stat = await fs.stat(cache)
     if (stat.isFile() && stat.size <= CACHE_BYTES) {
       const saved = JSON.parse(await fs.readFile(cache, 'utf8'))
-      if (
-        saved?.version === CACHE_VERSION &&
-        saved.size === size &&
-        saved.mtimeMs === mtimeMs &&
-        valid(saved.tracks)
-      )
-        return saved.tracks as EmbeddedTrack[]
+      if (saved?.version === CACHE_VERSION && saved.size === size && saved.mtimeMs === mtimeMs) {
+        if (typeof saved.error === 'string' && saved.error.length <= 200)
+          return { error: saved.error }
+        if (valid(saved.tracks)) return saved.tracks as EmbeddedTrack[]
+      }
     }
   } catch {
     // No usable cache: read the file.
   }
   return undefined
+}
+async function save(dir: string, cache: string, content: object) {
+  try {
+    await fs.mkdir(dir, { recursive: true })
+    const temporary = cache + '.' + randomUUID() + '.tmp'
+    await fs.writeFile(temporary, JSON.stringify({ version: CACHE_VERSION, ...content }))
+    await fs.rename(temporary, cache)
+    await trim(dir)
+  } catch {
+    // The cache only saves time; failing to write it is not an error.
+  }
 }
 
 // The finished tracks of a video, or the read in progress (started here when none is running).
@@ -124,46 +156,44 @@ async function embeddedJob(
     kept = ex.embeddedSubtitles.get(key)
   if (kept) return { tracks: kept, file: found.file }
   const running = ex.embeddedJobs.get(key)
-  if (running) return { job: running, file: found.file }
+  // A read that was stopped (another video opened) but has not noticed yet is not handed back; it starts again.
+  if (running && !running.controller.signal.aborted) return { job: running, file: found.file }
   const dir = path.join(ex.root, 'subtitle-cache'),
     cache = path.join(dir, key + '.json')
+  // R-425: the reads of other videos stop; reading two films at once on one disk slows both and the playback.
+  for (const other of ex.embeddedJobs.values()) other.controller.abort()
   let listed: (tracks: EmbeddedTrack[]) => void = () => {}
   const job: EmbeddedJob = {
     ready: new Promise((resolve) => (listed = resolve)),
     done: Promise.resolve([]),
     focus: 0,
+    controller: new AbortController(),
   }
+  const stamp = { size: found.stat.size, mtimeMs: found.stat.mtimeMs }
   job.done = (async () => {
     const saved = await cached(cache, found.stat.size, found.stat.mtimeMs)
+    if (saved && 'error' in saved) throw new Error(saved.error)
     if (saved) {
       listed(saved)
       return saved
     }
-    const tracks = await readMkvSubtitles(found.file, {
-      onProgress: (fraction) => ex.desktop.subtitleProgress?.({ rowId, fileId, fraction }),
-      onTracks: (live) => {
-        job.live = live
-        listed(live)
-      },
-      focus: () => job.focus,
-    })
+    let tracks: EmbeddedTrack[]
     try {
-      await fs.mkdir(dir, { recursive: true })
-      const temporary = cache + '.' + randomUUID() + '.tmp'
-      await fs.writeFile(
-        temporary,
-        JSON.stringify({
-          version: CACHE_VERSION,
-          size: found.stat.size,
-          mtimeMs: found.stat.mtimeMs,
-          tracks,
-        })
-      )
-      await fs.rename(temporary, cache)
-      await trim(dir)
-    } catch {
-      // The cache only saves time; failing to write it is not an error.
+      tracks = await readMkvSubtitles(found.file, {
+        onProgress: (fraction) => ex.desktop.subtitleProgress?.({ rowId, fileId, fraction }),
+        onTracks: (live) => {
+          job.live = live
+          listed(live)
+        },
+        focus: () => job.focus,
+        signal: job.controller.signal,
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (lasting(error)) await save(dir, cache, { ...stamp, error: message.slice(0, 200) })
+      throw error
     }
+    await save(dir, cache, { ...stamp, tracks })
     return tracks
   })()
   // A read that fails before the track list is known fails the early answer too.
@@ -178,7 +208,10 @@ async function embeddedJob(
       ex.embeddedSubtitles.set(key, tracks)
     })
     .catch(() => {})
-    .finally(() => ex.embeddedJobs.delete(key))
+    // Only this job's own entry: a stopped job finishing late must not remove the read that replaced it.
+    .finally(() => {
+      if (ex.embeddedJobs.get(key) === job) ex.embeddedJobs.delete(key)
+    })
   return { job, file: found.file }
 }
 
@@ -200,6 +233,7 @@ const info = (track: EmbeddedTrack): EmbeddedSubtitleInfo => ({
   ...(track.forced ? { forced: true } : {}),
   graphic: track.graphic,
   ...(track.picture ? { picture: true } : {}),
+  ...(track.truncated ? { truncated: true } : {}),
   cues: track.pictures ? track.pictures.length : track.cues.length,
 })
 

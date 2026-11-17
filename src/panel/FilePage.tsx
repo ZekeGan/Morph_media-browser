@@ -6,7 +6,7 @@ import { currentLocale, t as tr, useLocale } from '../i18n'
 import { Icon, type IconName } from '../common/icons'
 import { audioCover } from '../media/MediaThumb'
 import { fileSize, friendlyType } from '../media/fileLabels'
-import { sortVolumes } from '../../shared/reader'
+import { bookFinished, sortVolumes } from '../../shared/reader'
 
 // R-337: one file in the right panel — a large preview, the kind and size in words, the main action for its kind,
 // and the details folded away. R-338: a text book shows its cover, title, author, chapters and the place it was left.
@@ -213,14 +213,19 @@ export function BookShelf({
           comic = isComicArchive(entry),
           saved = text ? row.record?.details?.novels?.[entry.name] : undefined,
           volume = comic ? row.record?.details?.volumes?.[entry.name] : undefined,
+          // R-426: a finished volume (its last page was on screen, the right page of a spread too) shows its last page.
+          volumeDone =
+            !!volume &&
+            bookFinished(volume.page, volume.total, row.record?.details?.reading?.spread),
+          volumePage = volume ? (volumeDone ? volume.total : volume.page + 1) : 0,
           percent = saved
             ? Math.round(saved.percent * 100)
             : volume
-              ? Math.round(((volume.page + 1) / volume.total) * 100)
+              ? Math.round((volumePage / volume.total) * 100)
               : 0,
           unfinished = saved
             ? saved.percent > 0 && saved.percent < 1
-            : !!volume && volume.page > 0 && volume.page < volume.total - 1,
+            : !!volume && volume.page > 0 && !volumeDone,
           label = !text && !comic ? tr('開啟') : unfinished ? tr('繼續閱讀') : tr('開始閱讀')
         return (
           <li key={entry.id}>
@@ -233,7 +238,7 @@ export function BookShelf({
             </div>
             <small>
               {volume
-                ? tr('讀到 {0} / {1} 頁', volume.page + 1, volume.total)
+                ? tr('讀到 {0} / {1} 頁', volumePage, volume.total)
                 : saved
                   ? percent + '%'
                   : friendlyType(entry)}

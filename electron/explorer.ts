@@ -33,6 +33,7 @@ import { projectImageCells } from '../shared/layouts'
 import { type ImageUrlOptions, type RemoteImage } from './image-url'
 import type { SourceImage } from './source-images'
 import { parseSubtitles } from '../shared/subtitles'
+import { externalPlayerArgs } from '../shared/videoPlayer'
 import { key, probeFile } from './media-files'
 import * as contentFns from './explorer-content'
 import * as streamFns from './explorer-stream'
@@ -78,6 +79,9 @@ export interface DesktopOperations {
   // R-320: the program that plays .swf games, from the app settings, and setting it.
   flashPlayer?(): string | undefined
   setFlashPlayer?(file: string | undefined): Promise<void>
+  // R-431: the program videos open in from the player's external-player button, and setting it.
+  videoPlayer?(): string | undefined
+  setVideoPlayer?(file: string | undefined): Promise<void>
   // R-381: the languages external sources are read in, first choice first (app settings).
   sourceLanguages?(): string[]
   // R-412: how far reading a video's subtitle tracks has come.
@@ -398,6 +402,38 @@ export class Explorer {
         }
         return { probe: { kind: await probeFile(entry.file) } }
       }
+      case 'openExternalPlayer': {
+        // R-431: the file comes from the row's file table; the program only from the app settings (main side).
+        const entry = await this.file(req.rowId, req.fileId)
+        if (!/^(video|audio)\//.test(entry.mime)) throw new Error('只能用外部播放器開啟影音檔案')
+        const player = this.desktop.videoPlayer?.()
+        if (!player) {
+          await this.desktop.open(entry.file)
+          return {}
+        }
+        if (
+          !(await fs.stat(player).then(
+            (s) => s.isFile(),
+            () => false
+          ))
+        )
+          throw new Error('找不到外部播放器；請到應用程式設定重新指定')
+        // The position is only passed on when it is a sane number (an invalid one starts from the beginning).
+        await this.desktop.launch(player, externalPlayerArgs(player, entry.file, req.time))
+        return {}
+      }
+      case 'subtitleTrack': {
+        // R-432: the name and language are kept as text with size caps; the record check rejects anything else.
+        const name = req.name?.trim().slice(0, 200),
+          language = req.language?.trim().slice(0, 35)
+        return this.after(
+          await this.details(req.rowId, req.revision, (d) => {
+            if (name || language)
+              d.subtitleTrack = { ...(name ? { name } : {}), ...(language ? { language } : {}) }
+            else delete d.subtitleTrack
+          })
+        )
+      }
       case 'openExternal':
         if (!httpUrl(req.url) || !this.desktop.external) throw new Error('網址無法開啟')
         await this.desktop.external(req.url)
@@ -588,20 +624,6 @@ export class Explorer {
               p.settings[req.subtitle] = req.settings
             }
             d.playback[req.fileId] = p
-          })
-        )
-      }
-      case 'episodes': {
-        // R-423 (tentative): one write, with the revision check; every key must be a video of this folder.
-        const names = req.episodes ? Object.keys(req.episodes) : []
-        if (names.length > 10000) throw new Error('集數記錄不合法')
-        for (const fileId of names)
-          if (!(await this.file(req.rowId, fileId)).mime.startsWith('video/'))
-            throw new Error('不是影片')
-        return this.after(
-          await this.details(req.rowId, req.revision, (d) => {
-            if (req.episodes && names.length) d.episodes = req.episodes
-            else delete d.episodes
           })
         )
       }
@@ -1081,6 +1103,22 @@ export class Explorer {
           throw new Error('請選擇播放 Flash 的程式（.exe）')
         await this.desktop.setFlashPlayer(file)
         return { flashPlayer: file }
+      }
+      case 'chooseVideoPlayer': {
+        // R-431: picked in a main-process dialog; any existing absolute .exe (PotPlayer, mpv, VLC…).
+        if (!this.desktop.setVideoPlayer) throw new Error('無法設定外部影片播放器')
+        if (req.clear) {
+          await this.desktop.setVideoPlayer(undefined)
+          return {}
+        }
+        const chosen = await this.desktop.choose('exe')
+        if (!chosen) return { cancelled: true }
+        if (!path.isAbsolute(chosen)) throw new Error('請選擇播放影片的程式（.exe）')
+        const file = await fs.realpath(chosen)
+        if (!/\.exe$/i.test(file) || !(await fs.stat(file)).isFile())
+          throw new Error('請選擇播放影片的程式（.exe）')
+        await this.desktop.setVideoPlayer(file)
+        return { videoPlayer: file }
       }
       case 'listShortcuts': {
         const row = await this.library.checkedRow(req.rowId)

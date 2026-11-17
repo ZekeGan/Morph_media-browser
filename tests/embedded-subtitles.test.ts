@@ -172,8 +172,21 @@ test('a damaged or hostile file ends with an error or the cues so far, inside th
   await assert.rejects(readMkvSubtitles(await write('late.mkv', whole), { ms: -1 }), /逾時/)
   const saved = { ...LIMITS }
   try {
+    // R-425: a track past the limits stops at what was read and says so; the other tracks are still read whole.
     LIMITS.cuesPerTrack = 1
-    await assert.rejects(readMkvSubtitles(await write('many.mkv', whole)), /過大/)
+    const many = await readMkvSubtitles(await write('many.mkv', whole))
+    assert.deepEqual(
+      many.map((track) => [track.number, track.cues.length, !!track.truncated]),
+      [
+        [2, 1, true],
+        [3, 1, false],
+        [4, 0, false],
+        [5, 1, false],
+      ]
+    )
+    Object.assign(LIMITS, saved, { textTotal: 12 })
+    const wordy = await readMkvSubtitles(await write('wordy.mkv', whole))
+    assert.ok(wordy.some((track) => track.truncated))
     Object.assign(LIMITS, saved, { tracksElement: 10 })
     await assert.rejects(readMkvSubtitles(await write('tracks.mkv', whole)), /過大/)
     // A block bigger than a subtitle can be is skipped, not read.
@@ -355,7 +368,8 @@ const u32 = (n: number) =>
 interface IndexedCluster {
   time: number
   children: Buffer[]
-  subs: { track: number; at: number }[]
+  // duration: the CueDuration written in the index (ms), as mkvmerge writes for subtitle blocks.
+  subs: { track: number; at: number; duration?: number }[]
 }
 function indexed(options: { lie?: boolean; list?: Buffer; clusters?: IndexedCluster[] } = {}) {
   const info = el(0x1549a966, el(0x2ad7b1, [0x0f, 0x42, 0x40]))
@@ -405,6 +419,7 @@ function indexed(options: { lie?: boolean; list?: Buffer; clusters?: IndexedClus
                 num(0xf7, sub.track),
                 el(0xf1, u32(position)),
                 el(0xf0, u32(options.lie ? relative + 3 : relative)),
+                ...(sub.duration !== undefined ? [el(0xb2, u32(sub.duration))] : []),
               ])
             ),
           ])
@@ -964,4 +979,123 @@ test('the explorer answers with the picture cues around a time, from a cache tha
   assert.ok(!isExplorerRequest({ ...request, track: '4' }))
   assert.ok(!isExplorerRequest({ ...request, fileId: '' }))
   assert.ok(!isExplorerRequest({ ...request, time: 'now' }))
+})
+
+// R-425: fansub karaoke and signs are drawn one frame per line; those pieces are left out, read or indexed.
+test('pieces of effects are left out, from the index without reading them and from the clusters', async (t) => {
+  const { write } = await fixture(t)
+  const piece = (relative: number, text: string) => subtitle(2, relative, text, 40)
+  // Read from the clusters: a 40 ms line is a piece, a 2 s line is said.
+  const walked = await readMkvSubtitles(
+    await write(
+      'walked.mkv',
+      matroska(
+        tracks(entry(2, 0x11, 'S_TEXT/UTF8', 'jpn')),
+        cluster(0, piece(0, 'に'), piece(40, 'な'), subtitle(2, 500, 'line'))
+      )
+    )
+  )
+  assert.deepEqual(
+    walked[0].cues.map((cue) => cue.text),
+    ['line']
+  )
+  // From the index: the entries say 40 ms, so those blocks are never read; the track still counts as indexed.
+  const file = await write(
+    'pieces.mkv',
+    indexed({
+      clusters: [
+        {
+          time: 0,
+          children: [video(0), piece(0, 'に'), piece(40, 'な'), subtitle(2, 500, 'first')],
+          subs: [
+            { track: 2, at: 1, duration: 40 },
+            { track: 2, at: 2, duration: 40 },
+            { track: 2, at: 3, duration: 2000 },
+          ],
+        },
+        {
+          time: 30000,
+          children: [video(0), subtitle(3, 0, 'lo there')],
+          subs: [{ track: 3, at: 1, duration: 2000 }],
+        },
+      ],
+    })
+  )
+  const fromIndex = await readMkvSubtitles(file)
+  assert.deepEqual(
+    fromIndex.map((track) => track.cues.map((cue) => cue.text)),
+    [['first'], ['Hello there']]
+  )
+})
+
+test('with no subtitle places in the index the clusters are read from the playback time first', async (t) => {
+  const { write } = await fixture(t)
+  // Only the video is indexed (as many tools write it): its entries still tell where each cluster starts.
+  const file = await write(
+    'video-index.mkv',
+    indexed({
+      clusters: [
+        { time: 0, children: [video(0), subtitle(2, 100, 'first')], subs: [{ track: 1, at: 0 }] },
+        {
+          time: 30000,
+          children: [video(0), subtitle(2, 0, 'second')],
+          subs: [{ track: 1, at: 0 }],
+        },
+        { time: 65000, children: [video(0), subtitle(2, 0, 'third')], subs: [{ track: 1, at: 0 }] },
+      ],
+    })
+  )
+  let live: { cues: { text: string }[] }[] = [],
+    firstRead: string | undefined
+  const found = await readMkvSubtitles(file, {
+    focus: () => 40,
+    onTracks: (list) => (live = list),
+    onProgress: () => {
+      firstRead ??= live.flatMap((track) => track.cues)[0]?.text
+    },
+  })
+  assert.equal(firstRead, 'second', 'the cluster at 30 s (the one playing at 40 s) is read first')
+  assert.deepEqual(
+    found[0].cues.map((cue) => cue.text),
+    ['first', 'second', 'third']
+  )
+})
+
+test('a read can be stopped, and opening another video stops the one before', async (t) => {
+  const { write, root, closers } = await fixture(t)
+  const stopped = new AbortController()
+  stopped.abort()
+  await assert.rejects(
+    readMkvSubtitles(await write('stop.mkv', sample()), { signal: stopped.signal }),
+    /取消/
+  )
+  // A file that cannot be read keeps failing from the cache, without reading it again.
+  const media = path.join(root, 'media'),
+    local = path.join(root, 'local')
+  await fs.mkdir(media)
+  await fs.writeFile(path.join(media, 'bad.mkv'), Buffer.from('not a video at all'))
+  const library = new Library(local, undefined, false)
+  await library.init()
+  const progress: number[] = []
+  const explorer = new Explorer(library, local, {
+    choose: async () => undefined,
+    open: async () => {},
+    launch: async () => {},
+    thumbnail: async () => Buffer.from('x'),
+    subtitleProgress: (value) => progress.push(value.fraction),
+  })
+  closers.push(() => explorer.index.close())
+  const snapshot = await library.create(media, { name: 'P', depth: { mode: 'through', level: 1 } }),
+    row = snapshot.rows[0],
+    bad = (await explorer.content(row.rowId)).entries.find((entry) => entry.name === 'bad.mkv')!
+  await assert.rejects(
+    explorer.request({ action: 'embeddedSubtitles', rowId: row.rowId, fileId: bad.id }),
+    /不是 Matroska/
+  )
+  const cacheFiles = await fs.readdir(path.join(local, 'subtitle-cache'))
+  assert.equal(cacheFiles.filter((name) => name.endsWith('.json')).length, 1, 'the failure is kept')
+  await assert.rejects(
+    explorer.request({ action: 'embeddedSubtitles', rowId: row.rowId, fileId: bad.id }),
+    /不是 Matroska/
+  )
 })
