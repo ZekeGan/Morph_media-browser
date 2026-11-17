@@ -1625,12 +1625,6 @@
     "en": "Import selected data",
     "es": "Importar datos seleccionados"
   },
-  "自訂工具列": {
-    "ja": "ツールバーをカスタマイズ",
-    "zh-CN": "自订工具列",
-    "en": "Customize toolbar",
-    "es": "Personalizar barra de herramientas"
-  },
   "啟動參數（JSON 字串陣列）": {
     "ja": "起動引数（JSON文字列配列）",
     "zh-CN": "启动参数（JSON 字串阵列）",
@@ -1841,23 +1835,11 @@
     "en": "Restore previous backup",
     "es": "Restaurar copia anterior"
   },
-  "放棄未保存工具列？": {
-    "ja": "未保存のツールバーを破棄しますか？",
-    "zh-CN": "放弃未保存工具列？",
-    "en": "Discard unsaved toolbar changes?",
-    "es": "¿Descartar los cambios de barra de herramientas sin guardar?"
-  },
   "按鈕文字": {
     "ja": "ボタンの文字",
     "zh-CN": "按钮文字",
     "en": "Button label",
     "es": "Texto del botón"
-  },
-  "任務類型": {
-    "ja": "操作の種類",
-    "zh-CN": "任务类型",
-    "en": "Action type",
-    "es": "Tipo de acción"
   },
   "顏色": {
     "ja": "色",
@@ -1876,18 +1858,6 @@
     "zh-CN": "移除",
     "en": "Remove",
     "es": "Eliminar"
-  },
-  "加入按鈕": {
-    "ja": "ボタンを追加",
-    "zh-CN": "加入按钮",
-    "en": "Add button",
-    "es": "Añadir botón"
-  },
-  "保存工具列": {
-    "ja": "ツールバーを保存",
-    "zh-CN": "保存工具栏",
-    "en": "Save toolbar",
-    "es": "Guardar barra de herramientas"
   },
   "圖片無法載入，點擊檢視": {
     "ja": "画像を読み込めません。クリックして確認",
@@ -3419,12 +3389,6 @@
     "zh-CN": "取消更改",
     "es": "Descartar cambios"
   },
-  "操作順序": {
-    "en": "Action order",
-    "ja": "操作の順序",
-    "zh-CN": "操作顺序",
-    "es": "Orden de acciones"
-  },
   "上移 {0}": {
     "en": "Move {0} up",
     "ja": "{0} を上へ移動",
@@ -3436,18 +3400,6 @@
     "ja": "{0} を下へ移動",
     "zh-CN": "下移 {0}",
     "es": "Bajar {0}"
-  },
-  "加入按鈕以建立操作。": {
-    "en": "Add a button to create an action.",
-    "ja": "ボタンを追加して操作を作成します。",
-    "zh-CN": "添加按钮以创建操作。",
-    "es": "Añade un botón para crear una acción."
-  },
-  "工具列套用到整個專案；目標與參數只屬於目前資料夾。": {
-    "en": "The toolbar applies to the whole project; targets and arguments belong to this folder.",
-    "ja": "ツールバーはプロジェクト全体に使われます。対象と引数はこのフォルダーだけのものです。",
-    "zh-CN": "工具栏套用到整个项目；目标与参数只属于目前文件夹。",
-    "es": "La barra se aplica a todo el proyecto; los destinos y argumentos son solo de esta carpeta."
   },
   "條件未符合": {
     "en": "Condition not met",
@@ -3640,12 +3592,6 @@
     "ja": "ファイル",
     "es": "archivos",
     "zh-CN": "个文件"
-  },
-  "移除 {0}": {
-    "en": "Remove {0}",
-    "ja": "{0} を削除",
-    "es": "Quitar {0}",
-    "zh-CN": "移除 {0}"
   },
   "縮圖": {
     "zh-CN": "缩略图",
@@ -5740,12 +5686,6 @@
     "en": "Application version",
     "ja": "アプリのバージョン",
     "es": "Versión de la aplicación"
-  },
-  "自訂顏色": {
-    "zh-CN": "自定义颜色",
-    "en": "Custom colour",
-    "ja": "カスタムカラー",
-    "es": "Color personalizado"
   },
   "預覽": {
     "zh-CN": "预览",
@@ -13078,5 +13018,35 @@
     "en": "Which game action the card button runs (start, a folder, a page or a manual); without one, the default game launch.",
     "ja": "カードのボタンが実行するゲーム操作（起動、フォルダー、ページ、説明書のどれでも）。未指定なら既定のゲーム起動。",
     "es": "Qué acción del juego ejecuta el botón (iniciar, una carpeta, una página o un manual); sin elegir, el inicio predeterminado."
+  },
+  "新增遊戲操作": {
+    "zh-CN": "新增游戏操作",
+    "en": "New game action",
+    "ja": "ゲーム操作を追加",
+    "es": "Nueva acción del juego"
+  },
+  "新操作的按鈕文字": {
+    "zh-CN": "新操作的按钮文字",
+    "en": "Button text of the new action",
+    "ja": "新しい操作のボタン文字",
+    "es": "Texto del botón de la nueva acción"
+  },
+  "新操作的類型": {
+    "zh-CN": "新操作的类型",
+    "en": "Type of the new action",
+    "ja": "新しい操作の種類",
+    "es": "Tipo de la nueva acción"
+  },
+  "新增": {
+    "zh-CN": "新增",
+    "en": "Add",
+    "ja": "追加",
+    "es": "Añadir"
+  },
+  "操作套用到整個專案，在版面編輯器的「啟動遊戲」組件新增；目標與參數只屬於目前資料夾。": {
+    "zh-CN": "操作套用到整个项目，在版面编辑器的“启动游戏”组件新增；目标与参数只属于当前文件夹。",
+    "en": "Actions apply to the whole project and are added from the launch component in the layout editor; targets and arguments belong to this folder only.",
+    "ja": "操作はプロジェクト全体に適用され、レイアウトエディターの「ゲーム起動」コンポーネントで追加します。対象と引数はこのフォルダーだけのものです。",
+    "es": "Las acciones se aplican a todo el proyecto y se añaden desde el componente de inicio en el editor de diseño; los destinos y argumentos son solo de esta carpeta."
   }
 }

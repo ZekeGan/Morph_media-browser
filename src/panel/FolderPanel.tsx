@@ -9,7 +9,7 @@ import {
   sampleOf,
   type KindSample,
 } from '../../shared/kind'
-import { GameActionEditor, GameActionTargets } from '../game/GameActions'
+import { GameActionTargets } from '../game/GameActions'
 import { GameExtraSettings } from '../game/GameExtras'
 import {
   addCommonFields,
@@ -33,7 +33,6 @@ import {
   Button,
   Divider,
   Group,
-  Modal,
   SegmentedControl,
   Select,
   Stack,
@@ -46,8 +45,6 @@ import { FolderImages } from './FolderImages'
 import { FolderSourceImport, useSourceImport } from '../metadata/FolderSourceImport'
 import {
   builtinPanel,
-  gameActionTemplates,
-  type ActionTemplate,
   type ExplorerRequest,
   type ExplorerResponse,
   launchGap,
@@ -101,7 +98,6 @@ export function FolderPanel({
           ? (lastTab ?? 'fields')
           : initialTab
     ),
-    [tasks, setTasks] = useState<ActionTemplate[]>(),
     [targetDirty, setTargetDirty] = useState(false)
   useEffect(() => {
     setTab(
@@ -109,7 +105,6 @@ export function FolderPanel({
         ? 'fields'
         : initialTab
     )
-    setTasks(undefined)
   }, [row.rowId, initialTab])
   const importer = useSourceImport()
   useEffect(() => {
@@ -239,12 +234,10 @@ export function FolderPanel({
       JSON.stringify(values[f.attributeId]) !== JSON.stringify(original[f.attributeId])
   ).length
   const fieldDirty = changedCount > 0
-  const taskDirty =
-    tasks !== undefined && JSON.stringify(tasks) !== JSON.stringify(gameActionTemplates(project))
   useLayoutEffect(() => {
-    onDirty(fieldDirty || taskDirty || targetDirty)
+    onDirty(fieldDirty || targetDirty)
     return () => onDirty(false)
-  }, [fieldDirty, taskDirty, targetDirty, onDirty])
+  }, [fieldDirty, targetDirty, onDirty])
   useEffect(() => {
     if (!fieldDirty) setValues({})
   }, [row.record?.revision])
@@ -933,19 +926,13 @@ export function FolderPanel({
         </Tabs.Panel>
         <Tabs.Panel value="game" pt="md" keepMounted>
           <Stack>
-            <Group justify="space-between">
-              <Group gap={4} wrap="nowrap">
-                <Text fw={600}>{tr('遊戲操作')}</Text>
-                <HelpTip text={tr('工具列套用到整個專案；目標與參數只屬於目前資料夾。')} />
-              </Group>
-              <Button
-                size="xs"
-                variant="default"
-                disabled={disabled || fieldDirty || targetDirty}
-                onClick={() => setTasks(structuredClone(gameActionTemplates(project)))}
-              >
-                {tr('自訂工具列')}
-              </Button>
+            <Group gap={4} wrap="nowrap">
+              <Text fw={600}>{tr('遊戲操作')}</Text>
+              <HelpTip
+                text={tr(
+                  '操作套用到整個專案，在版面編輯器的「啟動遊戲」組件新增；目標與參數只屬於目前資料夾。'
+                )}
+              />
             </Group>
             <GameActionTargets
               key={row.rowId}
@@ -975,33 +962,6 @@ export function FolderPanel({
           setError={setError}
         />
       </Tabs>
-      <Modal
-        zIndex={450}
-        opened={tasks !== undefined}
-        title={tr('自訂工具列')}
-        onClose={() => {
-          if (!taskDirty || window.confirm(tr('放棄未保存工具列？'))) setTasks(undefined)
-        }}
-        size="lg"
-      >
-        <Stack>
-          {tasks && <GameActionEditor tasks={tasks} onChange={setTasks} disabled={busy} />}
-          <Button
-            disabled={busy || !tasks?.every((task) => task.label.trim())}
-            onClick={async () => {
-              if (
-                await act({
-                  action: 'saveProject',
-                  project: { ...project, actionTemplates: tasks },
-                })
-              )
-                setTasks(undefined)
-            }}
-          >
-            {tr('保存工具列')}
-          </Button>
-        </Stack>
-      </Modal>
     </Stack>
   )
 }

@@ -126,6 +126,16 @@ try {
     .waitFor()
   for (const name of ['遊戲附加按鈕', '遊玩時間', '遊戲引擎'])
     await page.locator('.basic-palette').getByRole('button', { name, exact: true }).waitFor()
+  // R-385: a new game action is added from the launch component's settings and chosen for it.
+  await page
+    .locator('.basic-palette')
+    .getByRole('button', { name: '啟動遊戲', exact: true })
+    .click()
+  await page.getByRole('textbox', { name: '新操作的按鈕文字', exact: true }).fill('Manual')
+  await page.getByRole('textbox', { name: '新操作的類型', exact: true }).click()
+  await page.getByRole('option', { name: '開啟資料夾內的檔案', exact: true }).click()
+  await page.getByRole('button', { name: '新增', exact: true }).click()
+  await page.locator('.editor-inspector input[value="Manual"]').waitFor()
   assert.deepEqual(errors, [])
   passed = true
   console.log(

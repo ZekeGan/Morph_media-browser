@@ -140,60 +140,35 @@ try {
   assert.equal(await fs.readFile(projectFile(media, project.projectId), 'utf8'), originalProject)
   assert.ok((await args.inputValue()).includes('with spaces'))
   await drawer.getByRole('button', { name: '取消變更', exact: true }).click()
-  await drawer.getByRole('button', { name: '自訂工具列', exact: true }).click()
-  const editor = page.getByRole('dialog', { name: '自訂工具列', exact: true })
-  await editor.getByRole('button', { name: '加入按鈕', exact: true }).click()
-  await editor.getByRole('textbox', { name: '按鈕文字', exact: true }).fill('Open notes')
-  await editor.getByRole('textbox', { name: '任務類型', exact: true }).click()
-  await page.getByRole('option', { name: '以指定應用程式開啟檔案', exact: true }).click()
-  await editor.locator('.game-action-item').last().focus()
-  await page.keyboard.press('Alt+ArrowUp')
-  assert.ok(
-    (await editor.locator('.game-action-select').first().innerText()).includes('Open notes')
-  )
-  await editor.getByRole('button', { name: '加入按鈕', exact: true }).click()
-  await editor.getByRole('textbox', { name: '按鈕文字', exact: true }).fill('Website')
-  await editor.getByRole('textbox', { name: '任務類型', exact: true }).click()
-  await page.getByRole('option', { name: '開啟網址', exact: true }).click()
-  // The drag events are sent directly with one shared DataTransfer: Playwright's native drag sometimes never starts
-  // (about 1 run in 10), while this still runs the item's own dragstart, dragover and drop handlers.
-  const transfer = await page.evaluateHandle(() => new DataTransfer())
-  const source = editor.locator('.game-action-item').last(),
-    target = editor.locator('.game-action-item').first()
-  await source.dispatchEvent('dragstart', { dataTransfer: transfer })
-  await target.dispatchEvent('dragenter', { dataTransfer: transfer })
-  await target.dispatchEvent('dragover', { dataTransfer: transfer })
-  await target.dispatchEvent('drop', { dataTransfer: transfer })
-  await source.dispatchEvent('dragend', { dataTransfer: transfer })
-  // The new order renders after the drop: wait for it instead of reading the list at once.
-  await editor
-    .locator('.game-action-select')
-    .first()
-    .filter({ hasText: 'Website' })
-    .waitFor({ timeout: 3000 })
-  await page.screenshot({ path: path.join(screens, 'editor.png') })
-  page.once('dialog', (dialog) => dialog.accept())
-  await editor.locator('.mantine-Modal-close').click()
-  await editor.waitFor({ state: 'hidden' })
+  // R-385: the toolbar dialog is gone; actions are added from the launch component in the layout editor (tested in
+  // game-launch-cell-ui). Here a page action is added to the project directly so the folder can bind it.
+  assert.equal(await drawer.getByRole('button', { name: '自訂工具列', exact: true }).count(), 0) // ui-names: ignore
   assert.equal(await fs.readFile(projectFile(media, project.projectId), 'utf8'), originalProject)
-  await drawer.getByRole('button', { name: '自訂工具列', exact: true }).click()
-  await editor.waitFor()
-  assert.equal(await editor.locator('.game-action-item').count(), 1)
-  await editor.getByRole('button', { name: '加入按鈕', exact: true }).click()
-  await editor.getByRole('textbox', { name: '按鈕文字', exact: true }).fill('Website')
-  await editor.getByRole('textbox', { name: '任務類型', exact: true }).click()
-  await page.getByRole('option', { name: '開啟網址', exact: true }).click()
-  await editor.getByRole('button', { name: '保存工具列', exact: true }).click()
-  await editor.waitFor({ state: 'hidden' })
+  await page.evaluate(async (projectId) => {
+    const snapshot = (await window.media.request({ action: 'snapshot' })).snapshot!
+    const current = snapshot.projects.find((p) => p.projectId === projectId)!.project!
+    await window.media.request({
+      action: 'saveProject',
+      project: {
+        ...current,
+        actionTemplates: [
+          ...(current.actionTemplates ?? [
+            { id: 'default-launch-game', label: '啟動遊戲', kind: 'exe', color: '#168c77' },
+          ]),
+          { id: 'website', label: 'Website', kind: 'url', color: '#2f80ed' },
+        ],
+      },
+    })
+  }, project.projectId)
+  // A save from outside the window's own requests shows after a refresh (which also rescans).
+  await button('重新整理').click()
   await idle()
+  await drawer.getByRole('tab', { name: '遊戲操作', exact: true }).click()
   await drawer.getByRole('textbox', { name: '網址', exact: true }).fill('https://example.test/game')
   await drawer.getByRole('button', { name: '保存網址', exact: true }).click()
   await idle()
   assert.equal(
-    JSON.parse(await fs.readFile(folderFile(game), 'utf8')).details.targets[
-      JSON.parse(await fs.readFile(projectFile(media, project.projectId), 'utf8'))
-        .actionTemplates[1].id
-    ].path,
+    JSON.parse(await fs.readFile(folderFile(game), 'utf8')).details.targets.website.path,
     'https://example.test/game'
   )
   // The eye hides a button from this folder's action row; the binding stays.
@@ -219,12 +194,7 @@ try {
     win.setMinimumSize(500, 400)
     win.setBounds({ width: 620, height: 780 })
   })
-  await drawer.getByRole('button', { name: '自訂工具列', exact: true }).click()
-  await editor.waitFor()
-  assert.ok(await editor.locator('.game-action-inspector').isVisible())
   await page.screenshot({ path: path.join(screens, 'narrow.png'), animations: 'disabled' })
-  await editor.locator('.mantine-Modal-close').click()
-  await editor.waitFor({ state: 'hidden' })
   await button('關閉資料夾設定').click()
   await app.evaluate(({ BrowserWindow }) =>
     BrowserWindow.getAllWindows()[0].setBounds({ width: 1350, height: 900 })

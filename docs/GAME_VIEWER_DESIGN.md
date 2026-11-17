@@ -1,6 +1,6 @@
 # 遊戲內容頁、動作與掃描邊界
 
-> 最後確認：2026-11-17（R-384）。遊戲內容頁與啟動按鈕的現行規則；辨識規則見 [GAME_ENGINE_DETECTION](GAME_ENGINE_DETECTION.md)，有效記錄與導覽邊界見 [工作區](WORKSPACE_REVISION.md)。程式：`src/game/GameActions.tsx`、`src/panel/FolderContent.tsx`、`shared/launchArgs.ts`、`electron/explorer.ts`；契約在 `shared/explorer.ts`；取捨見 [決策索引](DECISIONS.md)（C-78～C-80、C-85、C-92）。
+> 最後確認：2026-11-17（R-385,R-409）。遊戲內容頁與啟動按鈕的現行規則；辨識規則見 [GAME_ENGINE_DETECTION](GAME_ENGINE_DETECTION.md)，有效記錄與導覽邊界見 [工作區](WORKSPACE_REVISION.md)。程式：`src/game/GameActions.tsx`、`src/panel/FolderContent.tsx`、`shared/launchArgs.ts`、`electron/explorer.ts`；契約在 `shared/explorer.ts`；取捨見 [決策索引](DECISIONS.md)（C-78～C-80、C-85、C-92）。
 
 ## 遊戲內容頁
 
@@ -11,7 +11,7 @@
 | 區域 | 已確認要求 |
 | --- | --- |
 | 上方大圖 | 頂部無邊框封面，右上使用小 ICON 更換／切換；來源可匯入或從資料夾已設定圖片選擇。保留完整比例，無圖片顯示佔位。 |
-| 中間自訂工具列 | 可自訂按鈕任務、顯示文字及樣式等屬性；右方編輯入口提供設定。支援 EXE、資料夾、指定應用程式開檔及 http(s) 網址；尚無自訂版型時提供啟動遊戲，目標須手動指定，不猜執行檔。 |
+| 中間操作列 | 專案的遊戲操作（EXE、資料夾、指定應用程式開檔、http(s) 網址、捷徑、檔案）依序成為按鈕；尚無自訂操作時提供啟動遊戲，目標須手動指定，不猜執行檔。新增操作在版面編輯器的「啟動遊戲」組件設定（R-385、R-409）；「自訂工具列」對話框已移除，既有操作的文字、顏色與順序照舊保留。 |
 | 欄位 | 沒有獨立的欄位表（R-390）；欄位在最上方的「資料夾詳情」裡，見[欄位在資料夾詳情](#欄位在資料夾詳情)。 |
 
 遊戲無圖用佔位，漫畫無圖不顯示左側封面，是各內容視圖的不同空值規則。C：TABLE 模式的「專案配置欄位」規則不直接用來裁掉詳情中其他已存原值。

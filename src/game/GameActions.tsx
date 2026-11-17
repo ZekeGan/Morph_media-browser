@@ -1,10 +1,8 @@
-import { useEffect, useState, useLayoutEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ActionIcon,
   Alert,
   Button,
-  ColorPicker,
-  ColorSwatch,
   Group,
   Select,
   Stack,
@@ -29,7 +27,7 @@ import { parseLaunchArgs } from '../../shared/launchArgs'
 import { useGameExtras } from './useGameExtras'
 import './game-actions.css'
 
-const kindLabel = (kind: ActionKind) =>
+export const kindLabel = (kind: ActionKind) =>
   ({
     exe: tr('啟動程式或啟動檔'),
     folder: tr('開啟資料夾'),
@@ -338,211 +336,54 @@ export function GameActionTargets({
   )
 }
 
-// Colours offered at a glance; anything else is one click away under "custom colour".
-const actionColors = [
-  '#168c77',
-  '#2f80ed',
-  '#7c5cff',
-  '#d6336c',
-  '#e5484d',
-  '#e8590c',
-  '#f59f00',
-  '#2f9e44',
-  '#1098ad',
-  '#868e96',
-]
-
-export function GameActionEditor({
-  tasks,
-  onChange,
+// R-385, R-409: a new game action is added where it is used, from the launch component in the layout editor: a name
+// and what it does. It joins the project's actions (binding a target stays in each folder's settings).
+export function NewGameAction({
   disabled,
+  onAdd,
 }: {
-  tasks: ActionTemplate[]
-  onChange: (tasks: ActionTemplate[]) => void
   disabled: boolean
+  onAdd: (template: ActionTemplate) => void
 }) {
-  const [selected, setSelected] = useState(tasks[0]?.id ?? ''),
-    [dragged, setDragged] = useState<string>()
-  const list = useRef<HTMLDivElement>(null),
-    positions = useRef(new Map<string, number>())
-  useLayoutEffect(() => {
-    const next = new Map<string, number>()
-    for (const node of list.current?.querySelectorAll<HTMLElement>('[data-task-id]') ?? []) {
-      const id = node.dataset.taskId!,
-        top = node.getBoundingClientRect().top,
-        previous = positions.current.get(id)
-      next.set(id, top)
-      if (
-        previous !== undefined &&
-        previous !== top &&
-        !matchMedia('(prefers-reduced-motion: reduce)').matches
-      )
-        node.animate(
-          [{ transform: 'translateY(' + (previous - top) + 'px)' }, { transform: 'translateY(0)' }],
-          { duration: 180, easing: 'ease-out' }
-        )
-    }
-    positions.current = next
-  }, [tasks])
-  const current = tasks.find((task) => task.id === selected) ?? tasks[0]
-  const update = (change: Partial<ActionTemplate>) =>
-    current &&
-    onChange(tasks.map((task) => (task.id === current.id ? { ...task, ...change } : task)))
-  const move = (id: string, to: number) => {
-    const from = tasks.findIndex((task) => task.id === id)
-    if (from < 0 || to < 0 || to >= tasks.length || from === to) return
-    const next = [...tasks],
-      [task] = next.splice(from, 1)
-    next.splice(to, 0, task)
-    onChange(next)
-  }
+  const [label, setLabel] = useState(''),
+    [kind, setKind] = useState<ActionKind>('exe')
   return (
-    <div className="game-action-editor">
-      <div ref={list} className="game-action-list" role="list" aria-label={tr('操作順序')}>
-        {tasks.map((task, i) => (
-          <div
-            data-task-id={task.id}
-            role="listitem"
-            tabIndex={0}
-            onKeyDown={(event) => {
-              if (event.altKey && ['ArrowUp', 'ArrowDown'].includes(event.key) && !disabled) {
-                event.preventDefault()
-                move(task.id, i + (event.key === 'ArrowUp' ? -1 : 1))
-              }
-            }}
-            className={`game-action-item${current?.id === task.id ? ' selected' : ''}`}
-            key={task.id}
-            draggable={!disabled}
-            onDragStart={(e) => {
-              setDragged(task.id)
-              e.dataTransfer.setData('application/x-game-action', task.id)
-              e.dataTransfer.effectAllowed = 'move'
-            }}
-            onDragEnd={() => setDragged(undefined)}
-            // Decide from the drag data, not from state: a quick drag reaches dragover before React has re-rendered
-            // with the dragged id, and refusing that dragover silently cancels the drop.
-            onDragOver={(e) => {
-              if (e.dataTransfer.types.includes('application/x-game-action')) {
-                e.preventDefault()
-                e.dataTransfer.dropEffect = 'move'
-              }
-            }}
-            onDrop={(e) => {
-              e.preventDefault()
-              const id = e.dataTransfer.getData('application/x-game-action') || dragged
-              if (id) move(id, i)
-              setDragged(undefined)
-            }}
-          >
-            <button
-              type="button"
-              className="game-action-select"
-              disabled={disabled}
-              aria-pressed={current?.id === task.id}
-              onClick={() => setSelected(task.id)}
-            >
-              <span className="game-action-grip" aria-hidden="true">
-                ⠿
-              </span>
-              <span className="game-action-dot" style={{ background: task.color }} />
-              <span>{tr(task.label)}</span>
-            </button>
-            <Tooltip label={tr('移除')}>
-              <ActionIcon
-                variant="subtle"
-                color="red"
-                aria-label={tr('移除 {0}', task.label)}
-                disabled={disabled}
-                onClick={() => onChange(tasks.filter((item) => item.id !== task.id))}
-              >
-                <Icon name="close" size={14} />
-              </ActionIcon>
-            </Tooltip>
-          </div>
-        ))}
-        <Button
-          variant="light"
+    <Stack gap={6} className="new-game-action">
+      <TextInput
+        size="xs"
+        label={tr('新增遊戲操作')}
+        placeholder={tr('按鈕文字')}
+        aria-label={tr('新操作的按鈕文字')}
+        value={label}
+        maxLength={100}
+        disabled={disabled}
+        onChange={(e) => setLabel(e.currentTarget.value)}
+      />
+      <Group gap={6} wrap="nowrap" align="flex-end">
+        <Select
           size="xs"
-          disabled={disabled || tasks.length >= 30}
+          style={{ flex: 1 }}
+          aria-label={tr('新操作的類型')}
+          allowDeselect={false}
+          value={kind}
+          disabled={disabled}
+          data={(['exe', 'folder', 'file-app', 'url', 'shortcut', 'file'] as const).map(
+            (value) => ({ value, label: kindLabel(value) })
+          )}
+          onChange={(value) => value && setKind(value as ActionKind)}
+        />
+        <Button
+          size="xs"
+          variant="light"
+          disabled={disabled || !label.trim()}
           onClick={() => {
-            const id = crypto.randomUUID()
-            onChange([...tasks, { id, label: tr('啟動遊戲'), kind: 'exe', color: '#168c77' }])
-            setSelected(id)
+            onAdd({ id: crypto.randomUUID(), label: label.trim(), kind, color: '#168c77' })
+            setLabel('')
           }}
         >
-          {tr('加入按鈕')}
+          {tr('新增')}
         </Button>
-      </div>
-      {current ? (
-        <Stack className="game-action-inspector" gap="sm">
-          <TextInput
-            label={tr('按鈕文字')}
-            value={current.label}
-            maxLength={100}
-            disabled={disabled}
-            onChange={(e) => update({ label: e.currentTarget.value })}
-          />
-          <Select
-            comboboxProps={{ zIndex: 460 }}
-            label={tr('任務類型')}
-            value={current.kind}
-            disabled={disabled}
-            data={(['exe', 'folder', 'file-app', 'url', 'shortcut', 'file'] as const).map(
-              (kind) => ({
-                value: kind,
-                label: kindLabel(kind),
-              })
-            )}
-            onChange={(value) => value && update({ kind: value as ActionKind })}
-          />
-          <div>
-            <Text size="sm" fw={500} mb={6}>
-              {tr('顏色')}
-            </Text>
-            <Group gap={8} role="radiogroup" aria-label={tr('顏色')}>
-              {actionColors.map((color) => (
-                <ColorSwatch
-                  key={color}
-                  component="button"
-                  type="button"
-                  color={color}
-                  size={26}
-                  role="radio"
-                  aria-checked={current.color.toLowerCase() === color}
-                  aria-label={color}
-                  disabled={disabled}
-                  style={{ cursor: disabled ? 'default' : 'pointer', color: '#fff' }}
-                  onClick={() => update({ color })}
-                >
-                  {current.color.toLowerCase() === color && <Icon name="check" size={14} />}
-                </ColorSwatch>
-              ))}
-            </Group>
-            <details className="action-custom-color">
-              <summary>{tr('自訂顏色')}</summary>
-              <ColorPicker
-                format="hex"
-                fullWidth
-                size="sm"
-                value={current.color}
-                onChange={(value) => /^#[0-9a-f]{6}$/i.test(value) && update({ color: value })}
-              />
-            </details>
-          </div>
-          <div>
-            <Text size="xs" c="dimmed" mb={4}>
-              {tr('預覽')}
-            </Text>
-            <Button size="xs" style={{ background: current.color, color: '#fff' }} tabIndex={-1}>
-              {tr(current.label)}
-            </Button>
-          </div>
-        </Stack>
-      ) : (
-        <Text c="dimmed" size="sm">
-          {tr('加入按鈕以建立操作。')}
-        </Text>
-      )}
-    </div>
+      </Group>
+    </Stack>
   )
 }

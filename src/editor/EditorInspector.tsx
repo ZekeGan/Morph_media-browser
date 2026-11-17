@@ -34,6 +34,7 @@ import { CellStyleEditor } from '../cells/CellStyleEditor'
 import { EnumColors } from '../cells/EnumColors'
 import { FallbackActions } from '../cells/FallbackActions'
 import { gameExtraLabels } from '../cells/GameExtraCell'
+import { NewGameAction } from '../game/GameActions'
 
 export type InspectorTab = 'content' | 'style'
 
@@ -661,6 +662,22 @@ export function EditorInspector(props: EditorInspectorProps) {
                           { value: 'contain', label: tr('完整顯示（保留空白）') },
                         ]}
                         onChange={(value) => updateCell({ imageFit: value as Cell['imageFit'] })}
+                      />
+                    )}
+                    {selectedCell.kind === 'game-launch' && (
+                      <NewGameAction
+                        disabled={gameActionTemplates(draft).length >= 30}
+                        onAdd={(template) =>
+                          change({
+                            ...draft,
+                            actionTemplates: [...gameActionTemplates(draft), template],
+                            cells: draft.cells.map((cell) =>
+                              cell.cellId === selectedCell.cellId
+                                ? { ...cell, actionId: template.id }
+                                : cell
+                            ),
+                          })
+                        }
                       />
                     )}
                     {selectedCell.kind === 'game-launch' &&
