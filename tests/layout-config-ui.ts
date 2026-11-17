@@ -35,6 +35,7 @@ await lib.saveProject({
     { id: 'albums', name: 'Albums', cells: layout('LAYOUT-A') },
   ],
   activeLayoutId: 'zero',
+  panelPresets: [{ id: 'panel-album', name: 'Panel Album', cells: layout('PANEL-A') }],
   layoutRules: { card: { types: { music: 'albums' }, levels: ['top'] } },
   cardView: { mode: 'single', level: 2 },
 })
@@ -52,6 +53,7 @@ try {
   await button.click()
   const dialog = page.getByRole('dialog', { name: '版面配置' })
   await dialog.waitFor()
+  await fs.mkdir(path.resolve('.test-output', 'shot'), { recursive: true })
   const item = (name: string) =>
     dialog
       .locator('.layout-config-item')
@@ -71,9 +73,21 @@ try {
   await item('Artist').locator('.layout-config-source', { hasText: '專屬' }).waitFor()
   await dialog.locator('.layout-config-preview').getByText('LAYOUT-A').first().waitFor()
   await dialog.getByText('1 處尚未保存').waitFor()
+  // R-409: the right panel has the same rules; switching keeps the card change. Music gets a panel layout and Album's
+  // right panel shows it in the preview.
+  await dialog.getByText('右側', { exact: true }).click()
+  await item('Album').locator('.layout-config-source', { hasText: '預設' }).waitFor()
+  await dialog.getByRole('combobox', { name: '音樂的版面' }).selectOption('panel-album')
+  await item('Album').locator('.layout-config-source', { hasText: '類型' }).waitFor()
+  await item('Album').click()
+  await dialog.locator('.layout-config-preview').getByText('PANEL-A').waitFor()
+  await dialog.getByText('2 處尚未保存').waitFor()
+  await page.screenshot({
+    path: path.resolve('.test-output', 'shot', 'r409-layout-config-panel.png'),
+  })
+  await dialog.getByText('卡片', { exact: true }).click()
   // Screenshots for review: wide, then the 900-wide window.
   const shots = path.resolve('.test-output', 'shot')
-  await fs.mkdir(shots, { recursive: true })
   await page.screenshot({ path: path.join(shots, 'r413-layout-config-wide.png') })
   await app.evaluate(({ BrowserWindow }) =>
     BrowserWindow.getAllWindows()[0].setBounds({ x: 0, y: 0, width: 900, height: 900 })
@@ -88,10 +102,14 @@ try {
   const artist = lib.snapshot().rows.find((r) => r.name === 'Artist')
   assert.equal(saved.layoutRules?.card?.folders?.[artist?.record?.folderId ?? ''], 'albums')
   assert.deepEqual(saved.layoutRules?.card?.levels, ['top'])
+  assert.deepEqual(saved.layoutRules?.panel, { types: { music: 'panel-album' } })
   await page.screenshot({ path: path.join(root, 'layout-config.png') })
   assert.deepEqual(errors, [])
   passed = true
-  console.log('PASS layout configuration: level and kind rules, own layout saved in rules. ' + root)
+  console.log(
+    'PASS layout configuration: level and kind rules, own layout saved in rules, right-panel rules. ' +
+      root
+  )
 } catch (error) {
   await reportFailure(page, root)
   throw error

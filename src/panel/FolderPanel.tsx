@@ -15,15 +15,14 @@ import {
   addCommonFields,
   cardChoice,
   cardPresets,
-  cardRule,
   presetDraft,
   panelCells,
+  panelChoice,
   rowCells,
   syncPresetDraft,
 } from '../../shared/layouts'
 import { commonFieldNames } from '../editor/commonFields'
 import { useIsWork, useParentKind } from '../browse/folderKind'
-import { editLayoutRules } from '../../shared/layoutRules'
 import { t as tr, useLocale } from '../i18n'
 import { layoutName as presetName } from '../editor/layoutName'
 import { HelpLabel, HelpTip } from '../common/HelpTip'
@@ -71,7 +70,7 @@ export function FolderPanel({
   run,
   onDirty,
   onEditLayout,
-  onEditBookLayout,
+  onLayoutConfig,
   initialTab = 'fields',
 }: {
   row: FolderRow
@@ -83,8 +82,8 @@ export function FolderPanel({
   run: Run
   onDirty: (dirty: boolean) => void
   onEditLayout?: () => void
-  // R-363: opens the book template editor at a template (a folder's own).
-  onEditBookLayout?: (preset?: string) => void
+  // R-409: opens the layout window at this folder, on cards or the right panel.
+  onLayoutConfig?: (target: 'card' | 'panel') => void
   initialTab?: string
 }) {
   useLocale()
@@ -142,18 +141,25 @@ export function FolderPanel({
     video: tr('影片'),
     general: tr('一般'),
   }
-  const layoutName = (id?: string) => {
-    const preset = cardPresets(project).find((p) => p.id === id) ?? cardPresets(project)[0]
-    return presetName(preset)
+  // R-409: the layouts this folder shows and where they come from; they are set in the layout window.
+  const sourceLabel: Record<string, string> = {
+    folder: tr('專屬'),
+    type: tr('類型'),
+    level: tr('層級'),
+    default: tr('預設'),
   }
-  // R-413: what the rules give this folder without its own choice.
-  const effectiveLayout = layoutName(
-    cardChoice(
-      { ...project, layoutRules: { card: { ...cardRule(project), folders: undefined } } },
-      row,
-      isWork
-    ).id
-  )
+  const shownCard = (() => {
+    const { id, source } = cardChoice(project, row, isWork),
+      preset = cardPresets(project).find((p) => p.id === id) ?? cardPresets(project)[0]
+    return { name: presetName(preset), source: sourceLabel[source] }
+  })()
+  const shownPanel = (() => {
+    const choice = panelChoice(project, row, effectiveKind(row, sample, parentKind)),
+      preset = choice && project.panelPresets?.find((p) => p.id === choice.id)
+    return preset
+      ? { name: presetName(preset), source: sourceLabel[choice!.source] }
+      : { name: tr('內建右側'), source: sourceLabel.default }
+  })()
   const kindReason: Record<string, string> = {
     game: tr('偵測到遊戲引擎'),
     content: tr('依檔案內容判斷'),
@@ -870,46 +876,46 @@ export function FolderPanel({
               />
             )}
             {row.record && (
-              <Select
-                label={
-                  <HelpLabel
-                    label={tr('此資料夾的卡片外觀')}
-                    help={tr('版面套用優先序：資料夾自選 › 類型預設 › 專案目前版面。')}
-                  />
-                }
-                allowDeselect={false}
-                value={cardRule(project)?.folders?.[row.record.folderId] ?? ''}
-                data={[
-                  { value: '', label: tr('遵循類型與專案設定（目前：{0}）', effectiveLayout) },
-                  ...cardPresets(project).map((preset) => ({
-                    value: preset.id,
-                    label: presetName(preset),
-                  })),
-                ]}
-                disabled={busy || fieldDirty}
-                onChange={(id) => {
-                  const folderId = row.record!.folderId
-                  void act({
-                    action: 'saveProject',
-                    project: editLayoutRules(project, (rules) => {
-                      const folders = { ...rules.card.folders }
-                      if (id) folders[folderId] = id
-                      else delete folders[folderId]
-                      rules.card.folders = folders
-                    }),
-                  })
-                }}
-              />
-            )}
-            {row.record && detectedKind.kind === 'book' && (
-              <BookLayoutChoice
-                project={project}
-                folderId={row.record.folderId}
-                folderName={row.name}
-                disabled={busy || fieldDirty}
-                act={act}
-                onEdit={onEditBookLayout}
-              />
+              <div className="folder-layouts" role="group" aria-label={tr('此資料夾的版面')}>
+                <HelpLabel
+                  label={<Text size="sm">{tr('此資料夾的版面')}</Text>}
+                  help={tr(
+                    '卡片與右側版面由版面配置的規則決定：資料夾專屬 › 類型 › 層級 › 預設；在版面配置視窗修改。'
+                  )}
+                />
+                <dl>
+                  <dt>{tr('卡片')}</dt>
+                  <dd>
+                    <span>{shownCard.name}</span>
+                    <small>{shownCard.source}</small>
+                  </dd>
+                  <dt>{tr('右側')}</dt>
+                  <dd>
+                    <span>{shownPanel.name}</span>
+                    <small>{shownPanel.source}</small>
+                  </dd>
+                </dl>
+                {onLayoutConfig && (
+                  <Group gap="xs">
+                    <Button
+                      size="compact-sm"
+                      variant="light"
+                      disabled={busy || fieldDirty}
+                      onClick={() => onLayoutConfig('card')}
+                    >
+                      {tr('卡片版面配置…')}
+                    </Button>
+                    <Button
+                      size="compact-sm"
+                      variant="light"
+                      disabled={busy || fieldDirty}
+                      onClick={() => onLayoutConfig('panel')}
+                    >
+                      {tr('右側版面配置…')}
+                    </Button>
+                  </Group>
+                )}
+              </div>
             )}
           </Stack>
         </Tabs.Panel>
@@ -997,84 +1003,5 @@ export function FolderPanel({
         </Stack>
       </Modal>
     </Stack>
-  )
-}
-
-// R-363: which book template this folder shows. "Its own" copies the template it shows now into a new one used by this
-// folder only and opens it in the editor; it is an ordinary template from then on.
-function BookLayoutChoice({
-  project,
-  folderId,
-  folderName,
-  disabled,
-  act,
-  onEdit,
-}: {
-  project: Project
-  folderId: string
-  folderName: string
-  disabled: boolean
-  act: Act
-  onEdit?: (preset?: string) => void
-}) {
-  // R-409: the book layouts are panel layouts; without one for books the built-in template is the default.
-  const defaultCells = builtinPanel(project, 'book')
-  const presets = project.panelPresets ?? []
-  const kindId = project.layoutRules?.panel?.types?.book ?? project.panelPresetId
-  const current = presets.find((preset) => preset.id === kindId)
-  const own = project.layoutRules?.panel?.folders?.[folderId]
-  // R-413: the folder's template is kept in the panel layout rules.
-  const setOwn = <P extends Project>(base: P, id: string | null) =>
-    editLayoutRules(base, (rules) => {
-      const folders = { ...rules.panel.folders }
-      if (id) folders[folderId] = id
-      else delete folders[folderId]
-      rules.panel.folders = folders
-    })
-  const choose = async (value: string | null) => {
-    if (value === '__own') {
-      const used = new Set(presets.map((preset) => preset.name.toLocaleLowerCase()))
-      const base = folderName.slice(0, 90).trim() || tr('此資料夾')
-      let name = base
-      for (let n = 2; used.has(name.toLocaleLowerCase()); n++) name = base + ' (' + n + ')'
-      const shown =
-        presets.find((preset) => preset.id === own)?.cells ?? current?.cells ?? defaultCells
-      const id = crypto.randomUUID()
-      const saved = await act({
-        action: 'saveProject',
-        project: setOwn(
-          { ...project, panelPresets: [...presets, { id, name, cells: structuredClone(shown) }] },
-          id
-        ),
-      })
-      if (saved) onEdit?.(id)
-      return
-    }
-    void act({ action: 'saveProject', project: setOwn(project, value || null) })
-  }
-  return (
-    <Select
-      label={
-        <HelpLabel
-          label={tr('此資料夾的漫畫展示')}
-          help={tr(
-            '右側漫畫資訊用哪個模板；「另做一份給這個資料夾」會複製目前的模板並打開編輯器。'
-          )}
-        />
-      }
-      allowDeselect={false}
-      value={own && presets.some((preset) => preset.id === own) ? own : ''}
-      data={[
-        {
-          value: '',
-          label: tr('遵循專案預設（目前：{0}）', current ? presetName(current) : tr('預設版面')),
-        },
-        ...presets.map((preset) => ({ value: preset.id, label: presetName(preset) })),
-        // Templates are limited to 30, as card layouts are.
-        { value: '__own', label: tr('另做一份給這個資料夾…'), disabled: presets.length >= 30 },
-      ]}
-      disabled={disabled}
-      onChange={(value) => void choose(value)}
-    />
   )
 }

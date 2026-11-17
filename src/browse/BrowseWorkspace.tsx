@@ -115,7 +115,9 @@ function BrowseWorkspaceBody({
 }: Props) {
   const locale = useLocale()
   const works = useContext(LayoutWorksContext),
-    [layoutsOpen, setLayoutsOpen] = useState(false)
+    [layoutsOpen, setLayoutsOpen] = useState(false),
+    // R-409: the layout window opened from a folder's settings starts at that folder, on cards or the right panel.
+    [layoutsFrom, setLayoutsFrom] = useState<{ row: FolderRow; target: 'card' | 'panel' }>()
 
   const [browse, setBrowse] = useState(initial),
     [readNext, setReadNext] = useState<{
@@ -599,7 +601,10 @@ function BrowseWorkspaceBody({
         run={run}
         onDirty={reportDirty}
         onEditLayout={() => edit()}
-        onEditBookLayout={(preset?: string) => edit('book', preset)}
+        onLayoutConfig={(target) => {
+          setLayoutsFrom({ row: config, target })
+          setLayoutsOpen(true)
+        }}
       />
     </Suspense>
   )
@@ -789,10 +794,15 @@ function BrowseWorkspaceBody({
         )}
       <LayoutConfig
         opened={layoutsOpen}
-        close={() => setLayoutsOpen(false)}
+        close={() => {
+          setLayoutsOpen(false)
+          setLayoutsFrom(undefined)
+        }}
         project={project}
         rows={all}
-        start={currentFolder}
+        start={layoutsFrom?.row ?? currentFolder}
+        initialTarget={layoutsFrom?.target}
+        editPanel={(kind, preset) => edit(kind, preset)}
         busy={busy}
         save={async (next) => !!(await act({ action: 'saveProject', project: next }))}
       />

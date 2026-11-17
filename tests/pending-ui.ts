@@ -111,26 +111,24 @@ try {
   await button('開啟專案 Pending Album').first().click()
   await button('目前資料夾設定').click()
   const drawer = page.locator('.folder-panel-dock-settings'),
-    scheme = drawer.getByRole('textbox', { name: '此資料夾的卡片外觀', exact: true })
+    layouts = drawer.getByRole('group', { name: '此資料夾的版面', exact: true })
   // Pending Manga shows the same folder, so the shared / this-project switch is offered here.
   await drawer.locator('label').filter({ hasText: '僅目前專案' }).waitFor()
   assert.equal(await drawer.locator('.mantine-Divider-root').count(), 1)
-  // The card layout is in the Appearance tab (R-235).
+  // The layouts are shown in the Appearance tab (R-235) and set in the layout window, which opens at this folder
+  // (R-409); cancelling it writes nothing.
   await drawer.getByRole('tab', { name: '外觀', exact: true }).click()
-  assert.match(await scheme.inputValue(), /^遵循類型與專案設定（目前：/)
-  await scheme.click()
-  await page.getByRole('option', { name: '預設版面', exact: true }).click()
-  await page.waitForFunction(() =>
-    document.querySelector('.statusbar')?.textContent?.includes('就緒')
-  )
-  await scheme.click()
-  await page.getByRole('option', { name: /^遵循類型與專案設定/ }).click()
-  await page.waitForFunction(() =>
-    document.querySelector('.statusbar')?.textContent?.includes('就緒')
-  )
+  await layouts.getByText('內建右側', { exact: true }).waitFor()
+  await layouts.getByRole('button', { name: '卡片版面配置…', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '版面配置' })
+  await dialog.locator('.layout-config-item.picked').waitFor()
+  await dialog.getByRole('button', { name: '取消', exact: true }).click()
+  await dialog.waitFor({ state: 'hidden' })
   await button('關閉資料夾設定').click()
   assert.equal(await fs.readFile(folderFile(media), 'utf8'), original)
   const body = page.locator('.folder-panel-body')
+  // The content tab draws once the settings close; scroll only after it has.
+  await body.getByText('cover.png', { exact: true }).first().waitFor()
   await body.evaluate((element) => {
     const spacer = document.createElement('div')
     spacer.id = 'controlled-scroll-content'

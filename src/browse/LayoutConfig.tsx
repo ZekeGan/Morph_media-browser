@@ -3,8 +3,10 @@ import {
   ActionIcon,
   Button,
   Group,
+  Menu,
   Modal,
   NativeSelect,
+  SegmentedControl,
   Text,
   TextInput,
   Tooltip,
@@ -15,8 +17,10 @@ import { Icon } from '../common/icons'
 import { Card } from '../cells/Card'
 import { isLayoutWork, KindIcon, LayoutWorksContext } from './folderKind'
 import { cardPresets, cardRule } from '../../shared/layouts'
+import { builtinPanel } from '../../shared/explorer'
 import {
   chooseLayout,
+  choosePanel,
   editLayoutRules,
   layoutLevel,
   type LayoutRule,
@@ -30,7 +34,7 @@ import type { FolderRow, Project } from '../../shared/model'
 // for works, a layout per level for other folders), each with how many folders it reaches. Right: the folders as an
 // indented list, each with its layout and where it comes from; picking one there makes it that folder's own. Below:
 // the cards of the picked folder and its neighbours as they will look. Edited on a draft, saved together. Rules:
-// docs/LAYOUT_RULES.md.
+// docs/LAYOUT_RULES.md. R-409: the same window sets the right-panel layouts ("卡片／右側"); both drafts are saved together.
 const kinds: { kind: FolderKind; label: string }[] = [
   { kind: 'game', label: '遊戲' },
   { kind: 'book', label: '書籍／漫畫' },
@@ -56,13 +60,35 @@ interface Props {
   start?: FolderRow
   busy: boolean
   save: (project: Project) => Promise<boolean>
+  // Which layouts the window opens on.
+  initialTarget?: Target
+  // Opens the right-panel editor for a kind at a layout (after the window is closed).
+  editPanel?: (kind: FolderKind, preset?: string) => void
 }
-export function LayoutConfig({ opened, close, project, rows, start, busy, save }: Props) {
+type Target = 'card' | 'panel'
+export function LayoutConfig({
+  opened,
+  close,
+  project,
+  rows,
+  start,
+  busy,
+  save,
+  initialTarget = 'card',
+  editPanel,
+}: Props) {
   useLocale()
   const works = useContext(LayoutWorksContext)
-  const presets = cardPresets(project)
-  const [draft, setDraft] = useState<LayoutRule>({}),
-    [base, setBase] = useState(''),
+  const [target, setTarget] = useState<Target>(initialTarget)
+  const panel = target === 'panel'
+  const panelPresets = project.panelPresets ?? []
+  const presets = panel ? panelPresets : cardPresets(project)
+  // Both drafts live side by side, so switching between card and panel keeps what was changed.
+  const [drafts, setDrafts] = useState<Record<Target, LayoutRule>>({ card: {}, panel: {} }),
+    [bases, setBases] = useState<Record<Target, string>>({ card: '', panel: '' }),
+    draft = drafts[target],
+    base = bases[target],
+    setBase = (id: string) => setBases((now) => ({ ...now, [target]: id })),
     [picked, setPicked] = useState<string>(),
     [query, setQuery] = useState(''),
     [closed, setClosed] = useState<string[]>([])
@@ -73,12 +99,19 @@ export function LayoutConfig({ opened, close, project, rows, start, busy, save }
     return rows.filter((r) => r.rowId === start.rowId || pathKey(r.path).startsWith(key + '/'))
   }, [rows, start])
   const structure = useMemo(() => treeStructure(scope), [scope])
-  const savedRule = () => structuredClone(cardRule(project) ?? {}),
-    savedBase = () => project.activeLayoutId ?? presets[0].id
+  const savedRules = (): Record<Target, LayoutRule> => ({
+      card: structuredClone(cardRule(project) ?? {}),
+      panel: structuredClone(project.layoutRules?.panel ?? {}),
+    }),
+    savedBases = (): Record<Target, string> => ({
+      card: project.activeLayoutId ?? cardPresets(project)[0].id,
+      panel: project.panelPresetId ?? '',
+    })
   useEffect(() => {
     if (!opened) return
-    setDraft(savedRule())
-    setBase(savedBase())
+    setTarget(initialTarget)
+    setDrafts(savedRules())
+    setBases(savedBases())
     setPicked(start?.rowId)
     setQuery('')
     // Two levels below the starting folder are open; deeper branches start closed.
@@ -89,7 +122,9 @@ export function LayoutConfig({ opened, close, project, rows, start, busy, save }
         .map((r) => r.rowId)
     )
   }, [opened])
+  // A panel without a layout shows its kind's built-in panel ('' stands for it).
   const name = (id: string) => {
+    if (panel && !presets.some((p) => p.id === id)) return tr('內建右側')
     const preset = presets.find((p) => p.id === id) ?? presets[0]
     return layoutName(preset)
   }
@@ -98,7 +133,14 @@ export function LayoutConfig({ opened, close, project, rows, start, busy, save }
   const followDefault = tr('沿用預設（{0}）', name(base))
   const known = (id: string) => presets.some((p) => p.id === id)
   const work = (row: FolderRow) => isLayoutWork(works, row.rowId)
-  const choice = (row: FolderRow, rule = draft) => chooseLayout(rule, row, work(row), base, known)
+  const kindOf = (row: FolderRow) => effectiveKind(row, row.contents)
+  const choice = (row: FolderRow, rule = draft) =>
+    panel
+      ? (choosePanel(rule, row, kindOf(row), base || undefined, known) ?? {
+          id: '',
+          source: 'default' as const,
+        })
+      : chooseLayout(rule, row, work(row), base, known)
   const deepest = useMemo(
     () =>
       Math.min(
@@ -122,12 +164,12 @@ export function LayoutConfig({ opened, close, project, rows, start, busy, save }
       }
     }
     return out
-  }, [rows, draft, base, works])
+  }, [rows, draft, base, works, target])
   const setRule = (change: (rule: LayoutRule) => void) =>
-    setDraft((now) => {
-      const next = structuredClone(now)
+    setDrafts((now) => {
+      const next = structuredClone(now[target])
       change(next)
-      return next
+      return { ...now, [target]: next }
     })
   // A search shows the folders whose name matches and the folders above them; otherwise the open branches.
   const listed = useMemo(() => {
@@ -155,24 +197,31 @@ export function LayoutConfig({ opened, close, project, rows, start, busy, save }
     return out
   }, [scope, structure, closed, query])
   const top = useMemo(() => scope.reduce((min, r) => Math.min(min, r.depth), Infinity), [scope])
-  const savedFolders = cardRule(project)?.folders ?? {}
+  const savedFolders = savedRules()[target].folders ?? {}
+  // Unsaved changes of both card and panel.
   const changes = useMemo(() => {
-    const before = savedRule()
-    let count = base !== savedBase() ? 1 : 0
-    for (const kind of new Set([
-      ...Object.keys(before.types ?? {}),
-      ...Object.keys(draft.types ?? {}),
-    ]))
-      if (before.types?.[kind as FolderKind] !== draft.types?.[kind as FolderKind]) count++
-    for (let i = 0; i < deepest; i++)
-      if ((before.levels?.[i] ?? '') !== (draft.levels?.[i] ?? '')) count++
-    for (const id of new Set([
-      ...Object.keys(before.folders ?? {}),
-      ...Object.keys(draft.folders ?? {}),
-    ]))
-      if (before.folders?.[id] !== draft.folders?.[id]) count++
+    const rules = savedRules(),
+      saved = savedBases()
+    let count = 0
+    for (const which of ['card', 'panel'] as const) {
+      const before = rules[which],
+        now = drafts[which]
+      if (bases[which] !== saved[which]) count++
+      for (const kind of new Set([
+        ...Object.keys(before.types ?? {}),
+        ...Object.keys(now.types ?? {}),
+      ]))
+        if (before.types?.[kind as FolderKind] !== now.types?.[kind as FolderKind]) count++
+      for (let i = 0; i < deepest; i++)
+        if ((before.levels?.[i] ?? '') !== (now.levels?.[i] ?? '')) count++
+      for (const id of new Set([
+        ...Object.keys(before.folders ?? {}),
+        ...Object.keys(now.folders ?? {}),
+      ]))
+        if (before.folders?.[id] !== now.folders?.[id]) count++
+    }
     return count
-  }, [draft, base, project])
+  }, [drafts, bases, project])
   // The preview: the picked folder and the folders beside it, drawn with the draft rules.
   const pickedRow = scope.find((r) => r.rowId === picked) ?? start ?? scope[0]
   const previewRows = useMemo(() => {
@@ -186,30 +235,78 @@ export function LayoutConfig({ opened, close, project, rows, start, busy, save }
     return [pickedRow, ...siblings.filter((r) => r.rowId !== pickedRow.rowId)].slice(0, PREVIEW)
   }, [pickedRow, scope, structure])
   const previewProject = useMemo<Project>(() => {
-    const preset = presets.find((p) => p.id === base) ?? presets[0]
+    const cards = cardPresets(project),
+      preset = cards.find((p) => p.id === bases.card) ?? cards[0]
     return {
       ...project,
-      layoutPresets: presets,
+      layoutPresets: cards,
       activeLayoutId: preset.id,
       cells: preset.cells,
-      layoutRules: { ...project.layoutRules, card: draft },
+      layoutRules: { ...project.layoutRules, card: drafts.card },
     }
-  }, [project, draft, base])
-  const apply = async () => {
+  }, [project, drafts, bases])
+  // The picked folder's right panel with the draft rules: its layout, else its kind's built-in panel.
+  const panelPreview = (row: FolderRow) => {
+    const { id } = choice(row),
+      kind = kindOf(row),
+      cells =
+        presets.find((p) => p.id === id)?.cells ??
+        (kind === 'book' ? builtinPanel(project, 'book') : undefined)
+    return { kind, cells }
+  }
+  // The project with both drafts; `extra` adds right-panel layouts made in this window.
+  const drafted = (extra: NonNullable<Project['panelPresets']> = []): Project => {
     let next = editLayoutRules(project, (rules) => {
-      rules.card = draft
+      rules.card = drafts.card
+      rules.panel = drafts.panel
     })
-    if (base !== savedBase()) {
-      const preset = presets.find((p) => p.id === base)
+    const cards = cardPresets(project)
+    if (bases.card !== savedBases().card) {
+      const preset = cards.find((p) => p.id === bases.card)
       if (preset)
         next = {
           ...next,
           cells: structuredClone(preset.cells),
-          layoutPresets: presets,
+          layoutPresets: cards,
           activeLayoutId: preset.id,
         }
     }
-    if (await save(next)) close()
+    const list = [...panelPresets, ...extra]
+    return {
+      ...next,
+      panelPresets: list.length ? list : undefined,
+      panelPresetId:
+        bases.panel && list.some((p) => p.id === bases.panel) ? bases.panel : undefined,
+    }
+  }
+  const apply = async () => {
+    if (await save(drafted())) close()
+  }
+  // A copy of the panel layout this folder shows now (or its built-in one), named after the folder, made its own
+  // layout and opened in the editor; unsaved changes in the window are saved with it.
+  const ownCopy = async (row: FolderRow) => {
+    const folderId = row.record?.folderId
+    if (!folderId || panelPresets.length >= 40) return
+    const { cells, kind } = panelPreview(row),
+      used = new Set(panelPresets.map((p) => p.name.toLocaleLowerCase())),
+      first = row.name.slice(0, 90).trim() || tr('此資料夾')
+    let label = first
+    for (let n = 2; used.has(label.toLocaleLowerCase()); n++) label = first + ' (' + n + ')'
+    const id = crypto.randomUUID()
+    const next = drafted([
+      { id, name: label, cells: structuredClone(cells ?? builtinPanel(project, kind)) },
+    ])
+    next.layoutRules = {
+      ...next.layoutRules,
+      panel: {
+        ...next.layoutRules?.panel,
+        folders: { ...next.layoutRules?.panel?.folders, [folderId]: id },
+      },
+    }
+    if (await save(next)) {
+      close()
+      editPanel?.(kind, id)
+    }
   }
   const reachText = (count = 0) => tr('{0} 個資料夾', count)
   return (
@@ -220,6 +317,17 @@ export function LayoutConfig({ opened, close, project, rows, start, busy, save }
       size="min(1400px, 96vw)"
       classNames={{ body: 'layout-config-body' }}
     >
+      <SegmentedControl
+        className="layout-config-target"
+        size="xs"
+        aria-label={tr('設定哪一種版面')}
+        value={target}
+        onChange={(value) => setTarget(value as Target)}
+        data={[
+          { value: 'card', label: tr('卡片') },
+          { value: 'panel', label: tr('右側') },
+        ]}
+      />
       <div className="layout-config">
         <aside className="layout-config-rules" aria-label={tr('規則')}>
           <section>
@@ -228,7 +336,7 @@ export function LayoutConfig({ opened, close, project, rows, start, busy, save }
               size="xs"
               aria-label={tr('預設版面')}
               value={base}
-              data={choices}
+              data={panel ? [{ value: '', label: tr('內建右側') }, ...choices] : choices}
               onChange={(e) => setBase(e.currentTarget.value)}
             />
             <Text className="layout-config-reach">
@@ -236,7 +344,7 @@ export function LayoutConfig({ opened, close, project, rows, start, busy, save }
             </Text>
           </section>
           <section>
-            <Text className="layout-config-heading">{tr('作品依類型')}</Text>
+            <Text className="layout-config-heading">{panel ? tr('依類型') : tr('作品依類型')}</Text>
             {kinds.map(({ kind, label }) => (
               <div className="layout-config-rule" key={kind}>
                 <span>{tr(label)}</span>
@@ -261,7 +369,9 @@ export function LayoutConfig({ opened, close, project, rows, start, busy, save }
             ))}
           </section>
           <section>
-            <Text className="layout-config-heading">{tr('一般資料夾依層級')}</Text>
+            <Text className="layout-config-heading">
+              {panel ? tr('依層級（類型沒有設定時）') : tr('一般資料夾依層級')}
+            </Text>
             {Array.from({ length: deepest }, (_, i) => (
               <div className="layout-config-rule" key={i}>
                 <span>{tr('第 {0} 層', i + 1)}</span>
@@ -413,6 +523,31 @@ export function LayoutConfig({ opened, close, project, rows, start, busy, save }
                     </Text>
                   )}
                   <span className="layout-config-source">{tr(sources[source])}</span>
+                  {panel && folderId && (
+                    <span onClick={(e) => e.stopPropagation()}>
+                      <Menu position="bottom-end" withinPortal>
+                        <Menu.Target>
+                          <Tooltip label={tr('更多選項')} withArrow>
+                            <ActionIcon
+                              size="sm"
+                              variant="subtle"
+                              aria-label={tr('{0} 的更多選項', row.name)}
+                            >
+                              <Icon name="more" size={14} />
+                            </ActionIcon>
+                          </Tooltip>
+                        </Menu.Target>
+                        <Menu.Dropdown>
+                          <Menu.Item
+                            disabled={busy || panelPresets.length >= 40 || !editPanel}
+                            onClick={() => void ownCopy(row)}
+                          >
+                            {tr('另做一份給這個資料夾…')}
+                          </Menu.Item>
+                        </Menu.Dropdown>
+                      </Menu>
+                    </span>
+                  )}
                 </div>
               )
             })}
@@ -422,7 +557,51 @@ export function LayoutConfig({ opened, close, project, rows, start, busy, save }
               </Text>
             )}
           </div>
-          {pickedRow && (
+          {pickedRow && panel && (
+            <div className="layout-config-preview">
+              <Group justify="space-between" gap="xs">
+                <Text className="layout-config-heading">
+                  {tr('預覽：「{0}」的右側', pickedRow.name)}
+                </Text>
+                {editPanel && (
+                  <Tooltip
+                    label={changes ? tr('先保存或取消變更') : tr('在編輯器打開這個右側版面')}
+                    withArrow
+                  >
+                    <Button
+                      size="compact-xs"
+                      variant="light"
+                      disabled={busy || !!changes}
+                      onClick={() => {
+                        const { id } = choice(pickedRow)
+                        close()
+                        editPanel(kindOf(pickedRow), id || undefined)
+                      }}
+                    >
+                      {tr('編輯右側版面')}
+                    </Button>
+                  </Tooltip>
+                )}
+              </Group>
+              {(() => {
+                const { cells } = panelPreview(pickedRow)
+                return cells?.length ? (
+                  <div className="layout-config-panel">
+                    <Card
+                      project={{ ...project, layoutPresets: undefined, layoutRules: {}, cells }}
+                      row={pickedRow}
+                      open={() => {}}
+                    />
+                  </div>
+                ) : (
+                  <Text size="sm" c="dimmed">
+                    {tr('這個類型沒有右側版面，顯示內建的主視覺。')}
+                  </Text>
+                )
+              })()}
+            </div>
+          )}
+          {pickedRow && !panel && (
             <div className="layout-config-preview">
               <Text className="layout-config-heading">
                 {tr('預覽：「{0}」與同一層的資料夾', pickedRow.name)}

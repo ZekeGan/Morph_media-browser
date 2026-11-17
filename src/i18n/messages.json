@@ -3191,12 +3191,6 @@
     "en": "The URL does not match the selected source",
     "es": "La URL no coincide con la fuente seleccionada"
   },
-  "此資料夾的卡片外觀": {
-    "ja": "このフォルダーのカードの見た目",
-    "zh-CN": "此文件夹的卡片外观",
-    "en": "Card look for this folder",
-    "es": "Aspecto de la tarjeta de esta carpeta"
-  },
   "作品網址或 ID": {
     "ja": "作品URLまたはID",
     "zh-CN": "作品网址或 ID",
@@ -5357,12 +5351,6 @@
     "ja": "フォルダーの種類を更新しました",
     "es": "Tipo de carpeta actualizado"
   },
-  "版面套用優先序：資料夾自選 › 類型預設 › 專案目前版面。": {
-    "zh-CN": "版面套用优先级：文件夹自选 › 类型默认 › 项目当前版面。",
-    "en": "Layout priority: the folder's own choice › type default › the project's current layout.",
-    "ja": "レイアウトの優先順位：フォルダー指定 › 種類の既定 › プロジェクトの現在のレイアウト。",
-    "es": "Prioridad del diseño: el propio de la carpeta › el del tipo › el actual del proyecto."
-  },
   "選一個資料夾開始瀏覽；原始資料夾不會被搬移或刪除。": {
     "zh-CN": "选一个文件夹开始浏览；原始文件夹不会被移动或删除。",
     "en": "Pick a folder to start browsing. The original folder is never moved or deleted.",
@@ -5494,12 +5482,6 @@
     "en": "You can also set it by hand.",
     "ja": "手動で指定することもできます。",
     "es": "También puedes fijarlo a mano."
-  },
-  "遵循類型與專案設定（目前：{0}）": {
-    "zh-CN": "遵循类型与项目设置（当前：{0}）",
-    "en": "Follow type and project (now: {0})",
-    "ja": "種類とプロジェクト設定に従う（現在：{0}）",
-    "es": "Seguir tipo y proyecto (ahora: {0})"
   },
   "遊戲資料夾裡的檔案很多，也不該被改動。所以只把「遊戲主資料夾」這一層當成一筆資料夾資訊，裡面的子資料夾受保護，不會被掃描或寫入。": {
     "zh-CN": "游戏文件夹里的文件很多，也不该被改动。所以只把「游戏主文件夹」这一层当成一笔文件夹信息，里面的子文件夹受保护，不会被扫描或写入。",
@@ -11849,24 +11831,6 @@
     "ja": "お気に入り数",
     "es": "Favoritos"
   },
-  "此資料夾的漫畫展示": {
-    "zh-CN": "此文件夹的漫画展示",
-    "en": "Manga view for this folder",
-    "ja": "このフォルダーの漫画表示",
-    "es": "Vista de manga de esta carpeta"
-  },
-  "右側漫畫資訊用哪個模板；「另做一份給這個資料夾」會複製目前的模板並打開編輯器。": {
-    "zh-CN": "右侧漫画信息用哪个模板；「另做一份给这个文件夹」会复制当前的模板并打开编辑器。",
-    "en": "Which template the manga details on the right use. \"Make one for this folder\" copies the current template and opens the editor.",
-    "ja": "右側の漫画情報に使うテンプレート。「このフォルダー用に作る」は今のテンプレートを複製してエディターを開きます。",
-    "es": "Qué plantilla usan los datos del manga a la derecha. «Crear una para esta carpeta» copia la plantilla actual y abre el editor."
-  },
-  "遵循專案預設（目前：{0}）": {
-    "zh-CN": "遵循项目默认（当前：{0}）",
-    "en": "Follow the project default (now: {0})",
-    "ja": "プロジェクトの既定に従う（現在：{0}）",
-    "es": "Seguir el valor del proyecto (ahora: {0})"
-  },
   "另做一份給這個資料夾…": {
     "zh-CN": "另做一份给这个文件夹…",
     "en": "Make one for this folder…",
@@ -12916,5 +12880,89 @@
     "en": "There is no list of right-panel layouts",
     "ja": "右側レイアウトの一覧がありません",
     "es": "No hay lista de diseños del panel derecho"
+  },
+  "內建右側": {
+    "zh-CN": "内置右侧",
+    "en": "Built-in panel",
+    "ja": "組み込みの右側",
+    "es": "Panel integrado"
+  },
+  "設定哪一種版面": {
+    "zh-CN": "设置哪一种版面",
+    "en": "Which layouts to set",
+    "ja": "設定するレイアウト",
+    "es": "Qué diseños configurar"
+  },
+  "右側": {
+    "zh-CN": "右侧",
+    "en": "Right panel",
+    "ja": "右側",
+    "es": "Panel derecho"
+  },
+  "依層級（類型沒有設定時）": {
+    "zh-CN": "按层级（类型没有设置时）",
+    "en": "By level (when the kind has none)",
+    "ja": "階層別（種類に設定がないとき）",
+    "es": "Por nivel (cuando el tipo no tiene)"
+  },
+  "{0} 的更多選項": {
+    "zh-CN": "{0} 的更多选项",
+    "en": "More options for {0}",
+    "ja": "{0} のその他のオプション",
+    "es": "Más opciones de {0}"
+  },
+  "預覽：「{0}」的右側": {
+    "zh-CN": "预览：“{0}”的右侧",
+    "en": "Preview: right panel of “{0}”",
+    "ja": "プレビュー：「{0}」の右側",
+    "es": "Vista previa: panel derecho de «{0}»"
+  },
+  "先保存或取消變更": {
+    "zh-CN": "先保存或取消更改",
+    "en": "Save or cancel the changes first",
+    "ja": "先に変更を保存するか取り消してください",
+    "es": "Guarda o cancela los cambios primero"
+  },
+  "在編輯器打開這個右側版面": {
+    "zh-CN": "在编辑器打开这个右侧版面",
+    "en": "Open this right-panel layout in the editor",
+    "ja": "この右側レイアウトをエディターで開く",
+    "es": "Abrir este diseño del panel derecho en el editor"
+  },
+  "編輯右側版面": {
+    "zh-CN": "编辑右侧版面",
+    "en": "Edit right panel",
+    "ja": "右側レイアウトを編集",
+    "es": "Editar panel derecho"
+  },
+  "這個類型沒有右側版面，顯示內建的主視覺。": {
+    "zh-CN": "这个类型没有右侧版面，显示内置的主视觉。",
+    "en": "This kind has no right-panel layout; its built-in view is shown.",
+    "ja": "この種類には右側レイアウトがなく、組み込みの表示になります。",
+    "es": "Este tipo no tiene diseño de panel derecho; se muestra su vista integrada."
+  },
+  "此資料夾的版面": {
+    "zh-CN": "此文件夹的版面",
+    "en": "Layouts of this folder",
+    "ja": "このフォルダーのレイアウト",
+    "es": "Diseños de esta carpeta"
+  },
+  "卡片與右側版面由版面配置的規則決定：資料夾專屬 › 類型 › 層級 › 預設；在版面配置視窗修改。": {
+    "zh-CN": "卡片与右侧版面由版面配置的规则决定：文件夹专属 › 类型 › 层级 › 默认；在版面配置窗口修改。",
+    "en": "The card and right-panel layouts follow the layout rules: the folder's own › kind › level › default. Change them in the layout window.",
+    "ja": "カードと右側のレイアウトはレイアウト配置の規則で決まります：フォルダー専用 › 種類 › 階層 › 既定。レイアウト配置ウィンドウで変更します。",
+    "es": "Los diseños de tarjeta y panel derecho siguen las reglas de diseño: propio de la carpeta › tipo › nivel › predeterminado. Cámbialos en la ventana de diseños."
+  },
+  "卡片版面配置…": {
+    "zh-CN": "卡片版面配置…",
+    "en": "Card layouts…",
+    "ja": "カードのレイアウト配置…",
+    "es": "Diseños de tarjeta…"
+  },
+  "右側版面配置…": {
+    "zh-CN": "右侧版面配置…",
+    "en": "Right-panel layouts…",
+    "ja": "右側のレイアウト配置…",
+    "es": "Diseños del panel derecho…"
   }
 }
