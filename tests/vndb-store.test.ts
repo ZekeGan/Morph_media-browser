@@ -4,11 +4,25 @@ import { metadata } from '../electron/metadata'
 import { storeLink, VNDB_STORE_MISSING } from '../electron/sources/vndb'
 import { sourceForUrl } from '../shared/sources'
 
-const asked: unknown[] = []
+const asked: unknown[] = [],
+  releases: unknown[] = []
 const fakeVndb = (found: boolean) =>
   (async (input: RequestInfo | URL, init?: RequestInit) => {
-    assert.equal(String(input), 'https://api.vndb.org/kana/vn', 'only the VNDB API is asked')
-    asked.push(JSON.parse(String(init?.body)).filters)
+    const url = String(input)
+    assert.match(
+      url,
+      /^https:\/\/api\.vndb\.org\/kana\/(vn|release)$/,
+      'only the VNDB API is asked'
+    )
+    const body = JSON.parse(String(init?.body))
+    // R-418: the work's releases are asked once for their game engine (by the work's id, never a link).
+    if (url.endsWith('/release') && body.filters[0] === 'vn') {
+      releases.push(body.filters)
+      return new Response(JSON.stringify({ results: [{ engine: 'KID Engine' }] }), {
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+    asked.push(body.filters)
     return new Response(
       JSON.stringify({
         results: found
@@ -62,6 +76,8 @@ test('R-293: a store address is previewed from VNDB, and FANZA without a key goe
   assert.equal(getchu.preview.provider, 'vndb')
   assert.equal(getchu.preview.source, 'https://vndb.org/v97')
   assert.deepEqual(asked.at(-1), ['release', '=', ['extlink', '=', ['getchu', 36221]]])
+  assert.deepEqual(releases.at(-1), ['vn', '=', ['id', '=', 'v97']])
+  assert.equal(getchu.preview.values.find((v) => v.key === 'ENGINE')?.value, 'KID Engine')
   const dmm = await metadata(
     'https://dlsoft.dmm.co.jp/detail/sai_0071/',
     fakeVndb(true),

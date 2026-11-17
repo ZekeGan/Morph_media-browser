@@ -127,7 +127,7 @@ export class Explorer {
   externals = new Map<string, { rowId: string; file: string }>()
   // R-412: subtitle tracks read from videos (a few kept in memory, the rest in the local cache) and the reads running.
   embeddedSubtitles = new Map<string, EmbeddedTrack[]>()
-  embeddedJobs = new Map<string, Promise<EmbeddedTrack[]>>()
+  embeddedJobs = new Map<string, embeddedFns.EmbeddedJob>()
   imagePreviews = new Map<string, RemoteImage & { expires: number }>()
   imageUrlOptions: ImageUrlOptions = {}
   previews = new Map<
@@ -1079,9 +1079,9 @@ export class Explorer {
         return this.chooseSubtitle(req.rowId)
       }
       case 'embeddedSubtitles':
-        return embeddedFns.embeddedList(this, req.rowId, req.fileId)
+        return embeddedFns.embeddedList(this, req.rowId, req.fileId, req.early)
       case 'embeddedSubtitle':
-        return embeddedFns.embeddedText(this, req.rowId, req.fileId, req.track)
+        return embeddedFns.embeddedText(this, req.rowId, req.fileId, req.track, req.early, req.time)
       case 'subtitle': {
         let file: string,
           portable = false,

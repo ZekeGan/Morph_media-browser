@@ -345,3 +345,185 @@ test('the explorer lists and returns embedded tracks through a cache that follow
   })
   assert.ok(progress.length > 0, 'the file changed, so it was read again')
 })
+
+// R-417: a file with a cue index (SeekHead → Cues at the end), as mkvmerge writes it. Positions are offsets from the
+// Segment's data; every element here has a 4-byte size, so they are known before the bytes are joined.
+const u32 = (n: number) =>
+  Buffer.from([(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255])
+function indexed(options: { lie?: boolean } = {}) {
+  const info = el(0x1549a966, el(0x2ad7b1, [0x0f, 0x42, 0x40]))
+  const list = tracks(
+    entry(1, 1, 'V_MPEG4/ISO/AVC', 'und'),
+    entry(2, 0x11, 'S_TEXT/UTF8', 'eng', 'English'),
+    // Header stripping (algorithm 3): every block lost the same leading bytes.
+    entry(3, 0x11, 'S_TEXT/UTF8', 'jpn', 'Stripped', [
+      el(0x6d80, el(0x6240, el(0x5034, Buffer.concat([num(0x4254, 3), el(0x4255, 'Hel')])))),
+    ])
+  )
+  const clusters: { time: number; children: Buffer[]; subs: { track: number; at: number }[] }[] = [
+    { time: 0, children: [video(0), subtitle(2, 100, 'first')], subs: [{ track: 2, at: 1 }] },
+    {
+      time: 30000,
+      children: [video(0), subtitle(2, 0, 'second'), subtitle(3, 0, 'lo there')],
+      subs: [
+        { track: 2, at: 1 },
+        { track: 3, at: 2 },
+      ],
+    },
+    { time: 65000, children: [video(0), subtitle(2, 0, 'third')], subs: [{ track: 2, at: 1 }] },
+  ]
+  const seekHead = (cues: number) =>
+    el(
+      0x114d9b74,
+      el(0x4dbb, Buffer.concat([el(0x53ab, idBytes(0x1c53bb6b)), el(0x53ac, u32(cues))]))
+    )
+  let position = seekHead(0).length + info.length + list.length
+  const built: Buffer[] = [],
+    points: Buffer[] = []
+  for (const item of clusters) {
+    const time = num(0xe7, item.time),
+      body = [time, ...item.children]
+    for (const sub of item.subs) {
+      const relative = body.slice(0, sub.at + 1).reduce((sum, part) => sum + part.length, 0)
+      points.push(
+        el(
+          0xbb,
+          Buffer.concat([
+            el(0xb3, u32(item.time)),
+            el(
+              0xb7,
+              Buffer.concat([
+                num(0xf7, sub.track),
+                el(0xf1, u32(position)),
+                el(0xf0, u32(options.lie ? relative + 3 : relative)),
+              ])
+            ),
+          ])
+        )
+      )
+    }
+    const whole = cluster(item.time, ...item.children)
+    built.push(whole)
+    position += whole.length
+  }
+  return Buffer.concat([
+    el(0x1a45dfa3, el(0x4282, 'matroska')),
+    el(
+      0x18538067,
+      Buffer.concat([
+        seekHead(position),
+        info,
+        list,
+        ...built,
+        el(0x1c53bb6b, Buffer.concat(points)),
+      ])
+    ),
+  ])
+}
+
+test('a file with a cue index: only the indexed blocks are read, nearest the playback time first', async (t) => {
+  const { write } = await fixture(t)
+  const file = await write('indexed.mkv', indexed())
+  const whole = await readMkvSubtitles(file)
+  assert.deepEqual(
+    whole.map((track) => track.cues.map((cue) => [cue.start, cue.text])),
+    [
+      [
+        [0.1, 'first'],
+        [30, 'second'],
+        [65, 'third'],
+      ],
+      [[30, 'Hello there']],
+    ],
+    'stripped header bytes are put back'
+  )
+  // Reading from 65 s: the first cue read is the one at 65 s, and the track list was known before any cue.
+  let live: { cues: { text: string }[] }[] = [],
+    firstRead: string | undefined,
+    cuesWhenListed = -1
+  await readMkvSubtitles(file, {
+    focus: () => 65,
+    onTracks: (found) => {
+      live = found
+      cuesWhenListed = found.reduce((sum, track) => sum + track.cues.length, 0)
+    },
+    onProgress: () => {
+      firstRead ??= live.flatMap((track) => track.cues)[0]?.text
+    },
+  })
+  assert.equal(cuesWhenListed, 0)
+  assert.equal(firstRead, 'third')
+  // An index that points at the wrong places is not trusted: the whole file is read and nothing is lost.
+  const lying = await readMkvSubtitles(await write('lying-index.mkv', indexed({ lie: true })))
+  assert.deepEqual(
+    lying[0].cues.map((cue) => cue.text),
+    ['first', 'second', 'third']
+  )
+  assert.deepEqual(
+    lying[1].cues.map((cue) => cue.text),
+    ['Hello there']
+  )
+})
+
+test('the explorer answers early with the track list and the cues read so far', async (t) => {
+  const { root, closers } = await fixture(t)
+  const media = path.join(root, 'media'),
+    local = path.join(root, 'local')
+  await fs.mkdir(media)
+  await fs.writeFile(path.join(media, 'film.mkv'), indexed())
+  const library = new Library(local, undefined, false)
+  await library.init()
+  const desktop: DesktopOperations = {
+    choose: async () => undefined,
+    open: async () => {},
+    launch: async () => {},
+    thumbnail: async () => Buffer.from('x'),
+  }
+  const explorer = new Explorer(library, local, desktop)
+  closers.push(() => explorer.index.close())
+  const snapshot = await library.create(media, { name: 'P', depth: { mode: 'through', level: 1 } }),
+    row = snapshot.rows[0],
+    film = (await explorer.content(row.rowId)).entries.find((entry) => entry.name === 'film.mkv')!
+  const early = await explorer.request({
+    action: 'embeddedSubtitles',
+    rowId: row.rowId,
+    fileId: film.id,
+    early: true,
+  })
+  assert.deepEqual(
+    early.embedded?.tracks.map((track) => track.number),
+    [2, 3]
+  )
+  const partial = await explorer.request({
+    action: 'embeddedSubtitle',
+    rowId: row.rowId,
+    fileId: film.id,
+    track: 2,
+    early: true,
+    time: 30,
+  })
+  assert.equal(partial.subtitle?.token, 'emb-2')
+  // Waiting for the whole read gives the final counts; afterwards an early request is complete, not partial.
+  const done = await explorer.request({
+    action: 'embeddedSubtitles',
+    rowId: row.rowId,
+    fileId: film.id,
+  })
+  assert.deepEqual(
+    done.embedded?.tracks.map((track) => track.cues),
+    [3, 1]
+  )
+  assert.equal(done.embedded?.reading, undefined)
+  const full = await explorer.request({
+    action: 'embeddedSubtitle',
+    rowId: row.rowId,
+    fileId: film.id,
+    track: 2,
+    early: true,
+  })
+  assert.equal(full.subtitle?.partial, undefined)
+  assert.deepEqual(
+    parseSubtitles(full.subtitle!.text).map((cue) => cue.text),
+    ['first', 'second', 'third']
+  )
+})

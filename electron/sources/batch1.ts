@@ -1,6 +1,6 @@
 import { SourceError } from '../metadata-common'
 import { clean, type Adapter } from './site'
-import { pickByLanguage, pickFromMap } from './language'
+import { itunesLanguage, pickByLanguage, pickFromMap } from './language'
 
 // R-284: public JSON APIs that need no key. Each adapter validates the work ID from the pasted address and asks only
 // its own fixed host (see config.ts); covers must come from the site's image host.
@@ -178,7 +178,8 @@ export const itunes: Adapter = async (site) => {
     'https://itunes.apple.com/lookup?id=' +
       id +
       '&entity=song&limit=200&country=' +
-      country.toLowerCase()
+      country.toLowerCase() +
+      (itunesLanguage(site.languages[0]) ? '&lang=' + itunesLanguage(site.languages[0]) : '')
   )
   const results = (reply.results ?? []) as Record<string, unknown>[]
   const album = results.find((r) => r.wrapperType === 'collection' && String(r.collectionId) === id)

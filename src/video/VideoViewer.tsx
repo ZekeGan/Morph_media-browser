@@ -63,7 +63,10 @@ export function VideoViewer({
     [subtitle, setSubtitle] = useState<ExplorerResponse['subtitle']>(),
     [cues, setCues] = useState<Cue[]>([]),
     // R-412: the subtitle tracks inside the playing MKV/WebM, read when the subtitle settings are opened.
-    [embedded, setEmbedded] = useState<EmbeddedState>()
+    [embedded, setEmbedded] = useState<EmbeddedState>(),
+    // R-417: the embedded track shown while its cues are still being read, and when it was last fetched again.
+    partialTrack = useRef<EmbeddedSubtitleInfo | undefined>(undefined),
+    partialRefreshed = useRef(0)
 
   const [settings, setSettings] = useState(defaultSubtitle),
     [error, setError] = useState(''),
@@ -293,6 +296,8 @@ export function VideoViewer({
     node.currentTime = Math.max(0, Math.min(node.duration, value))
     setTime(node.currentTime)
     showControls()
+    // R-417: a jump while the chosen embedded track is still being read moves the reading there.
+    if (partialTrack.current) void loadEmbedded(partialTrack.current, true)
   }
 
   const changeAudio = (volume: number, muted: boolean) => {
@@ -365,9 +370,11 @@ export function VideoViewer({
 
   const apply = (value: ExplorerResponse['subtitle']) => {
     if (!value) return
+    if (!value.partial) partialTrack.current = undefined
 
     try {
-      const parsed = parseSubtitles(value.text)
+      // R-417: an embedded track still being read may have nothing yet near the start.
+      const parsed = value.partial && !value.text.trim() ? [] : parseSubtitles(value.text)
       setCues(parsed)
       setSubtitle(value)
       setCaptions(true)
@@ -403,7 +410,9 @@ export function VideoViewer({
     }
   }
   // R-412: one embedded track; main returns it as SRT text, so it loads like a subtitle file.
-  const loadEmbedded = async (track: EmbeddedSubtitleInfo) => {
+  // R-417: while the video is still being read, main gives the cues read so far (partial) and reads near the
+  // playback time first; the track is fetched again as reading goes on (refresh keeps the subtitle settings).
+  const loadEmbedded = async (track: EmbeddedSubtitleInfo, refresh = false) => {
     const target = currentFile.current
     if (!target) return
     try {
@@ -412,9 +421,18 @@ export function VideoViewer({
         rowId: row.rowId,
         fileId: target,
         track: track.number,
+        early: true,
+        time: video.current?.currentTime ?? 0,
       })
-      if (mounted.current && currentFile.current === target && result.subtitle)
-        apply({ ...result.subtitle, name: embeddedLabel(track) })
+      if (!mounted.current || currentFile.current !== target || !result.subtitle) return
+      if (refresh && partialTrack.current?.number !== track.number) return
+      const value = { ...result.subtitle, name: embeddedLabel(track) }
+      partialTrack.current = value.partial ? track : undefined
+      if (!refresh) apply(value)
+      else {
+        setCues(value.text.trim() ? parseSubtitles(value.text) : [])
+        setSubtitle(value)
+      }
     } catch (reason) {
       if (mounted.current && currentFile.current === target) setError(describeError(reason).message)
     }
@@ -495,23 +513,31 @@ export function VideoViewer({
     return () => clearTimeout(timer)
   }, [resumed])
 
-  // R-412: the tracks inside an MKV/WebM are read once its subtitle settings are opened (main keeps a cache, so
-  // opening the same video again is quick), with progress while it reads.
+  // R-412: the tracks inside an MKV/WebM, read by main (with a cache, so opening the same video again is quick).
+  // R-417: reading starts as soon as the video opens; the track list comes back first and the cues are read in the
+  // background with progress, so the subtitle settings usually find them ready.
   const matroska = !!file && /\.(mkv|webm)$/i.test(file.name)
-  useEffect(() => {
-    if (!subtitleExpanded || !matroska || !file || embedded?.fileId === file.id) return
-    const target = file.id
-    setEmbedded({ fileId: target, status: 'loading', progress: 0, tracks: [] })
-    void window.explorer
-      .request({ action: 'embeddedSubtitles', rowId: row.rowId, fileId: target })
+  const listEmbedded = (target: string, early: boolean) =>
+    window.explorer
+      .request({ action: 'embeddedSubtitles', rowId: row.rowId, fileId: target, early })
       .then((result) => {
         if (mounted.current && currentFile.current === target)
-          setEmbedded({
+          setEmbedded((state) => ({
             fileId: target,
-            status: 'done',
-            progress: 1,
+            status: result.embedded?.reading ? 'loading' : 'done',
+            progress: result.embedded?.reading && state?.fileId === target ? state.progress : 1,
             tracks: result.embedded?.tracks ?? [],
-          })
+          }))
+      })
+  useEffect(() => {
+    if (!matroska || !file || embedded?.fileId === file.id) return
+    const target = file.id
+    setEmbedded({ fileId: target, status: 'loading', progress: 0, tracks: [] })
+    void listEmbedded(target, true)
+      // The second answer waits for the whole read: final counts, and the chosen track in full.
+      .then(() => listEmbedded(target, false))
+      .then(() => {
+        if (partialTrack.current) void loadEmbedded(partialTrack.current, true)
       })
       .catch((reason) => {
         if (mounted.current && currentFile.current === target)
@@ -523,22 +549,28 @@ export function VideoViewer({
             error: describeError(reason).message,
           })
       })
-  }, [subtitleExpanded, matroska, file?.id])
+  }, [matroska, file?.id])
   useEffect(
     () =>
       window.explorer.onSubtitleProgress((progress) => {
-        if (progress.rowId === row.rowId && progress.fileId === currentFile.current)
-          setEmbedded((state) =>
-            state?.status === 'loading' && state.fileId === progress.fileId
-              ? { ...state, progress: progress.fraction }
-              : state
-          )
+        if (progress.rowId !== row.rowId || progress.fileId !== currentFile.current) return
+        setEmbedded((state) =>
+          state?.status === 'loading' && state.fileId === progress.fileId
+            ? { ...state, progress: progress.fraction }
+            : state
+        )
+        // R-417: the chosen track fills in as it is read, at most every two seconds.
+        if (partialTrack.current && Date.now() - partialRefreshed.current > 2000) {
+          partialRefreshed.current = Date.now()
+          void loadEmbedded(partialTrack.current, true)
+        }
       }),
     [row.rowId]
   )
 
   useEffect(() => {
     setResumed(undefined)
+    partialTrack.current = undefined
     setEmbedded(undefined)
     setSubtitle(undefined)
     setCues([])

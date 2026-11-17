@@ -12592,5 +12592,131 @@
     "en": "Default",
     "ja": "既定を使用",
     "es": "Predeterminado"
+  },
+  "這個來源沒有{0}的資料，顯示的是{1}": {
+    "zh-CN": "这个来源没有{0}的资料，显示的是{1}",
+    "en": "This source has nothing in {0}; it shows {1}",
+    "ja": "このソースには{0}のデータがなく、{1}で表示されています",
+    "es": "Esta fuente no tiene datos en {0}; muestra {1}"
+  },
+  "日文": {
+    "zh-CN": "日文",
+    "en": "Japanese",
+    "ja": "日本語",
+    "es": "japonés"
+  },
+  "韓文": {
+    "zh-CN": "韩文",
+    "en": "Korean",
+    "ja": "韓国語",
+    "es": "coreano"
+  },
+  "中文": {
+    "zh-CN": "中文",
+    "en": "Chinese",
+    "ja": "中国語",
+    "es": "chino"
+  },
+  "拉丁字母的語言": {
+    "zh-CN": "拉丁字母的语言",
+    "en": "a Latin-script language",
+    "ja": "ラテン文字の言語",
+    "es": "un idioma de escritura latina"
+  },
+  "遊玩時長（分鐘）": {
+    "zh-CN": "游玩时长（分钟）",
+    "en": "Play time (minutes)",
+    "ja": "プレイ時間（分）",
+    "es": "Tiempo de juego (minutos)"
+  },
+  "Steam 商店網址": {
+    "zh-CN": "Steam 商店网址",
+    "en": "Steam store address",
+    "ja": "Steam ストアのアドレス",
+    "es": "Dirección de la tienda de Steam"
+  },
+  "DLsite 網址": {
+    "zh-CN": "DLsite 网址",
+    "en": "DLsite address",
+    "ja": "DLsite のアドレス",
+    "es": "Dirección de DLsite"
+  },
+  "官方網站": {
+    "zh-CN": "官方网站",
+    "en": "Official website",
+    "ja": "公式サイト",
+    "es": "Sitio web oficial"
+  },
+  "遊戲引擎": {
+    "zh-CN": "游戏引擎",
+    "en": "Game engine",
+    "ja": "ゲームエンジン",
+    "es": "Motor del juego"
+  },
+  "截圖網址": {
+    "zh-CN": "截图网址",
+    "en": "Screenshot addresses",
+    "ja": "スクリーンショットのアドレス",
+    "es": "Direcciones de capturas"
+  },
+  "用名稱搜尋": {
+    "zh-CN": "按名称搜索",
+    "en": "Search by name",
+    "ja": "名前で検索",
+    "es": "Buscar por nombre"
+  },
+  "用資料夾名稱（可修改）搜尋 VNDB、MusicBrainz、AniList、Bangumi 與 Steam，從候選中選一個再預覽；不會自動配對。": {
+    "zh-CN": "用文件夹名称（可修改）搜索 VNDB、MusicBrainz、AniList、Bangumi 与 Steam，从候选中选一个再预览；不会自动匹配。",
+    "en": "Search VNDB, MusicBrainz, AniList, Bangumi and Steam with the folder name (editable), then pick one candidate to preview. Nothing is matched automatically.",
+    "ja": "フォルダー名（変更可）で VNDB、MusicBrainz、AniList、Bangumi、Steam を検索し、候補から 1 つ選んでプレビューします。自動で照合はしません。",
+    "es": "Busca en VNDB, MusicBrainz, AniList, Bangumi y Steam con el nombre de la carpeta (editable) y elige un candidato para la vista previa. Nada se asocia automáticamente."
+  },
+  "{0} 搜尋失敗": {
+    "zh-CN": "{0} 搜索失败",
+    "en": "{0}: search failed",
+    "ja": "{0}: 検索に失敗しました",
+    "es": "{0}: la búsqueda falló"
+  },
+  "沒有找到候選，可以改個名稱再搜尋，或直接貼上網址。": {
+    "zh-CN": "没有找到候选，可以换个名称再搜索，或直接粘贴网址。",
+    "en": "No candidates found. Try another name, or paste an address.",
+    "ja": "候補が見つかりません。名前を変えて再検索するか、アドレスを貼り付けてください。",
+    "es": "No se encontraron candidatos. Prueba con otro nombre o pega una dirección."
+  },
+  "季數": {
+    "zh-CN": "季数",
+    "en": "Seasons",
+    "ja": "シーズン数",
+    "es": "Temporadas"
+  },
+  "各集": {
+    "zh-CN": "各集",
+    "en": "Episodes",
+    "ja": "各話",
+    "es": "Episodios"
+  },
+  "橫幅圖網址": {
+    "zh-CN": "横幅图网址",
+    "en": "Hero image address",
+    "ja": "ヒーロー画像のアドレス",
+    "es": "Dirección de la imagen hero"
+  },
+  "標誌圖網址": {
+    "zh-CN": "标志图网址",
+    "en": "Logo address",
+    "ja": "ロゴのアドレス",
+    "es": "Dirección del logotipo"
+  },
+  "圖示網址": {
+    "zh-CN": "图标网址",
+    "en": "Icon address",
+    "ja": "アイコンのアドレス",
+    "es": "Dirección del icono"
+  },
+  "請輸入要搜尋的名稱": {
+    "zh-CN": "请输入要搜索的名称",
+    "en": "Enter a name to search for",
+    "ja": "検索する名前を入力してください",
+    "es": "Escribe un nombre para buscar"
   }
 }

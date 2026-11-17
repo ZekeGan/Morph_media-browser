@@ -13,7 +13,8 @@ export interface Site {
   // R-381: the preferred languages as locale ids (zh-TW, ja, zh-CN, en, es), first choice first; empty = site default.
   languages: string[]
   text(key: string, value: unknown): void
-  list(key: string, value: unknown): void
+  // max: how many entries a long list may keep (200 by default).
+  list(key: string, value: unknown, max?: number): void
   number(key: string, value: unknown): void
 }
 // Extra request settings: headers (a key or client ID) and a plain-text body (IGDB's query language).
@@ -36,7 +37,7 @@ export const clean = (value: unknown) =>
   decode(value)
     .replace(/<[^>]*>/g, '')
     .slice(0, 10000)
-export const tags = (value: unknown) =>
+export const tags = (value: unknown, max = 200) =>
   Array.isArray(value)
     ? [
         ...new Set(
@@ -45,5 +46,5 @@ export const tags = (value: unknown) =>
             .map((item) => clean(item).slice(0, 100))
             .filter(Boolean)
         ),
-      ].slice(0, 200)
+      ].slice(0, max)
     : []

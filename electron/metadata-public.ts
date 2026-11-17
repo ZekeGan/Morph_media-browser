@@ -2,6 +2,7 @@ import type { MetadataPreview } from '../shared/explorer'
 import { KEY_MISSING, KEY_REJECTED } from '../shared/keys'
 import { imageType, limitedBytes, SourceError, sourceJson, sourceRequest } from './metadata-common'
 import { sourceConfig, userAgent, type PublicSourceId } from './sources/config'
+import { detectScript, scriptAccepted } from './sources/language'
 import { clean, tags, type Adapter, type RequestExtra, type Site } from './sources/site'
 import { anilist } from './sources/anilist'
 import { bangumi } from './sources/bangumi'
@@ -12,6 +13,7 @@ import { musicbrainz } from './sources/musicbrainz'
 import { openlibrary } from './sources/openlibrary'
 import { pixiv } from './sources/pixiv'
 import { vndb } from './sources/vndb'
+import { wikidata } from './sources/wikidata'
 import { booth, kakuyomu } from './sources/pages'
 import { itch } from './sources/itch'
 import { nhentai } from './sources/nhentai'
@@ -71,6 +73,7 @@ const adapters: Record<PublicSourceId, Adapter> = {
   musicbrainz,
   openlibrary,
   commons,
+  wikidata,
   dlsite,
   pixiv,
   hitomi,
@@ -174,8 +177,8 @@ export async function publicMetadata(
       const result = clean(value)
       if (result) values.push({ key, type: 'string', value: result })
     },
-    list(key, value) {
-      const result = tags(value)
+    list(key, value, max) {
+      const result = tags(value, max)
       if (result.length) values.push({ key, type: 'tags', value: result })
     },
     number(key, value) {
@@ -189,6 +192,19 @@ export async function publicMetadata(
     { key: 'TITLE', type: 'string', value: title },
     { key: 'SOURCE_URL', type: 'string', value: canonical }
   )
+  // R-420: a title or description that is in none of the preferred languages gets a notice (it never blocks the import).
+  // The value is "<preferred ids>|<script>"; the import window words it in the interface language.
+  if (site.languages.length) {
+    const description = values.find((v) => v.key === 'DESCRIPTION')
+    const text = description?.type === 'string' ? String(description.value) : title
+    const script = detectScript(text, description !== undefined)
+    if (script && !scriptAccepted(script, site.languages))
+      values.push({
+        key: 'LANGUAGE_NOTICE',
+        type: 'string',
+        value: site.languages.join(',') + '|' + script,
+      })
+  }
   const result: Result = {
     preview: { provider, title: title.slice(0, 200), source: canonical, values, related },
   }

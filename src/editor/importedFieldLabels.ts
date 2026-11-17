@@ -95,4 +95,25 @@ export const importedFieldLabels = (): Record<string, string> => ({
   DISC_COUNT: tr('片數'),
   MEDIA_FORMAT: tr('媒體格式'),
   TRACK_LIST: tr('曲目清單'),
+  // R-418: Wikidata IDs on other sites
+  WIKIDATA_ID: 'Wikidata ID',
+  MUSICBRAINZ_ARTIST_ID: 'MusicBrainz artist ID',
+  VNDB_ID: 'VNDB ID',
+  STEAM_APP_ID: 'Steam App ID',
+  ANILIST_ID: 'AniList ID',
+  MAL_ID: 'MyAnimeList anime ID',
+  MAL_MANGA_ID: 'MyAnimeList manga ID',
+  // R-419: TMDB series and SteamGridDB pictures
+  SEASON_COUNT: tr('季數'),
+  EPISODES: tr('各集'),
+  HERO_URL: tr('橫幅圖網址'),
+  LOGO_URL: tr('標誌圖網址'),
+  ICON_URL: tr('圖示網址'),
+  // R-418: VNDB extras and Steam screenshots
+  PLAY_MINUTES: tr('遊玩時長（分鐘）'),
+  STEAM_URL: tr('Steam 商店網址'),
+  DLSITE_URL: tr('DLsite 網址'),
+  OFFICIAL_URL: tr('官方網站'),
+  ENGINE: tr('遊戲引擎'),
+  SCREENSHOTS: tr('截圖網址'),
 })

@@ -78,7 +78,11 @@ test('R-381: a VNDB work takes its title in the preferred language, else VNDB de
   assert.equal(zh.preview.title, '繁中題')
   assert.ok(zh.cover && zh.preview.image?.startsWith('data:image/png'))
   assert.match(asked[0].fields, /image\.url/)
-  assert.doesNotMatch(asked[0].fields, /sexual|violence/, 'no rating filter is asked for')
+  assert.doesNotMatch(
+    asked[0].fields,
+    /image\.(sexual|violence)/,
+    'the picture is taken at any rating'
+  )
   const es = await metadata('https://vndb.org/v17', fetcher, undefined, { languages: ['es'] })
   assert.equal(es.preview.title, 'Default Title')
 })
@@ -330,4 +334,41 @@ test('R-381: Bangumi, AniList and MangaDex follow the preferred language and kee
   assert.equal(value(ja, 'DESCRIPTION'), 'JA')
   assert.equal((await read(['zh-TW'])).preview.title, '港題')
   assert.equal((await read([])).preview.title, 'English Title')
+})
+
+test('R-420: DLsite and iTunes follow the first preferred language; a text in none of them gets a notice', async () => {
+  const seen: string[] = []
+  const dl = mock((url) => {
+    if (url.includes('product.json'))
+      return { body: [{ workno: 'RJ173356', work_name: 'タイトル', intro_s: 'これは説明です' }] }
+    return { body: {} }
+  }, seen)
+  const address = 'https://www.dlsite.com/maniax/work/=/product_id/RJ173356.html'
+  const noticeOf = (result: Awaited<ReturnType<typeof metadata>>) =>
+    value(result, 'LANGUAGE_NOTICE')
+  const en = await metadata(address, dl, undefined, { languages: ['zh-TW', 'en'] })
+  assert.ok(seen.length >= 2 && seen.every((url) => url.includes('&locale=zh_TW')), seen.join())
+  assert.equal(noticeOf(en), 'zh-TW,en|ja', 'Japanese text, none of the preferred languages')
+  assert.equal(value(en, 'DESCRIPTION'), 'これは説明です')
+  const ja = await metadata(address, dl, undefined, { languages: ['zh-TW', 'ja'] })
+  assert.equal(noticeOf(ja), undefined)
+  seen.length = 0
+  const none = await metadata(address, dl)
+  assert.ok(seen.length >= 1 && seen.every((url) => !url.includes('locale')), seen.join())
+  assert.equal(noticeOf(none), undefined, 'no preference: no notice')
+
+  const apple = mock((url) => {
+    if (url.startsWith('https://itunes.apple.com/lookup'))
+      return {
+        body: {
+          results: [{ wrapperType: 'collection', collectionId: 5, collectionName: 'Album' }],
+        },
+      }
+  }, seen)
+  seen.length = 0
+  await metadata('https://music.apple.com/jp/album/x/id5', apple, undefined, { languages: ['ja'] })
+  assert.match(seen[0], /country=jp&lang=ja_jp$/)
+  seen.length = 0
+  await metadata('https://music.apple.com/jp/album/x/id5', apple)
+  assert.doesNotMatch(seen[0], /lang=/)
 })

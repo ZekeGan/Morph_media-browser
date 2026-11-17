@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Alert, Badge, Button, Checkbox, Group, Stack, Text, TextInput } from '@mantine/core'
 import { metadataSources, sourceForUrl } from '../../shared/sources'
+import { localeOptions } from '../../shared/locales'
 import { keySite, type KeyStatus } from '../../shared/keys'
-import type { ExplorerRequest, ExplorerResponse, MetadataPreview } from '../../shared/explorer'
+import type {
+  ExplorerRequest,
+  ExplorerResponse,
+  MetadataCandidate,
+  MetadataPreview,
+} from '../../shared/explorer'
+import { errorMessage } from '../../shared/notifications'
 import type { FolderRow } from '../../shared/model'
 import { t as tr } from '../i18n'
 import { HelpLabel, HelpTip } from '../common/HelpTip'
@@ -37,6 +44,28 @@ export function useSourceImport() {
 export type SourceImport = ReturnType<typeof useSourceImport>
 
 // "Fill in from a website": paste an address, preview what the site has, pick the fields to import.
+// R-420: preview values that are notes, not data to import.
+const noteKeys = ['COVER_STATUS', 'LANGUAGE_NOTICE']
+// The notice value is "<preferred language ids>|<script of the text>".
+function languageNotice(value: unknown) {
+  const [ids, script] = String(value ?? '').split('|')
+  if (!ids || !script) return undefined
+  const names = Object.fromEntries(localeOptions.map((option) => [option.value, option.label]))
+  const found = { ja: tr('日文'), ko: tr('韓文'), zh: tr('中文'), latin: tr('拉丁字母的語言') }[
+    script
+  ]
+  return found
+    ? tr(
+        '這個來源沒有{0}的資料，顯示的是{1}',
+        ids
+          .split(',')
+          .map((id) => names[id] ?? id)
+          .join('、'),
+        found
+      )
+    : undefined
+}
+
 export function FolderSourceImport({
   importer,
   row,
@@ -56,6 +85,27 @@ export function FolderSourceImport({
 }) {
   const sourceLabels = importedFieldLabels()
   const { source, setSource, preview, setPreview, keys, setKeys, cover, setCover } = importer
+  // R-418: search the sources by the folder's name (editable); picking a candidate previews its address.
+  const [query, setQuery] = useState(row.name),
+    [searching, setSearching] = useState(false),
+    [found, setFound] = useState<{ list: MetadataCandidate[]; failed: string[] }>()
+  useEffect(() => {
+    setQuery(row.name)
+    setFound(undefined)
+  }, [row.rowId])
+  const sourceName = (id: string) => metadataSources.find((item) => item.id === id)?.name ?? id
+  const search = async () => {
+    setError('')
+    setSearching(true)
+    try {
+      const result = await window.explorer.request({ action: 'metadataSearch', query })
+      setFound({ list: result.candidates ?? [], failed: result.failedSources ?? [] })
+    } catch (error) {
+      setError(errorMessage(error instanceof Error ? error.message : String(error)))
+    } finally {
+      setSearching(false)
+    }
+  }
   // The source is recognised from the pasted address alone; the preview button only works for a known site.
   const detected = sourceForUrl(source.trim()),
     [listOpen, setListOpen] = useState(false)
@@ -103,7 +153,7 @@ export function FolderSourceImport({
     if (result?.preview) {
       importer.setReplace(false)
       setPreview(result.preview)
-      setKeys(result.preview.values.filter((v) => v.key !== 'COVER_STATUS').map((v) => v.key))
+      setKeys(result.preview.values.filter((v) => !noteKeys.includes(v.key)).map((v) => v.key))
     }
   }
   return (
@@ -116,6 +166,74 @@ export function FolderSourceImport({
       </div>
       <section className="settings-section">
         <Stack gap="sm">
+          <form
+            className="source-search"
+            onSubmit={(event) => {
+              event.preventDefault()
+              if (query.trim() && !searching && !disabled && !fieldDirty) void search()
+            }}
+          >
+            <TextInput
+              id="folder-source-search"
+              disabled={busy}
+              maxLength={200}
+              label={
+                <HelpLabel
+                  label={tr('用名稱搜尋')}
+                  help={tr(
+                    '用資料夾名稱（可修改）搜尋 VNDB、MusicBrainz、AniList、Bangumi 與 Steam，從候選中選一個再預覽；不會自動配對。'
+                  )}
+                />
+              }
+              value={query}
+              onChange={(event) => setQuery(event.currentTarget.value)}
+              rightSectionWidth={72}
+              rightSection={
+                <Button
+                  type="submit"
+                  size="compact-xs"
+                  loading={searching}
+                  disabled={disabled || fieldDirty || busy || !query.trim()}
+                >
+                  {tr('搜尋')}
+                </Button>
+              }
+            />
+          </form>
+          {found && (
+            <div className="source-candidates">
+              {found.failed.length > 0 && (
+                <Text size="xs" c="orange">
+                  {tr('{0} 搜尋失敗', found.failed.map(sourceName).join('、'))}
+                </Text>
+              )}
+              {!found.list.length && (
+                <Text size="xs" c="dimmed">
+                  {tr('沒有找到候選，可以改個名稱再搜尋，或直接貼上網址。')}
+                </Text>
+              )}
+              <ul>
+                {found.list.map((item) => (
+                  <li key={item.url}>
+                    <button
+                      type="button"
+                      disabled={disabled || fieldDirty || busy}
+                      onClick={() => {
+                        setSource(item.url)
+                        void loadPreview(item.url)
+                      }}
+                    >
+                      <span className="candidate-title">{item.title}</span>
+                      {item.detail && <span className="candidate-detail">{item.detail}</span>}
+                      <Badge variant="light" size="sm">
+                        {sourceName(item.provider)}
+                      </Badge>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <TextInput
             id="folder-source-url"
             disabled={busy}
@@ -268,7 +386,7 @@ export function FolderSourceImport({
             </thead>
             <tbody>
               {preview.values
-                .filter((v) => v.key !== 'COVER_STATUS')
+                .filter((v) => !noteKeys.includes(v.key))
                 .map((v) => {
                   const next = Array.isArray(v.value) ? v.value.join('、') : String(v.value),
                     existing = row.record?.attributes.find(
@@ -308,6 +426,11 @@ export function FolderSourceImport({
           {preview.values.find((v) => v.key === 'COVER_STATUS') && (
             <Alert color="orange" mt="sm">
               {String(preview.values.find((v) => v.key === 'COVER_STATUS')!.value)}
+            </Alert>
+          )}
+          {languageNotice(preview.values.find((v) => v.key === 'LANGUAGE_NOTICE')?.value) && (
+            <Alert color="orange" mt="sm">
+              {languageNotice(preview.values.find((v) => v.key === 'LANGUAGE_NOTICE')!.value)}
             </Alert>
           )}
           {preview.image && (

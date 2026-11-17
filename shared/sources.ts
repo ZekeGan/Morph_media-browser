@@ -93,6 +93,14 @@ export const metadataSources = [
     categories: ['album', 'other'],
     hint: 'https://commons.wikimedia.org/wiki/File:NAME',
   },
+  // R-418: Wikidata items (pictures, descriptions and the item's IDs on other sites).
+  {
+    id: 'wikidata',
+    name: 'Wikidata',
+    group: '圖片／插畫',
+    categories: ['album', 'music', 'other'],
+    hint: 'https://www.wikidata.org/wiki/Q123',
+  },
   // R-284: public APIs without a key.
   {
     id: 'mangadex',
@@ -232,6 +240,8 @@ export function sourceForUrl(source: string): MetadataSourceId | undefined {
     'www.pixiv.net': 'pixiv',
     'pixiv.net': 'pixiv',
     'commons.wikimedia.org': 'commons',
+    'www.wikidata.org': 'wikidata',
+    'wikidata.org': 'wikidata',
     'www.dlsite.com': 'dlsite',
     'mangadex.org': 'mangadex',
     'kitsu.app': 'kitsu',

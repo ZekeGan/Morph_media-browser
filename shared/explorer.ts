@@ -377,11 +377,21 @@ export type ExplorerRequest =
     }
   | { action: 'chooseSubtitle'; rowId: string }
   // R-412: the subtitle tracks inside an MKV/WebM video, and one of them as subtitle text.
-  | { action: 'embeddedSubtitles'; rowId: string; fileId: string }
-  | { action: 'embeddedSubtitle'; rowId: string; fileId: string; track: number }
+  // R-417: early answers as soon as the track list is known (reading goes on in the background) and gives a track's
+  // cues read so far; time is the playback position to read first.
+  | { action: 'embeddedSubtitles'; rowId: string; fileId: string; early?: boolean }
+  | {
+      action: 'embeddedSubtitle'
+      rowId: string
+      fileId: string
+      track: number
+      early?: boolean
+      time?: number
+    }
   | { action: 'imageUrlPreview'; url: string }
   | { action: 'imageUrlApply'; rowId: string; revision: number; token: string; cover: boolean }
   | { action: 'metadataPreview'; source: string; provider?: MetadataSourceId }
+  | { action: 'metadataSearch'; query: string }
   | {
       action: 'metadataApply'
       rowId: string
@@ -397,8 +407,10 @@ export interface ExplorerResponse {
   snapshot?: Snapshot
   content?: ContentResult
   search?: SearchResult
-  subtitle?: { token: string; name: string; text: string; portable: boolean }
-  embedded?: { fileId: string; tracks: EmbeddedSubtitleInfo[] }
+  // R-417: partial = an embedded track still being read; what is here so far.
+  subtitle?: { token: string; name: string; text: string; portable: boolean; partial?: boolean }
+  // R-417: reading = the tracks' cues are still being read (early answer).
+  embedded?: { fileId: string; tracks: EmbeddedSubtitleInfo[]; reading?: boolean }
   shortcuts?: string[]
   extras?: GameExtras
   novel?: NovelBook
@@ -409,9 +421,20 @@ export interface ExplorerResponse {
   flashPlayer?: string
   probe?: { kind: 'zip' | 'rar' | '7z' | 'gzip' | 'html' | 'empty' | 'media' | 'unknown' }
   preview?: MetadataPreview
+  // R-418: candidates from a name search, and the sources that could not answer.
+  candidates?: MetadataCandidate[]
+  failedSources?: MetadataSourceId[]
   imagePreview?: { token: string; image: string; name: string; size: number }
   cancelled?: boolean
   notice?: Notice
+}
+// R-418: one search result; picking it previews its address like a pasted one.
+export interface MetadataCandidate {
+  provider: MetadataSourceId
+  title: string
+  // Year, artist or type: whatever helps tell candidates apart.
+  detail?: string
+  url: string
 }
 // Game page extras (R-305–R-310). Paths stay in main; the window only learns what can be offered.
 export interface GameExtras {

@@ -63,7 +63,7 @@ function month(name: string) {
 // these purposes, and saving or importing then writes the field's current type (R-240). Other types never change.
 export const dateOrText = (a: string, b: string) =>
   ['string', 'date', 'datetime'].includes(a) && ['string', 'date', 'datetime'].includes(b)
-// Reads a date written as text: ISO dates and times, 2020/11/12, 2020年11月12日 and English month names
+// Reads a date written as text: ISO dates and times, 2020/11/12, 2020年11月12日 (spaces allowed, as Steam writes it) and English month names
 // ("12 Nov, 2020", "Nov 12, 2020", "March 5, 2001"). A year alone, a year and month, or anything else is not a
 // date. A time with a zone is turned into this computer's local time, the way the date and time inputs store it.
 export function parseDate(text: unknown): { type: 'date' | 'datetime'; value: string } | undefined {
@@ -88,7 +88,9 @@ export function parseDate(text: unknown): { type: 'date' | 'datetime'; value: st
     const local = `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}T${pad(at.getHours())}:${pad(at.getMinutes())}`
     return { type: 'datetime', value: local + (at.getSeconds() ? ':' + pad(at.getSeconds()) : '') }
   }
-  m = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/.exec(s) ?? /^(\d{4})年(\d{1,2})月(\d{1,2})日$/.exec(s)
+  m =
+    /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/.exec(s) ??
+    /^(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日$/.exec(s)
   if (m) {
     const date = day(+m[1], +m[2], +m[3])
     return date ? { type: 'date', value: date } : undefined

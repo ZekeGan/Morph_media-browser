@@ -10,6 +10,7 @@ import {
 export { limitedBytes } from './metadata-common'
 import { sourceForUrl, type MetadataSourceId } from '../shared/sources'
 import { publicMetadata } from './metadata-public'
+import { steamLanguage } from './sources/language'
 import { webMetadata } from './sources/webSource'
 import type { WebOptions } from './sources/web'
 // E-Hentai tags are "namespace:name". Besides the full list, each namespace becomes its own field so that
@@ -169,9 +170,18 @@ export async function ehMetadata(
   return { preview, cover }
 }
 
+// R-418: the store text follows the first preferred language (`l`); screenshots are listed as addresses only.
+const STEAM_IMAGE_HOSTS = [
+  'shared.fastly.steamstatic.com',
+  'shared.akamai.steamstatic.com',
+  'cdn.akamai.steamstatic.com',
+  'cdn.cloudflare.steamstatic.com',
+  'cdn.fastly.steamstatic.com',
+]
 export async function steamMetadata(
   source: string,
-  fetcher: typeof fetch = fetch
+  fetcher: typeof fetch = fetch,
+  languages: string[] = []
 ): Promise<{
   preview: Omit<MetadataPreview, 'token'>
   cover?: { bytes: Buffer; mime: string; ext: string }
@@ -201,7 +211,10 @@ export async function steamMetadata(
   if (Number(appId) > 4294967295) throw new Error('Steam App ID 超出範圍')
   const reply = await sourceRequest(
     fetcher,
-    'https://store.steampowered.com/api/appdetails?appids=' + appId + '&l=english',
+    'https://store.steampowered.com/api/appdetails?appids=' +
+      appId +
+      '&l=' +
+      steamLanguage(languages[0]),
     { signal: AbortSignal.timeout(15000), redirect: 'error' }
   )
   const item = sourceJson(reply.toString())?.[appId],
@@ -246,6 +259,26 @@ export async function steamMetadata(
   ]
   if (typeof data.release_date?.date === 'string' && data.release_date.date)
     values.push({ key: 'STORE_RELEASE_DATE', type: 'string', value: clean(data.release_date.date) })
+  const shots = (Array.isArray(data.screenshots) ? data.screenshots : [])
+    .map((shot: { path_full?: unknown }) => {
+      try {
+        const url = new URL(String(shot?.path_full))
+        return url.protocol === 'https:' &&
+          STEAM_IMAGE_HOSTS.includes(url.hostname) &&
+          !url.port &&
+          !url.username &&
+          !url.password &&
+          (url.pathname.startsWith('/store_item_assets/steam/apps/' + appId + '/') ||
+            url.pathname.startsWith('/steam/apps/' + appId + '/'))
+          ? url.href.slice(0, 500)
+          : undefined
+      } catch {
+        return undefined
+      }
+    })
+    .filter((url: string | undefined): url is string => !!url)
+    .slice(0, 12)
+  if (shots.length) values.push({ key: 'SCREENSHOTS', type: 'tags', value: shots })
   if (data.release_date?.coming_soon === true)
     values.push({ key: 'RELEASE_STATUS', type: 'string', value: '尚未發售' })
   const preview: Omit<MetadataPreview, 'token'> = {
@@ -258,13 +291,7 @@ export async function steamMetadata(
   if (typeof data.header_image === 'string') {
     try {
       const image = new URL(data.header_image)
-      const allowed = [
-        'shared.fastly.steamstatic.com',
-        'shared.akamai.steamstatic.com',
-        'cdn.akamai.steamstatic.com',
-        'cdn.cloudflare.steamstatic.com',
-        'cdn.fastly.steamstatic.com',
-      ]
+      const allowed = STEAM_IMAGE_HOSTS
       if (
         image.protocol !== 'https:' ||
         !allowed.includes(image.hostname) ||
@@ -312,7 +339,7 @@ export async function metadata(
   const provider = sourceForUrl(source)
   if (!provider || (expected && provider !== expected))
     throw new Error('來源網址與選定來源不符或未支援')
-  if (provider === 'steam') return steamMetadata(source, fetcher)
+  if (provider === 'steam') return steamMetadata(source, fetcher, options.languages)
   if (provider === 'eh' || provider === 'exh') return ehMetadata(source, fetcher)
   if (provider === 'web') return webMetadata(source, fetcher, options)
   return publicMetadata(provider, source, fetcher, options)

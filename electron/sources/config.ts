@@ -45,6 +45,11 @@ export const sourceConfig: Record<
   },
   openlibrary: { requestHosts: ['openlibrary.org'], coverHosts: ['covers.openlibrary.org'] },
   commons: { requestHosts: ['commons.wikimedia.org'], coverHosts: ['upload.wikimedia.org'] },
+  // R-418: the item data, and the Commons API that turns its picture file name into an address.
+  wikidata: {
+    requestHosts: ['www.wikidata.org', 'commons.wikimedia.org'],
+    coverHosts: ['upload.wikimedia.org'],
+  },
   dlsite: { requestHosts: ['www.dlsite.com'], coverHosts: ['img.dlsite.jp'] },
   pixiv: { requestHosts: ['www.pixiv.net'], coverHosts: ['i.pximg.net'], referer: true },
   // ltn.hitomi.la lost its DNS record in 2026-11; the gallery data moved here (R-297). The host may change again.

@@ -25,6 +25,7 @@ import { warmHiddenHelper } from './hidden'
 import type { LocaleId } from '../shared/locales'
 import { nativeText } from '../shared/native-messages'
 import { libraryDispatcher } from './library-dispatch'
+import { searchSources } from './sources/search'
 import { isExplorerRequest, isLibraryRequest, isWorkspaceCommand, ref } from './ipc-requests'
 
 const directory = path.dirname(fileURLToPath(import.meta.url))
@@ -220,6 +221,11 @@ else {
         if (!isExplorerRequest(request)) throw new Error('無效的操作')
         pendingRequests++
         try {
+          // R-418: a name search only asks websites; it needs neither the library nor the explorer.
+          if (request.action === 'metadataSearch')
+            return await searchSources(request.query, fetch, workspace.sourceLanguages(), {
+              keyFor: (site) => explorer.desktop.keyStore?.get(site) ?? Promise.resolve(undefined),
+            })
           return await library.run(() => explorer.request(request))
         } finally {
           pendingRequests--

@@ -42,6 +42,74 @@ export function storeLink(input: URL): [string, string | number] | undefined {
   return undefined
 }
 
+// R-418: what VNDB knows beyond the description. Tags hide spoilers (level 1 and 2) and "lie" tags; the links are
+// kept only as text for the preview (never requested), and the engine comes from the work's releases.
+type Link = { name?: unknown; url?: unknown }
+const TAG_LIMIT = 30,
+  SCREENSHOT_LIMIT = 12
+export const VN_EXTRA_FIELDS =
+  'length_minutes,rating,votecount,tags{name,rating,spoiler,lie},extlinks{name,url},screenshots{url,sexual,violence}'
+const webUrl = (value: unknown, host?: RegExp) => {
+  try {
+    const url = new URL(String(value))
+    return (url.protocol === 'https:' || url.protocol === 'http:') &&
+      !url.username &&
+      !url.password &&
+      (!host || host.test(url.hostname))
+      ? url.href.slice(0, 500)
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+function links(site: Site, list: unknown) {
+  const items = (Array.isArray(list) ? list : []) as Link[],
+    pick = (name: string, host?: RegExp) =>
+      items.map((item) => (item?.name === name ? webUrl(item.url, host) : undefined)).find(Boolean)
+  site.text('STEAM_URL', pick('steam', /^store\.steampowered\.com$/))
+  site.text('DLSITE_URL', pick('dlsite', /^www\.dlsite\.com$/))
+  site.text('OFFICIAL_URL', pick('website'))
+}
+// The most used engine among the releases (a release names its own).
+function engineOf(engines: unknown[]) {
+  const count = new Map<string, number>()
+  for (const engine of engines)
+    if (typeof engine === 'string' && engine.trim())
+      count.set(engine.trim(), (count.get(engine.trim()) ?? 0) + 1)
+  return [...count].sort((a, b) => b[1] - a[1])[0]?.[0]
+}
+function extras(site: Site, vn: any) {
+  site.number('PLAY_MINUTES', vn.length_minutes)
+  // VNDB rates 10–100; shown on a 10-point scale with one decimal.
+  if (typeof vn.rating === 'number') site.number('RATING', Math.round(vn.rating) / 10)
+  site.number('RATING_COUNT', vn.votecount)
+  site.list(
+    'TAGS',
+    (Array.isArray(vn.tags) ? vn.tags : [])
+      .filter(
+        (tag: { name?: unknown; spoiler?: unknown; lie?: unknown }) =>
+          typeof tag?.name === 'string' && tag.spoiler === 0 && tag.lie !== true
+      )
+      .sort((a: { rating?: number }, b: { rating?: number }) => (b.rating ?? 0) - (a.rating ?? 0))
+      .slice(0, TAG_LIMIT)
+      .map((tag: { name: string }) => tag.name)
+  )
+  links(site, vn.extlinks)
+  // Screenshots are listed as addresses only; only the unrated ones (no sexual or violence level).
+  site.list(
+    'SCREENSHOTS',
+    (Array.isArray(vn.screenshots) ? vn.screenshots : [])
+      .filter(
+        (shot: { url?: unknown; sexual?: unknown; violence?: unknown }) =>
+          shot?.sexual === 0 &&
+          shot.violence === 0 &&
+          /^https:\/\/t\.vndb\.org\//.test(String(shot.url))
+      )
+      .slice(0, SCREENSHOT_LIMIT)
+      .map((shot: { url: string }) => shot.url)
+  )
+}
+
 type Titled = { lang?: unknown; title?: unknown }
 const VN_ID = /^v[1-9]\d{0,11}$/,
   RELEASE_ID = /^r[1-9]\d{0,11}$/
@@ -64,7 +132,8 @@ async function release(site: Site, id: string) {
   const data = (
     await site.json('https://api.vndb.org/kana/release', {
       filters: ['id', '=', id],
-      fields: 'title,alttitle,released,platforms,languages{lang,title,latin,main},vns{id,title}',
+      fields:
+        'title,alttitle,released,platforms,engine,extlinks{name,url},languages{lang,title,latin,main},vns{id,title}',
       results: 1,
     })
   ).results?.[0]
@@ -72,6 +141,8 @@ async function release(site: Site, id: string) {
   site.text('TITLE_ORIGINAL', data.alttitle)
   site.text('RELEASE_DATE', data.released)
   site.list('PLATFORMS', data.platforms)
+  site.text('ENGINE', data.engine)
+  links(site, data.extlinks)
   site.list(
     'LANGUAGES',
     Array.isArray(data.languages) ? data.languages.map((language: Titled) => language?.lang) : []
@@ -91,7 +162,7 @@ async function release(site: Site, id: string) {
       const vn = (
         await site.json('https://api.vndb.org/kana/vn', {
           filters: ['id', '=', first.id],
-          fields: 'description,image.url,developers.name',
+          fields: 'description,image.url,developers.name,' + VN_EXTRA_FIELDS,
           results: 1,
         })
       ).results?.[0]
@@ -102,6 +173,7 @@ async function release(site: Site, id: string) {
           vn.developers?.map((developer: { name?: unknown }) => developer?.name)
         )
         if (typeof vn.image?.url === 'string') image = vn.image.url
+        extras(site, vn)
       }
     } catch {}
   }
@@ -124,7 +196,8 @@ export const vndb: Adapter = async (site) => {
     await site.json('https://api.vndb.org/kana/vn', {
       filters: store ? ['release', '=', ['extlink', '=', store]] : ['id', '=', id],
       fields:
-        'title,alttitle,description,released,languages,platforms,developers.name,image.url,titles{lang,title}',
+        'title,alttitle,description,released,languages,platforms,developers.name,image.url,titles{lang,title},' +
+        VN_EXTRA_FIELDS,
       results: 1,
     })
   ).results?.[0]
@@ -139,6 +212,21 @@ export const vndb: Adapter = async (site) => {
     'DEVELOPERS',
     data.developers?.map((developer: { name?: unknown }) => developer?.name)
   )
+  extras(site, data)
+  // A failed lookup of the releases only leaves out the engine.
+  try {
+    const releases = (
+      await site.json('https://api.vndb.org/kana/release', {
+        filters: ['vn', '=', ['id', '=', data.id]],
+        fields: 'engine',
+        results: 100,
+      })
+    ).results
+    site.text(
+      'ENGINE',
+      engineOf(Array.isArray(releases) ? releases.map((r: { engine?: unknown }) => r?.engine) : [])
+    )
+  } catch {}
   return {
     title: clean(titleIn(site, data.titles) ?? data.title),
     canonical: 'https://vndb.org/' + data.id,

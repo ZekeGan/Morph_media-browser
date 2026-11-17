@@ -1,5 +1,5 @@
 import { SourceError } from '../metadata-common'
-import { clean, type Adapter } from './site'
+import { clean, type Adapter, type Site } from './site'
 import { tmdbLanguage } from './language'
 
 // R-285–R-290, R-321: sources that need the user's own key, kept where no keyless source does the job (site.keys, read by main only). Each validates the work ID from
@@ -8,6 +8,55 @@ import { tmdbLanguage } from './language'
 
 // TMDB: /movie/<id>-slug or /tv/<id>-slug. A Read Access Token (a JWT) goes in the Authorization header, an API key
 // in the query. Pictures come from image.tmdb.org at a fixed size; the terms ask to credit TMDB (the window does).
+// R-419: a series' seasons and episodes ("S01E02 Title"), one request per season. A season that fails is left out;
+// the list is the seasons' own order, capped (seasons 1–30, 500 episodes). Specials (season 0) are not listed.
+export const TMDB_SEASONS_MAX = 30
+export const TMDB_EPISODES_MAX = 500
+async function seasons(
+  site: Site,
+  id: string,
+  data: { number_of_seasons?: unknown; seasons?: { season_number?: unknown }[] },
+  fetchSeason: (path: string) => Promise<any>
+) {
+  site.number('SEASON_COUNT', data.number_of_seasons)
+  const numbers = (Array.isArray(data.seasons) ? data.seasons : [])
+    .map((season) => season?.season_number)
+    .filter((n): n is number => Number.isInteger(n) && (n as number) >= 1)
+    .sort((a, b) => a - b)
+    .slice(0, TMDB_SEASONS_MAX)
+  const replies = await Promise.allSettled(numbers.map((n) => fetchSeason(`/tv/${id}/season/${n}`)))
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const episodes = replies.flatMap((reply, index) =>
+    reply.status !== 'fulfilled' || !Array.isArray(reply.value?.episodes)
+      ? []
+      : reply.value.episodes.flatMap((episode: { episode_number?: unknown; name?: unknown }) =>
+          Number.isInteger(episode?.episode_number) && (episode.episode_number as number) >= 0
+            ? [
+                `S${pad(numbers[index])}E${pad(episode.episode_number as number)}` +
+                  (typeof episode.name === 'string' && episode.name.trim()
+                    ? ' ' + clean(episode.name)
+                    : ''),
+              ]
+            : []
+        )
+  )
+  site.list('EPISODES', episodes, TMDB_EPISODES_MAX)
+}
+// A TMDB request with the user's token or key (the same way for the main page and each season).
+function get(site: Site, path: string) {
+  const token = site.keys.token ?? '',
+    bearer = token.startsWith('eyJ')
+  return site.json(
+    'https://api.themoviedb.org/3' +
+      path +
+      '?language=' +
+      tmdbLanguage(site.languages[0]) +
+      (bearer ? '' : '&api_key=' + encodeURIComponent(token)),
+    undefined,
+    bearer ? { headers: { Authorization: 'Bearer ' + token } } : {}
+  )
+}
+
 export const tmdb: Adapter = async (site) => {
   const [, kind, id] = site.match(/^\/(movie|tv)\/(\d{1,10})(?:-[^/]*)?\/?$/)
   const token = site.keys.token ?? ''
@@ -38,6 +87,7 @@ export const tmdb: Adapter = async (site) => {
   site.number('RUNTIME', data.runtime)
   site.number('EPISODE_COUNT', data.number_of_episodes)
   site.text('SOURCE_CREDIT', 'TMDB')
+  if (kind === 'tv') await seasons(site, id, data, (path) => get(site, path))
   return {
     title: clean(data.title ?? data.name),
     canonical: 'https://www.themoviedb.org/' + kind + '/' + id,
@@ -54,6 +104,23 @@ export const steamgriddb: Adapter = async (site) => {
   const auth = { headers: { Authorization: 'Bearer ' + (site.keys.apiKey ?? '') } }
   const game = await site.json('https://www.steamgriddb.com/api/v2/games/id/' + id, undefined, auth)
   if (!game.success || String(game.data?.id) !== id) throw new SourceError('notFound')
+  // R-419: a hero (banner), a logo and an icon, each optional; only addresses on the picture host are kept.
+  const extra = async (kind: 'heroes' | 'logos' | 'icons', key: string) => {
+    const url = (
+      await site
+        .json('https://www.steamgriddb.com/api/v2/' + kind + '/game/' + id, undefined, auth)
+        .catch(() => undefined)
+    )?.data?.[0]?.url
+    try {
+      if (new URL(url).protocol === 'https:' && new URL(url).hostname === 'cdn2.steamgriddb.com')
+        site.text(key, url)
+    } catch {}
+  }
+  await Promise.all([
+    extra('heroes', 'HERO_URL'),
+    extra('logos', 'LOGO_URL'),
+    extra('icons', 'ICON_URL'),
+  ])
   const grids = await site
     .json(
       'https://www.steamgriddb.com/api/v2/grids/game/' + id + '?dimensions=600x900',

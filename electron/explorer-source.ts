@@ -113,7 +113,10 @@ export async function applyMetadata(
     ?.project?.fieldBindings
   if (req.mode !== undefined && !['fill', 'replace'].includes(req.mode))
     throw new Error('來源匯入模式不合法')
-  for (const raw of item.preview.values.filter((v) => req.keys.includes(v.key))) {
+  // Notes about the preview (cover, language) are never written as data, whatever the window asks.
+  for (const raw of item.preview.values.filter(
+    (v) => req.keys.includes(v.key) && !['COVER_STATUS', 'LANGUAGE_NOTICE'].includes(v.key)
+  )) {
     const provider = item.preview.provider ?? 'eh',
       attributeId = provider + '-' + raw.key.toLowerCase(),
       v = importedValue(raw, bindings?.find((f) => f.attributeId === attributeId)?.type),

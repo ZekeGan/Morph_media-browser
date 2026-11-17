@@ -1,4 +1,5 @@
 import { SourceError } from '../metadata-common'
+import { dlsiteLocale } from './language'
 import { clean, type Adapter } from './site'
 
 // Two public endpoints: product.json has the names (circle, creators by role, genres, series); the older
@@ -9,8 +10,14 @@ export const dlsite: Adapter = async (site) => {
     ),
     shop = found[1],
     id = found[2]
+  // R-420: the first preferred language asks DLsite for its translated names (only where DLsite has them).
+  const locale = dlsiteLocale(site.languages[0])
   const list = await site.json(
-    'https://www.dlsite.com/' + shop + '/api/=/product.json?workno=' + id
+    'https://www.dlsite.com/' +
+      shop +
+      '/api/=/product.json?workno=' +
+      id +
+      (locale ? '&locale=' + locale : '')
   )
   const data = Array.isArray(list) ? list.find((item) => item?.workno === id) : undefined
   if (!data || typeof data !== 'object') throw new SourceError('notFound')
@@ -22,7 +29,8 @@ export const dlsite: Adapter = async (site) => {
           shop +
           '/product/info/ajax?product_id=' +
           id +
-          '&cdn_cache_min=1'
+          '&cdn_cache_min=1' +
+          (locale ? '&locale=' + locale : '')
       )
     )[id]
   } catch {}
@@ -31,6 +39,7 @@ export const dlsite: Adapter = async (site) => {
   site.text('MAKER_ID', data.maker_id ?? sales?.maker_id)
   site.text('WORK_TYPE', data.work_type ?? sales?.work_type)
   site.text('WORK_TYPE_NAME', data.work_type_string)
+  site.text('DESCRIPTION', data.intro_s)
   site.text('SERIES', data.series_name || sales?.title_name)
   // Creators are grouped by role (created_by, voice_by, scenario_by…); each role becomes its own tag field.
   if (data.creaters && typeof data.creaters === 'object' && !Array.isArray(data.creaters))

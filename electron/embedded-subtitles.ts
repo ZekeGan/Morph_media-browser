@@ -46,11 +46,40 @@ async function trim(dir: string) {
   }
 }
 
-export async function embeddedTracks(
+// R-417: a read in progress. The track list is known first (ready) and its cue arrays fill while the file is read;
+// focus is the playback time the window asked for last, read first.
+export interface EmbeddedJob {
+  ready: Promise<EmbeddedTrack[]>
+  done: Promise<EmbeddedTrack[]>
+  live?: EmbeddedTrack[]
+  focus: number
+}
+
+async function cached(cache: string, size: number, mtimeMs: number) {
+  try {
+    const stat = await fs.stat(cache)
+    if (stat.isFile() && stat.size <= CACHE_BYTES) {
+      const saved = JSON.parse(await fs.readFile(cache, 'utf8'))
+      if (
+        saved?.version === CACHE_VERSION &&
+        saved.size === size &&
+        saved.mtimeMs === mtimeMs &&
+        valid(saved.tracks)
+      )
+        return saved.tracks as EmbeddedTrack[]
+    }
+  } catch {
+    // No usable cache: read the file.
+  }
+  return undefined
+}
+
+// The finished tracks of a video, or the read in progress (started here when none is running).
+async function embeddedJob(
   ex: Explorer,
   rowId: string,
   fileId: string
-): Promise<EmbeddedTrack[]> {
+): Promise<{ tracks: EmbeddedTrack[] } | { job: EmbeddedJob }> {
   // The file comes from the folder's own content list; the window never names a path.
   const found = await ex.file(rowId, fileId)
   if (!/\.(mkv|webm|mka)$/i.test(found.file))
@@ -59,29 +88,30 @@ export async function embeddedTracks(
       .update(`${CACHE_VERSION}|${found.file}|${found.stat.size}|${found.stat.mtimeMs}`)
       .digest('hex'),
     kept = ex.embeddedSubtitles.get(key)
-  if (kept) return kept
+  if (kept) return { tracks: kept }
   const running = ex.embeddedJobs.get(key)
-  if (running) return running
+  if (running) return { job: running }
   const dir = path.join(ex.root, 'subtitle-cache'),
     cache = path.join(dir, key + '.json')
-  const job = (async () => {
-    try {
-      const stat = await fs.stat(cache)
-      if (stat.isFile() && stat.size <= CACHE_BYTES) {
-        const saved = JSON.parse(await fs.readFile(cache, 'utf8'))
-        if (
-          saved?.version === CACHE_VERSION &&
-          saved.size === found.stat.size &&
-          saved.mtimeMs === found.stat.mtimeMs &&
-          valid(saved.tracks)
-        )
-          return saved.tracks as EmbeddedTrack[]
-      }
-    } catch {
-      // No usable cache: read the file.
+  let listed: (tracks: EmbeddedTrack[]) => void = () => {}
+  const job: EmbeddedJob = {
+    ready: new Promise((resolve) => (listed = resolve)),
+    done: Promise.resolve([]),
+    focus: 0,
+  }
+  job.done = (async () => {
+    const saved = await cached(cache, found.stat.size, found.stat.mtimeMs)
+    if (saved) {
+      listed(saved)
+      return saved
     }
     const tracks = await readMkvSubtitles(found.file, {
       onProgress: (fraction) => ex.desktop.subtitleProgress?.({ rowId, fileId, fraction }),
+      onTracks: (live) => {
+        job.live = live
+        listed(live)
+      },
+      focus: () => job.focus,
     })
     try {
       await fs.mkdir(dir, { recursive: true })
@@ -102,16 +132,29 @@ export async function embeddedTracks(
     }
     return tracks
   })()
+  // A read that fails before the track list is known fails the early answer too.
+  job.ready = Promise.race([job.ready, job.done])
+  // Only early requests wait on ready; a failed read must not leave it rejected with no one listening.
+  job.ready.catch(() => {})
   ex.embeddedJobs.set(key, job)
-  try {
-    const tracks = await job
-    while (ex.embeddedSubtitles.size >= KEPT)
-      ex.embeddedSubtitles.delete(ex.embeddedSubtitles.keys().next().value!)
-    ex.embeddedSubtitles.set(key, tracks)
-    return tracks
-  } finally {
-    ex.embeddedJobs.delete(key)
-  }
+  void job.done
+    .then((tracks) => {
+      while (ex.embeddedSubtitles.size >= KEPT)
+        ex.embeddedSubtitles.delete(ex.embeddedSubtitles.keys().next().value!)
+      ex.embeddedSubtitles.set(key, tracks)
+    })
+    .catch(() => {})
+    .finally(() => ex.embeddedJobs.delete(key))
+  return { job }
+}
+
+export async function embeddedTracks(
+  ex: Explorer,
+  rowId: string,
+  fileId: string
+): Promise<EmbeddedTrack[]> {
+  const found = await embeddedJob(ex, rowId, fileId)
+  return 'tracks' in found ? found.tracks : found.job.done
 }
 
 const info = (track: EmbeddedTrack): EmbeddedSubtitleInfo => ({
@@ -128,28 +171,49 @@ const info = (track: EmbeddedTrack): EmbeddedSubtitleInfo => ({
 export async function embeddedList(
   ex: Explorer,
   rowId: string,
-  fileId: string
+  fileId: string,
+  early = false
 ): Promise<ExplorerResponse> {
-  return { embedded: { fileId, tracks: (await embeddedTracks(ex, rowId, fileId)).map(info) } }
+  const found = await embeddedJob(ex, rowId, fileId)
+  if ('tracks' in found) return { embedded: { fileId, tracks: found.tracks.map(info) } }
+  if (!early) return { embedded: { fileId, tracks: (await found.job.done).map(info) } }
+  const tracks = await found.job.ready
+  return { embedded: { fileId, tracks: tracks.map(info), reading: !!found.job.live } }
 }
 
-// One track as SRT text, in the same shape a subtitle file is returned.
+// One track as SRT text, in the same shape a subtitle file is returned. Early: while the file is still being read,
+// the cues read so far (partial), and the reading moves to the given playback time.
 export async function embeddedText(
   ex: Explorer,
   rowId: string,
   fileId: string,
-  number: number
+  number: number,
+  early = false,
+  time?: number
 ): Promise<ExplorerResponse> {
-  const track = (await embeddedTracks(ex, rowId, fileId)).find((item) => item.number === number)
+  const found = await embeddedJob(ex, rowId, fileId)
+  let tracks: EmbeddedTrack[],
+    partial = false
+  if ('tracks' in found) tracks = found.tracks
+  else if (early) {
+    if (typeof time === 'number' && time >= 0) found.job.focus = time
+    tracks = await found.job.ready
+    partial = !!found.job.live
+  } else tracks = await found.job.done
+  const track = tracks.find((item) => item.number === number)
   if (!track) throw new Error('找不到這個字幕軌')
   if (track.graphic) throw new Error('有圖形字幕，目前無法顯示')
-  if (!track.cues.length) throw new Error('這個字幕軌沒有可顯示的文字')
+  if (!track.cues.length && !partial) throw new Error('這個字幕軌沒有可顯示的文字')
+  const cues = partial
+    ? track.cues.slice().sort((a, b) => a.start - b.start || a.end - b.end)
+    : track.cues
   return {
     subtitle: {
       token: 'emb-' + number,
       name: track.name || track.language || '#' + number,
-      text: cuesToSrt(track.cues),
+      text: cuesToSrt(cues),
       portable: false,
+      ...(partial ? { partial: true } : {}),
     },
   }
 }

@@ -24,6 +24,9 @@ export const LIMITS = {
   // Element headers visited; a hostile file of empty elements cannot keep the reader busy longer.
   elements: 8_000_000,
   tracksElement: 2 * 1024 * 1024,
+  // R-417: the seek list and the cue index read whole.
+  seekHead: 64 * 1024,
+  cuesElement: 16 * 1024 * 1024,
   blockPayload: 64 * 1024,
   cuesPerTrack: 100_000,
   textTotal: 16 * 1024 * 1024,
@@ -49,6 +52,19 @@ const ID = {
   contentEncoding: 0x6240,
   contentCompression: 0x5034,
   contentCompAlgo: 0x4254,
+  contentCompSettings: 0x4255,
+  seekHead: 0x114d9b74,
+  seek: 0x4dbb,
+  seekId: 0x53ab,
+  seekPosition: 0x53ac,
+  cues: 0x1c53bb6b,
+  cuePoint: 0xbb,
+  cueTime: 0xb3,
+  cueTrackPositions: 0xb7,
+  cueTrack: 0xf7,
+  cueClusterPosition: 0xf1,
+  cueRelativePosition: 0xf0,
+  cueDuration: 0xb2,
   contentEncryption: 0x5035,
   cluster: 0x1f43b675,
   timecode: 0xe7,
@@ -136,6 +152,7 @@ function* children(b: Buffer) {
 
 interface Track extends EmbeddedTrack {
   zlib: boolean
+  strip?: Buffer
 }
 function parseTracks(b: Buffer): Map<number, Track> {
   const found = new Map<number, Track>()
@@ -150,6 +167,7 @@ function parseTracks(b: Buffer): Map<number, Track> {
       isDefault = true,
       forced = false,
       zlib = false,
+      strip: Buffer | undefined,
       unusable = false
     for (const field of children(entry.data)) {
       const text = () => field.data.toString('utf8').replace(/\0.*$/s, '').slice(0, 200)
@@ -167,12 +185,16 @@ function parseTracks(b: Buffer): Map<number, Track> {
             for (const part of children(encoding.data)) {
               if (part.id === ID.contentEncryption) unusable = true
               if (part.id === ID.contentCompression) {
-                // Algorithm 0 (the default) is zlib; 3 strips a header, which is not supported.
-                const algorithm = children(part.data)
-                let value = 0
-                for (const item of algorithm)
+                // Algorithm 0 (the default) is zlib; 3 (mkvmerge's default) strips the same leading bytes from
+                // every block, which are put back on reading (R-417). Others are not supported.
+                let value = 0,
+                  settings: Buffer | undefined
+                for (const item of children(part.data))
                   if (item.id === ID.contentCompAlgo) value = uint(item.data)
+                  else if (item.id === ID.contentCompSettings) settings = item.data
                 if (value === 0) zlib = true
+                else if (value === 3 && settings && settings.length <= 256)
+                  strip = Buffer.from(settings)
                 else unusable = true
               }
             }
@@ -192,6 +214,7 @@ function parseTracks(b: Buffer): Map<number, Track> {
       ...(format ? { format } : {}),
       cues: [],
       zlib,
+      ...(strip ? { strip } : {}),
     })
   }
   return found
@@ -251,9 +274,70 @@ function cueText(track: Track, payload: Buffer): string {
     .join('\n')
 }
 
+// One entry of the cue index that points at a subtitle block (R-417).
+interface IndexEntry {
+  time: number
+  track: number
+  // Both are offsets from the start of the Segment's data, as Matroska writes them.
+  cluster: number
+  relative: number
+  duration: number
+}
+function parseSeekHead(b: Buffer): number | undefined {
+  for (const seek of children(b)) {
+    if (seek.id !== ID.seek) continue
+    let id = 0,
+      position: number | undefined
+    for (const item of children(seek.data))
+      if (item.id === ID.seekId) id = uint(item.data)
+      else if (item.id === ID.seekPosition) position = uint(item.data)
+    if (id === ID.cues && position !== undefined) return position
+  }
+  return undefined
+}
+function parseCues(b: Buffer, wanted: Set<number>, scale: number): IndexEntry[] {
+  const found: IndexEntry[] = []
+  for (const point of children(b)) {
+    if (point.id !== ID.cuePoint) continue
+    let time = 0
+    const places: Omit<IndexEntry, 'time'>[] = []
+    for (const item of children(point.data))
+      if (item.id === ID.cueTime) time = uint(item.data)
+      else if (item.id === ID.cueTrackPositions) {
+        let track = 0,
+          cluster: number | undefined,
+          relative: number | undefined,
+          duration = 0
+        for (const field of children(item.data))
+          if (field.id === ID.cueTrack) track = uint(field.data)
+          else if (field.id === ID.cueClusterPosition) cluster = uint(field.data)
+          else if (field.id === ID.cueRelativePosition) relative = uint(field.data)
+          else if (field.id === ID.cueDuration) duration = uint(field.data)
+        if (wanted.has(track) && cluster !== undefined && relative !== undefined) {
+          // Checked per entry: one cue point may hold a great many positions.
+          if (found.length + places.length >= LIMITS.cuesPerTrack * 4)
+            throw new Error('內嵌字幕過大')
+          places.push({ track, cluster, relative, duration: (duration * scale) / 1e9 })
+        }
+      }
+    for (const place of places) found.push({ time: (time * scale) / 1e9, ...place })
+    if (found.length > LIMITS.cuesPerTrack * 4) throw new Error('內嵌字幕過大')
+  }
+  return found
+}
+
+export interface ReadOptions {
+  onProgress?: (fraction: number) => void
+  ms?: number
+  // R-417: called once the track list is known, before any cue is read; the cue arrays then fill while reading.
+  onTracks?: (tracks: EmbeddedTrack[]) => void
+  // R-417: the playback time to read first (seconds), asked again while reading so a jump moves the reading there.
+  focus?: () => number
+}
+
 export async function readMkvSubtitles(
   file: string,
-  options: { onProgress?: (fraction: number) => void; ms?: number } = {}
+  options: ReadOptions = {}
 ): Promise<EmbeddedTrack[]> {
   const handle = await fs.open(file, 'r')
   try {
@@ -266,8 +350,10 @@ export async function readMkvSubtitles(
       segment = await source.header(position)
     if (!segment || segment.id !== ID.segment) throw new Error('不是 Matroska 影片檔')
     const end = segment.size < 0 ? source.size : Math.min(source.size, segment.data + segment.size)
-    position = segment.data
+    const base = segment.data
+    position = base
     let tracks: Map<number, Track> | undefined,
+      cuesAt: number | undefined,
       scale = 1_000_000,
       elements = 0,
       text = 0,
@@ -275,11 +361,11 @@ export async function readMkvSubtitles(
     const tick = () => {
       if (++elements > LIMITS.elements || Date.now() > deadline) throw new Error('讀取內嵌字幕逾時')
     }
-    const progress = (at: number) => {
-      const percent = Math.floor((at / source.size) * 100)
+    const progress = (fraction: number) => {
+      const percent = Math.floor(fraction * 100)
       if (percent !== reported) {
         reported = percent
-        options.onProgress?.(Math.min(1, at / source.size))
+        options.onProgress?.(Math.min(1, fraction))
       }
     }
     // One block (SimpleBlock, or the Block of a BlockGroup): the track, the time inside the cluster, the payload.
@@ -309,7 +395,7 @@ export async function readMkvSubtitles(
       block: { offset: number; payload: Buffer },
       duration: number
     ) => {
-      let body = block.payload
+      let body = track.strip ? Buffer.concat([track.strip, block.payload]) : block.payload
       if (track.zlib)
         try {
           body = inflateSync(body, { maxOutputLength: LIMITS.blockPayload })
@@ -323,6 +409,26 @@ export async function readMkvSubtitles(
         throw new Error('內嵌字幕過大')
       const start = (cluster * scale) / 1e9 + block.offset
       track.cues.push({ start, end: start + (duration > 0 ? duration : 3), text: words })
+    }
+    // A BlockGroup: its Block and BlockDuration. Undefined when the block is not on a text subtitle track.
+    const readGroup = async (from: number, to: number) => {
+      let inner = from,
+        block: Awaited<ReturnType<typeof readBlock>>,
+        duration = 0
+      while (inner < to) {
+        tick()
+        const child = await source.header(inner)
+        if (!child) break
+        const stop = child.size < 0 ? to : Math.min(to, child.data + child.size)
+        if (child.id === ID.block) {
+          block = await readBlock(child.data, stop - child.data)
+          // Not a text subtitle track: the rest of the group is not needed.
+          if (!block) return undefined
+        } else if (child.id === ID.blockDuration)
+          duration = (uint(await source.bytes(child.data, Math.min(8, child.size))) * scale) / 1e9
+        inner = stop
+      }
+      return block && { block, duration }
     }
     // A cluster: its children up to its end (or, with no size, up to the next top-level element). Returns where it ends.
     const cluster = async (from: number, to: number, unknown: boolean) => {
@@ -339,54 +445,153 @@ export async function readMkvSubtitles(
           const block = await readBlock(h.data, next - h.data)
           if (block) addCue(block.track, time, block, 0)
         } else if (h.id === ID.blockGroup) {
-          let inner = h.data,
-            block: Awaited<ReturnType<typeof readBlock>>,
-            duration = 0
-          while (inner < next) {
-            tick()
-            const child = await source.header(inner)
-            if (!child) break
-            const stop = child.size < 0 ? next : Math.min(next, child.data + child.size)
-            if (child.id === ID.block) {
-              block = await readBlock(child.data, stop - child.data)
-              // Not a text subtitle track: the rest of the group is not needed.
-              if (!block) break
-            } else if (child.id === ID.blockDuration)
-              duration =
-                (uint(await source.bytes(child.data, Math.min(8, child.size))) * scale) / 1e9
-            inner = stop
-          }
-          if (block) addCue(block.track, time, block, duration)
+          const group = await readGroup(h.data, next)
+          if (group) addCue(group.block.track, time, group.block, group.duration)
         }
         at = next
-        progress(at)
+        progress(at / source.size)
       }
       return to
+    }
+    // R-417: the cluster's own time, read from its first children (Timecode comes first in practice).
+    const clusterTimes = new Map<number, number | undefined>()
+    const clusterTime = async (at: number) => {
+      if (clusterTimes.has(at)) return clusterTimes.get(at)
+      let time: number | undefined
+      const h = await source.header(at)
+      if (h?.id === ID.cluster) {
+        let inner = h.data
+        for (let i = 0; i < 4; i++) {
+          tick()
+          const child = await source.header(inner)
+          if (!child || child.size < 0) break
+          if (child.id === ID.timecode) {
+            time = uint(await source.bytes(child.data, Math.min(8, child.size)))
+            break
+          }
+          inner = child.data + child.size
+        }
+      }
+      if (clusterTimes.size < 1_000_000) clusterTimes.set(at, time)
+      return time
+    }
+    // R-417: read only the blocks the cue index points at, nearest the playback time first. False when the index
+    // does not cover every text track or points at blocks that are not there; the whole file is read instead.
+    const fromIndex = async (entries: IndexEntry[]) => {
+      const textTracks = [...tracks!.values()].filter((track) => !track.graphic)
+      if (!textTracks.every((track) => entries.some((entry) => entry.track === track.number)))
+        return false
+      const seen = new Set<number>()
+      let left = entries.slice(),
+        done = 0,
+        missed = 0,
+        focused = Number.NaN
+      while (left.length) {
+        tick()
+        const focus = options.focus?.() ?? 0
+        if (focus !== focused) {
+          focused = focus
+          left.sort((a, b) => Math.abs(b.time - focus) - Math.abs(a.time - focus))
+        }
+        const entry = left.pop()!
+        done++
+        // The block the entry points at; a place that is not a block of that track (or not an element at all)
+        // counts as a miss, not as a damaged file.
+        let found:
+            | {
+                time: number
+                block: NonNullable<Awaited<ReturnType<typeof readBlock>>>
+                duration: number
+              }
+            | undefined,
+          repeated = false
+        try {
+          const clusterAt = base + entry.cluster,
+            time = await clusterTime(clusterAt),
+            h = await source.header(clusterAt),
+            at = h && h.id === ID.cluster ? h.data + entry.relative : -1
+          if (time !== undefined && at >= 0 && at < end) {
+            repeated = seen.has(at)
+            seen.add(at)
+            const block = repeated ? undefined : await source.header(at),
+              limit = block && block.size >= 0 ? block.data + block.size : -1
+            if (block?.id === ID.simpleBlock && limit > 0) {
+              const read = await readBlock(block.data, limit - block.data)
+              if (read) found = { time, block: read, duration: entry.duration }
+            } else if (block?.id === ID.blockGroup && limit > 0) {
+              const group = await readGroup(block.data, limit)
+              if (group)
+                found = { time, block: group.block, duration: group.duration || entry.duration }
+            }
+          }
+        } catch (error) {
+          if (error instanceof Error && error.message === '讀取內嵌字幕逾時') throw error
+        }
+        // Let the window ask for what is read so far between blocks.
+        if (done % 64 === 0) await new Promise((resolve) => setImmediate(resolve))
+        if (repeated) continue
+        if (found && found.block.track.number === entry.track)
+          addCue(found.block.track, found.time, found.block, found.duration)
+        else if (++missed > 2 && missed > done / 50) return false
+        progress(done / entries.length)
+      }
+      return true
     }
     while (position < end) {
       tick()
       const h = await source.header(position)
       if (!h) break
       const next = h.size < 0 ? end : Math.min(end, h.data + h.size)
-      if (h.id === ID.info && h.size > 0 && h.size <= 65536) {
+      if (h.id === ID.seekHead && h.size > 0 && h.size <= LIMITS.seekHead) {
+        // A damaged seek list only means no index: the file is then read whole.
+        try {
+          const at = parseSeekHead(Buffer.from(await source.bytes(h.data, h.size)))
+          if (at !== undefined && cuesAt === undefined) cuesAt = base + at
+        } catch {}
+      } else if (h.id === ID.cues && cuesAt === undefined) cuesAt = position
+      else if (h.id === ID.info && h.size > 0 && h.size <= 65536) {
         for (const item of children(await source.bytes(h.data, h.size)))
           if (item.id === ID.timecodeScale && item.data.length <= 8)
             scale = uint(item.data) || scale
       } else if (h.id === ID.tracks) {
         if (h.size < 0 || h.size > LIMITS.tracksElement) throw new Error('字幕軌資料過大')
         tracks = parseTracks(Buffer.from(await source.bytes(h.data, h.size)))
+        options.onTracks?.([...tracks.values()])
         // Nothing to read in the rest of the file when no track has text.
         if (![...tracks.values()].some((track) => !track.graphic)) break
       } else if (h.id === ID.cluster) {
+        if (tracks && cuesAt !== undefined) {
+          const wanted = new Set(
+            [...tracks.values()].filter((track) => !track.graphic).map((track) => track.number)
+          )
+          // A damaged or oversized index is not used: the file is then read whole.
+          let entries: IndexEntry[] | undefined
+          try {
+            const index = await source.header(cuesAt)
+            if (index?.id === ID.cues && index.size > 0 && index.size <= LIMITS.cuesElement)
+              entries = parseCues(
+                Buffer.from(await source.bytes(index.data, index.size)),
+                wanted,
+                scale
+              )
+          } catch {}
+          if (entries) {
+            if (await fromIndex(entries)) break
+            // The index could not be trusted: start over from the clusters with nothing kept.
+            for (const track of tracks.values()) track.cues.length = 0
+            text = 0
+          }
+          cuesAt = undefined
+        }
         position = await cluster(h.data, next, h.size < 0)
-        progress(position)
+        progress(position / source.size)
         continue
       } else if (h.size < 0) break
       position = next
     }
     if (!tracks) throw new Error('影片檔沒有軌道資訊')
     options.onProgress?.(1)
-    return [...tracks.values()].map(({ zlib: _zlib, ...track }) => ({
+    return [...tracks.values()].map(({ zlib: _zlib, strip: _strip, ...track }) => ({
       ...track,
       cues: track.cues.sort((a, b) => a.start - b.start || a.end - b.end),
     }))
