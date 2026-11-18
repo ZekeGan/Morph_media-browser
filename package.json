@@ -45,7 +45,7 @@
   },
   "dependencies": {
     "7z-wasm": "1.2.0",
-    "music-metadata": "^12.3.2"
+    "music-metadata": "^12.5.0"
   },
   "devDependencies": {
     "@dagrejs/dagre": "^3.1.3",
