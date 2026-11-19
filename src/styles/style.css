@@ -434,12 +434,18 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .layout-config-batch { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--inset); }
 .layout-config-level { flex: none; font-size: 11px; color: var(--muted); white-space: nowrap; }
 .layout-config-item.picked .layout-config-level { color: inherit; opacity: .75; }
-.layout-config-preview { border-top: 1px solid var(--line); padding: 8px 10px; background: var(--inset); display: flex; flex-direction: column; gap: 6px; }
-.layout-config-cards { display: flex; gap: 10px; overflow-x: auto; }
-.layout-config-card { width: 220px; flex: none; pointer-events: none; }
+.layout-config-preview { position: relative; flex: none; min-height: 0; border-top: 1px solid var(--line); padding: 8px 10px; background: var(--inset); display: flex; flex-direction: column; gap: 6px; }
+/* R-444: the preview's top edge is dragged to change its height; its content scales to fit instead of scrolling. */
+.layout-config-resize { position: absolute; top: -4px; left: 0; right: 0; height: 8px; cursor: row-resize; z-index: 1; touch-action: none; }
+.layout-config-resize:hover, .layout-config-resize:focus-visible { background: color-mix(in srgb, var(--accent) 45%, transparent); outline: none; }
+.layout-config-fit { flex: 1; min-height: 0; overflow: hidden; }
+.layout-config-fit-box { position: relative; overflow: hidden; }
+.layout-config-fit-box > div { position: absolute; top: 0; left: 0; width: max-content; transform-origin: 0 0; }
+.layout-config-cards { display: flex; gap: 10px; }
+.layout-config-card { width: 240px; flex: none; pointer-events: none; }
 /* R-409: cards or right panel; the panel preview is as wide as the right panel. */
 .layout-config-target { align-self: flex-start; }
-.layout-config-panel { width: min(420px, 100%); max-height: 260px; overflow: auto; pointer-events: none; }
+.layout-config-panel { width: 420px; pointer-events: none; }
 .folder-layouts { display: flex; flex-direction: column; gap: 6px; }
 .folder-layouts dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: 13px; }
 .folder-layouts dt { color: var(--muted); }

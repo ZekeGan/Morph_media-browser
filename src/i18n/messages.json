@@ -13138,5 +13138,11 @@
     "en": "Preview: {0} selected folders",
     "ja": "プレビュー：選択した {0} 個のフォルダー",
     "es": "Vista previa: {0} carpetas seleccionadas"
+  },
+  "調整預覽高度": {
+    "zh-CN": "调整预览高度",
+    "en": "Resize preview",
+    "ja": "プレビューの高さを調整",
+    "es": "Ajustar altura de la vista previa"
   }
 }
