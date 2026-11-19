@@ -12389,12 +12389,6 @@
     "ja": "一致するフォルダーはありません",
     "es": "No hay carpetas que coincidan"
   },
-  "預覽：「{0}」與同一層的資料夾": {
-    "zh-CN": "预览：「{0}」与同一层的文件夹",
-    "en": "Preview: “{0}” and the folders beside it",
-    "ja": "プレビュー：「{0}」と同じ階層のフォルダー",
-    "es": "Vista previa: «{0}» y las carpetas de su nivel"
-  },
   "{0} 處尚未保存": {
     "zh-CN": "{0} 处尚未保存",
     "en": "{0} unsaved changes",
@@ -13132,5 +13126,17 @@
     "en": "Edit card layout",
     "ja": "カードレイアウトを編集",
     "es": "Editar diseño de tarjeta"
+  },
+  "預覽：「{0}」": {
+    "zh-CN": "预览：「{0}」",
+    "en": "Preview: “{0}”",
+    "ja": "プレビュー：「{0}」",
+    "es": "Vista previa: «{0}»"
+  },
+  "預覽：所選的 {0} 個資料夾": {
+    "zh-CN": "预览：所选的 {0} 个文件夹",
+    "en": "Preview: {0} selected folders",
+    "ja": "プレビュー：選択した {0} 個のフォルダー",
+    "es": "Vista previa: {0} carpetas seleccionadas"
   }
 }

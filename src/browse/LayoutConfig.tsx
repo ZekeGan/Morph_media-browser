@@ -277,18 +277,12 @@ export function LayoutConfig({
     }
     return count
   }, [drafts, bases, project])
-  // The preview: the picked folder and the folders beside it, drawn with the draft rules.
+  // The preview, drawn with the draft rules (R-444): the picked folder, or the marked ones when several are marked.
   const pickedRow = scope.find((r) => r.rowId === picked) ?? start ?? scope[0]
   const previewRows = useMemo(() => {
-    if (!pickedRow) return []
-    const parent = scope.find(
-      (r) => pathKey(r.path) === pathKey(pickedRow.path.replace(/[\\/][^\\/]*$/, ''))
-    )
-    const siblings = (parent ? structure.children.get(parent.rowId) : structure.roots) ?? [
-      pickedRow,
-    ]
-    return [pickedRow, ...siblings.filter((r) => r.rowId !== pickedRow.rowId)].slice(0, PREVIEW)
-  }, [pickedRow, scope, structure])
+    if (marked.length > 1) return scope.filter((r) => marked.includes(r.rowId)).slice(0, PREVIEW)
+    return pickedRow ? [pickedRow] : []
+  }, [pickedRow, scope, marked])
   const previewProject = useMemo<Project>(() => {
     const cards = cardPresets(project),
       preset = cards.find((p) => p.id === bases.card) ?? cards[0]
@@ -784,7 +778,9 @@ export function LayoutConfig({
                 <Group gap={4}>
                   {previewFold}
                   <Text className="layout-config-heading">
-                    {tr('預覽：「{0}」與同一層的資料夾', pickedRow.name)}
+                    {marked.length > 1
+                      ? tr('預覽：所選的 {0} 個資料夾', marked.length)
+                      : tr('預覽：「{0}」', pickedRow.name)}
                   </Text>
                 </Group>
                 {editCard && (
