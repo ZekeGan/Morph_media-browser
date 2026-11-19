@@ -1,13 +1,4 @@
-import {
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type MouseEvent,
-  type ReactNode,
-} from 'react'
+import { useContext, useEffect, useMemo, useState, type MouseEvent } from 'react'
 import {
   ActionIcon,
   Button,
@@ -58,8 +49,7 @@ const sources: Record<LayoutSource, string> = {
   default: '預設',
 }
 const MAX_LEVELS = 12,
-  PREVIEW = 3,
-  PREVIEW_MIN = 120
+  PREVIEW = 3
 
 interface Props {
   opened: boolean
@@ -119,59 +109,13 @@ export function LayoutConfig({
       }
       return window.innerWidth >= 960
     })
-  // R-444: the preview's height, dragged on its top edge (or with the arrow keys there); remembered on this computer.
-  const [previewHeight, setPreviewHeightState] = useState(() => {
-    try {
-      const saved = Number(localStorage.getItem('layoutConfig.previewHeight'))
-      if (saved >= PREVIEW_MIN) return saved
-    } catch {
-      // Storage may be unavailable; the default height is used.
-    }
-    return 260
-  })
-  const mainRef = useRef<HTMLElement>(null)
-  const setPreviewHeight = (value: number) => {
-    const room = (mainRef.current?.clientHeight ?? 600) - 120
-    const next = Math.round(Math.max(PREVIEW_MIN, Math.min(room, value)))
-    setPreviewHeightState(next)
-    try {
-      localStorage.setItem('layoutConfig.previewHeight', String(next))
-    } catch {
-      // Not remembered, still applied.
-    }
-  }
-  const previewHandle = (
-    <div
-      className="layout-config-resize"
-      role="separator"
-      aria-orientation="horizontal"
-      aria-label={tr('調整預覽高度')}
-      aria-valuenow={previewHeight}
-      tabIndex={0}
-      onPointerDown={(e) => {
-        e.preventDefault()
-        const from = e.clientY,
-          start = previewHeight,
-          target = e.currentTarget
-        target.setPointerCapture(e.pointerId)
-        const move = (event: PointerEvent) => setPreviewHeight(start + from - event.clientY)
-        const up = () => {
-          target.removeEventListener('pointermove', move)
-          target.removeEventListener('pointerup', up)
-          target.removeEventListener('pointercancel', up)
-        }
-        target.addEventListener('pointermove', move)
-        target.addEventListener('pointerup', up)
-        target.addEventListener('pointercancel', up)
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-          e.preventDefault()
-          setPreviewHeight(previewHeight + (e.key === 'ArrowUp' ? 20 : -20))
-        }
-      }}
-    />
-  )
+  // R-444: the preview draws cards as wide as the cards in the browsing area (measured when the window opens).
+  const [cardWidth, setCardWidth] = useState(260)
+  useEffect(() => {
+    if (!opened) return
+    const card = document.querySelector<HTMLElement>('.cards .folder-card')
+    if (card?.offsetWidth) setCardWidth(card.offsetWidth)
+  }, [opened])
   const togglePreview = () =>
     setPreviewOpen((open) => {
       try {
@@ -589,7 +533,7 @@ export function LayoutConfig({
             </Text>
           </section>
         </aside>
-        <section className="layout-config-main" aria-label={tr('資料夾')} ref={mainRef}>
+        <section className="layout-config-main" aria-label={tr('資料夾')}>
           <div className="layout-config-tools">
             <TextInput
               size="xs"
@@ -788,11 +732,7 @@ export function LayoutConfig({
             )}
           </div>
           {pickedRow && panel && (
-            <div
-              className="layout-config-preview"
-              style={previewOpen ? { height: previewHeight } : undefined}
-            >
-              {previewOpen && previewHandle}
+            <div className="layout-config-preview">
               <Group justify="space-between" gap="xs">
                 <Group gap={4}>
                   {previewFold}
@@ -824,15 +764,13 @@ export function LayoutConfig({
                 (() => {
                   const { cells } = panelPreview(pickedRow)
                   return cells?.length ? (
-                    <FitPreview>
-                      <div className="layout-config-panel">
-                        <Card
-                          project={{ ...project, layoutPresets: undefined, layoutRules: {}, cells }}
-                          row={pickedRow}
-                          open={() => {}}
-                        />
-                      </div>
-                    </FitPreview>
+                    <div className="layout-config-panel">
+                      <Card
+                        project={{ ...project, layoutPresets: undefined, layoutRules: {}, cells }}
+                        row={pickedRow}
+                        open={() => {}}
+                      />
+                    </div>
                   ) : (
                     <Text size="sm" c="dimmed">
                       {tr('這個類型沒有右側版面，顯示內建的主視覺。')}
@@ -842,11 +780,7 @@ export function LayoutConfig({
             </div>
           )}
           {pickedRow && !panel && (
-            <div
-              className="layout-config-preview"
-              style={previewOpen ? { height: previewHeight } : undefined}
-            >
-              {previewOpen && previewHandle}
+            <div className="layout-config-preview">
               <Group justify="space-between" gap="xs">
                 <Group gap={4}>
                   {previewFold}
@@ -877,15 +811,17 @@ export function LayoutConfig({
                 )}
               </Group>
               {previewOpen && (
-                <FitPreview>
-                  <div className="layout-config-cards">
-                    {previewRows.map((row) => (
-                      <div className="folder-card layout-config-card" key={row.rowId}>
-                        <Card project={previewProject} row={row} open={() => {}} />
-                      </div>
-                    ))}
-                  </div>
-                </FitPreview>
+                <div className="layout-config-cards">
+                  {previewRows.map((row) => (
+                    <div
+                      className="folder-card layout-config-card"
+                      key={row.rowId}
+                      style={{ width: cardWidth }}
+                    >
+                      <Card project={previewProject} row={row} open={() => {}} />
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           )}
@@ -911,49 +847,5 @@ export function LayoutConfig({
         </Button>
       </Group>
     </Modal>
-  )
-}
-
-// R-444: draws its content at its own size and scales the whole of it to fit the room it is given (both ways), so
-// the preview grows and shrinks with the pane instead of scrolling.
-function FitPreview({ children }: { children: ReactNode }) {
-  const room = useRef<HTMLDivElement>(null),
-    inner = useRef<HTMLDivElement>(null)
-  const [size, setSize] = useState({ scale: 1, width: 0, height: 0 })
-  useLayoutEffect(() => {
-    const outer = room.current,
-      content = inner.current
-    if (!outer || !content) return
-    const fit = () => {
-      const width = content.offsetWidth,
-        height = content.offsetHeight
-      if (!width || !height) return
-      const scale = Math.max(
-        0.2,
-        Math.min(4, outer.clientWidth / width, outer.clientHeight / height)
-      )
-      setSize((now) =>
-        now.scale === scale && now.width === width && now.height === height
-          ? now
-          : { scale, width, height }
-      )
-    }
-    const observer = new ResizeObserver(fit)
-    observer.observe(outer)
-    observer.observe(content)
-    fit()
-    return () => observer.disconnect()
-  }, [])
-  return (
-    <div className="layout-config-fit" ref={room}>
-      <div
-        className="layout-config-fit-box"
-        style={{ width: size.width * size.scale, height: size.height * size.scale }}
-      >
-        <div ref={inner} style={{ transform: `scale(${size.scale})` }}>
-          {children}
-        </div>
-      </div>
-    </div>
   )
 }
