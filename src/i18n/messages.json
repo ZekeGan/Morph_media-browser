@@ -13055,12 +13055,6 @@
     "ja": "（例：「{0}」）",
     "es": ", p. ej. «{0}»"
   },
-  "專案裡沒有": {
-    "zh-CN": "项目里没有",
-    "en": "None in this project",
-    "ja": "プロジェクトにありません",
-    "es": "Ninguna en el proyecto"
-  },
   "顯示哪些資料夾": {
     "zh-CN": "显示哪些文件夹",
     "en": "Which folders to show",

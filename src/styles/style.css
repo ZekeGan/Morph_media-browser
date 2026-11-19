@@ -432,7 +432,8 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .layout-config-list { user-select: none; }
 .layout-config-item.marked:not(.picked) { background: color-mix(in srgb, var(--selected) 55%, transparent); }
 .layout-config-batch { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--inset); }
-.layout-config-rule.absent > span:first-child, .layout-config-rule.absent .layout-config-reach { opacity: .55; }
+.layout-config-level { flex: none; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.layout-config-item.picked .layout-config-level { color: inherit; opacity: .75; }
 .layout-config-preview { border-top: 1px solid var(--line); padding: 8px 10px; background: var(--inset); display: flex; flex-direction: column; gap: 6px; }
 .layout-config-cards { display: flex; gap: 10px; overflow-x: auto; }
 .layout-config-card { width: 220px; flex: none; pointer-events: none; }

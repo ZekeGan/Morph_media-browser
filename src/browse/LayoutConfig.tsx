@@ -162,6 +162,10 @@ export function LayoutConfig({
   const known = (id: string) => presets.some((p) => p.id === id)
   const work = (row: FolderRow) => isLayoutWork(works, row.rowId)
   const kindOf = (row: FolderRow) => effectiveKind(row, row.contents)
+  // Whether the level rules can reach a folder: a non-work folder for cards, a folder whose kind has no layout for
+  // the right panel.
+  const levelRuled = (row: FolderRow) =>
+    layoutLevel(row) > 0 && (panel ? !draft.types?.[kindOf(row)] : !work(row))
   const choice = (row: FolderRow, rule = draft) =>
     panel
       ? (choosePanel(rule, row, kindOf(row), base || undefined, known) ?? {
@@ -192,7 +196,7 @@ export function LayoutConfig({
       const kind = kindOf(row),
         level = layoutLevel(row) - 1
       if (panel || work(row)) out.kindTotals[kind] = (out.kindTotals[kind] ?? 0) + 1
-      if (panel ? !draft.types?.[kind] : !work(row)) {
+      if (levelRuled(row)) {
         out.levelTotals[level] = (out.levelTotals[level] ?? 0) + 1
         out.levelExamples[level] ??= row.name
       }
@@ -381,19 +385,34 @@ export function LayoutConfig({
     } else setMarked([])
     setPicked(row.rowId)
   }
+  // The layout a folder gets from the rules alone, leaving out its own choice.
+  const inherited = (row: FolderRow, rule: LayoutRule = draft) => {
+    const folderId = row.record?.folderId
+    if (!folderId || !rule.folders?.[folderId]) return choice(row, rule).id
+    const folders = { ...rule.folders }
+    delete folders[folderId]
+    return choice(row, { ...rule, folders }).id
+  }
+  // R-444: gives folders a layout as their own; picking the layout the rules already give them makes no own choice
+  // (it would only hide the rule that applies), so their own choice is cleared instead. undefined clears it.
+  const giveOwn = (rows: FolderRow[], id: string | undefined) =>
+    setRule((rule) => {
+      const folders = { ...rule.folders }
+      for (const row of rows) {
+        const folderId = row.record?.folderId
+        if (!folderId) continue
+        if (id && id !== inherited(row, rule)) folders[folderId] = id
+        else delete folders[folderId]
+      }
+      rule.folders = folders
+    })
   // Gives every marked folder (that has a record) this layout as its own, or clears their own layouts.
   const giveMarked = (id: string | undefined) => {
     if (id === '') return
-    const ids = scope
-      .filter((r) => marked.includes(r.rowId))
-      .flatMap((r) => (r.record?.folderId ? [r.record.folderId] : []))
-    setRule((rule) => {
-      const folders = { ...rule.folders }
-      for (const folderId of ids)
-        if (id) folders[folderId] = id
-        else delete folders[folderId]
-      rule.folders = folders
-    })
+    giveOwn(
+      scope.filter((r) => marked.includes(r.rowId)),
+      id
+    )
   }
   const previewFold = (
     <Tooltip label={previewOpen ? tr('收合預覽') : tr('展開預覽')} withArrow>
@@ -409,11 +428,12 @@ export function LayoutConfig({
     </Tooltip>
   )
   // R-444: a kind or level rule says how many folders it could apply to and how many use it now, so "0" no longer
-  // reads as "none of this kind"; a kind or level the project does not have is dimmed.
+  // reads as "none of this kind"; kinds and levels without such folders are not listed.
+  const levelsShown = Array.from({ length: deepest }, (_, i) => i).filter(
+    (i) => reach.levelTotals[i]
+  )
   const ruleReach = (used = 0, total = 0, example?: string) =>
-    total
-      ? tr('使用中 {0}／共 {1} 個', used, total) + (example ? tr('，如「{0}」', example) : '')
-      : tr('專案裡沒有')
+    tr('使用中 {0}／共 {1} 個', used, total) + (example ? tr('，如「{0}」', example) : '')
   return (
     <Modal
       opened={opened}
@@ -440,12 +460,9 @@ export function LayoutConfig({
             <Text className="layout-config-heading">{panel ? tr('依類型') : tr('作品依類型')}</Text>
             {/* R-444: only the kinds the project has, or that already have a layout set. */}
             {kinds
-              .filter(({ kind }) => reach.kindTotals[kind] || draft.types?.[kind])
+              .filter(({ kind }) => reach.kindTotals[kind])
               .map(({ kind, label }) => (
-                <div
-                  className={'layout-config-rule' + (reach.kindTotals[kind] ? '' : ' absent')}
-                  key={kind}
-                >
+                <div className={'layout-config-rule'} key={kind}>
                   <span>{tr(label)}</span>
                   <NativeSelect
                     size="xs"
@@ -469,38 +486,38 @@ export function LayoutConfig({
                 </div>
               ))}
           </section>
-          <section>
-            <Text className="layout-config-heading">
-              {panel ? tr('依層級（類型沒有設定時）') : tr('一般資料夾依層級')}
-            </Text>
-            {Array.from({ length: deepest }, (_, i) => (
-              <div
-                className={'layout-config-rule' + (reach.levelTotals[i] ? '' : ' absent')}
-                key={i}
-              >
-                <span>{tr('第 {0} 層', i + 1)}</span>
-                <NativeSelect
-                  size="xs"
-                  aria-label={tr('第 {0} 層的版面', i + 1)}
-                  className={draft.levels?.[i] ? undefined : 'inherited'}
-                  value={draft.levels?.[i] ?? ''}
-                  data={inherit(followDefault)}
-                  onChange={(e) => {
-                    const id = e.currentTarget.value
-                    setRule((rule) => {
-                      const levels = [...(rule.levels ?? [])]
-                      while (levels.length <= i) levels.push('')
-                      levels[i] = id
-                      rule.levels = levels
-                    })
-                  }}
-                />
-                <span className="layout-config-reach">
-                  {ruleReach(reach.levels[i], reach.levelTotals[i], reach.levelExamples[i])}
-                </span>
-              </div>
-            ))}
-          </section>
+          {/* R-444: only the levels that hold folders the level rules apply to (none: no section). */}
+          {levelsShown.length > 0 && (
+            <section>
+              <Text className="layout-config-heading">
+                {panel ? tr('依層級（類型沒有設定時）') : tr('一般資料夾依層級')}
+              </Text>
+              {levelsShown.map((i) => (
+                <div className={'layout-config-rule'} key={i}>
+                  <span>{tr('第 {0} 層', i + 1)}</span>
+                  <NativeSelect
+                    size="xs"
+                    aria-label={tr('第 {0} 層的版面', i + 1)}
+                    className={draft.levels?.[i] ? undefined : 'inherited'}
+                    value={draft.levels?.[i] ?? ''}
+                    data={inherit(followDefault)}
+                    onChange={(e) => {
+                      const id = e.currentTarget.value
+                      setRule((rule) => {
+                        const levels = [...(rule.levels ?? [])]
+                        while (levels.length <= i) levels.push('')
+                        levels[i] = id
+                        rule.levels = levels
+                      })
+                    }}
+                  />
+                  <span className="layout-config-reach">
+                    {ruleReach(reach.levels[i], reach.levelTotals[i], reach.levelExamples[i])}
+                  </span>
+                </div>
+              ))}
+            </section>
+          )}
           <section className="layout-config-fallback">
             <Text className="layout-config-heading">{tr('其他全部（以上都沒設定時）')}</Text>
             <NativeSelect
@@ -626,6 +643,12 @@ export function LayoutConfig({
                     <span className="layout-config-title" title={row.name}>
                       {row.name}
                     </span>
+                    {/* R-444: the level, only where level rules apply, to match the rules on the left. */}
+                    {levelRuled(row) && (
+                      <span className="layout-config-level">
+                        {tr('第 {0} 層', layoutLevel(row))}
+                      </span>
+                    )}
                     {dirty && <span className="layout-config-dirty" title={tr('尚未保存')} />}
                   </span>
                   {folderId ? (
@@ -637,16 +660,11 @@ export function LayoutConfig({
                           aria-label={tr('{0} 的版面', row.name)}
                           className={own ? undefined : 'inherited'}
                           value={own ?? ''}
-                          data={inherit(tr('沿用（{0}）', name(id)))}
+                          data={inherit(tr('沿用（{0}）', name(inherited(row))))}
                           onChange={(e) => {
                             const value = e.currentTarget.value
                             setPicked(row.rowId)
-                            setRule((rule) => {
-                              const folders = { ...rule.folders }
-                              if (value) folders[folderId] = value
-                              else delete folders[folderId]
-                              rule.folders = folders
-                            })
+                            giveOwn([row], value || undefined)
                           }}
                         />
                         <span className="layout-config-value" aria-hidden="true">
