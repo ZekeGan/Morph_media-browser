@@ -91,7 +91,28 @@ export function LayoutConfig({
     setBase = (id: string) => setBases((now) => ({ ...now, [target]: id })),
     [picked, setPicked] = useState<string>(),
     [query, setQuery] = useState(''),
-    [closed, setClosed] = useState<string[]>([])
+    [closed, setClosed] = useState<string[]>([]),
+    // R-444: show only the folders with their own layout, or only those changed and not saved yet.
+    [only, setOnly] = useState<'all' | 'own' | 'dirty'>('all'),
+    // R-444: the preview can be folded away (remembered on this computer); a narrow window starts with it folded.
+    [previewOpen, setPreviewOpen] = useState(() => {
+      try {
+        const saved = localStorage.getItem('layoutConfig.preview')
+        if (saved) return saved === 'open'
+      } catch {
+        // Storage may be unavailable; fall back to the window width.
+      }
+      return window.innerWidth >= 960
+    })
+  const togglePreview = () =>
+    setPreviewOpen((open) => {
+      try {
+        localStorage.setItem('layoutConfig.preview', open ? 'closed' : 'open')
+      } catch {
+        // Not remembered, still toggled.
+      }
+      return !open
+    })
   // The list: the folder being browsed and everything below it (the whole project at its root).
   const scope = useMemo(() => {
     if (!start) return rows
@@ -114,6 +135,7 @@ export function LayoutConfig({
     setBases(savedBases())
     setPicked(start?.rowId)
     setQuery('')
+    setOnly('all')
     // Two levels below the starting folder are open; deeper branches start closed.
     const top = scope.reduce((min, r) => Math.min(min, r.depth), Infinity)
     setClosed(
@@ -151,8 +173,23 @@ export function LayoutConfig({
   )
   // How many folders of the whole project each rule reaches with the draft (a folder's own choice counts there).
   const reach = useMemo(() => {
-    const out = { default: 0, kinds: {} as Record<string, number>, levels: [] as number[] }
+    const out = {
+      default: 0,
+      kinds: {} as Record<string, number>,
+      levels: [] as number[],
+      // R-444: how many folders each rule could apply to (before folders' own choices), and one of them by name.
+      kindTotals: {} as Record<string, number>,
+      levelTotals: [] as number[],
+      levelExamples: [] as string[],
+    }
     for (const row of rows) {
+      const kind = kindOf(row),
+        level = layoutLevel(row) - 1
+      if (panel || work(row)) out.kindTotals[kind] = (out.kindTotals[kind] ?? 0) + 1
+      if (panel ? !draft.types?.[kind] : !work(row)) {
+        out.levelTotals[level] = (out.levelTotals[level] ?? 0) + 1
+        out.levelExamples[level] ??= row.name
+      }
       const { source } = choice(row)
       if (source === 'default') out.default++
       else if (source === 'type') {
@@ -171,20 +208,28 @@ export function LayoutConfig({
       change(next)
       return { ...now, [target]: next }
     })
-  // A search shows the folders whose name matches and the folders above them; otherwise the open branches.
+  // A search or a filter (R-444) shows the folders that match and the folders above them; otherwise the open branches.
   const listed = useMemo(() => {
     const text = query.trim().toLocaleLowerCase()
-    const keep = text
-      ? new Set(
-          scope
-            .filter((r) => r.name.toLocaleLowerCase().includes(text))
-            .flatMap((hit) =>
-              scope
-                .filter((r) => r === hit || pathKey(hit.path).startsWith(pathKey(r.path) + '/'))
-                .map((r) => r.rowId)
-            )
-        )
-      : undefined
+    const saved = savedRules()[target].folders ?? {},
+      matches = (r: FolderRow) => {
+        const id = r.record?.folderId
+        if (only === 'own' && !(id && draft.folders?.[id])) return false
+        if (only === 'dirty' && !(id && draft.folders?.[id] !== saved[id])) return false
+        return !text || r.name.toLocaleLowerCase().includes(text)
+      }
+    const keep =
+      text || only !== 'all'
+        ? new Set(
+            scope
+              .filter(matches)
+              .flatMap((hit) =>
+                scope
+                  .filter((r) => r === hit || pathKey(hit.path).startsWith(pathKey(r.path) + '/'))
+                  .map((r) => r.rowId)
+              )
+          )
+        : undefined
     const out: FolderRow[] = []
     const walk = (list: FolderRow[]) => {
       for (const row of list) {
@@ -195,7 +240,7 @@ export function LayoutConfig({
     }
     walk(structure.roots)
     return out
-  }, [scope, structure, closed, query])
+  }, [scope, structure, closed, query, only, draft, target, project])
   const top = useMemo(() => scope.reduce((min, r) => Math.min(min, r.depth), Infinity), [scope])
   const savedFolders = savedRules()[target].folders ?? {}
   // Unsaved changes of both card and panel.
@@ -311,6 +356,25 @@ export function LayoutConfig({
     }
   }
   const reachText = (count = 0) => tr('{0} 個資料夾', count)
+  const previewFold = (
+    <Tooltip label={previewOpen ? tr('收合預覽') : tr('展開預覽')} withArrow>
+      <ActionIcon
+        size="sm"
+        variant="subtle"
+        aria-label={previewOpen ? tr('收合預覽') : tr('展開預覽')}
+        aria-expanded={previewOpen}
+        onClick={togglePreview}
+      >
+        <Icon name={previewOpen ? 'chevron-down' : 'chevron-right'} size={14} />
+      </ActionIcon>
+    </Tooltip>
+  )
+  // R-444: a kind or level rule says how many folders it could apply to and how many use it now, so "0" no longer
+  // reads as "none of this kind"; a kind or level the project does not have is dimmed.
+  const ruleReach = (used = 0, total = 0, example?: string) =>
+    total
+      ? tr('使用中 {0}／共 {1} 個', used, total) + (example ? tr('，如「{0}」', example) : '')
+      : tr('專案裡沒有')
   return (
     <Modal
       opened={opened}
@@ -348,7 +412,10 @@ export function LayoutConfig({
           <section>
             <Text className="layout-config-heading">{panel ? tr('依類型') : tr('作品依類型')}</Text>
             {kinds.map(({ kind, label }) => (
-              <div className="layout-config-rule" key={kind}>
+              <div
+                className={'layout-config-rule' + (reach.kindTotals[kind] ? '' : ' absent')}
+                key={kind}
+              >
                 <span>{tr(label)}</span>
                 <NativeSelect
                   size="xs"
@@ -366,7 +433,9 @@ export function LayoutConfig({
                     })
                   }}
                 />
-                <span className="layout-config-reach">{reachText(reach.kinds[kind])}</span>
+                <span className="layout-config-reach">
+                  {ruleReach(reach.kinds[kind], reach.kindTotals[kind])}
+                </span>
               </div>
             ))}
           </section>
@@ -375,7 +444,10 @@ export function LayoutConfig({
               {panel ? tr('依層級（類型沒有設定時）') : tr('一般資料夾依層級')}
             </Text>
             {Array.from({ length: deepest }, (_, i) => (
-              <div className="layout-config-rule" key={i}>
+              <div
+                className={'layout-config-rule' + (reach.levelTotals[i] ? '' : ' absent')}
+                key={i}
+              >
                 <span>{tr('第 {0} 層', i + 1)}</span>
                 <NativeSelect
                   size="xs"
@@ -393,7 +465,9 @@ export function LayoutConfig({
                     })
                   }}
                 />
-                <span className="layout-config-reach">{reachText(reach.levels[i])}</span>
+                <span className="layout-config-reach">
+                  {ruleReach(reach.levels[i], reach.levelTotals[i], reach.levelExamples[i])}
+                </span>
               </div>
             ))}
           </section>
@@ -423,6 +497,17 @@ export function LayoutConfig({
             <Button size="compact-xs" variant="subtle" onClick={() => setClosed([])}>
               {tr('全部展開')}
             </Button>
+            <SegmentedControl
+              size="xs"
+              aria-label={tr('顯示哪些資料夾')}
+              value={only}
+              onChange={(value) => setOnly(value as typeof only)}
+              data={[
+                { value: 'all', label: tr('全部') },
+                { value: 'own', label: tr('只看專屬') },
+                { value: 'dirty', label: tr('只看未保存') },
+              ]}
+            />
             <span className="layout-config-legend" aria-hidden="true">
               {(['type', 'level', 'default', 'folder'] as const).map((source) => (
                 <span key={source}>
@@ -439,7 +524,7 @@ export function LayoutConfig({
                 own = folderId ? draft.folders?.[folderId] : undefined,
                 dirty = !!folderId && own !== savedFolders[folderId],
                 count = structure.children.get(row.rowId)?.length ?? 0,
-                isClosed = !query.trim() && closed.includes(row.rowId)
+                isClosed = !query.trim() && only === 'all' && closed.includes(row.rowId)
               return (
                 <div
                   key={row.rowId}
@@ -483,23 +568,29 @@ export function LayoutConfig({
                   </span>
                   {folderId ? (
                     <span className="layout-config-choice" onClick={(e) => e.stopPropagation()}>
-                      <NativeSelect
-                        size="xs"
-                        aria-label={tr('{0} 的版面', row.name)}
-                        className={own ? undefined : 'inherited'}
-                        value={own ?? ''}
-                        data={inherit(tr('沿用（{0}）', name(id)))}
-                        onChange={(e) => {
-                          const value = e.currentTarget.value
-                          setPicked(row.rowId)
-                          setRule((rule) => {
-                            const folders = { ...rule.folders }
-                            if (value) folders[folderId] = value
-                            else delete folders[folderId]
-                            rule.folders = folders
-                          })
-                        }}
-                      />
+                      {/* R-444: the row reads as the layout's name; the menu shows on hover, focus or pick. */}
+                      <span className="layout-config-pick">
+                        <NativeSelect
+                          size="xs"
+                          aria-label={tr('{0} 的版面', row.name)}
+                          className={own ? undefined : 'inherited'}
+                          value={own ?? ''}
+                          data={inherit(tr('沿用（{0}）', name(id)))}
+                          onChange={(e) => {
+                            const value = e.currentTarget.value
+                            setPicked(row.rowId)
+                            setRule((rule) => {
+                              const folders = { ...rule.folders }
+                              if (value) folders[folderId] = value
+                              else delete folders[folderId]
+                              rule.folders = folders
+                            })
+                          }}
+                        />
+                        <span className="layout-config-value" aria-hidden="true">
+                          {name(id)}
+                        </span>
+                      </span>
                       {own && (
                         <Tooltip label={tr('清除專屬版面')} withArrow>
                           <ActionIcon
@@ -562,9 +653,12 @@ export function LayoutConfig({
           {pickedRow && panel && (
             <div className="layout-config-preview">
               <Group justify="space-between" gap="xs">
-                <Text className="layout-config-heading">
-                  {tr('預覽：「{0}」的右側', pickedRow.name)}
-                </Text>
+                <Group gap={4}>
+                  {previewFold}
+                  <Text className="layout-config-heading">
+                    {tr('預覽：「{0}」的右側', pickedRow.name)}
+                  </Text>
+                </Group>
                 {editPanel && (
                   <Tooltip
                     label={changes ? tr('先保存或取消變更') : tr('在編輯器打開這個右側版面')}
@@ -585,44 +679,58 @@ export function LayoutConfig({
                   </Tooltip>
                 )}
               </Group>
-              {(() => {
-                const { cells } = panelPreview(pickedRow)
-                return cells?.length ? (
-                  <div className="layout-config-panel">
-                    <Card
-                      project={{ ...project, layoutPresets: undefined, layoutRules: {}, cells }}
-                      row={pickedRow}
-                      open={() => {}}
-                    />
-                  </div>
-                ) : (
-                  <Text size="sm" c="dimmed">
-                    {tr('這個類型沒有右側版面，顯示內建的主視覺。')}
-                  </Text>
-                )
-              })()}
+              {previewOpen &&
+                (() => {
+                  const { cells } = panelPreview(pickedRow)
+                  return cells?.length ? (
+                    <div className="layout-config-panel">
+                      <Card
+                        project={{ ...project, layoutPresets: undefined, layoutRules: {}, cells }}
+                        row={pickedRow}
+                        open={() => {}}
+                      />
+                    </div>
+                  ) : (
+                    <Text size="sm" c="dimmed">
+                      {tr('這個類型沒有右側版面，顯示內建的主視覺。')}
+                    </Text>
+                  )
+                })()}
             </div>
           )}
           {pickedRow && !panel && (
             <div className="layout-config-preview">
-              <Text className="layout-config-heading">
-                {tr('預覽：「{0}」與同一層的資料夾', pickedRow.name)}
-              </Text>
-              <div className="layout-config-cards">
-                {previewRows.map((row) => (
-                  <div className="folder-card layout-config-card" key={row.rowId}>
-                    <Card project={previewProject} row={row} open={() => {}} />
-                  </div>
-                ))}
-              </div>
+              <Group gap={4}>
+                {previewFold}
+                <Text className="layout-config-heading">
+                  {tr('預覽：「{0}」與同一層的資料夾', pickedRow.name)}
+                </Text>
+              </Group>
+              {previewOpen && (
+                <div className="layout-config-cards">
+                  {previewRows.map((row) => (
+                    <div className="folder-card layout-config-card" key={row.rowId}>
+                      <Card project={previewProject} row={row} open={() => {}} />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </section>
       </div>
       <Group justify="flex-end" gap="sm" className="layout-config-footer">
-        <Text size="xs" c="dimmed">
-          {changes ? tr('{0} 處尚未保存', changes) : tr('沒有變更')}
-        </Text>
+        {changes ? (
+          <Tooltip label={tr('只列出改過的資料夾')} withArrow>
+            <Button size="compact-xs" variant="subtle" onClick={() => setOnly('dirty')}>
+              {tr('{0} 處尚未保存', changes)}
+            </Button>
+          </Tooltip>
+        ) : (
+          <Text size="xs" c="dimmed">
+            {tr('沒有變更')}
+          </Text>
+        )}
         <Button variant="default" onClick={close} disabled={busy}>
           {tr('取消')}
         </Button>

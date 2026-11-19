@@ -13048,5 +13048,59 @@
     "en": "Actions apply to the whole project and are added from the launch component in the layout editor; targets and arguments belong to this folder only.",
     "ja": "操作はプロジェクト全体に適用され、レイアウトエディターの「ゲーム起動」コンポーネントで追加します。対象と引数はこのフォルダーだけのものです。",
     "es": "Las acciones se aplican a todo el proyecto y se añaden desde el componente de inicio en el editor de diseño; los destinos y argumentos son solo de esta carpeta."
+  },
+  "使用中 {0}／共 {1} 個": {
+    "zh-CN": "使用中 {0}／共 {1} 个",
+    "en": "{0} of {1} in use",
+    "ja": "使用中 {0}／全 {1} 件",
+    "es": "En uso {0} de {1}"
+  },
+  "，如「{0}」": {
+    "zh-CN": "，如「{0}」",
+    "en": ", e.g. “{0}”",
+    "ja": "（例：「{0}」）",
+    "es": ", p. ej. «{0}»"
+  },
+  "專案裡沒有": {
+    "zh-CN": "项目里没有",
+    "en": "None in this project",
+    "ja": "プロジェクトにありません",
+    "es": "Ninguna en el proyecto"
+  },
+  "顯示哪些資料夾": {
+    "zh-CN": "显示哪些文件夹",
+    "en": "Which folders to show",
+    "ja": "表示するフォルダー",
+    "es": "Qué carpetas mostrar"
+  },
+  "只看專屬": {
+    "zh-CN": "只看专属",
+    "en": "Own only",
+    "ja": "専用のみ",
+    "es": "Solo propias"
+  },
+  "只看未保存": {
+    "zh-CN": "只看未保存",
+    "en": "Unsaved only",
+    "ja": "未保存のみ",
+    "es": "Solo sin guardar"
+  },
+  "只列出改過的資料夾": {
+    "zh-CN": "只列出改过的文件夹",
+    "en": "List only the changed folders",
+    "ja": "変更したフォルダーだけを表示",
+    "es": "Mostrar solo las carpetas cambiadas"
+  },
+  "收合預覽": {
+    "zh-CN": "收起预览",
+    "en": "Collapse preview",
+    "ja": "プレビューを折りたたむ",
+    "es": "Contraer vista previa"
+  },
+  "展開預覽": {
+    "zh-CN": "展开预览",
+    "en": "Expand preview",
+    "ja": "プレビューを展開",
+    "es": "Expandir vista previa"
   }
 }
