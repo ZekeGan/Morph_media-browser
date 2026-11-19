@@ -109,6 +109,23 @@ export function LayoutConfig({
       }
       return window.innerWidth >= 960
     })
+  // R-444: the rules column can be folded away for more room (remembered on this computer).
+  const [rulesOpen, setRulesOpen] = useState(() => {
+    try {
+      return localStorage.getItem('layoutConfig.rules') !== 'closed'
+    } catch {
+      return true
+    }
+  })
+  const toggleRules = () =>
+    setRulesOpen((open) => {
+      try {
+        localStorage.setItem('layoutConfig.rules', open ? 'closed' : 'open')
+      } catch {
+        // Not remembered, still toggled.
+      }
+      return !open
+    })
   const togglePreview = () =>
     setPreviewOpen((open) => {
       try {
@@ -447,8 +464,8 @@ export function LayoutConfig({
           { value: 'panel', label: tr('右側') },
         ]}
       />
-      <div className="layout-config">
-        <aside className="layout-config-rules" aria-label={tr('規則')}>
+      <div className={'layout-config' + (rulesOpen ? '' : ' rules-closed')}>
+        <aside className="layout-config-rules" aria-label={tr('規則')} hidden={!rulesOpen}>
           {/* R-444: the rules read top to bottom in the order they apply; the default comes last. */}
           <section>
             <Text className="layout-config-heading">{panel ? tr('依類型') : tr('作品依類型')}</Text>
@@ -528,6 +545,17 @@ export function LayoutConfig({
         </aside>
         <section className="layout-config-main" aria-label={tr('資料夾')}>
           <div className="layout-config-tools">
+            <Tooltip label={rulesOpen ? tr('收合規則') : tr('展開規則')} withArrow>
+              <ActionIcon
+                size="md"
+                variant="subtle"
+                aria-label={rulesOpen ? tr('收合規則') : tr('展開規則')}
+                aria-expanded={rulesOpen}
+                onClick={toggleRules}
+              >
+                <Icon name="panel-left" size={16} />
+              </ActionIcon>
+            </Tooltip>
             <TextInput
               size="xs"
               className="layout-config-search"

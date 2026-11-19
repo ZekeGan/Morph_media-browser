@@ -13138,5 +13138,17 @@
     "en": "Preview: {0} selected folders",
     "ja": "プレビュー：選択した {0} 個のフォルダー",
     "es": "Vista previa: {0} carpetas seleccionadas"
+  },
+  "收合規則": {
+    "zh-CN": "收起规则",
+    "en": "Hide rules",
+    "ja": "ルールを隠す",
+    "es": "Ocultar reglas"
+  },
+  "展開規則": {
+    "zh-CN": "展开规则",
+    "en": "Show rules",
+    "ja": "ルールを表示",
+    "es": "Mostrar reglas"
   }
 }

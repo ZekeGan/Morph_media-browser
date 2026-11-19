@@ -393,6 +393,8 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .layout-config-body { display: flex; flex-direction: column; gap: 10px; }
 .layout-config { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 0; height: min(68vh, 720px); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
 .layout-config-rules { display: flex; flex-direction: column; gap: 14px; padding: 12px; overflow: auto; background: var(--inset); border-right: 1px solid var(--line); }
+.layout-config.rules-closed { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+.layout-config-rules[hidden] { display: none; }
 .layout-config-rules section { display: flex; flex-direction: column; gap: 6px; }
 .layout-config-heading { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .03em; }
 .layout-config-rule { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 2px 6px; align-items: center; font-size: 13px; }
