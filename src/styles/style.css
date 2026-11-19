@@ -434,12 +434,15 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .layout-config-batch { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--inset); }
 .layout-config-level { flex: none; font-size: 11px; color: var(--muted); white-space: nowrap; }
 .layout-config-item.picked .layout-config-level { color: inherit; opacity: .75; }
-.layout-config-preview { flex: 0 1 auto; min-height: 0; overflow: auto; border-top: 1px solid var(--line); padding: 8px 10px; background: var(--inset); display: flex; flex-direction: column; gap: 6px; }
-.layout-config-cards { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.layout-config-preview { flex: 0 1 auto; min-height: 0; overflow: hidden; border-top: 1px solid var(--line); padding: 8px 10px; background: var(--inset); display: flex; flex-direction: column; gap: 6px; }
+/* R-444: only the cards scroll when taller than the room; the preview heading stays put. */
+.layout-config-preview > :first-child { flex: none; }
+.layout-config-cards { flex: 0 1 auto; min-height: 0; overflow: auto; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .layout-config-card { flex: none; pointer-events: none; width: 100%;}
 /* R-409: cards or right panel; the panel preview is as wide as the right panel. */
 .layout-config-target { align-self: flex-start; }
-.layout-config-panel { width: 100%; margin: 0 auto; pointer-events: none; }
+.layout-config-panel { flex: 0 1 auto; min-height: 0; overflow: auto; width: 100%; margin: 0 auto; }
+.layout-config-panel > * { pointer-events: none; }
 .folder-layouts { display: flex; flex-direction: column; gap: 6px; }
 .folder-layouts dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: 13px; }
 .folder-layouts dt { color: var(--muted); }
