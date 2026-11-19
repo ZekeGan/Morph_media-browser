@@ -151,8 +151,19 @@ try {
     true
   )
   assert.equal(await page.locator('.playback-items-images .playback-item').count(), 3)
+  const listFillsPanel = () =>
+    page.evaluate(() => {
+      const list = [...document.querySelectorAll('.playback-queue-open .playback-items')].find(
+        (node) => (node as HTMLElement).offsetParent
+      )!
+      const panel = document.querySelector('.playback-queue-open')!
+      const pad = parseFloat(getComputedStyle(panel).paddingBottom)
+      return panel.getBoundingClientRect().bottom - pad - list.getBoundingClientRect().bottom
+    })
+  assert.ok(Math.abs(await listFillsPanel()) <= 2, 'queue list reaches the panel bottom')
   // A trial play is not queued: the folder tab lists the siblings to switch to.
   await page.getByRole('tab', { name: /目前資料夾/ }).click()
+  assert.ok(Math.abs(await listFillsPanel()) <= 2, 'folder list reaches the panel bottom')
   const second = page
     .locator('.playback-item')
     .filter({ hasText: 'second.mp4' })

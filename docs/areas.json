@@ -157,7 +157,7 @@
       "name": "漫畫閱讀器",
       "docs": ["MANGA_VIEWER_DESIGN.md#漫畫閱讀器"],
       "code": ["src/reader/Reader*", "src/reader/Webtoon*", "src/common/readerInput*", "shared/reader*"],
-      "ui": ["reader-ui", "reader-read-on-ui", "webtoon-ui", "reader-next-ui", "reader-carry-ui", "reader-cbz-next-ui", "media-scope-ui"],
+      "ui": ["reader-ui", "reader-read-on-ui", "webtoon-ui", "reader-next-ui", "reader-carry-ui", "reader-cbz-next-ui", "reader-cbz-immersive-ui", "media-scope-ui"],
       "tests": ["reader.test.ts"]
     },
     {
@@ -165,7 +165,7 @@
       "name": "小說閱讀器",
       "docs": ["NOVEL_READER.md#閱讀", "NOVEL_READER.md#閱讀紀錄"],
       "code": ["src/novel/*", "src/common/readerInput*", "electron/novel*", "shared/novel*"],
-      "ui": ["novel-ui", "novel-short-chapters-ui", "novel-end-center-ui", "markdown-ui"],
+      "ui": ["novel-ui", "novel-short-chapters-ui", "novel-scroll-steady-ui", "novel-end-center-ui", "markdown-ui"],
       "tests": ["novel.test.ts", "markdown.test.ts"]
     },
     {
@@ -195,7 +195,7 @@
       "name": "ZIP／CBZ／PDF",
       "docs": ["DOCUMENT_VIEWER_DESIGN.md#zipcbz", "DOCUMENT_VIEWER_DESIGN.md#pdf"],
       "code": ["src/documents/DocumentViewer*", "electron/archive*"],
-      "ui": ["reader-ui", "reader-cbz-next-ui", "book-volumes-ui", "novel-ui", "decided-ui"],
+      "ui": ["reader-ui", "reader-cbz-next-ui", "reader-cbz-immersive-ui", "book-volumes-ui", "novel-ui", "decided-ui"],
       "tests": ["decided-media.test.ts", "archive-foreign.test.ts"]
     },
     {

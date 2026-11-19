@@ -86,9 +86,12 @@ export function NovelReader({
     [settings, setSettingsState] = useState(loadSettings),
     saved = row.record?.details?.novels?.[file.name],
     [chapter, setChapter] = useState(saved?.chapter ?? 0),
-    // R-427: scroll mode lays out this many chapters before and after the current one; more while the neighbours
-    // are too short to fill the window (see fillWindow).
-    [reach, setReach] = useState({ before: 1, after: 1 }),
+    // R-427, R-442: the chapters scroll mode lays out, apart from the current one (progress, contents): crossing
+    // into a neighbour only changes the current chapter, and the laid-out range changes in fillWindow and trim.
+    [span, setSpan] = useState(() => ({
+      from: (saved?.chapter ?? 0) - 1,
+      to: (saved?.chapter ?? 0) + 1,
+    })),
     [position, setPosition] = useState(saved?.position ?? 0),
     [bookmarks, setBookmarks] = useState(saved?.bookmarks ?? []),
     [panel, setPanel] = useState<'toc' | 'marks' | 'search'>(),
@@ -109,8 +112,11 @@ export function NovelReader({
     findAfterRender = useRef<{ text: string; nth: number } | undefined>(undefined),
     // Scroll mode: how far into the newly current chapter the view was when scrolling crossed into it.
     anchor = useRef<number | undefined>(undefined),
-    // R-355: how far a glide still had to go when scrolling crossed into the next or previous chapter.
-    glideRest = useRef<number | undefined>(undefined)
+    // R-355: how far a glide still had to go when the chapters around the view changed.
+    glideRest = useRef<number | undefined>(undefined),
+    // R-442: the current chapter changed because scrolling crossed into it; the view is already where it should be.
+    followed = useRef(false),
+    idleTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const setSettings = (change: Partial<Settings>) =>
     setSettingsState((previous) => {
       const next = { ...previous, ...change }
@@ -139,6 +145,9 @@ export function NovelReader({
     [book]
   )
   const current = book?.chapters[chapter]
+  // A jump (contents, a bookmark, a clamped saved chapter) can land outside the laid-out range: start again around it.
+  const laid =
+    chapter >= span.from && chapter <= span.to ? span : { from: chapter - 1, to: chapter + 1 }
   // --- Geometry: paged mode lays the chapter out in columns one window wide (or tall, in vertical text). ---
   useLayoutEffect(() => {
     const element = scroller.current
@@ -246,6 +255,12 @@ export function NovelReader({
   useLayoutEffect(() => {
     const element = scroller.current
     if (!element || !current) return
+    // R-442: nothing around the view changed, only which chapter counts as current: leave the view (and a glide) be.
+    if (followed.current) {
+      followed.current = false
+      track()
+      return
+    }
     const target = restore.current
     restore.current = 0
     const box = paged ? undefined : sectionBox(chapter)
@@ -279,7 +294,7 @@ export function NovelReader({
     vertical,
     paged,
     box,
-    reach,
+    span,
     settings.size,
     settings.lineHeight,
     settings.margin,
@@ -288,42 +303,60 @@ export function NovelReader({
   ])
   // R-427: chapters shorter than the window left nothing to scroll (the laid-out neighbours ended above the bottom), so
   // the wheel did nothing and the reading never crossed into the next chapter. Chapters are added on each side until
-  // there is about a window of text beyond the view, and taken away again when there is plenty more.
-  const fillWindow = () => {
-    if (!book || paged) return
-    const { at, max } = extent(),
-      view = viewSize(),
-      size = (index: number) => sectionBox(index)?.size ?? 0
-    let { before, after } = reach
-    const last = book.chapters.length - 1
-    if (chapter + after < last && max - at < view * 1.5) after++
-    else if (after > 1 && max - at - size(chapter + after) >= view * 2) after--
-    if (chapter - before > 0 && at < view * 1.5) before++
-    else if (before > 1 && at - size(chapter - before) >= view * 2) before--
-    if (before === reach.before && after === reach.after) return
+  // there is about a window of text beyond the view.
+  const relay = (from: number, to: number) => {
+    if (from === laid.from && to === laid.to) return
     const own = sectionBox(chapter)
     if (!own) return
     // The view stays where it was in the current chapter while the text around it changes.
+    const { at } = extent()
     anchor.current = at - own.start
     glideRest.current = glide.current ? glide.current.target - at : undefined
-    setReach({ before, after })
+    setSpan({ from, to })
   }
+  const fillWindow = () => {
+    if (!book || paged) return
+    const { at, max } = extent(),
+      view = viewSize()
+    let { from, to } = laid
+    if (to < book.chapters.length - 1 && max - at < view * 1.5) to++
+    if (from > 0 && at < view * 1.5) from--
+    relay(from, to)
+  }
+  // R-442: taking chapters away while scrolling moved the text under the reader at every chapter crossed. Chapters
+  // far from the view (about 3 windows) go only once scrolling has stopped.
+  const trim = () => {
+    if (!book || paged || glide.current || !scroller.current) return
+    const { at, max } = extent(),
+      view = viewSize(),
+      size = (index: number) => sectionBox(index)?.size ?? 0
+    let { from, to } = laid,
+      above = at,
+      below = max - at
+    // One neighbour stays on each side, as before.
+    while (from < chapter - 1 && above - size(from) >= view * 3) above -= size(from++)
+    while (to > chapter + 1 && below - size(to) >= view * 3) below -= size(to--)
+    relay(from, to)
+  }
+  const latestTrim = useRef(trim)
+  latestTrim.current = trim
+  useEffect(() => () => clearTimeout(idleTimer.current), [])
   const track = () => {
     if (!scroller.current) return
     const { at, max } = extent()
     if (paged) return setPosition(max > 0 ? Math.min(1, Math.max(0, at / max)) : 0)
+    clearTimeout(idleTimer.current)
+    idleTimer.current = setTimeout(() => latestTrim.current(), 400)
     const view = viewSize(),
       line = at + view * 0.1,
-      shown = Array.from(
-        { length: reach.before + reach.after + 1 },
-        (_, k) => chapter - reach.before + k
-      ).find((index) => {
-        const box = index !== chapter && sectionBox(index)
-        return box && line >= box.start && line < box.start + box.size
-      })
+      shown = Array.from({ length: laid.to - laid.from + 1 }, (_, k) => laid.from + k).find(
+        (index) => {
+          const box = index !== chapter && sectionBox(index)
+          return box && line >= box.start && line < box.start + box.size
+        }
+      )
     if (shown !== undefined) {
-      anchor.current = at - sectionBox(shown)!.start
-      glideRest.current = glide.current ? glide.current.target - at : undefined
+      followed.current = true
       setEnding(false)
       setChapter(shown)
       return
@@ -383,6 +416,7 @@ export function NovelReader({
     setEnding(false)
     restore.current = at
     setChapter(index)
+    if (index !== chapter) setSpan({ from: index - 1, to: index + 1 })
     if (index === chapter && !paged) {
       const box = sectionBox(index)
       if (box) {
@@ -1069,10 +1103,7 @@ export function NovelReader({
               <div className={'novel-content novel-font-' + settings.font} style={contentStyle}>
                 {(paged
                   ? [chapter]
-                  : Array.from(
-                      { length: reach.before + reach.after + 1 },
-                      (_, k) => chapter - reach.before + k
-                    )
+                  : Array.from({ length: laid.to - laid.from + 1 }, (_, k) => laid.from + k)
                 )
                   .filter((index) => index >= 0 && index < book.chapters.length)
                   .map((index) => {
@@ -1154,7 +1185,7 @@ export function NovelReader({
                     )}
                   </div>
                 ) : (
-                  chapter + reach.after >= book.chapters.length - 1 && (
+                  laid.to >= book.chapters.length - 1 && (
                     <div className="novel-chapter-end" role="separator">
                       {next ? (
                         <Button variant="outline" onClick={() => next.open()}>

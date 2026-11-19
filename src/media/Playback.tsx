@@ -437,7 +437,7 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
                     className={showQueue ? 'playback-queue-open' : ''}
                     aria-hidden={!showQueue}
                   >
-                    <Tabs value={tab} onChange={setTab}>
+                    <Tabs className="playback-tabs" value={tab} onChange={setTab}>
                       <Tabs.List>
                         <Tabs.Tab value="queue">{tr('播放佇列')}</Tabs.Tab>
                         <Tabs.Tab value="folder">

@@ -28,7 +28,10 @@ export function DocumentViewer({
   next?: { name: string; open: () => void }
 }) {
   useLocale()
-  const [images, setImages] = useState<MediaEntry[]>(),
+  // The pages belong to the archive they were read from: when the file changes, the previous book's pages are gone in
+  // the same render (R-436), so the reader never mounts with another book's pages under the new key.
+  const [loaded, setLoaded] = useState<{ id: string; entries: MediaEntry[] }>(),
+    images = loaded?.id === file.id ? loaded.entries : undefined,
     [error, setError] = useState(''),
     // R-430: the settings and immersive reading of the volume just finished, which the next volume starts with (the
     // folder's saved settings may not have come back from the save yet).
@@ -51,15 +54,13 @@ export function DocumentViewer({
   useEffect(() => {
     if (file.kind !== 'archive') return
     let alive = true
-    // R-415: the next book in the same viewer starts from its own pages, not the previous book's.
-    setImages(undefined)
     setError('')
     void window.explorer
       .request({ action: 'archive', rowId, fileId: file.id })
       .then((result) => {
         if (!alive) return
         if (!result.content?.entries.length) throw new Error(tr('壓縮檔內沒有支援的圖片'))
-        setImages(result.content.entries)
+        setLoaded({ id: file.id, entries: result.content.entries })
       })
       .catch((reason) => {
         if (alive) setError(String(reason))
