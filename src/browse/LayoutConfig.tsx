@@ -109,13 +109,6 @@ export function LayoutConfig({
       }
       return window.innerWidth >= 960
     })
-  // R-444: the preview draws cards as wide as the cards in the browsing area (measured when the window opens).
-  const [cardWidth, setCardWidth] = useState(260)
-  useEffect(() => {
-    if (!opened) return
-    const card = document.querySelector<HTMLElement>('.cards .folder-card')
-    if (card?.offsetWidth) setCardWidth(card.offsetWidth)
-  }, [opened])
   const togglePreview = () =>
     setPreviewOpen((open) => {
       try {
@@ -813,11 +806,7 @@ export function LayoutConfig({
               {previewOpen && (
                 <div className="layout-config-cards">
                   {previewRows.map((row) => (
-                    <div
-                      className="folder-card layout-config-card"
-                      key={row.rowId}
-                      style={{ width: cardWidth }}
-                    >
+                    <div className="folder-card layout-config-card" key={row.rowId}>
                       <Card project={previewProject} row={row} open={() => {}} />
                     </div>
                   ))}

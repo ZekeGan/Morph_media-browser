@@ -436,7 +436,7 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .layout-config-item.picked .layout-config-level { color: inherit; opacity: .75; }
 .layout-config-preview { flex: 0 1 auto; min-height: 0; overflow: auto; border-top: 1px solid var(--line); padding: 8px 10px; background: var(--inset); display: flex; flex-direction: column; gap: 6px; }
 .layout-config-cards { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-.layout-config-card { flex: none; pointer-events: none; }
+.layout-config-card { flex: none; pointer-events: none; width: 100%;}
 /* R-409: cards or right panel; the panel preview is as wide as the right panel. */
 .layout-config-target { align-self: flex-start; }
 .layout-config-panel { width: min(420px, 100%); margin: 0 auto; pointer-events: none; }
