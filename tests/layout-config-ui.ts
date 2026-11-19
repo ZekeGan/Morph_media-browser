@@ -86,6 +86,42 @@ try {
     path: path.resolve('.test-output', 'shot', 'r409-layout-config-panel.png'),
   })
   await dialog.getByText('卡片', { exact: true }).click()
+  // R-444: the level is shown on the folder the level rules reach (Artist), not on a work (Album); only the kinds the
+  // project has folders of are listed.
+  await item('Artist').locator('.layout-config-level', { hasText: '第 1 層' }).waitFor()
+  assert.equal(await item('Album').locator('.layout-config-level').count(), 0)
+  await dialog.getByRole('combobox', { name: '音樂的版面' }).waitFor()
+  assert.equal(await dialog.getByRole('combobox', { name: '影片的版面' }).count(), 0)
+  // Picking the layout the rules already give a folder makes no own choice.
+  await item('Album').getByRole('combobox', { name: 'Album 的版面' }).selectOption('albums')
+  await item('Album').locator('.layout-config-source', { hasText: '類型' }).waitFor()
+  await dialog.getByText('2 處尚未保存').waitFor()
+  // Filters: only the folders with their own layout (and the folders above them).
+  await dialog.getByText('只看專屬', { exact: true }).click()
+  await item('Artist').waitFor()
+  assert.equal(await item('Album').count(), 0)
+  await dialog.getByText('全部', { exact: true }).click()
+  await item('Album').waitFor()
+  // Ctrl+click marks a second folder: the bar for marked folders shows, and the preview draws both.
+  await item('Album').click()
+  await item('Artist').click({ modifiers: ['Control'] })
+  await dialog.getByText('已選 2 個資料夾').waitFor()
+  await dialog.getByText('預覽：所選的 2 個資料夾').waitFor()
+  await dialog.getByRole('button', { name: '取消選取', exact: true }).click()
+  await dialog.getByText('已選 2 個資料夾').waitFor({ state: 'detached' })
+  // The preview, the whole rules column and each group of rules fold and open again.
+  await dialog.getByRole('button', { name: '收合預覽', exact: true }).click()
+  assert.equal(await dialog.locator('.layout-config-cards').count(), 0)
+  await dialog.getByRole('button', { name: '展開預覽', exact: true }).click()
+  await dialog.locator('.layout-config-cards').waitFor()
+  await dialog.getByRole('button', { name: '作品依類型', exact: true }).click()
+  assert.equal(await dialog.getByRole('combobox', { name: '音樂的版面' }).count(), 0)
+  await dialog.getByRole('button', { name: '作品依類型', exact: true }).click()
+  await dialog.getByRole('combobox', { name: '音樂的版面' }).waitFor()
+  await dialog.getByRole('button', { name: '收合規則', exact: true }).click()
+  await dialog.getByRole('combobox', { name: '音樂的版面' }).waitFor({ state: 'hidden' })
+  await dialog.getByRole('button', { name: '展開規則', exact: true }).click()
+  await dialog.getByRole('combobox', { name: '音樂的版面' }).waitFor()
   // Screenshots for review: wide, then the 900-wide window.
   const shots = path.resolve('.test-output', 'shot')
   await page.screenshot({ path: path.join(shots, 'r413-layout-config-wide.png') })
