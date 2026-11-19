@@ -12323,12 +12323,6 @@
     "ja": "ルール",
     "es": "Reglas"
   },
-  "沒有其他規則時使用 · {0}": {
-    "zh-CN": "没有其他规则时使用 · {0}",
-    "en": "Used when no other rule applies · {0}",
-    "ja": "他のルールがないときに使用 · {0}",
-    "es": "Se usa si no hay otra regla · {0}"
-  },
   "作品依類型": {
     "zh-CN": "作品按类型",
     "en": "Works by kind",
@@ -13102,5 +13096,47 @@
     "en": "Expand preview",
     "ja": "プレビューを展開",
     "es": "Expandir vista previa"
+  },
+  "其他全部（以上都沒設定時）": {
+    "zh-CN": "其他全部（以上都没设置时）",
+    "en": "Everything else (when nothing above applies)",
+    "ja": "その他すべて（上のどれも設定されていないとき）",
+    "es": "Todo lo demás (si nada de lo anterior aplica)"
+  },
+  "預設版面 · {0}": {
+    "zh-CN": "默认版面 · {0}",
+    "en": "Default layout · {0}",
+    "ja": "既定のレイアウト · {0}",
+    "es": "Diseño predeterminado · {0}"
+  },
+  "所選資料夾": {
+    "zh-CN": "所选文件夹",
+    "en": "Selected folders",
+    "ja": "選択したフォルダー",
+    "es": "Carpetas seleccionadas"
+  },
+  "所選資料夾的版面": {
+    "zh-CN": "所选文件夹的版面",
+    "en": "Layout for the selected folders",
+    "ja": "選択したフォルダーのレイアウト",
+    "es": "Diseño de las carpetas seleccionadas"
+  },
+  "套用版面…": {
+    "zh-CN": "套用版面…",
+    "en": "Apply layout…",
+    "ja": "レイアウトを適用…",
+    "es": "Aplicar diseño…"
+  },
+  "在編輯器打開這個卡片版面": {
+    "zh-CN": "在编辑器打开这个卡片版面",
+    "en": "Open this card layout in the editor",
+    "ja": "このカードレイアウトをエディターで開く",
+    "es": "Abrir este diseño de tarjeta en el editor"
+  },
+  "編輯卡片版面": {
+    "zh-CN": "编辑卡片版面",
+    "en": "Edit card layout",
+    "ja": "カードレイアウトを編集",
+    "es": "Editar diseño de tarjeta"
   }
 }

@@ -1,4 +1,4 @@
-import { syncPresetDraft } from '../shared/layouts'
+import { selectPreset, syncPresetDraft } from '../shared/layouts'
 import { t as tr, useLocale } from './i18n'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Button, Checkbox, Group, Modal, Stack } from '@mantine/core'
@@ -277,12 +277,26 @@ export function App() {
     : undefined
   const panelProject = (p: Project) =>
     panelEditorProject(p, panelKind!, panelEditorStart(p, panelKind!), templatePreset)
+  // R-444: the card editor opened from the layout window at a layout other than the default one edits that layout and
+  // leaves the default as it was (unless another layout is picked in the editor, which makes that one the default).
+  const cardOther =
+    !panelKind &&
+    !!templatePreset &&
+    templatePreset !== project?.activeLayoutId &&
+    !!project?.layoutPresets?.some((p) => p.id === templatePreset)
+  const keepDefault = (p: Project) => {
+    const next = syncPresetDraft(p),
+      original = next.layoutPresets?.find((x) => x.id === project!.activeLayoutId)
+    return cardOther && p.activeLayoutId === templatePreset && original
+      ? { ...next, activeLayoutId: original.id, cells: structuredClone(original.cells) }
+      : next
+  }
   const saveEdited = async (p: Project, preset?: { name: string; asNew: boolean }) => {
     try {
       const next = panelKind
         ? fromPanelEditor(project!, p, panelKind, !!templatePreset)
         : p.layoutPresets
-          ? syncPresetDraft(p)
+          ? keepDefault(p)
           : saveCardPreset(
               p,
               preset ?? { name: tr('預設版面'), asNew: false },
@@ -369,7 +383,7 @@ export function App() {
         >
           {editor && project ? (
             <Editor
-              key={`${project.projectId}:${templateCategory ?? 'card'}`}
+              key={`${project.projectId}:${templateCategory ?? 'card'}:${templatePreset ?? ''}`}
               act={act}
               presets={!panelKind}
               presetTools={!!panelKind}
@@ -390,7 +404,11 @@ export function App() {
               }
               onDirty={setEditorDirty}
               project={
-                panelKind ? panelProject(project) : { ...project, cells: visibleCells(project) }
+                panelKind
+                  ? panelProject(project)
+                  : cardOther
+                    ? selectPreset(project, templatePreset!)
+                    : { ...project, cells: visibleCells(project) }
               }
               rows={(snapshot.structure ?? snapshot.rows).filter(
                 (r) => r.projectId === selected && !r.readonly

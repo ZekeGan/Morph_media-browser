@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useState, type MouseEvent } from 'react'
 import {
   ActionIcon,
   Button,
@@ -64,6 +64,8 @@ interface Props {
   initialTarget?: Target
   // Opens the right-panel editor for a kind at a layout (after the window is closed).
   editPanel?: (kind: FolderKind, preset?: string) => void
+  // R-444: opens the card editor at a card layout without making it the default layout.
+  editCard?: (preset: string) => void
 }
 type Target = 'card' | 'panel'
 export function LayoutConfig({
@@ -76,6 +78,7 @@ export function LayoutConfig({
   save,
   initialTarget = 'card',
   editPanel,
+  editCard,
 }: Props) {
   useLocale()
   const works = useContext(LayoutWorksContext)
@@ -94,6 +97,8 @@ export function LayoutConfig({
     [closed, setClosed] = useState<string[]>([]),
     // R-444: show only the folders with their own layout, or only those changed and not saved yet.
     [only, setOnly] = useState<'all' | 'own' | 'dirty'>('all'),
+    // R-444: folders marked with Ctrl / Shift + click, to give them a layout together.
+    [marked, setMarked] = useState<string[]>([]),
     // R-444: the preview can be folded away (remembered on this computer); a narrow window starts with it folded.
     [previewOpen, setPreviewOpen] = useState(() => {
       try {
@@ -136,6 +141,7 @@ export function LayoutConfig({
     setPicked(start?.rowId)
     setQuery('')
     setOnly('all')
+    setMarked([])
     // Two levels below the starting folder are open; deeper branches start closed.
     const top = scope.reduce((min, r) => Math.min(min, r.depth), Infinity)
     setClosed(
@@ -356,6 +362,39 @@ export function LayoutConfig({
     }
   }
   const reachText = (count = 0) => tr('{0} 個資料夾', count)
+  // R-444: a click picks one folder; Ctrl+click adds or removes it from the marked ones, Shift+click marks the run
+  // of listed folders from the picked one to it.
+  const mark = (row: FolderRow, e: MouseEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      setMarked((now) => {
+        const start = now.length || !pickedRow ? now : [pickedRow.rowId]
+        return start.includes(row.rowId)
+          ? start.filter((id) => id !== row.rowId)
+          : [...start, row.rowId]
+      })
+    } else if (e.shiftKey && pickedRow) {
+      const from = listed.findIndex((r) => r.rowId === pickedRow.rowId),
+        to = listed.findIndex((r) => r.rowId === row.rowId)
+      if (from < 0 || to < 0) return
+      setMarked(listed.slice(Math.min(from, to), Math.max(from, to) + 1).map((r) => r.rowId))
+      return
+    } else setMarked([])
+    setPicked(row.rowId)
+  }
+  // Gives every marked folder (that has a record) this layout as its own, or clears their own layouts.
+  const giveMarked = (id: string | undefined) => {
+    if (id === '') return
+    const ids = scope
+      .filter((r) => marked.includes(r.rowId))
+      .flatMap((r) => (r.record?.folderId ? [r.record.folderId] : []))
+    setRule((rule) => {
+      const folders = { ...rule.folders }
+      for (const folderId of ids)
+        if (id) folders[folderId] = id
+        else delete folders[folderId]
+      rule.folders = folders
+    })
+  }
   const previewFold = (
     <Tooltip label={previewOpen ? tr('收合預覽') : tr('展開預覽')} withArrow>
       <ActionIcon
@@ -396,48 +435,39 @@ export function LayoutConfig({
       />
       <div className="layout-config">
         <aside className="layout-config-rules" aria-label={tr('規則')}>
-          <section>
-            <Text className="layout-config-heading">{tr('預設版面')}</Text>
-            <NativeSelect
-              size="xs"
-              aria-label={tr('預設版面')}
-              value={base}
-              data={panel ? [{ value: '', label: tr('內建右側') }, ...choices] : choices}
-              onChange={(e) => setBase(e.currentTarget.value)}
-            />
-            <Text className="layout-config-reach">
-              {tr('沒有其他規則時使用 · {0}', reachText(reach.default))}
-            </Text>
-          </section>
+          {/* R-444: the rules read top to bottom in the order they apply; the default comes last. */}
           <section>
             <Text className="layout-config-heading">{panel ? tr('依類型') : tr('作品依類型')}</Text>
-            {kinds.map(({ kind, label }) => (
-              <div
-                className={'layout-config-rule' + (reach.kindTotals[kind] ? '' : ' absent')}
-                key={kind}
-              >
-                <span>{tr(label)}</span>
-                <NativeSelect
-                  size="xs"
-                  aria-label={tr('{0}的版面', tr(label))}
-                  className={draft.types?.[kind] ? undefined : 'inherited'}
-                  value={draft.types?.[kind] ?? ''}
-                  data={inherit(followDefault)}
-                  onChange={(e) => {
-                    const id = e.currentTarget.value
-                    setRule((rule) => {
-                      const types = { ...rule.types }
-                      if (id) types[kind] = id
-                      else delete types[kind]
-                      rule.types = types
-                    })
-                  }}
-                />
-                <span className="layout-config-reach">
-                  {ruleReach(reach.kinds[kind], reach.kindTotals[kind])}
-                </span>
-              </div>
-            ))}
+            {/* R-444: only the kinds the project has, or that already have a layout set. */}
+            {kinds
+              .filter(({ kind }) => reach.kindTotals[kind] || draft.types?.[kind])
+              .map(({ kind, label }) => (
+                <div
+                  className={'layout-config-rule' + (reach.kindTotals[kind] ? '' : ' absent')}
+                  key={kind}
+                >
+                  <span>{tr(label)}</span>
+                  <NativeSelect
+                    size="xs"
+                    aria-label={tr('{0}的版面', tr(label))}
+                    className={draft.types?.[kind] ? undefined : 'inherited'}
+                    value={draft.types?.[kind] ?? ''}
+                    data={inherit(followDefault)}
+                    onChange={(e) => {
+                      const id = e.currentTarget.value
+                      setRule((rule) => {
+                        const types = { ...rule.types }
+                        if (id) types[kind] = id
+                        else delete types[kind]
+                        rule.types = types
+                      })
+                    }}
+                  />
+                  <span className="layout-config-reach">
+                    {ruleReach(reach.kinds[kind], reach.kindTotals[kind])}
+                  </span>
+                </div>
+              ))}
           </section>
           <section>
             <Text className="layout-config-heading">
@@ -470,6 +500,19 @@ export function LayoutConfig({
                 </span>
               </div>
             ))}
+          </section>
+          <section className="layout-config-fallback">
+            <Text className="layout-config-heading">{tr('其他全部（以上都沒設定時）')}</Text>
+            <NativeSelect
+              size="xs"
+              aria-label={tr('預設版面')}
+              value={base}
+              data={panel ? [{ value: '', label: tr('內建右側') }, ...choices] : choices}
+              onChange={(e) => setBase(e.currentTarget.value)}
+            />
+            <Text className="layout-config-reach">
+              {tr('預設版面 · {0}', reachText(reach.default))}
+            </Text>
           </section>
         </aside>
         <section className="layout-config-main" aria-label={tr('資料夾')}>
@@ -517,6 +560,24 @@ export function LayoutConfig({
               ))}
             </span>
           </div>
+          {marked.length > 1 && (
+            <div className="layout-config-batch" role="group" aria-label={tr('所選資料夾')}>
+              <Text size="xs">{tr('已選 {0} 個資料夾', marked.length)}</Text>
+              <NativeSelect
+                size="xs"
+                aria-label={tr('所選資料夾的版面')}
+                value=""
+                data={[{ value: '', label: tr('套用版面…') }, ...choices]}
+                onChange={(e) => giveMarked(e.currentTarget.value)}
+              />
+              <Button size="compact-xs" variant="subtle" onClick={() => giveMarked(undefined)}>
+                {tr('清除專屬版面')}
+              </Button>
+              <Button size="compact-xs" variant="subtle" onClick={() => setMarked([])}>
+                {tr('取消選取')}
+              </Button>
+            </div>
+          )}
           <div className="layout-config-list" role="list">
             {listed.map((row) => {
               const { id, source } = choice(row),
@@ -532,9 +593,10 @@ export function LayoutConfig({
                   className={
                     'layout-config-item from-' +
                     source +
-                    (row.rowId === pickedRow?.rowId ? ' picked' : '')
+                    (row.rowId === pickedRow?.rowId ? ' picked' : '') +
+                    (marked.includes(row.rowId) ? ' marked' : '')
                   }
-                  onClick={() => setPicked(row.rowId)}
+                  onClick={(e) => mark(row, e)}
                 >
                   <span
                     className="layout-config-name"
@@ -700,11 +762,32 @@ export function LayoutConfig({
           )}
           {pickedRow && !panel && (
             <div className="layout-config-preview">
-              <Group gap={4}>
-                {previewFold}
-                <Text className="layout-config-heading">
-                  {tr('預覽：「{0}」與同一層的資料夾', pickedRow.name)}
-                </Text>
+              <Group justify="space-between" gap="xs">
+                <Group gap={4}>
+                  {previewFold}
+                  <Text className="layout-config-heading">
+                    {tr('預覽：「{0}」與同一層的資料夾', pickedRow.name)}
+                  </Text>
+                </Group>
+                {editCard && (
+                  <Tooltip
+                    label={changes ? tr('先保存或取消變更') : tr('在編輯器打開這個卡片版面')}
+                    withArrow
+                  >
+                    <Button
+                      size="compact-xs"
+                      variant="light"
+                      disabled={busy || !!changes}
+                      onClick={() => {
+                        const { id } = choice(pickedRow)
+                        close()
+                        editCard(id)
+                      }}
+                    >
+                      {tr('編輯卡片版面')}
+                    </Button>
+                  </Tooltip>
+                )}
               </Group>
               {previewOpen && (
                 <div className="layout-config-cards">

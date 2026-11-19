@@ -803,6 +803,7 @@ function BrowseWorkspaceBody({
         start={layoutsFrom?.row ?? currentFolder}
         initialTarget={layoutsFrom?.target}
         editPanel={(kind, preset) => edit(kind, preset)}
+        editCard={(preset) => edit(undefined, preset)}
         busy={busy}
         save={async (next) => !!(await act({ action: 'saveProject', project: next }))}
       />
