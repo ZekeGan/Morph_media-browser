@@ -395,6 +395,9 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .layout-config-rules { display: flex; flex-direction: column; gap: 14px; padding: 12px; overflow: auto; background: var(--inset); border-right: 1px solid var(--line); }
 .layout-config.rules-closed { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
 .layout-config-rules[hidden] { display: none; }
+.layout-config-section { display: flex; align-items: center; gap: 4px; width: 100%; padding: 2px 0; border: 0; border-radius: 4px; background: none; color: var(--muted); text-align: left; cursor: pointer; font: inherit; }
+.layout-config-section:hover, .layout-config-section:hover .layout-config-heading { color: var(--text); }
+.layout-config-section:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .layout-config-rules section { display: flex; flex-direction: column; gap: 6px; }
 .layout-config-heading { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .03em; }
 .layout-config-rule { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 2px 6px; align-items: center; font-size: 13px; }

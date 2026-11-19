@@ -126,6 +126,39 @@ export function LayoutConfig({
       }
       return !open
     })
+  // R-444: each group of rules on the left folds on its heading (remembered on this computer).
+  const [folded, setFolded] = useState<string[]>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('layoutConfig.ruleSections') ?? '[]')
+      return Array.isArray(saved) ? saved.filter((x) => typeof x === 'string') : []
+    } catch {
+      return []
+    }
+  })
+  const ruleHead = (id: string, label: string) => {
+    const open = !folded.includes(id)
+    return (
+      <button
+        type="button"
+        className="layout-config-section"
+        aria-expanded={open}
+        onClick={() =>
+          setFolded((now) => {
+            const next = open ? [...now, id] : now.filter((x) => x !== id)
+            try {
+              localStorage.setItem('layoutConfig.ruleSections', JSON.stringify(next))
+            } catch {
+              // Not remembered, still folded.
+            }
+            return next
+          })
+        }
+      >
+        <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14} />
+        <span className="layout-config-heading">{label}</span>
+      </button>
+    )
+  }
   const togglePreview = () =>
     setPreviewOpen((open) => {
       try {
@@ -468,79 +501,83 @@ export function LayoutConfig({
         <aside className="layout-config-rules" aria-label={tr('規則')} hidden={!rulesOpen}>
           {/* R-444: the rules read top to bottom in the order they apply; the default comes last. */}
           <section>
-            <Text className="layout-config-heading">{panel ? tr('依類型') : tr('作品依類型')}</Text>
-            {/* R-444: only the kinds the project has, or that already have a layout set. */}
-            {kinds
-              .filter(({ kind }) => reach.kindTotals[kind])
-              .map(({ kind, label }) => (
-                <div className={'layout-config-rule'} key={kind}>
-                  <span>{tr(label)}</span>
-                  <NativeSelect
-                    size="xs"
-                    aria-label={tr('{0}的版面', tr(label))}
-                    className={draft.types?.[kind] ? undefined : 'inherited'}
-                    value={draft.types?.[kind] ?? ''}
-                    data={inherit(followDefault)}
-                    onChange={(e) => {
-                      const id = e.currentTarget.value
-                      setRule((rule) => {
-                        const types = { ...rule.types }
-                        if (id) types[kind] = id
-                        else delete types[kind]
-                        rule.types = types
-                      })
-                    }}
-                  />
-                  <span className="layout-config-reach">
-                    {ruleReach(reach.kinds[kind], reach.kindTotals[kind])}
-                  </span>
-                </div>
-              ))}
+            {ruleHead('types', panel ? tr('依類型') : tr('作品依類型'))}
+            {/* R-444: only the kinds the project has folders of. */}
+            {!folded.includes('types') &&
+              kinds
+                .filter(({ kind }) => reach.kindTotals[kind])
+                .map(({ kind, label }) => (
+                  <div className={'layout-config-rule'} key={kind}>
+                    <span>{tr(label)}</span>
+                    <NativeSelect
+                      size="xs"
+                      aria-label={tr('{0}的版面', tr(label))}
+                      className={draft.types?.[kind] ? undefined : 'inherited'}
+                      value={draft.types?.[kind] ?? ''}
+                      data={inherit(followDefault)}
+                      onChange={(e) => {
+                        const id = e.currentTarget.value
+                        setRule((rule) => {
+                          const types = { ...rule.types }
+                          if (id) types[kind] = id
+                          else delete types[kind]
+                          rule.types = types
+                        })
+                      }}
+                    />
+                    <span className="layout-config-reach">
+                      {ruleReach(reach.kinds[kind], reach.kindTotals[kind])}
+                    </span>
+                  </div>
+                ))}
           </section>
           {/* R-444: only the levels that hold folders the level rules apply to (none: no section). */}
           {levelsShown.length > 0 && (
             <section>
-              <Text className="layout-config-heading">
-                {panel ? tr('依層級（類型沒有設定時）') : tr('一般資料夾依層級')}
-              </Text>
-              {levelsShown.map((i) => (
-                <div className={'layout-config-rule'} key={i}>
-                  <span>{tr('第 {0} 層', i + 1)}</span>
-                  <NativeSelect
-                    size="xs"
-                    aria-label={tr('第 {0} 層的版面', i + 1)}
-                    className={draft.levels?.[i] ? undefined : 'inherited'}
-                    value={draft.levels?.[i] ?? ''}
-                    data={inherit(followDefault)}
-                    onChange={(e) => {
-                      const id = e.currentTarget.value
-                      setRule((rule) => {
-                        const levels = [...(rule.levels ?? [])]
-                        while (levels.length <= i) levels.push('')
-                        levels[i] = id
-                        rule.levels = levels
-                      })
-                    }}
-                  />
-                  <span className="layout-config-reach">
-                    {ruleReach(reach.levels[i], reach.levelTotals[i], reach.levelExamples[i])}
-                  </span>
-                </div>
-              ))}
+              {ruleHead('levels', panel ? tr('依層級（類型沒有設定時）') : tr('一般資料夾依層級'))}
+              {!folded.includes('levels') &&
+                levelsShown.map((i) => (
+                  <div className={'layout-config-rule'} key={i}>
+                    <span>{tr('第 {0} 層', i + 1)}</span>
+                    <NativeSelect
+                      size="xs"
+                      aria-label={tr('第 {0} 層的版面', i + 1)}
+                      className={draft.levels?.[i] ? undefined : 'inherited'}
+                      value={draft.levels?.[i] ?? ''}
+                      data={inherit(followDefault)}
+                      onChange={(e) => {
+                        const id = e.currentTarget.value
+                        setRule((rule) => {
+                          const levels = [...(rule.levels ?? [])]
+                          while (levels.length <= i) levels.push('')
+                          levels[i] = id
+                          rule.levels = levels
+                        })
+                      }}
+                    />
+                    <span className="layout-config-reach">
+                      {ruleReach(reach.levels[i], reach.levelTotals[i], reach.levelExamples[i])}
+                    </span>
+                  </div>
+                ))}
             </section>
           )}
           <section className="layout-config-fallback">
-            <Text className="layout-config-heading">{tr('其他全部（以上都沒設定時）')}</Text>
-            <NativeSelect
-              size="xs"
-              aria-label={tr('預設版面')}
-              value={base}
-              data={panel ? [{ value: '', label: tr('內建右側') }, ...choices] : choices}
-              onChange={(e) => setBase(e.currentTarget.value)}
-            />
-            <Text className="layout-config-reach">
-              {tr('預設版面 · {0}', reachText(reach.default))}
-            </Text>
+            {ruleHead('default', tr('其他全部（以上都沒設定時）'))}
+            {!folded.includes('default') && (
+              <>
+                <NativeSelect
+                  size="xs"
+                  aria-label={tr('預設版面')}
+                  value={base}
+                  data={panel ? [{ value: '', label: tr('內建右側') }, ...choices] : choices}
+                  onChange={(e) => setBase(e.currentTarget.value)}
+                />
+                <Text className="layout-config-reach">
+                  {tr('預設版面 · {0}', reachText(reach.default))}
+                </Text>
+              </>
+            )}
           </section>
         </aside>
         <section className="layout-config-main" aria-label={tr('資料夾')}>
