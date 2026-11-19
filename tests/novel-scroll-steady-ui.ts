@@ -121,6 +121,9 @@ try {
       state.__stop?.()
       const frames: Record<string, number>[] = []
       state.__frames = frames
+      // Per frame: time, position along the reading direction, current chapter number.
+      const motion: [number, number, number, number][] = []
+      ;(window as unknown as { __motion: typeof motion }).__motion = motion
       let request = 0
       const sample = () => {
         const view = document.querySelector('.novel-page')
@@ -140,6 +143,16 @@ try {
                 : rect.top - frame.top
           }
           frames.push(starts)
+          motion.push([
+            performance.now(),
+            vertical ? Math.abs(view.scrollLeft) : view.scrollTop,
+            Number(
+              /第 (\d+) \//.exec(
+                document.querySelector('.novel-info strong')?.textContent ?? ''
+              )?.[1] ?? 0
+            ),
+            vertical ? view.scrollWidth - view.clientWidth : view.scrollHeight - view.clientHeight,
+          ])
         }
         request = requestAnimationFrame(sample)
       }
@@ -178,6 +191,24 @@ try {
     const frames = await win.evaluate(
       () => (window as unknown as { __frames: Record<string, number>[] }).__frames
     )
+    const motion = await win.evaluate(
+      () => (window as unknown as { __motion: [number, number, number, number][] }).__motion
+    )
+    // The wheel turns faster than a glide settles, so from the first move to the last the text never stands still: a
+    // glide that stopped when a chapter was added after the view waited for the next notch (the lag of R-442).
+    const moving = motion.map(([, at], i) => i > 0 && at !== motion[i - 1][1]),
+      first = moving.indexOf(true),
+      last = moving.lastIndexOf(true),
+      stalls: string[] = []
+    for (let i = first, still = 0; i <= last; i++) {
+      still = moving[i] ? 0 : still + 1
+      if (still === 3) {
+        const [, at, chapterShown, max] = motion[i]
+        stalls.push(
+          `frame ${i} at ${Math.round(at)} of ${Math.round(max)}, chapter ${chapterShown}`
+        )
+      }
+    }
     await win.screenshot({ path: path.join(base, 'shot', `r442-steady-${layout}.png`) })
     const jumps: string[] = []
     for (let i = 1; i < frames.length; i++)
@@ -193,6 +224,7 @@ try {
       `${layout}: the wheel reads on through the short chapters: reached ${reached}`
     )
     assert.deepEqual(jumps, [], `${layout}: no chapter on the screen moves back while reading on`)
+    assert.deepEqual(stalls, [], `${layout}: the glide does not stop while the wheel turns on`)
     results.push(`${layout} ${frames.length} frames, chapter ${reached}`)
   }
   assert.deepEqual(errors, [])

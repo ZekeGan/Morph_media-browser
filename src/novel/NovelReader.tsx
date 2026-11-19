@@ -114,7 +114,8 @@ export function NovelReader({
     anchor = useRef<number | undefined>(undefined),
     // R-355: how far a glide still had to go when the chapters around the view changed.
     glideRest = useRef<number | undefined>(undefined),
-    // R-442: the current chapter changed because scrolling crossed into it; the view is already where it should be.
+    // R-442: the current chapter changed because scrolling crossed into it, or chapters after the view came or went;
+    // the view is already where it should be.
     followed = useRef(false),
     idleTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const setSettings = (change: Partial<Settings>) =>
@@ -255,7 +256,8 @@ export function NovelReader({
   useLayoutEffect(() => {
     const element = scroller.current
     if (!element || !current) return
-    // R-442: nothing around the view changed, only which chapter counts as current: leave the view (and a glide) be.
+    // R-442: nothing before the view changed (only which chapter counts as current, or the chapters after it): leave
+    // the view (and a glide) be.
     if (followed.current) {
       followed.current = false
       track()
@@ -306,6 +308,14 @@ export function NovelReader({
   // there is about a window of text beyond the view.
   const relay = (from: number, to: number) => {
     if (from === laid.from && to === laid.to) return
+    // R-442: chapters added or taken away after the view do not move it, so the view is left alone. Putting it back
+    // where it was when scrolling asked for the change undid the glide's step taken in between, and the glide, seeing
+    // the page not move, stopped until the next wheel notch: a lag at every chapter added while reading on.
+    if (from === laid.from) {
+      followed.current = true
+      setSpan({ from, to })
+      return
+    }
     const own = sectionBox(chapter)
     if (!own) return
     // The view stays where it was in the current chapter while the text around it changes.
