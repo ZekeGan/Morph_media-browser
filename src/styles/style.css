@@ -439,7 +439,7 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .layout-config-card { flex: none; pointer-events: none; width: 100%;}
 /* R-409: cards or right panel; the panel preview is as wide as the right panel. */
 .layout-config-target { align-self: flex-start; }
-.layout-config-panel { width: min(420px, 100%); margin: 0 auto; pointer-events: none; }
+.layout-config-panel { width: 100%; margin: 0 auto; pointer-events: none; }
 .folder-layouts { display: flex; flex-direction: column; gap: 6px; }
 .folder-layouts dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: 13px; }
 .folder-layouts dt { color: var(--muted); }
