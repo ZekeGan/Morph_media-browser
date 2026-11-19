@@ -79,3 +79,15 @@ export async function removeTestRoot(root: string) {
   if (!target.startsWith(base + path.sep)) throw new Error('Unsafe cleanup: ' + target)
   await fs.rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 }
+
+// R-445: the card editor opens from the layout window, at the layout the current folder uses.
+export async function openLayoutEditor(page: Page) {
+  await page
+    .getByRole('button', { name: /^版面配置/ })
+    .filter({ visible: true })
+    .first()
+    .click()
+  const dialog = page.getByRole('dialog', { name: '版面配置' })
+  await dialog.getByRole('button', { name: '編輯卡片版面', exact: true }).click()
+  await dialog.waitFor({ state: 'hidden' })
+}

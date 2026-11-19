@@ -3,7 +3,7 @@ import path from 'node:path'
 import assert from 'node:assert/strict'
 import { Library } from '../electron/library'
 import { folderFile, readFolder } from '../electron/files'
-import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
+import { closeApp, launchApp, removeTestRoot, reportFailure, openLayoutEditor } from './support/app'
 
 // A yes/no field's own wording (R-234), set in the editor's field details, shows on the canvas, in the field list
 // preview, on the card and in the folder settings.
@@ -50,7 +50,7 @@ try {
   await page.getByRole('button', { name: '開啟專案 Wording', exact: true }).first().click()
   await page.locator('.workspace-toolbar').waitFor()
   // Set the wording in the editor's field details, then save the layout.
-  await button('編輯版面').click()
+  await openLayoutEditor(page)
   await page.locator('.editor-page').waitFor()
   await button('欄位操作 Owned').click()
   await page.getByRole('menuitem', { name: '欄位設定…', exact: true }).click()

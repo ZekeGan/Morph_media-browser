@@ -51,7 +51,12 @@ button, input, select, textarea { font-family: inherit; }
 .sidebar-project.selected, .folder-card.selected { color: var(--selected-text); }
 .sidebar-project.selected:hover { background: var(--selected); }
 .center-mode .mantine-SegmentedControl-label { display: flex; gap: 6px; align-items: center; }
-.center-mode .mantine-SegmentedControl-indicator { background: var(--selected); }
+/* R-446: the sliding indicator is measured when the control first shows; inside a window or popover that is still
+   opening it lands in the wrong place. Every segmented control marks its chosen item with the item's own background
+   instead (Mantine's own look before it measures), so nothing is measured. */
+.mantine-SegmentedControl-indicator { display: none !important; }
+.mantine-SegmentedControl-root[data-initialized] .mantine-SegmentedControl-label[data-active]::before { display: block; }
+.center-mode .mantine-SegmentedControl-label[data-active]::before { background: var(--selected); }
 .center-mode .mantine-SegmentedControl-label[data-active] { color: var(--selected-text); }
 .mantine-ActionIcon-root[data-variant='subtle'] { color: var(--muted); }
 .mantine-ActionIcon-root:disabled { opacity: .45; }

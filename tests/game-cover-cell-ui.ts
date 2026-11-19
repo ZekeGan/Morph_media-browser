@@ -6,7 +6,7 @@ import { Library } from '../electron/library'
 import { folderFile, readFolder } from '../electron/files'
 import { DATA_DIR, type Cell } from '../shared/model'
 import { tinyPng } from './support/archive-fixture'
-import { closeApp } from './support/app'
+import { closeApp, openLayoutEditor } from './support/app'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
@@ -123,7 +123,7 @@ for (const [w, h] of [
       'contain'
     )
     assert.equal(await page.locator('.folder-card .cell-blur-bg').count(), 1)
-    await button('編輯版面').click()
+    await openLayoutEditor(page)
     await page
       .locator('.editor-cell .cell-image, .editor-cell .cell-image-placeholder')
       .first()

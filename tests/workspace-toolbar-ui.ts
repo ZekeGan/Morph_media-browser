@@ -68,24 +68,20 @@ try {
   await button('關閉資料夾設定').click()
   await page.locator('.workspace-toolbar').getByText('檔案', { exact: true }).click()
   await page.locator('.workspace-file-scope [aria-label="檔案總覽範圍設定"]').waitFor()
-  // R-402: the first time the scope switch opens, its selection mark sits exactly on the chosen item.
+  // R-402, R-446: the first time the scope switch opens (in a popover still appearing), the chosen item is marked by
+  // its own background; the sliding indicator, which was measured too early, is not drawn.
   await page.locator('.workspace-file-scope [aria-label="檔案總覽範圍設定"]').click()
   await page.getByRole('radiogroup', { name: '檔案總覽範圍' }).waitFor()
-  await page.waitForTimeout(500)
   const mark = await page.evaluate(() => {
     const group = document.querySelector('[aria-label="檔案總覽範圍"]')!,
-      indicator = group
-        .querySelector('.mantine-SegmentedControl-indicator')!
-        .getBoundingClientRect(),
-      active = group
-        .querySelector('.mantine-SegmentedControl-control[data-active]')!
-        .getBoundingClientRect()
-    return [indicator.left - active.left, indicator.width - active.width]
+      indicator = group.querySelector('.mantine-SegmentedControl-indicator'),
+      active = group.querySelector('.mantine-SegmentedControl-label[data-active]')!
+    return {
+      indicator: indicator ? getComputedStyle(indicator).display : 'none',
+      mark: getComputedStyle(active, '::before').display,
+    }
   })
-  assert.ok(
-    mark.every((gap) => Math.abs(gap) < 2),
-    'the selection mark is on its item: ' + mark.join(',')
-  )
+  assert.deepEqual(mark, { indicator: 'none', mark: 'block' }, 'the chosen item is marked itself')
   await page.keyboard.press('Escape')
   assert.equal(await page.locator('.file-overview .file-overview-toolbar').count(), 0)
   assert.equal(await button('卡片顯示設定').count(), 0)

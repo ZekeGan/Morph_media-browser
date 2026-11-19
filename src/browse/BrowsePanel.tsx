@@ -32,7 +32,8 @@ type Props = {
   closeConfig: () => void
   config?: FolderRow
   detail?: FolderRow
-  edit: (category?: string, preset?: string) => void
+  // R-445: opens the layout window on the right panel with this folder picked.
+  layoutConfig: (row: FolderRow) => void
   expanded: boolean
   filePreview?: OverviewEntry
   folderMode: boolean
@@ -76,7 +77,7 @@ export function BrowsePanel(props: Props) {
     closeConfig,
     config,
     detail,
-    edit,
+    layoutConfig,
     expanded,
     filePreview,
     folderMode,
@@ -176,14 +177,15 @@ export function BrowsePanel(props: Props) {
                   {tr('進入此資料夾')}
                 </Button>
               )}
-              {kind === 'book' && (
-                <Tooltip label={tr('編輯此專案所有漫畫的資訊版面；卡片外觀另外設定')}>
+              {/* R-445: every kind: the layout window opens on its right panel with this folder picked. */}
+              {detail && (
+                <Tooltip label={tr('右側版面配置…')}>
                   <ActionIcon
-                    aria-label={tr('編輯漫畫展示')}
+                    aria-label={tr('右側版面配置…')}
                     variant="subtle"
                     color="gray"
                     disabled={busy}
-                    onClick={() => edit('book')}
+                    onClick={() => layoutConfig(detail)}
                   >
                     <Icon name="layout" />
                   </ActionIcon>

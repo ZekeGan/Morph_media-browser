@@ -6,7 +6,7 @@ import { Library } from '../electron/library'
 import { presetDraft, addPreset, syncPresetDraft } from '../shared/layouts'
 import { folderFile, readFolder, saveFolder } from '../electron/files'
 import { WorkspaceStore } from '../electron/workspace'
-import { closeApp } from './support/app'
+import { closeApp, openLayoutEditor } from './support/app'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
@@ -173,14 +173,14 @@ try {
   )
   await button('退出閱讀器').click()
   await toolbar.getByText('資料夾', { exact: true }).click()
-  await button('編輯版面').click()
+  await openLayoutEditor(page)
   await page.locator('.editor-toolbar').waitFor()
   const saveBox = (await button('儲存').boundingBox())!,
     undoBox = (await button('復原').boundingBox())!
   assert.ok(Math.abs(saveBox.y - undoBox.y) < 12)
   await page.screenshot({ path: path.join(root, 'editor.png') })
   await page.getByRole('button', { name: /^(放棄變更|關閉)$/ }).click()
-  await button('編輯版面').click()
+  await openLayoutEditor(page)
   const deleteField = async () => {
     await button('欄位操作 Flag').click()
     await page.getByRole('menuitem', { name: '刪除欄位及資料', exact: true }).click()

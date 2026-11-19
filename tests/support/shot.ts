@@ -6,7 +6,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { Library } from '../../electron/library'
 import { readFolder, saveFolder } from '../../electron/files'
-import { closeApp, launchApp, removeTestRoot } from './app'
+import { closeApp, launchApp, removeTestRoot, openLayoutEditor } from './app'
 
 const args = process.argv.slice(2)
 const kind = (['game', 'manga', 'album', 'other'] as const).find((name) => name === args[0])
@@ -215,7 +215,7 @@ try {
     // In a narrow window the open folder panel overlays the toolbar; close it first.
     const closePanel = page.getByRole('button', { name: '關閉資料夾內容', exact: true })
     if (await closePanel.isVisible()) await closePanel.click()
-    await page.getByRole('button', { name: '編輯版面', exact: true }).click()
+    await openLayoutEditor(page)
     await page.locator('.editor-page').waitFor()
     const select = option('select')
     if (select) await page.locator('.editor-cell').nth(Number(select)).click()

@@ -4,7 +4,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import type { Page } from 'playwright-core'
 import { Library } from '../../electron/library'
-import { closeApp, launchApp, removeTestRoot } from './app'
+import { closeApp, launchApp, removeTestRoot, openLayoutEditor } from './app'
 import { readFolder, saveFolder } from '../../electron/files'
 import type { Cell } from '../../shared/model'
 import { buildDemoLibrary, demoDetails } from './demo-data'
@@ -48,7 +48,7 @@ const shots: Shot[] = [
     name: '04-editor',
     run: async (page) => {
       await openProject(page)
-      await page.getByRole('button', { name: '編輯版面', exact: true }).click()
+      await openLayoutEditor(page)
       await page.locator('.editor-page').waitFor()
       await page.getByRole('textbox', { name: '使用真實資料預覽' }).click()
       await page.getByRole('option').filter({ hasText: '月光花園' }).first().click()

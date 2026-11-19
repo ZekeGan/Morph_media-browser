@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { Library } from '../electron/library'
 import { folderFile, projectFile, readFolder, readJson } from '../electron/files'
 import type { Project } from '../shared/model'
-import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
+import { closeApp, launchApp, removeTestRoot, reportFailure, openLayoutEditor } from './support/app'
 
 // The editor's "Your fields" section (source groups, not-yet-added rows, search, create from search, value filter,
 // reference only), a field group shown by a text component (made from the row menu, a tags member converted, order
@@ -56,7 +56,7 @@ let passed = false
 try {
   const button = (name: string) => page.getByRole('button', { name, exact: true })
   await page.getByRole('button', { name: '開啟專案 Fields', exact: true }).first().click()
-  await button('編輯版面').click()
+  await openLayoutEditor(page)
   await page.locator('.editor-page').waitFor()
   const fields = page.locator('.project-field-palette')
   const row = (name: string) =>
@@ -190,7 +190,7 @@ try {
   assert.deepEqual(await records(), originalRecords, 'the editor never rewrites folder records')
 
   // Reopened, the component still shows the group.
-  await button('編輯版面').click()
+  await openLayoutEditor(page)
   await page.locator(`.editor-cell[data-cell-id="${cellId}"]`).click()
   await page.getByRole('tab', { name: '內容', exact: true }).click()
   await page.getByText(`群組「${groupName}」`, { exact: true }).waitFor()

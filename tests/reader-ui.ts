@@ -108,7 +108,7 @@ try {
   // R-362: the book's cover is a component of its template (no picture drawn beside it), showing the first image.
   assert.equal(await page.locator('.media-info-template .manga-cover').count(), 0)
   await page.locator('.media-info-template .card-cell img').first().waitFor()
-  await page.getByRole('button', { name: '編輯漫畫展示', exact: true }).waitFor()
+  await page.getByRole('button', { name: '右側版面配置…', exact: true }).first().waitFor()
   // R-363: a folder can make its own manga template; the editor opens on it, the folder keeps the choice.
   await page.evaluate(() => {
     window.confirm = () => true

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { Library } from '../electron/library'
 import { ensureFolder, folderFile, readFolder } from '../electron/files'
 import type { Cell } from '../shared/model'
-import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
+import { closeApp, launchApp, removeTestRoot, reportFailure, openLayoutEditor } from './support/app'
 
 // Tag and text cells can keep their height and scroll; without the option the extra content stays cut off.
 const base = path.resolve('.test-output')
@@ -119,7 +119,7 @@ try {
   await page.keyboard.press('PageDown')
   assert.ok((await metrics()).top > 0)
   // The editor's field list shows the previewed folder's real value on one line, the whole value on hover.
-  await page.getByRole('button', { name: '編輯版面', exact: true }).click()
+  await openLayoutEditor(page)
   const value = page.locator('.palette-field[data-attribute-id="tags"] .palette-field-value')
   await value.waitFor()
   assert.equal(await value.innerText(), '沒有值', 'a folder without the field')

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { Library } from '../electron/library'
 import { ensureFolder, folderFile, readFolder } from '../electron/files'
 import type { Cell } from '../shared/model'
-import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
+import { closeApp, launchApp, removeTestRoot, reportFailure, openLayoutEditor } from './support/app'
 
 // The "launch game" cell: disabled until the folder has a bound launch file, enabled afterwards. Never clicked here.
 const base = path.resolve('.test-output')
@@ -119,7 +119,7 @@ try {
     false
   )
   // The editor offers it for game projects only.
-  await page.getByRole('button', { name: '編輯版面', exact: true }).click()
+  await openLayoutEditor(page)
   await page
     .locator('.basic-palette')
     .getByRole('button', { name: '啟動遊戲', exact: true })

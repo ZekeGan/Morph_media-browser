@@ -593,18 +593,6 @@
     "en": "Subtitle settings",
     "es": "Ajustes de subtítulos"
   },
-  "編輯此專案所有漫畫的資訊版面；卡片外觀另外設定": {
-    "ja": "このプロジェクトのすべてのマンガの情報レイアウトを編集します。カードの見た目は別に設定します",
-    "zh-CN": "编辑此项目所有漫画的信息版面；卡片外观另外设定",
-    "en": "Edit the info layout for all manga in this project; the card look is set separately",
-    "es": "Edita el diseño de información de todos los mangas del proyecto; el aspecto de la tarjeta se ajusta aparte"
-  },
-  "編輯漫畫展示": {
-    "ja": "漫画表示を編集",
-    "zh-CN": "编辑漫画展示",
-    "en": "Edit manga presentation",
-    "es": "Editar presentación de manga"
-  },
   "還原內容區": {
     "ja": "内容パネルを元に戻す",
     "zh-CN": "还原内容区",

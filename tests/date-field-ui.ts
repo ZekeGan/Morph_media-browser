@@ -3,7 +3,7 @@ import path from 'node:path'
 import assert from 'node:assert/strict'
 import { Library } from '../electron/library'
 import { readFolder, saveFolder } from '../electron/files'
-import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
+import { closeApp, launchApp, removeTestRoot, reportFailure, openLayoutEditor } from './support/app'
 
 // Manage fields: a date field changes to text (date comparisons removed, counted first) and a text field changes to
 // a date only when every saved value reads as a date (R-240).
@@ -78,7 +78,7 @@ const { app, page } = await launchApp(local, errors, { width: 1500, height: 950 
 let passed = false
 try {
   await page.getByRole('button', { name: '開啟專案 Dates', exact: true }).first().click()
-  await page.getByRole('button', { name: '編輯版面', exact: true }).click()
+  await openLayoutEditor(page)
   await page.locator('.editor-page').waitFor()
   await page.getByRole('button', { name: '管理欄位', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: '管理欄位' })

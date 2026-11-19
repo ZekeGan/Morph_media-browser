@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { Library } from '../electron/library'
 import { ensureFolder, folderFile, readFolder } from '../electron/files'
 import type { Cell } from '../shared/model'
-import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
+import { closeApp, launchApp, removeTestRoot, reportFailure, openLayoutEditor } from './support/app'
 
 // Text, box and tag/choice colour styles show on cards and can be set in the editor's Style section.
 const base = path.resolve('.test-output')
@@ -164,7 +164,7 @@ try {
   assert.notEqual(green, await badges.first().evaluate((node) => getComputedStyle(node).color))
 
   // Editor: set the style of the selected cell through the Style section.
-  await page.getByRole('button', { name: '編輯版面', exact: true }).click()
+  await openLayoutEditor(page)
   await page.locator('.editor-cell').first().click()
   const inspector = page.getByRole('complementary', { name: '組件設定', exact: true })
   // The folder name has no content settings, so its style shows without tabs (R-232).
@@ -227,7 +227,7 @@ try {
   await inspector.getByRole('tab', { name: '樣式', exact: true }).click()
   await page.getByRole('button', { name: '儲存', exact: true }).click()
   await page.locator('.editor-page').waitFor({ state: 'hidden' })
-  await page.getByRole('button', { name: '編輯版面', exact: true }).click()
+  await openLayoutEditor(page)
   await withTabs()
   assert.equal(
     await inspector.getByRole('tab', { name: '樣式', exact: true }).getAttribute('aria-selected'),

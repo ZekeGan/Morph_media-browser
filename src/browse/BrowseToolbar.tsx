@@ -32,7 +32,6 @@ type Props = {
   deepest: number
   density: { itemsPerRow: number | string; pageSize: number | string }
   display: ReturnType<typeof cardDisplay>
-  edit: (category?: string, preset?: string) => void
   folderMode: boolean
   switchContent: (value: 'folders' | 'files') => void
   hasGames: boolean
@@ -68,7 +67,6 @@ export function BrowseToolbar(props: Props) {
     deepest,
     density,
     display,
-    edit,
     folderMode,
     switchContent,
     hasGames,
@@ -159,16 +157,7 @@ export function BrowseToolbar(props: Props) {
                 >
                   {layoutLabel}
                 </Button>
-                <Tooltip label={tr('編輯版面')} openDelay={350} withArrow>
-                  <ActionIcon
-                    variant="default"
-                    aria-label={tr('編輯版面')}
-                    disabled={busy}
-                    onClick={() => edit()}
-                  >
-                    <Icon name="layout" size={16} />
-                  </ActionIcon>
-                </Tooltip>
+                {/* R-445: layouts are edited from the layout window, at the layout a folder actually uses. */}
               </div>
               <Tooltip label={tr('版面配置')} withArrow>
                 <ActionIcon

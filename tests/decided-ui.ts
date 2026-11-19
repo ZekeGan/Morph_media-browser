@@ -7,7 +7,7 @@ import { folderFile } from '../electron/files'
 import { zipFixture, tinyPng } from './support/archive-fixture'
 import { exportSettings } from '../electron/settings-package'
 import { defaultWorkspace } from '../shared/workspace'
-import { closeApp } from './support/app'
+import { closeApp, openLayoutEditor } from './support/app'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
@@ -133,7 +133,7 @@ try {
   await page.locator('.folder-panel').waitFor()
   await page.locator('.folder-panel-header strong').getByText('Library', { exact: true }).waitFor()
   await page.locator('.center-mode').getByText('卡片', { exact: true }).click()
-  await button('編輯版面').click()
+  await openLayoutEditor(page)
   await page.locator('.editor-page').waitFor()
   await button('新增方案').click()
   await page.getByLabel('方案名稱', { exact: true }).fill('空白 QA')

@@ -123,8 +123,16 @@ page.setDefaultTimeout(15000)
 let locale: LocaleId = 'zh-TW'
 const tr = (text: string) => catalog[locale][text] ?? text
 const button = (text: string) => page.getByRole('button', { name: tr(text), exact: true })
+// R-445: the editor opens from the layout window; the names follow the language the test switched to.
 const edit = async () => {
-  await button('編輯版面').click()
+  await page
+    .getByRole('button', { name: new RegExp('^' + tr('版面配置')) })
+    .filter({ visible: true })
+    .first()
+    .click()
+  const dialog = page.getByRole('dialog', { name: tr('版面配置') })
+  await dialog.getByRole('button', { name: tr('編輯卡片版面'), exact: true }).click()
+  await dialog.waitFor({ state: 'hidden' })
 }
 const open = async (name: string) => {
   await page

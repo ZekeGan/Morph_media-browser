@@ -2,7 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import assert from 'node:assert/strict'
 import { Library } from '../electron/library'
-import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
+import { closeApp, launchApp, removeTestRoot, reportFailure, openLayoutEditor } from './support/app'
 
 // Field rename, enum condition dropdown and the tabbed inspector (content / style / condition) in the CELL editor.
 const base = path.resolve('.test-output')
@@ -68,7 +68,7 @@ try {
   }
 
   await page.getByRole('button', { name: '開啟專案 Fields', exact: true }).first().click()
-  await page.getByRole('button', { name: '編輯版面', exact: true }).click()
+  await openLayoutEditor(page)
   await page.locator('.editor-page').waitFor()
 
   // A component with a display condition opens "More options" by itself; it offers the enum's options.

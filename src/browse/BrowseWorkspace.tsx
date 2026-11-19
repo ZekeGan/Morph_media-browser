@@ -819,7 +819,6 @@ function BrowseWorkspaceBody({
           deepest={deepest}
           density={density}
           display={display}
-          edit={edit}
           folderMode={folderMode}
           switchContent={switchContent}
           hasGames={hasGames}
@@ -995,7 +994,10 @@ function BrowseWorkspaceBody({
         closeConfig={closeConfig}
         config={config}
         detail={detail}
-        edit={edit}
+        layoutConfig={(row) => {
+          setLayoutsFrom({ row, target: 'panel' })
+          setLayoutsOpen(true)
+        }}
         expanded={expanded}
         filePreview={filePreview}
         folderMode={folderMode}

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { Library } from '../electron/library'
 import { folderFile, projectFile, readFolder, readJson } from '../electron/files'
 import type { Project } from '../shared/model'
-import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
+import { closeApp, launchApp, removeTestRoot, reportFailure, openLayoutEditor } from './support/app'
 
 // Layout text chosen by rules ("released within 90 days" → New) and a component with two display conditions, any
 // of which shows it (R-239).
@@ -61,7 +61,7 @@ try {
     await page.getByRole('option', { name: option, exact: true }).click()
   }
   await page.getByRole('button', { name: '開啟專案 Rules', exact: true }).first().click()
-  await button('編輯版面').click()
+  await openLayoutEditor(page)
   await page.locator('.editor-page').waitFor()
   // A rule: released within 90 days shows "New"; with nothing matching the text stays empty.
   await page.locator('.editor-cell[data-cell-id="label"]').click()

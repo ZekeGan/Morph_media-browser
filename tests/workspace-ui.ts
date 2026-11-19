@@ -9,7 +9,7 @@ import { createHash } from 'node:crypto'
 import { DATA_DIR } from '../shared/model'
 import { folderFile } from '../electron/files'
 import packageInfo from '../package.json'
-import { closeApp } from './support/app'
+import { closeApp, openLayoutEditor } from './support/app'
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
 const root = await fs.mkdtemp(path.join(base, 'workspace05-')),
@@ -323,7 +323,7 @@ try {
   await page.getByRole('button', { name: '關閉資料夾設定', exact: true }).click()
   await drawer.waitFor({ state: 'hidden' })
   await page.getByRole('button', { name: '切換右側內容', exact: true }).click()
-  await page.getByRole('button', { name: '編輯版面', exact: true }).click()
+  await openLayoutEditor(page)
   await page.getByRole('button', { name: '新增方案', exact: true }).click()
   await page.getByLabel('方案名稱', { exact: true }).fill('第二方案')
   await page.getByRole('button', { name: '確認', exact: true }).click()
@@ -438,7 +438,8 @@ try {
     const v = document.querySelector('video')
     return v && v.readyState >= 2
   })
-  assert.equal(await page.locator('.video-panel .media-info-template').count(), 0)
+  // R-409: a video folder's right panel is its built-in layout (the video count with Play).
+  assert.equal(await page.locator('.video-panel .media-info-template').count(), 1)
   await page.evaluate(async () => {
     const v = document.querySelector('video')!
     await v.play()

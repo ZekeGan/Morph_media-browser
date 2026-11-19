@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { Library } from '../electron/library'
 import { folderFile, readFolder, readJson, projectFile } from '../electron/files'
 import type { Cell, Project } from '../shared/model'
-import { closeApp } from './support/app'
+import { closeApp, openLayoutEditor } from './support/app'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
@@ -146,7 +146,7 @@ try {
   await copy.click()
   await copy.getByText('已複製', { exact: true }).waitFor()
   assert.equal(await app.evaluate(({ clipboard }) => clipboard.readText()), 'false')
-  await button('編輯版面').click()
+  await openLayoutEditor(page)
   await page.locator('.editor-toolbar').waitFor()
   const palette = page.locator('.basic-palette .palette-item').first()
   // The drag picture is our own copy that keeps the item's middle under the cursor; the native one is blank.
@@ -326,7 +326,7 @@ try {
   assert.equal(saved.cells[0].presentation, 'progress')
   assert.equal(saved.cells[0].maximum, 10)
   assert.equal(saved.cells[0].copyValue, undefined)
-  await button('編輯版面').click()
+  await openLayoutEditor(page)
   await page.locator('.editor-cell').first().click()
   assert.equal(await mode().locator('input:checked').getAttribute('value'), 'progress')
   await page.screenshot({ path: path.join(root, 'editor.png') })
