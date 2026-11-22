@@ -12617,24 +12617,6 @@
     "ja": "{0}（キーが必要）",
     "es": "{0} (requiere clave)"
   },
-  "請至少選一個來源": {
-    "zh-CN": "请至少选择一个来源",
-    "en": "Pick at least one source",
-    "ja": "ソースを1つ以上選んでください",
-    "es": "Elige al menos una fuente"
-  },
-  "{0} 需要你自己的金鑰才能搜尋。": {
-    "zh-CN": "{0} 需要你自己的密钥才能搜索。",
-    "en": "{0} needs your own key before it can be searched.",
-    "ja": "{0} を検索するには、自分のキーが必要です。",
-    "es": "{0} necesita tu propia clave para poder buscar."
-  },
-  "用資料夾名稱（可修改）搜尋下方勾選的來源（VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai；設定了金鑰時還有 TMDB 與 FANZA）。成人作品會標示「成人」。從候選中選一個再預覽，不會自動配對。": {
-    "zh-CN": "用文件夹名称（可修改）搜索下方勾选的来源（VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai；设置了密钥时还有 TMDB 与 FANZA）。成人作品会标示“成人”。从候选中选一个再预览，不会自动匹配。",
-    "en": "Search the sources ticked below by the folder name (editable): VNDB, MusicBrainz, AniList, Bangumi, Steam, DLsite and nhentai, plus TMDB and FANZA when a key is set. Adult works are marked \"Adult\". Pick one candidate to preview; nothing is matched automatically.",
-    "ja": "フォルダー名（変更可）で、下でチェックしたソース（VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai。キーを設定すると TMDB と FANZA も）を検索します。成人向け作品には「成人向け」と表示されます。候補を1つ選んでプレビューします。自動では照合しません。",
-    "es": "Busca por el nombre de la carpeta (editable) en las fuentes marcadas abajo: VNDB, MusicBrainz, AniList, Bangumi, Steam, DLsite y nhentai, y también TMDB y FANZA si hay clave. Las obras para adultos se marcan como «Adultos». Elige un candidato para previsualizarlo; no se empareja automáticamente."
-  },
   "這個字幕軌太大，只讀到一部分": {
     "zh-CN": "这个字幕轨太大，只读到一部分",
     "en": "This track is too large; only part of it was read",
@@ -13138,5 +13120,41 @@
     "en": "Show rules",
     "ja": "ルールを表示",
     "es": "Mostrar reglas"
+  },
+  "未選來源": {
+    "zh-CN": "未选来源",
+    "en": "No sources",
+    "ja": "ソース未選択",
+    "es": "Sin fuentes"
+  },
+  "搜尋的來源：{0}": {
+    "zh-CN": "搜索的来源：{0}",
+    "en": "Search sources: {0}",
+    "ja": "検索するソース：{0}",
+    "es": "Fuentes de búsqueda: {0}"
+  },
+  "需要金鑰": {
+    "zh-CN": "需要密钥",
+    "en": "Needs a key",
+    "ja": "キーが必要",
+    "es": "Necesita clave"
+  },
+  "成人向": {
+    "zh-CN": "成人向",
+    "en": "Adult",
+    "ja": "成人向け",
+    "es": "Para adultos"
+  },
+  "還原此類型預設": {
+    "zh-CN": "还原此类型默认",
+    "en": "Reset to this kind’s defaults",
+    "ja": "この種類の既定に戻す",
+    "es": "Restablecer los valores de este tipo"
+  },
+  "用資料夾名稱（可修改）搜尋右邊按鈕選的來源（VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai；設定了金鑰時還有 TMDB 與 FANZA）。成人作品會標示「成人」。從候選中選一個再預覽，不會自動配對。": {
+    "zh-CN": "用文件夹名称（可修改）搜索右边按钮选的来源（VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai；设置了密钥时还有 TMDB 与 FANZA）。成人作品会标示“成人”。从候选中选一个再预览，不会自动匹配。",
+    "en": "Search the sources chosen in the button on the right by the folder name (editable): VNDB, MusicBrainz, AniList, Bangumi, Steam, DLsite and nhentai, plus TMDB and FANZA when a key is set. Adult works are marked \"Adult\". Pick one candidate to preview; nothing is matched automatically.",
+    "ja": "フォルダー名（変更可）で、右のボタンで選んだソース（VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai。キーを設定すると TMDB と FANZA も）を検索します。成人向け作品には「成人向け」と表示されます。候補を1つ選んでプレビューします。自動では照合しません。",
+    "es": "Busca por el nombre de la carpeta (editable) en las fuentes elegidas en el botón de la derecha: VNDB, MusicBrainz, AniList, Bangumi, Steam, DLsite y nhentai, y también TMDB y FANZA si hay clave. Las obras para adultos se marcan como «Adultos». Elige un candidato para previsualizarlo; no se empareja automáticamente."
   }
 }

@@ -5,7 +5,7 @@ import {
   Button,
   Checkbox,
   Group,
-  MultiSelect,
+  Popover,
   Stack,
   Text,
   TextInput,
@@ -150,6 +150,17 @@ export function FolderSourceImport({
       (id === 'tmdb' || id === 'fanza') && !!searchKeys && !searchKeys[id]?.set,
     chosen = (saved ?? defaultSearchSources(kind)).filter((id) => !needsKey(id)),
     keyless = searchableSources.filter(needsKey)
+  // R-443: the button says which sources are ticked (the first name, then "+N"); its tooltip lists them all.
+  const chosenLabel = chosen.length
+    ? sourceName(chosen[0]) + (chosen.length > 1 ? ' +' + (chosen.length - 1) : '')
+    : tr('未選來源')
+  const sourceGroups: { label: string; ids: SearchSourceId[] }[] = [
+    { label: tr('一般'), ids: ['vndb', 'musicbrainz', 'anilist', 'bangumi', 'steam', 'dlsite'] },
+    { label: tr('需要金鑰'), ids: ['tmdb', 'fanza'] },
+    { label: tr('成人向'), ids: ['nhentai'] },
+  ]
+  const tick = (id: SearchSourceId, on: boolean) =>
+    chooseSources(on ? [...chosen, id] : chosen.filter((item) => item !== id))
   const chooseSources = (value: string[]) => {
     const next = value.filter(isSearchSource)
     setSaved(next)
@@ -252,60 +263,90 @@ export function FolderSourceImport({
                 <HelpLabel
                   label={tr('用名稱搜尋')}
                   help={tr(
-                    '用資料夾名稱（可修改）搜尋下方勾選的來源（VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai；設定了金鑰時還有 TMDB 與 FANZA）。成人作品會標示「成人」。從候選中選一個再預覽，不會自動配對。'
+                    '用資料夾名稱（可修改）搜尋右邊按鈕選的來源（VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai；設定了金鑰時還有 TMDB 與 FANZA）。成人作品會標示「成人」。從候選中選一個再預覽，不會自動配對。'
                   )}
                 />
               }
               value={query}
               onChange={(event) => setQuery(event.currentTarget.value)}
-              rightSectionWidth={72}
-              rightSection={
+              className="source-search-input"
+            />
+            <Popover position="bottom-end" withArrow shadow="md" width={300}>
+              <Popover.Target>
                 <Button
-                  type="submit"
-                  size="compact-xs"
-                  loading={searching}
-                  disabled={disabled || fieldDirty || busy || !query.trim() || !chosen.length}
+                  size="xs"
+                  variant="default"
+                  className="source-search-sources"
+                  color={chosen.length ? undefined : 'red'}
+                  disabled={busy}
+                  rightSection={<Icon name="chevron-down" size={12} />}
+                  aria-label={tr(
+                    '搜尋的來源：{0}',
+                    chosen.map(sourceName).join('、') || tr('未選來源')
+                  )}
+                  data-empty={chosen.length ? undefined : ''}
+                  title={chosen.map(sourceName).join('、') || tr('未選來源')}
                 >
-                  {tr('搜尋')}
+                  <span className="source-search-sources-text">{chosenLabel}</span>
                 </Button>
-              }
-            />
-            <MultiSelect
-              mt="xs"
-              size="xs"
-              disabled={busy}
-              label={tr('搜尋的來源')}
-              aria-label={tr('搜尋的來源')}
-              description={tr('依資料夾類型記住你的選擇；沒選過時用該類型的預設。')}
-              data={searchableSources.map((id) => ({
-                value: id,
-                label: needsKey(id) ? tr('{0}（需要金鑰）', sourceName(id)) : sourceName(id),
-                disabled: needsKey(id),
-              }))}
-              value={chosen}
-              onChange={chooseSources}
-              error={chosen.length ? undefined : tr('請至少選一個來源')}
-            />
-            {keyless.length > 0 && (
-              <Group gap={4} mt={4}>
-                <Text size="xs" c="dimmed">
-                  {tr('{0} 需要你自己的金鑰才能搜尋。', keyless.map(sourceName).join('、'))}
-                </Text>
+              </Popover.Target>
+              <Popover.Dropdown className="source-search-menu">
+                {/* <Text size="xs" c="dimmed" mb={6}>
+                  {tr('依資料夾類型記住你的選擇；沒選過時用該類型的預設。')}
+                </Text> */}
+                {sourceGroups.map((group) => (
+                  <div key={group.label} className="source-search-group">
+                    <Text size="xs" fw={600}>
+                      {group.label}
+                    </Text>
+                    <Group gap="xs" mt={4} mb={8}>
+                      {group.ids.map((id) => (
+                        <Checkbox
+                          key={id}
+                          size="xs"
+                          label={
+                            needsKey(id) ? tr('{0}（需要金鑰）', sourceName(id)) : sourceName(id)
+                          }
+                          checked={chosen.includes(id)}
+                          disabled={needsKey(id)}
+                          onChange={(event) => tick(id, event.currentTarget.checked)}
+                        />
+                      ))}
+                    </Group>
+                  </div>
+                ))}
+                {keyless.length > 0 && (
+                  <Button
+                    size="compact-xs"
+                    variant="subtle"
+                    onClick={() =>
+                      window.dispatchEvent(
+                        new CustomEvent('morph:open-settings', {
+                          detail: { tab: 'keys', site: keyless[0] },
+                        })
+                      )
+                    }
+                  >
+                    {tr('設定金鑰')}
+                  </Button>
+                )}
                 <Button
                   size="compact-xs"
                   variant="subtle"
-                  onClick={() =>
-                    window.dispatchEvent(
-                      new CustomEvent('morph:open-settings', {
-                        detail: { tab: 'keys', site: keyless[0] },
-                      })
-                    )
-                  }
+                  onClick={() => chooseSources(defaultSearchSources(kind))}
                 >
-                  {tr('設定金鑰')}
+                  {tr('還原此類型預設')}
                 </Button>
-              </Group>
-            )}
+              </Popover.Dropdown>
+            </Popover>
+            <Button
+              type="submit"
+              size="xs"
+              loading={searching}
+              disabled={disabled || fieldDirty || busy || !query.trim() || !chosen.length}
+            >
+              {tr('搜尋')}
+            </Button>
           </form>
           {found && (
             <div className="source-candidates">

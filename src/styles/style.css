@@ -609,6 +609,13 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .source-diff thead th { color:var(--muted); font-weight:500; white-space:nowrap; }
 /* R-332: field names stay on one line; long values are clamped until opened. */
 .source-diff th[scope='row'] { white-space:nowrap; overflow-wrap:normal; }
+/* R-443: the name search row: the text box, the sources button and the search button side by side. */
+.source-search { display:flex; align-items:flex-end; gap:6px; }
+.source-search-input { flex:1; min-width:0; }
+.source-search-sources { flex:none; max-width:160px; }
+.source-search-sources .mantine-Button-label { overflow:hidden; }
+.source-search-sources-text { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.source-search-sources[data-empty] { color:var(--error); border-color:var(--error); }
 .source-candidates ul { list-style:none; margin:4px 0 0; padding:0; max-height:220px; overflow:auto; border:1px solid var(--line); border-radius:6px; }
 .source-candidates ul:empty { display:none; }
 .source-candidates li+li { border-top:1px solid var(--line); }
