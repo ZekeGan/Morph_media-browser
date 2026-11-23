@@ -206,6 +206,16 @@ try {
     await page.waitForFunction(() =>
       document.querySelector('.statusbar')?.textContent?.includes('就緒')
     )
+    // R-448: reading preferences are saved in the background (the app is not marked busy); wait until the records
+    // have stayed the same for half a second.
+    for (let still = 0, last = '', i = 0; still < 5 && i < 60; i++) {
+      const now = (
+        await Promise.all([...records.keys()].map((file) => fs.readFile(file, 'utf8')))
+      ).join('\n')
+      still = now === last ? still + 1 : 0
+      last = now
+      await page.waitForTimeout(100)
+    }
     // The existing reader saves reading preferences on exit. Allow only that
     // intentional change, then use the new bytes as the next appearance baseline.
     for (const [file, bytes] of records) {

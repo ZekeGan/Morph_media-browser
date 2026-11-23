@@ -1,6 +1,6 @@
 # 小說閱讀器
 
-> 最後確認：2026-11-19（R-427,R-442）。文字書（TXT、EPUB）的閱讀規則。程式：`src/novel/NovelReader.tsx`、`src/novel/NovelContent.tsx`、`electron/novel.ts`、`shared/novel.ts`；測試：`tests/novel.test.ts`、`tests/novel-ui.ts`。圖片漫畫的閱讀器見 [MANGA_VIEWER_DESIGN](MANGA_VIEWER_DESIGN.md)。
+> 最後確認：2026-11-23（R-427,R-442）。文字書（TXT、EPUB）的閱讀規則。程式：`src/novel/NovelReader.tsx`、`src/novel/NovelContent.tsx`、`electron/novel.ts`、`shared/novel.ts`；測試：`tests/novel.test.ts`、`tests/novel-ui.ts`。圖片漫畫的閱讀器見 [MANGA_VIEWER_DESIGN](MANGA_VIEWER_DESIGN.md)。
 
 ## 範圍與分類
 
@@ -29,7 +29,7 @@
 
 ## 閱讀紀錄
 
-- 每本書的位置存在資料夾記錄 `details.novels`（以檔名為鍵）：章節、該章讀到的比例、全書比例（依各章長度加權）、最後閱讀時間與書籤。換章、每半分鐘與離開時保存；只有位置變了才寫。主程序以記錄當下的版本寫入，只改這本書的位置。
+- 每本書的位置存在資料夾記錄 `details.novels`（以檔名為鍵）：章節、該章讀到的比例、全書比例（依各章長度加權）、最後閱讀時間與書籤。換章後捲動停下約 1.5 秒時、每半分鐘與離開時保存（捲動中跨過章節不立刻存，R-448）；只有位置變了才寫。主程序以記錄當下的版本寫入，只改這本書的位置。
 - 卡片「系統資訊」組件可選「閱讀進度」「最後閱讀」（資料夾內最近讀過的那本）；有閱讀紀錄的專案在表格多這兩欄，可排序。
 
 ## 網站來源

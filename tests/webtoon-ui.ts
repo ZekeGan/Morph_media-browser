@@ -114,10 +114,12 @@ try {
   await page.screenshot({ path: path.join(base, 'shot', 'r256-webtoon.png') })
   await page.keyboard.press('Escape')
   await reader().waitFor({ state: 'detached' })
-  await page.waitForFunction(() =>
-    document.querySelector('.statusbar')?.textContent?.includes('就緒')
-  )
-  const saved = (await readFolder(comic)).details?.reading
+  // R-448: reading preferences are saved in the background (the app is not marked busy): wait for the record.
+  let saved = (await readFolder(comic)).details?.reading
+  for (let i = 0; i < 50 && !saved?.webtoon; i++) {
+    await page.waitForTimeout(100)
+    saved = (await readFolder(comic)).details?.reading
+  }
   assert.equal(saved?.webtoon, true)
   assert.equal(saved?.webtoonWidth, 65)
   assert.equal(saved?.webtoonAsked, true)

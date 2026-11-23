@@ -356,6 +356,7 @@ export function NovelReader({
     const { at, max } = extent()
     if (paged) return setPosition(max > 0 ? Math.min(1, Math.max(0, at / max)) : 0)
     clearTimeout(idleTimer.current)
+    if (savePending.current) scheduleSave()
     idleTimer.current = setTimeout(() => latestTrim.current(), 400)
     const view = viewSize(),
       line = at + view * 0.1,
@@ -419,7 +420,22 @@ export function NovelReader({
       save()
     }
   }, [save])
-  useEffect(() => save(), [chapter])
+  // R-448: a chapter crossed while scrolling is saved once scrolling has stopped for a moment, not at every crossing
+  // (the save redraws the app); scrolling on puts it off again. The half-minute save and the save on leaving still run.
+  const saveLater = useRef<ReturnType<typeof setTimeout>>(undefined),
+    savePending = useRef(false)
+  const scheduleSave = () => {
+    clearTimeout(saveLater.current)
+    saveLater.current = setTimeout(() => {
+      savePending.current = false
+      save()
+    }, 1500)
+  }
+  useEffect(() => {
+    savePending.current = true
+    scheduleSave()
+  }, [chapter])
+  useEffect(() => () => clearTimeout(saveLater.current), [])
   // --- Moving ---
   const goChapter = (index: number, at: number | 'end' = 0) => {
     if (!book || index < 0 || index >= book.chapters.length) return

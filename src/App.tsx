@@ -1,6 +1,15 @@
 import { selectPreset, syncPresetDraft } from '../shared/layouts'
 import { t as tr, useLocale } from './i18n'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import { flushSync } from 'react-dom'
 import { Alert, Button, Checkbox, Group, Modal, Stack } from '@mantine/core'
 import type {
   RootSelection,
@@ -45,6 +54,49 @@ export function App() {
 
   const [snapshot, setSnapshot] = useState(empty),
     [selected, setSelected] = useState('')
+  // R-448: the newest snapshot generation taken in (from main), and a reading save's snapshot waiting for an idle
+  // moment. A snapshot older than what is shown is never taken in.
+  const shownGeneration = useRef(0),
+    waiting = useRef<Snapshot | undefined>(undefined)
+  const takeSnapshot = (next: Snapshot) => {
+    // One without a number (not from main's library) is taken in as it is, leaving the mark where it was.
+    if (next.generation !== undefined) {
+      if (next.generation <= shownGeneration.current) return
+      shownGeneration.current = next.generation
+    }
+    setSnapshot(next)
+  }
+  // A reading place saved in the background: its snapshot is taken in when the window is idle, newest only.
+  const takeLater = (next: Snapshot) => {
+    if ((next.generation ?? 0) <= (waiting.current?.generation ?? 0)) return
+    const first = !waiting.current
+    waiting.current = next
+    if (!first) return
+    const take = () => {
+      const latest = waiting.current
+      waiting.current = undefined
+      if (latest) startTransition(() => takeSnapshot(latest))
+    }
+    if ('requestIdleCallback' in window) window.requestIdleCallback(take, { timeout: 3000 })
+    else setTimeout(take, 0)
+  }
+  // Pressing anything outside the novel reader first takes in a waiting snapshot, so an edit made right after
+  // reading sends the record's current revision (capture phase: before React's handlers read their props).
+  useEffect(() => {
+    const flush = (event: Event) => {
+      const latest = waiting.current
+      if (!latest) return
+      if ((event.target as Element | null)?.closest?.('.novel-reader')) return
+      waiting.current = undefined
+      flushSync(() => takeSnapshot(latest))
+    }
+    document.addEventListener('pointerdown', flush, true)
+    document.addEventListener('keydown', flush, true)
+    return () => {
+      document.removeEventListener('pointerdown', flush, true)
+      document.removeEventListener('keydown', flush, true)
+    }
+  }, [])
   const [busy, setBusy] = useState(false),
     busyRef = useRef(false)
   const [notice, setNoticeState] = useState<Notice>(),
@@ -115,7 +167,7 @@ export function App() {
       }
       try {
         const result = await window.media.request(request)
-        setSnapshot(result.snapshot)
+        takeSnapshot(result.snapshot)
         if (!['snapshot', 'scan'].includes(request.action)) setNotice(undefined)
         if (result.notice) setNotice(result.notice)
         if (result.preview?.scope === 'all') {
@@ -245,21 +297,29 @@ export function App() {
   const explore = async (request: ExplorerRequest): Promise<ExplorerResponse | undefined> => {
     // Preserve reader preferences even while another setting is saving.
     // Reading places (manga pages, novel positions) are saved even while something else runs.
-    if (
-      busyRef.current &&
-      request.action !== 'reading' &&
-      request.action !== 'novelProgress' &&
-      request.action !== 'volumeProgress'
-    )
-      return
-    const ownBusy = !busyRef.current
+    const reading =
+      request.action === 'reading' ||
+      request.action === 'novelProgress' ||
+      request.action === 'volumeProgress'
+    if (busyRef.current && !reading) return
+    // Only a novel's place, saved while scrolling, waits for idle; the manga reading settings and volume places are
+    // followed by requests that send the record's revision, so their snapshot is taken in at once.
+    const later = request.action === 'novelProgress'
+    // R-448: a reading place is saved in the background while the reader goes on: it does not mark the app busy
+    // (that redrew the whole window at every chapter crossed), and the snapshot it brings back is taken in when the
+    // window is idle (newer ones only).
+    const ownBusy = !reading && !busyRef.current
     if (ownBusy) {
       busyRef.current = true
       setBusy(true)
     }
     try {
       const result = await window.explorer.request(request)
-      if (result.snapshot) setSnapshot(result.snapshot)
+      const next = result.snapshot
+      if (next) {
+        if (later) takeLater(next)
+        else takeSnapshot(next)
+      }
       if (result.notice) setNotice(result.notice)
       return result
     } catch (error) {
@@ -364,7 +424,7 @@ export function App() {
           problemCount={problemCount(snapshot)}
           onOverlay={setShellOverlay}
           onDirty={setShellDirty}
-          onSnapshot={setSnapshot}
+          onSnapshot={takeSnapshot}
           status={
             snapshot.progress.active
               ? tr(

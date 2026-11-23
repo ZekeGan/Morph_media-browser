@@ -238,6 +238,9 @@ export interface Snapshot {
   problems: string[]
   structure?: FolderRow[]
   progress: ScanProgress
+  // R-448: counts the snapshots main hands out (main runs one request at a time, so a higher number is newer); the
+  // window never takes in one older than what it shows.
+  generation?: number
 }
 export interface CleanupPreview {
   token: string

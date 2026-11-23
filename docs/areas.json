@@ -165,7 +165,7 @@
       "name": "小說閱讀器",
       "docs": ["NOVEL_READER.md#閱讀", "NOVEL_READER.md#閱讀紀錄"],
       "code": ["src/novel/*", "src/common/readerInput*", "electron/novel*", "shared/novel*"],
-      "ui": ["novel-ui", "novel-short-chapters-ui", "novel-scroll-steady-ui", "novel-end-center-ui", "markdown-ui"],
+      "ui": ["novel-ui", "novel-short-chapters-ui", "novel-scroll-steady-ui", "novel-chapter-freeze-ui", "novel-end-center-ui", "markdown-ui"],
       "tests": ["novel.test.ts", "markdown.test.ts"]
     },
     {

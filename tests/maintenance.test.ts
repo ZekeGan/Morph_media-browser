@@ -135,7 +135,8 @@ test('full removal restores a pristine metadata tree and a recreated project get
 })
 test('backup failure prevents full removal and leaves definitions, links, and original bytes intact', async (t) => {
   const { lib, media, local } = await fixture(t),
-    before = lib.snapshot(),
+    // The state itself (a snapshot also carries a generation number that grows with every snapshot, R-448).
+    before = structuredClone(lib.state),
     bytes = await fs.readFile(folderFile(media))
   const preview = await lib.previewFullRemoval(before.projects[0].projectId),
     open = fs.open
@@ -150,7 +151,7 @@ test('backup failure prevents full removal and leaves definitions, links, and or
     fs.open = open
   }
   assert.deepEqual(await fs.readFile(folderFile(media)), bytes)
-  assert.deepEqual(lib.snapshot(), before)
+  assert.deepEqual(lib.state, before)
   assert.ok(await exists(projectFile(media, before.projects[0].projectId)))
 })
 test('maintenance restores exact bytes on mid-write failure and refuses stale bytes or an in-tree backup', async (t) => {

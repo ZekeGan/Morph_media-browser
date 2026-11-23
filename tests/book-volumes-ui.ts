@@ -75,10 +75,12 @@ try {
   const left = await shown()
   await page.keyboard.press('Escape')
   await reader().waitFor({ state: 'detached' })
-  await page.waitForFunction(() =>
-    document.querySelector('.statusbar')?.textContent?.includes('就緒')
-  )
-  const saved = (await readFolder(media)).details
+  // R-448: reading places are saved in the background (the app is not marked busy): wait for the record itself.
+  let saved = (await readFolder(media)).details
+  for (let i = 0; i < 50 && !(saved?.reading?.spread && saved?.volumes?.['vol2.cbz']); i++) {
+    await page.waitForTimeout(100)
+    saved = (await readFolder(media)).details
+  }
   assert.equal(saved?.reading?.spread, true)
   assert.ok((saved?.volumes?.['vol2.cbz']?.page ?? 0) >= 2, JSON.stringify(saved?.volumes))
   assert.equal(saved?.volumes?.['vol2.cbz']?.total, 8)

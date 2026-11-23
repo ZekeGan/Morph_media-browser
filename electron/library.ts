@@ -120,8 +120,9 @@ export class Library {
     this.tail = next.catch(() => {})
     return next
   }
+  generation = 0
   snapshot() {
-    return structuredClone(this.state)
+    return { ...structuredClone(this.state), generation: ++this.generation }
   }
   cancelScan() {
     this.cancelled = true
