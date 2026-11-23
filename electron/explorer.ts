@@ -150,7 +150,9 @@ export class Explorer {
   thumbnailReads = 0
   audioCoverTail: Promise<unknown> = Promise.resolve()
   thumbnailJobs = new Map<string, { promise: Promise<Buffer>; signals: AbortSignal[] }>()
-  thumbnailTail: Promise<unknown> = Promise.resolve()
+  // R-441: thumbnails waiting to be made (the newest is taken first) and how many are being made now.
+  thumbnailQueue: (() => void)[] = []
+  thumbnailActive = 0
   thumbnailTrim?: Promise<void>
   thumbnailTrimAt = 0
   contentPages = new Map<

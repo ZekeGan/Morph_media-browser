@@ -1,3 +1,4 @@
+import os from 'node:os'
 import { readArchiveImage } from './archive-foreign'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -239,6 +240,29 @@ export async function archiveStream(
   }
 }
 
+// R-441: thumbnails were made one at a time, so a gallery opened cold showed them one by one. A few are made at once
+// (half the processors, 2 to 4), and the newest request goes first: while scrolling, that is what is on the screen.
+// A request the window has given up on (scrolled away, the gallery closed) is skipped when its turn comes.
+export const THUMBNAIL_WORKERS = Math.max(2, Math.min(4, Math.floor(os.cpus().length / 2)))
+export function queueThumbnail(ex: Explorer, make: () => Promise<Buffer>): Promise<Buffer> {
+  return new Promise<Buffer>((resolve, reject) => {
+    ex.thumbnailQueue.push(() => {
+      ex.thumbnailActive++
+      make()
+        .then(resolve, reject)
+        .finally(() => {
+          ex.thumbnailActive--
+          pumpThumbnails(ex)
+        })
+    })
+    pumpThumbnails(ex)
+  })
+}
+function pumpThumbnails(ex: Explorer) {
+  while (ex.thumbnailActive < THUMBNAIL_WORKERS && ex.thumbnailQueue.length)
+    ex.thumbnailQueue.pop()!()
+}
+
 export async function thumbnail(
   ex: Explorer,
   cache: string,
@@ -262,7 +286,7 @@ export async function thumbnail(
     return pending.promise
   }
   const signals = [signal]
-  const job = ex.thumbnailTail.then(async () => {
+  const job = queueThumbnail(ex, async () => {
     if (signals.every((signal) => signal.aborted)) throw new Error('縮圖已取消')
     try {
       const cached = await fs.readFile(cache)
@@ -281,7 +305,6 @@ export async function thumbnail(
     }
     return bytes
   })
-  ex.thumbnailTail = job.catch(() => {})
   ex.thumbnailJobs.set(cache, { promise: job, signals })
   try {
     return await job

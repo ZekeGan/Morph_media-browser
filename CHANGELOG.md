@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Faster thumbnails: a gallery or file list opened for the first time makes 2 to 4 thumbnails at once (half the processors) instead of one by one, the newest request first (while scrolling, what is on screen), and skips ones scrolled away (R-441).
 - Fix: reading on through a novel in scroll mode no longer freezes for about half a second at each chapter (the reading place was saved at every chapter crossed and redrew the whole window); the place is saved once scrolling stops, and reading places of novels, manga and volumes are saved in the background (R-448).
 - Right-panel editor: the main visuals sit in a section per kind (Album, Video, Book) like the Game section; editing a kind's right panel offers only its own section (and any other whose components are already on it) (R-452).
 - Fixes: a podcast's "Continue where I left off" starts the episode where it was left instead of at 0:00 (its place was overwritten with 0:00 while it loaded, R-451); in the video player a timeline or picture clicked with the mouse no longer shows a focus ring once a key is pressed, and the controls fade as usual; Tab still shows the focus (R-447).

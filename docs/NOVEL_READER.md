@@ -1,6 +1,6 @@
 # 小說閱讀器
 
-> 最後確認：2026-11-23（R-427,R-442）。文字書（TXT、EPUB）的閱讀規則。程式：`src/novel/NovelReader.tsx`、`src/novel/NovelContent.tsx`、`electron/novel.ts`、`shared/novel.ts`；測試：`tests/novel.test.ts`、`tests/novel-ui.ts`。圖片漫畫的閱讀器見 [MANGA_VIEWER_DESIGN](MANGA_VIEWER_DESIGN.md)。
+> 最後確認：2026-11-24（R-448）。文字書（TXT、EPUB）的閱讀規則。程式：`src/novel/NovelReader.tsx`、`src/novel/NovelContent.tsx`、`electron/novel.ts`、`shared/novel.ts`；測試：`tests/novel.test.ts`、`tests/novel-ui.ts`。圖片漫畫的閱讀器見 [MANGA_VIEWER_DESIGN](MANGA_VIEWER_DESIGN.md)。
 
 ## 範圍與分類
 
