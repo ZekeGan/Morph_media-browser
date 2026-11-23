@@ -194,6 +194,11 @@ function validCell(c: unknown): boolean {
     (c.imageIndex === undefined || (c.kind === 'image' && integer(c.imageIndex, 1, 999))) &&
     (c.imageCover === undefined ||
       (c.kind === 'image' && c.imageCover === true && c.imageIndex === undefined)) &&
+    (c.imageRole === undefined ||
+      (c.kind === 'image' &&
+        ['hero', 'logo', 'icon'].includes(c.imageRole) &&
+        c.imageIndex === undefined &&
+        c.imageCover === undefined)) &&
     (c.fallbackActionIds === undefined ||
       (c.kind === 'game-launch' &&
         Array.isArray(c.fallbackActionIds) &&

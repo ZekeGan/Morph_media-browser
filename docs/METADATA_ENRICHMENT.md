@@ -82,7 +82,7 @@ VNDB、Steam 的截圖（`SCREENSHOTS`，各最多 12 張）與 SteamGridDB 的�
 
 - **下載**：取得預覽時 main 依序下載（`electron/source-images.ts`），只取預覽本身已檢查過的網址：HTTPS、無埠號與帳密，主機須在該來源的圖片主機（`sources/config.ts` 的 `coverHosts`；Steam 用 `metadata.ts` 的 Steam 圖片主機）；不跟轉址（只有該來源設定 `coverRedirectHosts` 的封面路徑除外）、15 秒逾時、單張 ≤ 10 MiB、以 `imageType` 檢查是 JPEG／PNG／WebP；失敗或被拒的略過。整個預覽最多 30 MiB（再放不下一張 10 MiB 就停）。其他來源不下載。
 - **預覽**：視窗收到 `preview.images`（角色、截圖序號 `n`、data URI），縮圖清單預設都不勾，標示「截圖 n」「橫幅」「標誌」「圖示」。視窗不能指定任何網址，下載的圖片只存在 main 的預覽（以 token 對應，最近三個預覽保留圖片，15 分鐘到期即丟棄；匯入後釋放）。
-- **匯入**：`metadataApply` 的 `images` 只帶預覽圖片的位置（整數、不重複、須在範圍內，否則整個請求拒絕、不寫任何檔案）。選中的圖片和封面一樣存進可攜記錄的 `assets/`，`originalName` 為 `<來源>-<角色>[-<n>].<副檔名>`，並帶 `role`（`screenshot`、`hero`、`logo`、`icon`，暫定，見 [DATA_FORMAT](DATA_FORMAT.md)）；已有同名圖片就不重複加入；寫入失敗時清掉本次寫的檔案。橫幅、標誌、圖示用在遊戲頁要等 R-409。
+- **匯入**：`metadataApply` 的 `images` 只帶預覽圖片的位置（整數、不重複、須在範圍內，否則整個請求拒絕、不寫任何檔案）。選中的圖片和封面一樣存進可攜記錄的 `assets/`，`originalName` 為 `<來源>-<角色>[-<n>].<副檔名>`，並帶 `role`（`screenshot`、`hero`、`logo`、`icon`，暫定，見 [DATA_FORMAT](DATA_FORMAT.md)）；已有同名圖片就不重複加入；寫入失敗時清掉本次寫的檔案。橫幅、標誌、圖示可由圖片組件選用（R-435，見 [CELL 目錄](CELL_CATALOG.md#新增組件與型別)）。
 
 ## 預覽、套用與追溯
 

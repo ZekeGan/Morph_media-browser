@@ -727,18 +727,27 @@ export function EditorInspector(props: EditorInspectorProps) {
                           value={
                             selectedCell.imageCover
                               ? 'cover'
-                              : selectedCell.imageIndex
-                                ? 'nth'
-                                : 'none'
+                              : selectedCell.imageRole
+                                ? selectedCell.imageRole
+                                : selectedCell.imageIndex
+                                  ? 'nth'
+                                  : 'none'
                           }
                           data={[
                             { value: 'cover', label: tr('資料夾封面') },
+                            { value: 'hero', label: tr('來源匯入的橫幅') },
+                            { value: 'logo', label: tr('來源匯入的標誌') },
+                            { value: 'icon', label: tr('來源匯入的圖示') },
                             { value: 'nth', label: tr('顯示資料夾內第 N 張圖片') },
                             { value: 'none', label: tr('留空') },
                           ]}
                           onChange={(value) =>
                             updateCell({
                               imageCover: value === 'cover' || undefined,
+                              imageRole:
+                                value === 'hero' || value === 'logo' || value === 'icon'
+                                  ? value
+                                  : undefined,
                               imageIndex: value === 'nth' ? 1 : undefined,
                             })
                           }
@@ -746,6 +755,15 @@ export function EditorInspector(props: EditorInspectorProps) {
                         {selectedCell.imageCover && (
                           <Text size="xs" c="dimmed">
                             {tr('資料夾指定的封面；沒有指定時用資料夾內第一張圖片。')}
+                          </Text>
+                        )}
+                        {selectedCell.imageRole && (
+                          <Text size="xs" c="dimmed">
+                            {selectedCell.imageRole === 'hero'
+                              ? tr('從網站匯入的橫幅；沒有時用資料夾封面。')
+                              : selectedCell.imageRole === 'logo'
+                                ? tr('從網站匯入的標誌；沒有時留空。')
+                                : tr('從網站匯入的圖示；沒有時留空。')}
                           </Text>
                         )}
                         {selectedCell.imageIndex && (

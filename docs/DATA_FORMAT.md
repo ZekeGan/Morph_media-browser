@@ -29,7 +29,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 | `revision` | 整數 | 每次寫入加一；寫入時要帶上讀到的版本，不符就拒絕（版本衝突，草稿保留） |
 | `attributes` | 陣列 | 共用屬性，見下表 |
 | `projectOverrides` | 物件 | `projectId → 屬性陣列`：只對某個專案有效的私有覆寫，必須刻意建立 |
-| `assets` | 陣列 | `{ assetId, relativePath, originalName, mediaType, role? }`，圖片與資產；`role`（R-422，**暫定**，選用，不升 `schemaVersion`）是從網站匯入的圖片用途：`screenshot`、`hero`、`logo`、`icon`，其他值視為資料不合法；目前只存下，沒有畫面使用 |
+| `assets` | 陣列 | `{ assetId, relativePath, originalName, mediaType, role? }`，圖片與資產；`role`（R-422，**暫定**，選用，不升 `schemaVersion`）是從網站匯入的圖片用途：`screenshot`、`hero`、`logo`、`icon`，其他值視為資料不合法；圖片組件可選用橫幅、標誌、圖示（R-435，見 Cell 的 `imageRole`） |
 | `details` | 物件（選用） | 遊戲邊界與動作目標、閱讀與播放進度、字幕等，見下 |
 
 **屬性 `Attribute`**
@@ -96,7 +96,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 | `list`、`cardView`、`excludedRelativePaths`、`scanAll`、`traversal` | 列表、顯示範圍、排除與掃描設定；`cardView.works`（R-340）為 `true` 時是「所有作品」，舊版讀到時依 `mode: multi` 顯示全部層 |
 | `savedSearches` | 儲存的搜尋 |
 
-**組件 `Cell`**：`cellId`、`kind`（`name`、`path`、`field-text`、`field-tags`、`field-number`、`field-date`、`field-boolean`、`field-enum`、`field-url`、`field-date-only`、`static-text`、`spacer`、`system-info`、`image`、`divider`、`open-folder`、`game-cover`、`game-launch`，以及 R-409 暫定的右側主視覺 `album-info`、`video-info`、`book-card` 與遊戲附加按鈕 `game-extra`）、`grid`（12 欄、最多 100 列，組件不能重疊）、`style`，以及依型別的選用欄位：`attributeId`、`fallbackIds`（備用欄位，最多 5 個、同型別或文字／標籤相容顯示；舊設定，新設定用群組）、`groupId`（顯示欄位群組，此時 `attributeId` 為其成員之一、不可同時有 `fallbackIds`）、`condition`（顯示條件）、`wrap`／`scroll`／`growMax`（R-398，**暫定**，不升 `schemaVersion`：整數 1～20，內容比組件高時最多多佔的列數；只限文字欄位、標籤、版面文字、名稱、路徑，不可與 `scroll` 並存，缺省維持原高度）、`unit`／`decimals`／`maximum`、`presentation`、`imageFit`、`imageIndex`、`gameExtra`（R-409，**暫定**：`game-extra` 的按鈕 `save`／`steam`／`store`）、`systemInfo` 新增 `engine`（R-409）、`imageCover`（R-409，**暫定**：`true` 表示沒有手動選圖時顯示資料夾封面，不可與 `imageIndex` 並存）、`actionId`／`fallbackActionIds`、`tagColors`／`tagPrefix`。完整樣式欄位見 [CELL 目錄](CELL_CATALOG.md#組件樣式2026-11-02-新增)。
+**組件 `Cell`**：`cellId`、`kind`（`name`、`path`、`field-text`、`field-tags`、`field-number`、`field-date`、`field-boolean`、`field-enum`、`field-url`、`field-date-only`、`static-text`、`spacer`、`system-info`、`image`、`divider`、`open-folder`、`game-cover`、`game-launch`，以及 R-409 暫定的右側主視覺 `album-info`、`video-info`、`book-card` 與遊戲附加按鈕 `game-extra`）、`grid`（12 欄、最多 100 列，組件不能重疊）、`style`，以及依型別的選用欄位：`attributeId`、`fallbackIds`（備用欄位，最多 5 個、同型別或文字／標籤相容顯示；舊設定，新設定用群組）、`groupId`（顯示欄位群組，此時 `attributeId` 為其成員之一、不可同時有 `fallbackIds`）、`condition`（顯示條件）、`wrap`／`scroll`／`growMax`（R-398，**暫定**，不升 `schemaVersion`：整數 1～20，內容比組件高時最多多佔的列數；只限文字欄位、標籤、版面文字、名稱、路徑，不可與 `scroll` 並存，缺省維持原高度）、`unit`／`decimals`／`maximum`、`presentation`、`imageFit`、`imageIndex`、`gameExtra`（R-409，**暫定**：`game-extra` 的按鈕 `save`／`steam`／`store`）、`systemInfo` 新增 `engine`（R-409）、`imageCover`（R-409，**暫定**：`true` 表示沒有手動選圖時顯示資料夾封面，不可與 `imageIndex` 並存）、`imageRole`（R-435，**暫定**：`hero`／`logo`／`icon`，沒有手動選圖時顯示從網站匯入的那種圖片，不可與 `imageIndex`、`imageCover` 並存）、`actionId`／`fallbackActionIds`、`tagColors`／`tagPrefix`。完整樣式欄位見 [CELL 目錄](CELL_CATALOG.md#組件樣式2026-11-02-新增)。
 
 **顯示條件與依條件文字（R-239）**：`condition` 的 `operator` 另有 `within`／`older`（`value` 為 1～36500 的天數，只用於日期與日期時間欄位，依今天計算「距今 N 天內／超過 N 天」；只有日期的值以本機日曆日比較，含時間的值以當下時間比較，未來的日期算「N 天內」）。`moreConditions`（1～4 個，需先有 `condition`）與 `conditionMode: "any"`（只在有 `moreConditions` 時）讓組件有多個條件：預設全部符合才顯示，`any` 為任一符合。`textRules`（只限版面文字，1～10 條 `{ when, text }`，文字最多 1000 字，空白表示符合時不顯示）由上往下比對，第一個符合的顯示其文字，都不符合時顯示 `text`。刪除欄位時，讀它的額外條件與文字規則會被移除，主條件讀它時組件照舊一併移除。舊版程式讀到 `within`／`older` 會把專案視為不合法，Alpha 期間不另做相容。
 

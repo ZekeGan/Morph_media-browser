@@ -21,7 +21,7 @@ import { useFolderStats } from '../browse/folderStats'
 import { formatLastPlayed, formatPlayTime, usePlaytime } from '../game/playtime'
 import { latestNovel } from '../../shared/novel'
 import { cellColors } from './cellStyle'
-import { folderCoverAsset, folderCoverPicture } from './folderCover'
+import { folderCoverAsset, folderCoverPicture, sourceImageAsset } from './folderCover'
 import { PanelPart, panelPartKinds } from './PanelParts'
 import { GameExtraCell } from './GameExtraCell'
 import './cells.css'
@@ -343,14 +343,17 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
     const selected = row?.record?.details?.cellImages?.[cell.attributeId ?? cell.cellId],
       asset = selected
         ? row?.record?.assets.find((a) => a.assetId === selected)
-        : cell.attributeId
-          ? undefined
-          : folderCoverAsset(row),
-      // No picture chosen for this folder: the folder cover (R-409) or its n-th image file, when it has one.
+        : cell.imageRole
+          ? sourceImageAsset(row, cell.imageRole)
+          : cell.attributeId
+            ? undefined
+            : folderCoverAsset(row),
+      // No picture chosen for this folder: the folder cover (R-409; also for a missing imported banner, R-435) or its
+      // n-th image file, when it has one.
       fallback =
         asset || !row
           ? undefined
-          : cell.imageCover
+          : cell.imageCover || cell.imageRole === 'hero'
             ? folderCoverPicture(row)
             : cell.imageIndex
               ? {

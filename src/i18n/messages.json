@@ -13156,5 +13156,41 @@
     "en": "Album",
     "ja": "アルバム",
     "es": "Álbum"
+  },
+  "來源匯入的橫幅": {
+    "zh-CN": "来源导入的横幅",
+    "en": "Imported banner",
+    "ja": "取り込んだバナー",
+    "es": "Banner importado"
+  },
+  "來源匯入的標誌": {
+    "zh-CN": "来源导入的标志",
+    "en": "Imported logo",
+    "ja": "取り込んだロゴ",
+    "es": "Logotipo importado"
+  },
+  "來源匯入的圖示": {
+    "zh-CN": "来源导入的图标",
+    "en": "Imported icon",
+    "ja": "取り込んだアイコン",
+    "es": "Icono importado"
+  },
+  "從網站匯入的橫幅；沒有時用資料夾封面。": {
+    "zh-CN": "从网站导入的横幅；没有时用文件夹封面。",
+    "en": "The banner imported from a website; without one, the folder cover.",
+    "ja": "サイトから取り込んだバナー。ない場合はフォルダーの表紙。",
+    "es": "El banner importado de un sitio web; si no hay, la portada de la carpeta."
+  },
+  "從網站匯入的標誌；沒有時留空。": {
+    "zh-CN": "从网站导入的标志；没有时留空。",
+    "en": "The logo imported from a website; left empty without one.",
+    "ja": "サイトから取り込んだロゴ。ない場合は空欄。",
+    "es": "El logotipo importado de un sitio web; vacío si no hay."
+  },
+  "從網站匯入的圖示；沒有時留空。": {
+    "zh-CN": "从网站导入的图标；没有时留空。",
+    "en": "The icon imported from a website; left empty without one.",
+    "ja": "サイトから取り込んだアイコン。ない場合は空欄。",
+    "es": "El icono importado de un sitio web; vacío si no hay."
   }
 }
