@@ -9,6 +9,8 @@ import './themes/themes.css'
 import { App } from './App'
 import { PlaybackProvider } from './media/Playback'
 import { ErrorBoundary } from './notices/ErrorBoundary'
+import { watchInputModality } from './common/inputModality'
+watchInputModality()
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <AppThemeProvider>

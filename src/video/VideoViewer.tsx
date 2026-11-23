@@ -22,6 +22,7 @@ import { VideoPictureSubtitle } from './VideoPictureSubtitle'
 import { describeError } from '../notices/errors'
 import { useVideoAudio } from '../media/useVideoAudio'
 import { podcastFolder } from '../media/podcast'
+import { keyboardNavigation } from '../common/inputModality'
 import { clockText, resumeAt, saveVideoPlace, videoPlace } from '../media/videoPlace'
 
 type UpNext = {
@@ -199,7 +200,8 @@ export function VideoViewer({
 
     hideTimer.current = setTimeout(() => {
       if (
-        !controls.current?.querySelector(':focus-visible') &&
+        // R-447: only a control reached with Tab keeps them shown; one clicked with the mouse does not.
+        !(keyboardNavigation() && controls.current?.querySelector(':focus-visible')) &&
         !controls.current?.matches(':hover')
       )
         setActive(false)

@@ -77,6 +77,15 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     pickAnchor = useRef<number | undefined>(undefined)
   itemsRef.current = items
   currentRef.current = current
+  // R-451: where a podcast episode goes on from, read once when it becomes the current item; the stored place may
+  // change while it loads, and the episode must still start where it was left.
+  const resumeAt = useMemo(
+    () =>
+      current?.file.kind === 'audio' && isPodcast(podcastFolder(current.row))
+        ? episodePlace(podcastFolder(current.row), current.file.id)?.time
+        : undefined,
+    [current?.id]
+  )
   const body = useRef<HTMLDivElement>(null),
     sequence = useRef(0),
     drag = useRef<{ x: number; y: number; left: number; top: number } | undefined>(undefined),
@@ -188,7 +197,10 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     if (item) void select(item)
   }
   // R-390: a podcast episode's place is kept on this computer every few seconds and whenever it pauses or ends.
-  const savedAt = useRef(-1)
+  const savedAt = useRef(-1),
+    // R-451: the item whose playback has started. Before that the element still sits at 0:00 (its length arriving
+    // fires durationchange first), and saving then wiped the place it was about to go back to.
+    started = useRef<string>(undefined)
   const sync = () => {
     const node = media()
     if (!node) return
@@ -196,6 +208,8 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     setState({ time: node.currentTime, duration, paused: node.paused })
     const playing = currentRef.current
     if (playing?.file.kind !== 'audio') return
+    if (!node.paused) started.current = playing.id
+    if (started.current !== playing.id) return
     const folder = podcastFolder(playing.row)
     if (
       isPodcast(folder) &&
@@ -405,11 +419,7 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
                       previous={index > 0 ? () => step(-1) : undefined}
                       next={index >= 0 && index < items.length - 1 ? () => step(1) : undefined}
                       first={index > 0 ? () => void select(items[0]) : undefined}
-                      startAt={
-                        isPodcast(podcastFolder(current.row))
-                          ? episodePlace(podcastFolder(current.row), current.file.id)?.time
-                          : undefined
-                      }
+                      startAt={resumeAt}
                     />
                   ) : (
                     <VideoViewer

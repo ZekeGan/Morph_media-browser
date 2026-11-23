@@ -1,6 +1,6 @@
 # 影片播放器
 
-> 最後確認：2026-11-17（R-412）。只寫現行規則；選型與歷次取捨見 [決策索引](DECISIONS.md)（C-83～C-85）。程式：`src/video/VideoViewer.tsx`、`src/video/VideoControls.tsx`、`src/video/VideoSubtitleSettings.tsx`、`shared/subtitles.ts`；測試：`tests/video-player-ui.ts`、`tests/video-failure-ui.ts`。影片從媒體頁的大視窗（`MediaViewer`）或右側面板的檔案預覽開啟，入口與佇列見 [媒體工作區](MEDIA_WORKSPACE.md#統一媒體工作區)。
+> 最後確認：2026-11-23（R-412）。只寫現行規則；選型與歷次取捨見 [決策索引](DECISIONS.md)（C-83～C-85）。程式：`src/video/VideoViewer.tsx`、`src/video/VideoControls.tsx`、`src/video/VideoSubtitleSettings.tsx`、`shared/subtitles.ts`；測試：`tests/video-player-ui.ts`、`tests/video-failure-ui.ts`。影片從媒體頁的大視窗（`MediaViewer`）或右側面板的檔案預覽開啟，入口與佇列見 [媒體工作區](MEDIA_WORKSPACE.md#統一媒體工作區)。
 
 <a id="現行控制欄2026-10-28"></a>
 
@@ -9,7 +9,7 @@
 YouTube 式控制列；「放大／縮小」只指進入／退出全螢幕，不做畫面放大平移或劇院模式。使用 Video.js 媒體元件，控制列由 `VideoControls` 組成，共用同一個 HTMLVideoElement。
 
 - 上排：可拖曳進度、緩衝範圍與滑過時間。下排：播放／暫停、上一部／下一部（有播放清單時）、音量／靜音、時間、更多播放設定、用外部播放器開啟、全螢幕。沒有快退／快進按鈕（快捷鍵保留）；窄區域固定分行，避免音量展開時改變喇叭位置。
-- 播放時閒置約 2.5 秒隱藏控制列；滑鼠移動、鍵盤聚焦、暫停、設定開啟、音量拖曳或錯誤時顯示。控制列外層透明，只有按鈕群組使用半透明圓角底。音量平常只顯示喇叭，hover／聚焦展開滑桿，點喇叭切換靜音。強調色、圖示與語言沿用全域設定。
+- 播放時閒置約 2.5 秒隱藏控制列；滑鼠移動、鍵盤聚焦、暫停、設定開啟、音量拖曳或錯誤時顯示。只有用 Tab 移進控制列的焦點會讓它保持顯示；用滑鼠點過的進度條或按鈕，之後按鍵也不畫焦點外框、不擋淡出，播放區被滑鼠點過也不畫外框（R-447）。控制列外層透明，只有按鈕群組使用半透明圓角底。音量平常只顯示喇叭，hover／聚焦展開滑桿，點喇叭切換靜音。強調色、圖示與語言沿用全域設定。
 - 全螢幕由播放器容器使用 Fullscreen API，保留同一播放實例與控制列；按鈕、F 或雙擊切換，Esc 退出。更多面板與字幕選單留在容器內、限制寬高可捲動；Esc／關閉收起並把焦點還給齒輪。ESC 一次只退出最上層（先退出播放器全螢幕）。
 - 快捷鍵只在播放器有焦點時作用：K／Space 播放暫停，J／L ±10 秒，左右 ±5 秒，上下音量 ±5%，M 靜音，C 字幕，F 全螢幕。播放速度 0.5～2 倍，本次瀏覽切換影片時保留。
 

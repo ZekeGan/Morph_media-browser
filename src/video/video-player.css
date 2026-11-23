@@ -159,6 +159,14 @@
   outline-offset: -2px;
 }
 
+/* R-447: a focus given by the mouse draws no ring, even once a key (Space to pause) is pressed; Tab brings it back. */
+:root[data-input="pointer"] .custom-video-stage:focus-visible,
+:root[data-input="pointer"] .player-timeline input:focus-visible,
+:root[data-input="pointer"] .player-button:focus-visible,
+:root[data-input="pointer"] .player-settings button:focus-visible {
+  outline: none;
+}
+
 .video-viewer:fullscreen {
   width: 100%;
   height: 100%;

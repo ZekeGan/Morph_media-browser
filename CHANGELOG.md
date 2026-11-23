@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Fixes: a podcast's "Continue where I left off" starts the episode where it was left instead of at 0:00 (its place was overwritten with 0:00 while it loaded, R-451); in the video player a timeline or picture clicked with the mouse no longer shows a focus ring once a key is pressed, and the controls fade as usual; Tab still shows the focus (R-447).
 - Name search: the sources to search are chosen in a button left of Search (the first source and "+N", the full list on hover), grouped as general, needs a key and adult, with "Reset to this kind’s defaults"; the multi-select below the search box is gone (R-443).
 - Fix: switches (segmented controls) in windows and popovers no longer show their chosen item highlighted in the wrong place the first time they open; every switch now marks the chosen item directly (R-446).
 - Layouts have one way in: the layout window. The toolbar's Edit layout icon is gone (Edit card layout in the window's preview edits the layout the folder actually uses), and the content header's layout icon, once only for books, opens the window on the right panel with that folder picked for every kind (R-445).
