@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Right-panel editor: the main visuals sit in a section per kind (Album, Video, Book) like the Game section; editing a kind's right panel offers only its own section (and any other whose components are already on it) (R-452, tentative).
 - Fixes: a podcast's "Continue where I left off" starts the episode where it was left instead of at 0:00 (its place was overwritten with 0:00 while it loaded, R-451); in the video player a timeline or picture clicked with the mouse no longer shows a focus ring once a key is pressed, and the controls fade as usual; Tab still shows the focus (R-447).
 - Name search: the sources to search are chosen in a button left of Search (the first source and "+N", the full list on hover), grouped as general, needs a key and adult, with "Reset to this kind’s defaults"; the multi-select below the search box is gone (R-443).
 - Fix: switches (segmented controls) in windows and popovers no longer show their chosen item highlighted in the wrong place the first time they open; every switch now marks the chosen item directly (R-446).

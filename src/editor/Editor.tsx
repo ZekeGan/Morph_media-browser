@@ -1,4 +1,5 @@
 import { Icon } from '../common/icons'
+import type { FolderKind } from '../../shared/kind'
 import { t as tr, useLocale } from '../i18n'
 import { layoutName } from './layoutName'
 import { cellColors } from '../cells/cellStyle'
@@ -77,6 +78,7 @@ export function Editor({
   targetLabel = tr('卡片'),
   presets = false,
   presetTools = false,
+  panelKind,
   fromSaved,
 }: {
   project: Project
@@ -91,6 +93,8 @@ export function Editor({
   presets?: boolean
   // R-363: only the preset tools (choose, add, copy, rename, delete), for templates kept as presets (book templates).
   presetTools?: boolean
+  // R-452: the kind whose right panel is edited (its section of main visuals is the one shown).
+  panelKind?: FolderKind
   // How a project saved elsewhere while editing (a field removal) maps back into what this editor shows.
   fromSaved?: (saved: Project) => Project
 }) {
@@ -1134,6 +1138,7 @@ export function Editor({
           fieldRequest={fieldRequest}
           rows={rows.filter((row) => row.projectId === project.projectId)}
           panel={presetTools}
+          panelKind={panelKind}
           reference={(source) =>
             change({ ...draft, fieldBindings: withSourceBinding(draft.fieldBindings, source) })
           }

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import type { FolderKind } from '../../shared/kind'
 import { Icon, type IconName } from '../common/icons'
 import { OptionTagsInput } from './OptionTagsInput'
 import { t as tr } from '../i18n'
@@ -70,6 +71,13 @@ const kindIcons: Partial<Record<CellKind, IconName>> = {
   'book-card': 'book',
 }
 
+// R-452: the main visuals of the right panel, one section per kind of folder.
+const kindSections: { id: string; title: string; kind: FolderKind; kinds: PaletteKey[] }[] = [
+  { id: 'album', title: '專輯', kind: 'music', kinds: ['album-info'] },
+  { id: 'video', title: '影片', kind: 'video', kinds: ['video-info'] },
+  { id: 'book', title: '書籍', kind: 'book', kinds: ['book-card'] },
+]
+
 // The left-hand materials panel: find something and put it on the card. Four sections share one heading style
 // (folder info, your fields, layout, game); every row looks the same and is added by a click or a drag.
 export type EditorPaletteProps = {
@@ -89,6 +97,8 @@ export type EditorPaletteProps = {
   hasGames: boolean
   // The right-panel editor (R-409) also offers the panel's main visuals.
   panel?: boolean
+  // R-452: the kind whose right panel is edited; only its section of main visuals is offered.
+  panelKind?: FolderKind
   dragImage: (event: React.DragEvent<HTMLDivElement>) => void
   act: (request: Request) => Promise<Response | undefined>
   add: (
@@ -167,6 +177,7 @@ export function EditorPalette(props: EditorPaletteProps) {
     preview,
     hasGames,
     panel,
+    panelKind,
     dragImage,
     act,
     add,
@@ -709,8 +720,17 @@ export function EditorPalette(props: EditorPaletteProps) {
           'system-info:engine',
           'open-folder',
         ])}
+      {/* R-452: like the game section, the main visuals sit in one section per kind. The right panel being edited
+          shows its own kind's section, and any other whose components are already on it. */}
       {panel &&
-        componentSection('panel', tr('右側主視覺'), ['album-info', 'video-info', 'book-card'])}
+        kindSections
+          .filter(
+            (section) =>
+              !panelKind ||
+              section.kind === panelKind ||
+              draft.cells.some((cell) => (section.kinds as string[]).includes(cell.kind))
+          )
+          .map((section) => componentSection(section.id, tr(section.title), section.kinds))}
       <Modal
         opened={adding}
         onClose={() => setAdding(false)}

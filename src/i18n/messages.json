@@ -12893,12 +12893,6 @@
     "ja": "右側：EPUB が 1 冊だけのフォルダーはそのカバー、書名、著者を表示",
     "es": "Panel derecho: una carpeta con un solo EPUB muestra su portada, título y autor"
   },
-  "右側主視覺": {
-    "zh-CN": "右侧主视觉",
-    "en": "Right-panel visuals",
-    "ja": "右側のメイン表示",
-    "es": "Elementos del panel derecho"
-  },
   "在商店開啟": {
     "zh-CN": "在商店打开",
     "en": "Open in store",
@@ -13156,5 +13150,11 @@
     "en": "Search the sources chosen in the button on the right by the folder name (editable): VNDB, MusicBrainz, AniList, Bangumi, Steam, DLsite and nhentai, plus TMDB and FANZA when a key is set. Adult works are marked \"Adult\". Pick one candidate to preview; nothing is matched automatically.",
     "ja": "フォルダー名（変更可）で、右のボタンで選んだソース（VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai。キーを設定すると TMDB と FANZA も）を検索します。成人向け作品には「成人向け」と表示されます。候補を1つ選んでプレビューします。自動では照合しません。",
     "es": "Busca por el nombre de la carpeta (editable) en las fuentes elegidas en el botón de la derecha: VNDB, MusicBrainz, AniList, Bangumi, Steam, DLsite y nhentai, y también TMDB y FANZA si hay clave. Las obras para adultos se marcan como «Adultos». Elige un candidato para previsualizarlo; no se empareja automáticamente."
+  },
+  "專輯": {
+    "zh-CN": "专辑",
+    "en": "Album",
+    "ja": "アルバム",
+    "es": "Álbum"
   }
 }

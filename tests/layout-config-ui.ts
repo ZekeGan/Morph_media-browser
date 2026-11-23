@@ -140,6 +140,25 @@ try {
   assert.deepEqual(saved.layoutRules?.card?.levels, ['top'])
   assert.deepEqual(saved.layoutRules?.panel, { types: { music: 'panel-album' } })
   await page.screenshot({ path: path.join(root, 'layout-config.png') })
+  // R-452: the right panel of a music folder is edited with its own kind's section of main visuals only.
+  await app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()[0].setBounds({ x: 0, y: 0, width: 1500, height: 950 })
+  )
+  await page.waitForTimeout(300)
+  await page
+    .getByRole('button', { name: /^版面配置/ })
+    .filter({ visible: true })
+    .first()
+    .click()
+  await dialog.waitFor()
+  await dialog.getByText('右側', { exact: true }).click()
+  await item('Album').click()
+  await dialog.getByRole('button', { name: '編輯右側版面', exact: true }).click()
+  const palette = page.locator('.editor-palette')
+  await palette.waitFor()
+  await palette.locator('.palette-section-toggle', { hasText: '專輯' }).waitFor()
+  assert.equal(await palette.locator('.palette-section-toggle', { hasText: '書籍' }).count(), 0)
+  assert.equal(await palette.locator('.palette-section-toggle', { hasText: '影片' }).count(), 0)
   assert.deepEqual(errors, [])
   passed = true
   console.log(

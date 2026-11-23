@@ -387,6 +387,7 @@ export function App() {
               act={act}
               presets={!panelKind}
               presetTools={!!panelKind}
+              panelKind={panelKind}
               fromSaved={panelKind ? panelProject : undefined}
               targetLabel={
                 panelKind
