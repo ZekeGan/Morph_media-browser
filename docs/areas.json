@@ -240,6 +240,8 @@
         "src/cells/PanelContent*",
         "src/cells/PanelParts*",
         "src/cells/MediaInfoCell*",
+        "src/cells/folderFacts*",
+        "electron/media-facts*",
         "src/cells/GameExtraCell*",
         "src/cells/panelContext*",
         "src/cells/CellStyleEditor*",
@@ -265,6 +267,7 @@
         "editor-fields-ui"
       ],
       "tests": [
+        "media-facts.test.ts",
         "folder-cover.test.ts",
         "cells.test.ts",
         "cell-fallback.test.ts",

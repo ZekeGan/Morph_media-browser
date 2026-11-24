@@ -401,6 +401,9 @@ export type ExplorerRequest =
   | { action: 'novel'; rowId: string; fileId: string; summary?: boolean }
   // R-390: the tags and length of some audio files of one folder (at most 24 a request), read without their covers.
   | { action: 'audioTags'; rowId: string; fileIds: string[] }
+  // R-438: what cards say about album and video folders (file counts, the album's name, artist, year and length),
+  // for the folders on screen (at most 60 a request), from a local index. Folders that cannot be read are left out.
+  | { action: 'folderFacts'; rowIds: string[] }
   // Only this book's place changes, so main writes it against the record's current revision.
   | { action: 'novelProgress'; rowId: string; fileId: string; progress: NovelProgress }
   // R-407: the place in a comic archive, and (when the reader changed them) the folder's shared reading settings.
@@ -484,6 +487,7 @@ export interface ExplorerResponse {
   novel?: NovelBook
   // By file id; a file that cannot be read has an empty entry.
   audioTags?: Record<string, import('./album').AudioTags>
+  folderFacts?: Record<string, FolderFacts>
   keys?: Record<string, import('./keys').KeyStatus>
   localeEmulator?: string
   flashPlayer?: string
@@ -568,6 +572,15 @@ export interface ExplorerApi {
   // R-412: how far the reading of a video's subtitle tracks has come (0 to 1).
   onSubtitleProgress(callback: (progress: SubtitleProgress) => void): () => void
   dropSubtitle(rowId: string, file: File): Promise<ExplorerResponse>
+}
+// R-438: see electron/media-facts.ts. `duration` is missing until every track's length has been read.
+export interface FolderFacts {
+  audio: number
+  video: number
+  album?: string
+  artist?: string
+  year?: number
+  duration?: number
 }
 export const newDetails = (): FolderDetails => ({ schemaVersion: 1 })
 export const defaultSubtitle = (): SubtitlePrefs => ({

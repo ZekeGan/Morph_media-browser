@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@mantine/core'
 import type { Cell, FolderRow, Project } from '../../shared/model'
 import type { NovelBook } from '../../shared/explorer'
@@ -7,6 +7,7 @@ import { usePodcast } from '../media/AlbumView'
 import { VideoPlayButton } from '../media/VideoHeader'
 import { t as tr } from '../i18n'
 import { usePanelContent } from './panelContext'
+import { useFolderFacts } from './folderFacts'
 
 // R-438 (provisional): the album, video and book facts as small components, like the game's system information. They
 // show what the right panel's page has read about the folder; where nothing is read (a card, the editor) they show
@@ -50,9 +51,33 @@ function useEpubBook(row: FolderRow | undefined, fileId: string | undefined, wan
 export function MediaInfo({ cell, row }: { cell: Cell; row?: FolderRow }) {
   const content = usePanelContent(),
     info = cell.systemInfo as MediaInfoKind,
+    ref = useRef<HTMLSpanElement>(null),
     { podcast } = usePodcast(row ?? ({ rowId: '', path: '' } as FolderRow)),
-    book = useEpubBook(row, content?.epub?.id, info === 'bookTitle' || info === 'bookAuthor')
+    book = useEpubBook(row, content?.epub?.id, info === 'bookTitle' || info === 'bookAuthor'),
+    // A card (no page has read the folder) asks main for its folder's facts once it is on screen.
+    facts = useFolderFacts(row?.rowId, ref, !content && !!row)
   const summary = content?.album?.summary
+  // What is known about the album: the page's reading of it, else what the index says for a card.
+  const album = summary
+    ? {
+        name: summary.album ?? row?.name,
+        artist: summary.artist,
+        year: summary.year,
+        count: summary.count,
+        duration: summary.duration,
+      }
+    : !content && facts?.audio
+      ? {
+          name: facts.album ?? row?.name,
+          artist: facts.artist,
+          year: facts.year,
+          count: facts.audio,
+          duration: facts.duration,
+        }
+      : undefined
+  const videos = content
+    ? content.entries.filter((entry) => entry.kind === 'video').length
+    : (facts?.video ?? 0)
   // A comic's place: the volume read most recently, else the pictures of the folder.
   const volume = Object.values(row?.record?.details?.volumes ?? {}).sort((a, b) =>
     b.updated.localeCompare(a.updated)
@@ -61,30 +86,24 @@ export function MediaInfo({ cell, row }: { cell: Cell; row?: FolderRow }) {
   let text: string | undefined
   switch (info) {
     case 'albumName':
-      text = summary ? (summary.album ?? row?.name) : undefined
+      text = album?.name
       break
     case 'albumArtist':
-      text = summary?.artist
+      text = album?.artist
       break
     case 'albumYear':
       // A podcast has no year to show.
-      text = summary?.year && !podcast ? String(summary.year) : undefined
+      text = album?.year && !podcast ? String(album.year) : undefined
       break
     case 'trackCount':
-      text = summary
-        ? podcast
-          ? tr('{0} 集', summary.count)
-          : tr('{0} 首', summary.count)
-        : undefined
+      text = album ? (podcast ? tr('{0} 集', album.count) : tr('{0} 首', album.count)) : undefined
       break
     case 'totalLength':
-      text = summary?.duration !== undefined ? trackClock(summary.duration) : undefined
+      text = album?.duration !== undefined ? trackClock(album.duration) : undefined
       break
-    case 'videoCount': {
-      const count = content?.entries.filter((entry) => entry.kind === 'video').length
-      text = count ? tr('{0} 部影片', count) : undefined
+    case 'videoCount':
+      text = videos ? tr('{0} 部影片', videos) : undefined
       break
-    }
     case 'bookTitle':
       text = book ? book.title || content?.epub?.name : undefined
       break
@@ -98,7 +117,7 @@ export function MediaInfo({ cell, row }: { cell: Cell; row?: FolderRow }) {
       text = place ? tr('讀到 {0} / {1} 頁', place.page, place.total) : undefined
       break
   }
-  return text ? <span>{text}</span> : dash
+  return <span ref={ref}>{text ?? dash}</span>
 }
 
 // 播放影片／繼續觀看 and 繼續閱讀 as buttons. They only work where the page has read the folder.

@@ -170,6 +170,7 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
   },
   novel: { rowId: ref, fileId: ref, summary: opt(bool) },
   audioTags: { rowId: ref, fileIds: list(ref, 24) },
+  folderFacts: { rowIds: list(ref, 60) },
   keyStatus: {},
   setKey: { site: ref, values: record(text) },
   clearKey: { site: ref },

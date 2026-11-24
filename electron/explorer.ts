@@ -24,11 +24,13 @@ import {
   type ContentResult,
   type ExplorerRequest,
   type ExplorerResponse,
+  type FolderFacts,
   type GameAvailability,
   type MetadataPreview,
   type OverviewResult,
 } from '../shared/explorer'
 import { SearchIndex } from './search-index'
+import { MediaFacts } from './media-facts'
 import { isGameFolder } from '../shared/media'
 import { completionNotice } from '../shared/notifications'
 import { projectImageCells } from '../shared/layouts'
@@ -98,6 +100,7 @@ export interface DesktopOperations {
 const subtitleExtensions = ['.srt', '.vtt', '.ass', '.ssa']
 export class Explorer {
   readonly index: SearchIndex
+  readonly facts: MediaFacts
   archives = new Map<string, { file: string; index: ArchiveIndex }>()
   // At most four opened archives are kept; the oldest goes first, and a RAR/7z one gives its in-memory copy back.
   // Only one RAR/7z copy (up to 512 MiB) stays in the WebAssembly memory at a time, so several never add up.
@@ -175,6 +178,7 @@ export class Explorer {
   ) {
     this.index = new SearchIndex(path.join(root, 'search.sqlite'))
     this.index.sync(library.snapshot())
+    this.facts = new MediaFacts(path.join(root, 'media-facts.sqlite'))
   }
   async record(rowId: string, revision: number) {
     const row = await this.library.checkedRow(rowId, true),
@@ -1019,6 +1023,18 @@ export class Explorer {
         }
         await store.mark(req.site, result)
         return { keys: await store.status() }
+      }
+      case 'folderFacts': {
+        const folderFacts: Record<string, FolderFacts> = Object.create(null)
+        for (const rowId of new Set(req.rowIds))
+          try {
+            // The same guard as the folder's content: no unreadable, stopped or game-protected folder.
+            const row = await this.library.readableRow(rowId)
+            folderFacts[rowId] = await this.facts.read(row.path)
+          } catch {
+            // Left out; the card keeps its dash.
+          }
+        return { folderFacts }
       }
       case 'audioTags':
         return { audioTags: await streamFns.audioTags(this, req.rowId, req.fileIds) }
