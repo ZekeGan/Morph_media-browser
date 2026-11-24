@@ -58,9 +58,6 @@
   從 R-384 拆出。需要真實樣本確認存檔位置與檔名（Save*.rxdata／rvdata／rvdata2）才能做，使用者決定擱置（2026-11-17）
 - **R-243** 拆分 App／BrowseWorkspace 的狀態 ｜中｜一般｜無｜領域：browse、notices｜依賴：無
   App 有 27 個 useState，BrowseWorkspace 有 18 個 useEffect。使用者不再規劃大功能，原定「隨下一個大改需求一起做」的時機不會出現；程式運作正常，只在修改時有成本，擱置（2026-11-11）。
-- **R-220** 讓程式能在 Mac 上執行（不含 Mac 遊戲啟動，見 C-130）｜大｜安全邊界｜無｜領域：core、files、storage — 使用者決定擱置（2026-11-10）
-  ①已完成（2026-11-05）：macOS 上型別檢查與全部資料測試通過（只有 2 個本來就只屬 Windows 的測試跳過：隱藏屬性批次、寫入權限 ACL）；隱藏屬性在 Mac 不執行，`.media-viewer` 以點開頭本來就隱藏；路徑比較只在 Windows 不分大小寫（Mac 的 APFS 預設也不分，之後要留意）。下一步建議：CI 在 macOS 跑 UI smoke，看視窗、標題列按鈕與側鍵導覽。其餘步驟：②處理 Windows 專屬處：`process.platform` 判斷 6 處、隱藏屬性（`attrib`）、在檔案總管開啟、`.lnk` 捷徑與 Locale Emulator、以 EXE 為主的遊戲辨識；③electron-builder 產出 `.dmg`（未簽章會被 Gatekeeper 擋，正式簽章與公證需 Apple 開發者帳號）；④需要實機 Mac 查收。
-
 ## 發行前關卡
 
 - **R-I18N 語系關卡**（每次發行必做）：自動檢查每次提交都跑；發行時只做英日文抽查本版新畫面，見 [執行關卡](IMPLEMENTATION.md#發行前文案與語系關卡)。母語審閱與授權審閱已於 2026-11-05 完成。
