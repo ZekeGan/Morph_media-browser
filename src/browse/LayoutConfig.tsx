@@ -500,7 +500,7 @@ export function LayoutConfig({
     (i) => reach.levelTotals[i]
   )
   const ruleReach = (used = 0, total = 0, example?: string) =>
-    tr('使用中 {0}／共 {1} 個', used, total) + (example ? tr('，如「{0}」', example) : '')
+    tr('使用中 {0}／共 {1} 個', used, total)
   return (
     <Modal
       opened={opened}
@@ -557,7 +557,7 @@ export function LayoutConfig({
           {/* R-444: only the levels that hold folders the level rules apply to (none: no section). */}
           {levelsShown.length > 0 && (
             <section>
-              {ruleHead('levels', panel ? tr('依層級（類型沒有設定時）') : tr('一般資料夾依層級'))}
+              {ruleHead('levels', panel ? tr('依層級') : tr('一般資料夾依層級'))}
               {!folded.includes('levels') &&
                 levelsShown.map((i) => (
                   <div className={'layout-config-rule'} key={i}>
@@ -586,7 +586,7 @@ export function LayoutConfig({
             </section>
           )}
           <section className="layout-config-fallback">
-            {ruleHead('default', tr('其他全部（以上都沒設定時）'))}
+            {ruleHead('default', tr('預設'))}
             {!folded.includes('default') && (
               <>
                 <NativeSelect
