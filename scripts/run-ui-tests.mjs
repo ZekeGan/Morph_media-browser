@@ -29,14 +29,17 @@ const all = readdirSync('tests')
   .map((name) => name.replace(/\.ts$/, ''))
   .sort()
 
-// An Electron left over from an interrupted run can make the next run hang. Only processes started from this
-// project's node_modules are stopped, never other Electron-based programs.
+// An Electron left over from an interrupted run can make the next run hang. Only test windows are stopped: Electron
+// from this project's node_modules that Playwright started (its command line carries --remote-debugging-port=0),
+// with their helper processes. `pnpm dev`'s window and other Electron-based programs are left alone (R-456).
 function stopStrayElectron() {
   if (process.platform !== 'win32') return
-  const script =
-    '$root = $env:PROJECT_MODULES; Get-CimInstance Win32_Process -Filter "Name=\'electron.exe\'" | ' +
-    'Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith($root) } | ' +
-    'ForEach-Object { Stop-Process -Id $_.ProcessId -Force }'
+  const script = [
+    '$root = $env:PROJECT_MODULES',
+    '$all = @(Get-CimInstance Win32_Process -Filter "Name=\'electron.exe\'" | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith($root) })',
+    "$tests = @($all | Where-Object { $_.CommandLine -like '*--remote-debugging-port=0*' } | ForEach-Object { $_.ProcessId })",
+    '$all | Where-Object { $tests -contains $_.ProcessId -or $tests -contains $_.ParentProcessId } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }',
+  ].join('; ')
   spawnSync('powershell', ['-NoProfile', '-Command', script], {
     env: { ...process.env, PROJECT_MODULES: resolve('node_modules') },
     stdio: 'ignore',
