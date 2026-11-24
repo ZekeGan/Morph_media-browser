@@ -13336,5 +13336,17 @@
     "en": "{0} pages",
     "ja": "{0} ページ",
     "es": "{0} páginas"
+  },
+  "加入版面": {
+    "zh-CN": "加入版面",
+    "en": "Add to layout",
+    "ja": "レイアウトに追加",
+    "es": "Añadir al diseño"
+  },
+  "雙擊或按 Enter 加入版面，也可以拖進編輯框": {
+    "zh-CN": "双击或按 Enter 加入版面，也可以拖进编辑框",
+    "en": "Double-click or press Enter to add it to the layout, or drag it onto the canvas",
+    "ja": "ダブルクリックまたは Enter でレイアウトに追加、編集エリアへドラッグすることもできます",
+    "es": "Haz doble clic o pulsa Intro para añadirlo al diseño, o arrástralo al lienzo"
   }
 }

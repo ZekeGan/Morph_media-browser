@@ -206,7 +206,7 @@ else {
             !win ||
             win.isDestroyed() ||
             !trusted(win.webContents.getURL()) ||
-            !url?.startsWith('media://file/')
+            !(url?.startsWith('media://file/') || url?.startsWith('media://audio-cover/'))
           )
             throw new Error('圖片解碼器尚未就緒')
           // Decode asynchronously from the already-scoped stream. No original image
@@ -219,7 +219,10 @@ else {
         },
       })
       warmHiddenHelper()
-      app.on('will-quit', () => explorer.index.close())
+      app.on('will-quit', () => {
+        explorer.index.close()
+        explorer.facts.close()
+      })
       ipcMain.handle('explorer:request', async (event, request: unknown) => {
         checkSender(event)
         if (!isExplorerRequest(request)) throw new Error('無效的操作')

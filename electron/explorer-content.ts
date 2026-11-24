@@ -236,11 +236,46 @@ export async function folderCover(
       // A picture whose file is gone: the next rule decides.
     }
   const names = await folderFiles(row),
-    track = names.find((name) => types[path.extname(name).toLowerCase()]?.[0] === 'audio')
-  if (track) {
+    track = names.find((name) => types[path.extname(name).toLowerCase()]?.[0] === 'audio'),
+    // A track gone since the listing: the next rule decides.
+    stat = track && (await fs.stat(path.join(row.path, track)).catch(() => undefined))
+  if (track && stat) {
     const id = await serveFile(ex, row, rowId, track, types[path.extname(track).toLowerCase()][1])
+    // R-455: the embedded cover as a small picture, kept with the other thumbnails, so a page of album cards does
+    // not hold every full-size cover. Made from the track as it is now (its size and time are in the name).
+    const cache = path.join(ex.root, 'thumbnails'),
+      small = path.join(
+        cache,
+        createHash('sha256')
+          .update(`${path.join(row.path, track)}/${stat.size}/${stat.mtimeMs}/audio-cover`)
+          .digest('hex') + '.jpg'
+      )
+    await safePath(ex.root, small)
+    const jpeg = (bytes: Uint8Array) =>
+      new globalThis.Response(new Uint8Array(bytes), {
+        headers: { 'Content-Type': 'image/jpeg', 'X-Content-Type-Options': 'nosniff' },
+      })
+    const cached = await fs.readFile(small).catch(() => undefined)
+    if (cached?.length) return jpeg(cached)
     const response = await ex.audioCover(rowId, id, request.signal)
-    if (response.status === 200) return response
+    if (response.status === 200) {
+      try {
+        await fs.mkdir(cache, { recursive: true })
+        return jpeg(
+          await ex.thumbnail(
+            small,
+            path.join(row.path, track),
+            'image/jpeg',
+            0,
+            request.signal,
+            `media://audio-cover/${rowId}/${id}`
+          )
+        )
+      } catch {
+        // A cover the thumbnail maker cannot read is served as it is.
+        return response
+      }
+    }
   }
   const images = names.filter(imageMime),
     named = images.filter((name) => /^(cover|folder|front|artist)\.[^.]+$/i.test(name)),

@@ -6,6 +6,7 @@ import { openAsBlob } from 'node:fs'
 import { parseBlob } from 'music-metadata'
 import type { FolderFacts } from '../shared/explorer'
 import { safePath } from './files'
+import { hiddenFileNames } from './hidden'
 import { mediaNames, mediaTypes } from './media-files'
 
 // R-438: what a card can say about an album or video folder without opening it: how many audio and video files,
@@ -33,25 +34,56 @@ const strip = ({ sig: _sig, ...facts }: Stored): FolderFacts => ({
   duration: facts.duration === UNKNOWN ? undefined : facts.duration,
 })
 
+// R-455: the files' total size (part of the signature) is summed again at most this often for a folder whose
+// modification time and counts are unchanged; a card asks several times while its length is being read.
+const SIZE_FRESH_MS = 60_000
+// R-455: lengths waiting to be read; the folders asked about last (the cards on screen) go first, and the oldest
+// waiting ones are dropped (asked for again when their card comes back).
+const MAX_WAITING = 40
+// A pause between length reads; tests set it to make a long album take a while.
+export const lengthPause = { ms: 0 }
+
 export class MediaFacts {
   private db: DatabaseSync
-  // Tag and length reads go one at a time, behind each other.
+  // Tag reads go one at a time, behind each other; lengths have their own queue (R-455) so that a folder's name and
+  // artist never wait for another folder's tracks to be read through.
   private tail: Promise<unknown> = Promise.resolve()
+  private waiting: { folder: string; audio: Track[]; sig: string }[] = []
   private filling = new Set<string>()
+  private running = false
+  private sizes = new Map<string, { key: string; size: number; at: number }>()
   constructor(file: string) {
     fs.mkdirSync(path.dirname(file), { recursive: true })
+    let db: DatabaseSync | undefined
     try {
-      this.db = new DatabaseSync(file)
-      this.db.exec('PRAGMA quick_check;')
+      db = new DatabaseSync(file)
+      const check = db.prepare('PRAGMA quick_check').get() as Record<string, unknown> | undefined
+      if (Object.values(check ?? {})[0] !== 'ok') throw new Error('damaged')
     } catch {
-      if (fs.existsSync(file)) fs.renameSync(file, file + '.damaged-' + Date.now())
-      this.db = new DatabaseSync(file)
+      // The index can be rebuilt: a damaged one is set aside and a new one started.
+      try {
+        db?.close()
+      } catch {
+        // Not open.
+      }
+      try {
+        // Only the last damaged copy is kept.
+        if (fs.existsSync(file)) fs.renameSync(file, file + '.damaged')
+        db = new DatabaseSync(file)
+      } catch {
+        // The file cannot be moved (another program holds it): this run keeps its index in memory.
+        db = new DatabaseSync(':memory:')
+      }
     }
+    this.db = db
     this.db.exec(`CREATE TABLE IF NOT EXISTS facts(
       folder TEXT PRIMARY KEY, sig TEXT NOT NULL, audio INTEGER NOT NULL, video INTEGER NOT NULL,
       album TEXT, artist TEXT, year INTEGER, duration REAL);`)
   }
+  private closed = false
   close() {
+    this.closed = true
+    this.waiting = []
     this.db.close()
   }
   private get(folder: string): Stored | undefined {
@@ -100,8 +132,15 @@ export class MediaFacts {
   }
   // The facts of one folder: from the index when it is still valid, else read again.
   async read(folder: string): Promise<FolderFacts> {
+    // Hidden files are left out, as the folder's own listing does (R-455).
+    let hidden = new Set<string>()
+    try {
+      hidden = await hiddenFileNames(folder)
+    } catch {
+      // Without the attribute check, hidden files are simply counted.
+    }
     const names = (await fsp.readdir(folder, { withFileTypes: true }))
-      .filter((entry) => entry.isFile() && !entry.isSymbolicLink())
+      .filter((entry) => entry.isFile() && !entry.isSymbolicLink() && !hidden.has(entry.name))
       .flatMap((entry): Track[] => {
         const kind = mediaTypes[path.extname(entry.name).toLowerCase()]
         return kind && (kind[0] === 'audio' || kind[0] === 'video')
@@ -113,11 +152,19 @@ export class MediaFacts {
         .filter((entry) => entry.kind[0] === 'audio')
         .sort((a, b) => mediaNames.compare(a.name, b.name)),
       video = names.filter((entry) => entry.kind[0] === 'video')
-    let size = 0
-    for (const entry of names)
-      size += (await fsp.stat(path.join(folder, entry.name)).catch(() => ({ size: 0 }))).size
     const mtime = (await fsp.stat(folder)).mtimeMs,
-      sig = `${mtime}:${audio.length}:${video.length}:${size}`
+      key = `${mtime}:${audio.length}:${video.length}`,
+      recent = this.sizes.get(folder)
+    let size = 0
+    if (recent?.key === key && Date.now() - recent.at < SIZE_FRESH_MS) size = recent.size
+    else {
+      for (const entry of names)
+        size += (await fsp.stat(path.join(folder, entry.name)).catch(() => ({ size: 0 }))).size
+      this.sizes.delete(folder)
+      this.sizes.set(folder, { key, size, at: Date.now() })
+      if (this.sizes.size > 2000) this.sizes.delete(this.sizes.keys().next().value!)
+    }
+    const sig = `${key}:${size}`
     const known = this.get(folder)
     if (known?.sig === sig) {
       if (known.duration === undefined && audio.length) this.fill(folder, audio, sig)
@@ -150,29 +197,45 @@ export class MediaFacts {
   // partial sum is never shown; a folder with too many tracks stays without one.
   private fill(folder: string, audio: Track[], sig: string) {
     if (this.filling.has(folder) || audio.length > MAX_TRACKS_FOR_LENGTH) return
+    // Asked again: it moves to the front of the queue.
+    this.waiting = this.waiting.filter((job) => job.folder !== folder)
+    this.waiting.push({ folder, audio, sig })
+    if (this.waiting.length > MAX_WAITING) this.waiting.shift()
+    void this.drain()
+  }
+  private async drain() {
+    if (this.running) return
+    this.running = true
+    try {
+      for (let job; (job = this.waiting.pop());) await this.length(job.folder, job.audio, job.sig)
+    } finally {
+      this.running = false
+    }
+  }
+  private async length(folder: string, audio: Track[], sig: string) {
     this.filling.add(folder)
-    void this.later(async () => {
-      try {
-        let total = 0
-        let readable = true
-        for (const entry of audio) {
-          const seconds = (await this.header(folder, entry.name, entry.kind[1], true))?.format
-            .duration
-          if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds <= 0) {
-            readable = false
-            break
-          }
-          total += seconds
+    try {
+      let total = 0
+      let readable = true
+      for (const entry of audio) {
+        if (this.closed) return
+        if (lengthPause.ms) await new Promise((resolve) => setTimeout(resolve, lengthPause.ms))
+        const seconds = (await this.header(folder, entry.name, entry.kind[1], true))?.format
+          .duration
+        if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds <= 0) {
+          readable = false
+          break
         }
-        // Only for the folder as it was when the job started; a folder that changed meanwhile is read again.
-        const stored = this.get(folder)
-        if (stored?.sig === sig)
-          this.put(folder, { ...stored, duration: readable ? total : UNKNOWN })
-      } catch {
-        // A length that cannot be read stays as a dash and is tried again when the folder changes.
-      } finally {
-        this.filling.delete(folder)
+        total += seconds
       }
-    })
+      if (this.closed) return
+      // Only for the folder as it was when the job started; a folder that changed meanwhile is read again.
+      const stored = this.get(folder)
+      if (stored?.sig === sig) this.put(folder, { ...stored, duration: readable ? total : UNKNOWN })
+    } catch {
+      // A length that cannot be read stays as a dash and is tried again when the folder changes.
+    } finally {
+      this.filling.delete(folder)
+    }
   }
 }

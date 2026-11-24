@@ -26,8 +26,9 @@ async function send() {
         cache.set(id, facts)
         if (cache.size > 5000) cache.delete(cache.keys().next().value!)
         notify(id)
-        // The length is filled in behind the scenes; look again a few times.
-        if (facts.audio && facts.duration === undefined && (retries.get(id) ?? 0) < 4) {
+        // The length is filled in behind the scenes; look again for about a minute (R-455: asking again also keeps
+        // the folder at the front of main's queue).
+        if (facts.audio && facts.duration === undefined && (retries.get(id) ?? 0) < 15) {
           retries.set(id, (retries.get(id) ?? 0) + 1)
           // Only while a card for it is still there.
           setTimeout(() => listeners.has(id) && ask(id), 4000)
@@ -68,7 +69,10 @@ export function useFolderFacts(
     if (typeof IntersectionObserver === 'undefined') return ask(rowId)
     const watch = new IntersectionObserver((entries) => {
       if (entries.some((entry) => entry.isIntersecting)) {
-        if (!seen.current || !cache.has(rowId)) ask(rowId)
+        // A card back in view looks again for a length that was still missing.
+        if (cache.get(rowId)?.duration === undefined) retries.delete(rowId)
+        if (!seen.current || !cache.has(rowId) || cache.get(rowId)?.duration === undefined)
+          ask(rowId)
         seen.current = true
       }
     })

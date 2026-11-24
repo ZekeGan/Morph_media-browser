@@ -1341,7 +1341,12 @@ export function Editor({
                     setError(tr('欄位已變更或型別衝突，請重新選擇'))
                     return
                   }
-                  if (!(kind in labels)) return
+                  // A palette row may carry a preset ("system-info:albumName"); add() splits it. Only the
+                  // palette's own rows may (R-453), so text dragged in from elsewhere cannot name a setting.
+                  const preset =
+                    String(kind).startsWith('system-info:') &&
+                    !!transfer?.types.includes('application/x-media-viewer-component')
+                  if (!(kind in labels) && !preset) return
                   if (item) {
                     add(
                       kind,

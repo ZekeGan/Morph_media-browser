@@ -126,11 +126,44 @@ try {
     .waitFor()
   for (const name of ['遊戲附加按鈕', '遊玩時間', '遊戲引擎'])
     await page.locator('.basic-palette').getByRole('button', { name, exact: true }).waitFor()
+  // R-454: a click only marks a palette row and shows what it does; Enter adds it.
+  const editorCells = page.locator('.react-grid-layout .editor-cell'),
+    undo = page.getByRole('button', { name: '復原', exact: true }),
+    presetRow = (name: string) =>
+      page
+        .locator('.basic-palette .palette-item')
+        .filter({ has: page.getByRole('button', { name, exact: true }) })
+  const start = await editorCells.count()
+  await presetRow('遊玩時間').getByRole('button').click()
+  await presetRow('遊玩時間').getByText('從 M:orph 啟動的累計遊玩時間', { exact: true }).waitFor()
+  await page.waitForTimeout(200)
+  assert.equal(await editorCells.count(), start, 'a click adds nothing')
+  await presetRow('遊玩時間').getByRole('button').press('Enter')
+  await page.waitForFunction(
+    (n) => document.querySelectorAll('.react-grid-layout .editor-cell').length === n + 1,
+    start
+  )
+  await undo.click()
+  // R-453: a preset row (a system-info component with its setting) can be dragged onto the canvas.
+  {
+    const transfer = await page.evaluateHandle(() => new DataTransfer())
+    const grid = (await page.locator('.react-grid-layout').boundingBox())!
+    const at = { clientX: grid.x + 90, clientY: grid.y + 300, dataTransfer: transfer }
+    await presetRow('遊戲引擎').dispatchEvent('dragstart', { dataTransfer: transfer })
+    await page.locator('.react-grid-layout').dispatchEvent('dragenter', at)
+    await page.locator('.react-grid-layout').dispatchEvent('drop', at)
+    await presetRow('遊戲引擎').dispatchEvent('dragend', { dataTransfer: transfer })
+    await page.waitForFunction(
+      (n) => document.querySelectorAll('.react-grid-layout .editor-cell').length === n + 1,
+      start
+    )
+    await undo.click()
+  }
   // R-385: a new game action is added from the launch component's settings and chosen for it.
   await page
     .locator('.basic-palette')
     .getByRole('button', { name: '啟動遊戲', exact: true })
-    .click()
+    .dblclick()
   await page.getByRole('textbox', { name: '新操作的按鈕文字', exact: true }).fill('Manual')
   await page.getByRole('textbox', { name: '新操作的類型', exact: true }).click()
   await page.getByRole('option', { name: '開啟資料夾內的檔案', exact: true }).click()

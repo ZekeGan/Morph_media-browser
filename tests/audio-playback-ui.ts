@@ -7,7 +7,6 @@ import { promisify } from 'node:util'
 import { Library } from '../electron/library'
 import { WorkspaceStore } from '../electron/workspace'
 import { projectFile } from '../electron/files'
-import { tinyPng } from './support/archive-fixture'
 import { createServer } from 'vite'
 import { videoFixture } from './support/video-fixture'
 import { closeApp } from './support/app'
@@ -20,7 +19,22 @@ const root = await fs.mkdtemp(path.join(base, 'audio-playback-')),
   music = path.join(root, 'Music')
 await fs.mkdir(media)
 await fs.mkdir(music)
-await fs.writeFile(path.join(root, 'cover.png'), tinyPng)
+// A plain 64x64 colour picture: the 1x1 grey one from the archive fixtures cannot be decoded for a thumbnail.
+await promisify(execFile)(
+  'ffmpeg',
+  [
+    '-v',
+    'error',
+    '-f',
+    'lavfi',
+    '-i',
+    'color=c=red:s=64x64',
+    '-frames:v',
+    '1',
+    path.join(root, 'cover.png'),
+  ],
+  { windowsHide: true }
+)
 await fs.copyFile(await videoFixture(), path.join(media, 'fixture.mp4'))
 await promisify(execFile)(
   'ffmpeg',
@@ -159,6 +173,18 @@ try {
       const image = document.querySelector<HTMLImageElement>('.media-info-template img.cell-image')
       return !!image && image.complete && image.naturalWidth > 0
     })
+    // R-455: the embedded cover comes as a small JPEG (the track holds a PNG).
+    assert.equal(
+      await page.evaluate(async () => {
+        const image = document.querySelector<HTMLImageElement>(
+          '.media-info-template img.cell-image'
+        )!
+        return image.src.startsWith('media://cover/')
+          ? (await fetch(image.src)).headers.get('content-type')
+          : 'image/jpeg'
+      }),
+      'image/jpeg'
+    )
     if (name === 'Audio media') {
       await page.screenshot({ path: path.join(base, 'shot', 'r294-album-cover.png') })
       // R-390: with a video among its files this is a video folder; the header counts the videos and offers to play.

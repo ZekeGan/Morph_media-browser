@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { MediaFacts } from '../electron/media-facts'
+import { lengthPause, MediaFacts } from '../electron/media-facts'
 
 // A silent mono WAV of the given length in seconds (44.1 kHz, 16 bit).
 function wav(seconds: number) {
@@ -67,6 +67,50 @@ test('R-438: a folder card gets counts at once and the total length once every t
   assert.ok(Math.abs((await facts.read(album)).duration! - 3) < 0.05)
   // The folder's own files are only read: nothing was added to it.
   assert.deepEqual((await fs.readdir(album)).sort(), ['01.wav', '02.wav', 'clip.mp4', 'notes.txt'])
+})
+
+test("R-455: a folder name is read without waiting for another folder's lengths", async (t) => {
+  const root = await sandbox(t),
+    facts = opened(path.join(root, 'local', 'media-facts.sqlite'))
+  // A long album whose total length takes a while (each track read is slowed down here), then a second album.
+  const long = path.join(root, 'Long'),
+    next = path.join(root, 'Next')
+  for (const folder of [long, next]) await fs.mkdir(folder)
+  for (let n = 1; n <= 40; n++)
+    await fs.writeFile(path.join(long, String(n).padStart(3, '0') + '.wav'), wav(1))
+  await fs.writeFile(path.join(next, 'Track.wav'), wav(1))
+  lengthPause.ms = 50
+  t.after(() => {
+    lengthPause.ms = 0
+  })
+  await facts.read(long)
+  // The long album's lengths are being read now; the next folder's facts come back before they are done.
+  const second = await facts.read(next)
+  assert.equal(second.audio, 1)
+  assert.equal((await facts.read(long)).duration, undefined, 'the long album is still being read')
+  assert.ok(await until(async () => (await facts.read(next)).duration !== undefined))
+  assert.ok(Math.abs((await facts.read(long)).duration! - 40) < 1, 'it was read through first')
+})
+
+test('R-455: a hidden file is not counted, and a damaged index is set aside and started again', async (t) => {
+  const root = await sandbox(t),
+    album = path.join(root, 'Album'),
+    file = path.join(root, 'local', 'media-facts.sqlite')
+  await fs.mkdir(album)
+  await fs.writeFile(path.join(album, '01.wav'), wav(1))
+  await fs.writeFile(path.join(album, '02.wav'), wav(1))
+  if (process.platform === 'win32') {
+    const { execFileSync } = await import('node:child_process')
+    execFileSync('attrib', ['+h', path.join(album, '02.wav')])
+    const facts = opened(file)
+    assert.equal((await facts.read(album)).audio, 1)
+    open.pop()!.close()
+  }
+  await fs.mkdir(path.dirname(file), { recursive: true })
+  await fs.writeFile(file, 'NOT A DATABASE'.repeat(400))
+  const facts = opened(file)
+  assert.ok((await facts.read(album)).audio >= 1)
+  assert.ok((await fs.readdir(path.dirname(file))).some((name) => name.endsWith('.sqlite.damaged')))
 })
 
 test('R-438: the index is dropped for a folder whose files changed, and unreadable audio gives no length', async (t) => {

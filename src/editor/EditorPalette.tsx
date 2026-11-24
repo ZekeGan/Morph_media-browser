@@ -234,6 +234,9 @@ export function EditorPalette(props: EditorPaletteProps) {
   const [openGroup, setOpenGroup] = useState<{ id: string; fresh?: boolean }>()
   // Fields picked with Ctrl+click (or the row menu) to form a group together.
   const [picked, setPicked] = useState<string[]>([])
+  // R-454: a click only marks a row (a component's row then shows what it does); a double click, Enter or Space adds
+  // it at the bottom, and dragging places it.
+  const [chosen, setChosen] = useState<string>()
   const [dropOver, setDropOver] = useState<{ id: string; state: DropState }>()
   useEffect(() => {
     if (!groupRequest) return
@@ -331,6 +334,7 @@ export function EditorPalette(props: EditorPaletteProps) {
           'palette-item palette-row palette-field' +
           (added ? '' : ' is-unbound') +
           (isPicked ? ' is-picked' : '') +
+          (chosen === binding.attributeId ? ' is-chosen' : '') +
           (over ? ' is-drop-' + over : '')
         }
         data-attribute-id={binding.attributeId}
@@ -355,12 +359,18 @@ export function EditorPalette(props: EditorPaletteProps) {
           title={
             source?.conflict
               ? tr('同一欄位的型別不一致，請先處理資料衝突')
-              : `${name} · ${purposeLabel(binding.type)} · ${origin} · ${scope}`
+              : `${name} · ${purposeLabel(binding.type)} · ${origin} · ${scope}\n${tr('雙擊或按 Enter 加入版面，也可以拖進編輯框')}`
           }
           aria-pressed={picked.length ? isPicked : undefined}
           onClick={(event) => {
             if (event.ctrlKey || event.metaKey || picked.length) togglePick(binding.attributeId)
-            else add(kind, undefined, undefined, binding)
+            // A click from the keyboard (Enter or Space) has no mouse press count.
+            else if (event.detail === 0) add(kind, undefined, undefined, binding)
+            else setChosen(binding.attributeId)
+          }}
+          onDoubleClick={(event) => {
+            if (!event.ctrlKey && !event.metaKey && !picked.length)
+              add(kind, undefined, undefined, binding)
           }}
         >
           <span className="palette-row-icon is-glyph" aria-hidden>
@@ -405,6 +415,13 @@ export function EditorPalette(props: EditorPaletteProps) {
             </Tooltip>
           </Menu.Target>
           <Menu.Dropdown>
+            <Menu.Item
+              leftSection={<Icon name="plus" size={14} />}
+              disabled={source?.conflict}
+              onClick={() => add(kind, undefined, undefined, binding)}
+            >
+              {tr('加入版面')}
+            </Menu.Item>
             <Menu.Item
               leftSection={<Icon name="settings" size={14} />}
               onClick={() => setManaging({ focus: binding.attributeId })}
@@ -500,10 +517,11 @@ export function EditorPalette(props: EditorPaletteProps) {
   const componentRow = (kind: PaletteKey) => (
     <div
       key={kind}
-      className="palette-item palette-row"
+      className={'palette-item palette-row' + (chosen === kind ? ' is-chosen' : '')}
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData('text/plain', kind)
+        e.dataTransfer.setData('application/x-media-viewer-component', kind)
         e.dataTransfer.effectAllowed = 'copy'
         dragImage(e)
       }}
@@ -512,14 +530,21 @@ export function EditorPalette(props: EditorPaletteProps) {
         <UnstyledButton
           className="palette-row-main"
           aria-label={labelOf(kind)}
-          aria-description={hintOf(kind)}
-          onClick={() => add(kind as CellKind)}
+          aria-description={hintOf(kind) + ' ' + tr('雙擊或按 Enter 加入版面，也可以拖進編輯框')}
+          aria-pressed={chosen === kind}
+          onClick={(event) => {
+            // A click from the keyboard (Enter or Space) has no mouse press count.
+            if (event.detail === 0) add(kind as CellKind)
+            else setChosen(kind)
+          }}
+          onDoubleClick={() => add(kind as CellKind)}
         >
           <span className="palette-row-icon" aria-hidden>
             <Icon name={iconOf(kind)} size={14} />
           </span>
           <span className="palette-row-text">
             <span className="palette-field-name">{labelOf(kind)}</span>
+            {chosen === kind && <span className="palette-row-meta">{hintOf(kind)}</span>}
           </span>
         </UnstyledButton>
       </Tooltip>

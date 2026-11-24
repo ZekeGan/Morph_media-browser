@@ -125,9 +125,9 @@ try {
   assert.equal(await row('名稱（DLsite）').getByText('尚未加入', { exact: true }).count(), 0)
   assert.equal(await cells(), before)
 
-  // A click on a not-yet-added field adds it and puts it on the card, selected.
+  // A double click on a not-yet-added field adds it and puts it on the card, selected.
   await unfold('Steam')
-  await row('NAME').locator('.palette-row-main').click()
+  await row('NAME').locator('.palette-row-main').dblclick()
   await page.waitForFunction(
     (n) => document.querySelectorAll('.editor-cell').length === n + 1,
     before
