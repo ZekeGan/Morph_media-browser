@@ -10,7 +10,14 @@ import { hiddenFileNames } from '../electron/hidden'
 import { folderFile } from '../electron/files'
 import { validateWorkspace } from '../electron/workspace'
 import { defaultWorkspace } from '../shared/workspace'
-import { isGameFolder, matchesMedia, mediaIdentity, mediaQueue, visibleFile } from '../shared/media'
+import {
+  isGameFolder,
+  matchesMedia,
+  mediaIdentity,
+  mediaQueue,
+  sortMedia,
+  visibleFile,
+} from '../shared/media'
 import type { MediaEntry } from '../shared/explorer'
 import type { FolderRow } from '../shared/model'
 
@@ -147,4 +154,29 @@ test('new media projects reopen without migration, enumerate audio and hidden fl
   assert.deepEqual(await fs.readFile(folderFile(media)), before)
   for (const [name, bytes] of Object.entries(originals))
     assert.equal(await fs.readFile(path.join(media, name), 'utf8'), bytes)
+})
+test('R-486: the file list sorts by one field and a direction, ties by natural name, empty values last', () => {
+  const file = (name: string, size = 0, modified = 0, kind: MediaEntry['kind'] = 'image') =>
+    ({ id: name, name, kind, size, modified, mime: '', url: '' }) as MediaEntry
+  const list = [
+    file('10.png', 300, 5),
+    file('2.png', 100, 9),
+    file('b.mp4', 200, 0, 'video'),
+    file('a.png', 100, 7),
+  ]
+  const names = (sort: Parameters<typeof sortMedia>[1]) => sortMedia(list, sort).map((f) => f.name)
+  assert.deepEqual(names({ field: 'name', asc: true }), ['2.png', '10.png', 'a.png', 'b.mp4'])
+  assert.deepEqual(names({ field: 'name', asc: false }), ['b.mp4', 'a.png', '10.png', '2.png'])
+  // Equal sizes fall back to the name; a larger file goes last when ascending.
+  assert.deepEqual(names({ field: 'size', asc: true }), ['2.png', 'a.png', 'b.mp4', '10.png'])
+  assert.deepEqual(names({ field: 'size', asc: false }), ['10.png', 'b.mp4', '2.png', 'a.png'])
+  // A file with no date is last in both directions.
+  assert.deepEqual(names({ field: 'modified', asc: true }), ['10.png', 'a.png', '2.png', 'b.mp4'])
+  assert.deepEqual(names({ field: 'modified', asc: false }), ['2.png', 'a.png', '10.png', 'b.mp4'])
+  assert.deepEqual(names({ field: 'kind', asc: true }).at(-1), 'b.mp4')
+  // The input is left alone.
+  assert.deepEqual(
+    list.map((f) => f.name),
+    ['10.png', '2.png', 'b.mp4', 'a.png']
+  )
 })

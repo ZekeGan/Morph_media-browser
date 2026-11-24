@@ -148,6 +148,14 @@ const paths = {
       <path d="M3 10h14M10 3v14" />
     </>
   ),
+  masonry: (
+    <>
+      <rect x="3" y="3" width="6" height="8" rx="1" />
+      <rect x="11" y="3" width="6" height="5" rx="1" />
+      <rect x="3" y="13" width="6" height="4" rx="1" />
+      <rect x="11" y="10" width="6" height="7" rx="1" />
+    </>
+  ),
   list: (
     <>
       <path d="M7 5h10M7 10h10M7 15h10M3 5h.1M3 10h.1M3 15h.1" />

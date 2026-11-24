@@ -108,8 +108,10 @@ const errors: string[] = []
 page.on('pageerror', (error) => errors.push(error.message))
 const button = (name: string) => page.getByRole('button', { name, exact: true })
 const filter = async (name: string) => {
-  await page.getByRole('textbox', { name: '檔案類型', exact: true }).click()
-  await page.getByRole('option', { name, exact: true }).click()
+  await page
+    .locator('.media-type-chips')
+    .getByRole('button', { name: new RegExp('^' + name) })
+    .click()
 }
 const openFile = async (name: string) => {
   await page
@@ -160,8 +162,7 @@ try {
   await page.screenshot({ path: path.join(root, 'browser.png') })
   await filter('其他')
   for (const presentation of ['瀑布流', '縮圖', '列表']) {
-    await page.getByRole('textbox', { name: '檔案展示方式', exact: true }).click()
-    await page.getByRole('option', { name: presentation, exact: true }).click()
+    await page.locator('.media-view-select label').filter({ hasText: presentation }).click()
     for (const name of ['normal.ini', 'launch.exe', 'notes.srt']) {
       const tile = page
         .locator('.gallery-tile')
@@ -337,11 +338,9 @@ try {
   await close()
   await filter('圖片')
   await button('下一組').click()
-  await page.getByRole('textbox', { name: '檔案範圍', exact: true }).click()
-  await page.getByRole('option', { name: '包含子資料夾', exact: true }).click()
+  await page.getByRole('switch', { name: '包含子資料夾', exact: true }).check()
   await page.locator('.gallery-loading').waitFor({ state: 'detached' })
-  await page.getByRole('textbox', { name: '檔案範圍', exact: true }).click()
-  await page.getByRole('option', { name: '目前資料夾', exact: true }).click()
+  await page.getByRole('switch', { name: '包含子資料夾', exact: true }).uncheck()
   await page.locator('.media-thumbnail').filter({ hasText: 'image-001.png' }).waitFor()
   await filter('全部')
   await page.locator('.media-subfolders button').filter({ hasText: 'Child' }).click()

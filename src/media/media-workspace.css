@@ -1,15 +1,10 @@
+/* R-488: scope switch, type chips with counts, sort, layout buttons and the grouping toggle in one wrapping row. */
 .mixed-media-toolbar {
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
+    gap: 6px 10px;
     margin-bottom: 10px;
-}
-
-.mixed-media-toolbar .mantine-Select-root {
-    min-width: 0;
-    flex: 1;
-    max-width: 150px;
 }
 
 .mixed-media-toolbar .mantine-Input-input {
@@ -18,30 +13,84 @@
     font-size: 12px;
 }
 
-.mixed-media-toolbar>.mantine-ActionIcon-root {
-    flex-shrink: 0;
-}
-
 .mixed-media-browser {
     container-type: inline-size;
     width: 100%;
     min-width: 0;
 }
 
-.mixed-media-toolbar .media-scope-select {
-    flex: 0 0 124px;
-    max-width: 124px;
+.media-scope-switch {
+    flex: 0 0 auto;
 }
 
-@container(max-width:360px) {
-    .mixed-media-toolbar .media-view-select {
+.media-scope-switch .mantine-Switch-label {
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.media-type-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-width: 0;
+}
+
+.media-type-chip {
+    height: 26px;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.media-type-chip:hover {
+    background: var(--hover);
+}
+
+.media-type-chip.active {
+    border-color: var(--accent);
+    background: var(--selected);
+    color: var(--selected-text);
+}
+
+.media-type-chip > span {
+    opacity: 0.7;
+    font-variant-numeric: tabular-nums;
+}
+
+.media-type-chip:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+/* A narrow list swaps the chips for a dropdown with the same choices. */
+.media-type-select {
+    display: none;
+    flex: 1 1 120px;
+    min-width: 0;
+    max-width: 180px;
+}
+
+@container(max-width:300px) {
+    .media-type-chips {
         display: none;
     }
 
-    .mixed-media-toolbar .media-scope-select {
-        flex-basis: 112px;
-        max-width: 112px;
+    .media-type-select {
+        display: block;
     }
+}
+
+.media-sort-button .media-sort-summary {
+    white-space: nowrap;
+}
+
+.media-group-button {
+    padding-inline: 8px;
 }
 
 .gallery-source-header {

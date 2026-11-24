@@ -98,8 +98,10 @@ const errors: string[] = []
 page.on('pageerror', (error) => errors.push(error.message))
 const button = (name: string) => page.getByRole('button', { name, exact: true })
 const filter = async (name: string) => {
-  await page.getByRole('textbox', { name: '檔案類型', exact: true }).click()
-  await page.getByRole('option', { name, exact: true }).click()
+  await page
+    .locator('.media-type-chips')
+    .getByRole('button', { name: new RegExp('^' + name) })
+    .click()
 }
 const open = async (name: string) => {
   await page

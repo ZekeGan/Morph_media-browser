@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActionIcon, Menu, Select } from '@mantine/core'
+import { Button, Menu, SegmentedControl, Select, Switch, Tooltip } from '@mantine/core'
 import type {
   ContentResult,
   ExplorerRequest,
@@ -10,7 +10,16 @@ import type {
 } from '../../shared/explorer'
 import type { FolderRow, Project, Request, Response } from '../../shared/model'
 import { builtinPanelFor } from '../../shared/explorer'
-import { canPreviewMedia, matchesMedia, visibleFile, type MediaFilter } from '../../shared/media'
+import {
+  canPreviewMedia,
+  matchesMedia,
+  mediaSortFields,
+  sortMedia,
+  visibleFile,
+  type MediaFilter,
+  type MediaSort,
+  type MediaSortField,
+} from '../../shared/media'
 import { Gallery } from '../gallery/Gallery'
 import { MediaViewer } from './MediaViewer'
 import { AlbumActions, AlbumTracks, useAlbum } from './AlbumView'
@@ -22,6 +31,7 @@ import { placeProgress, useVideoPlaces, videoPlace } from './videoPlace'
 import { FolderPage } from '../panel/FolderPage'
 import { useRefreshNonce } from '../browse/refresh'
 import { Icon } from '../common/icons'
+import { iconLabel } from '../common/IconLabel'
 import { t as tr, useLocale } from '../i18n'
 import './media-workspace.css'
 
@@ -71,7 +81,9 @@ export function MediaBrowser({
   const [filter, setFilter] = useState<MediaFilter>(prefs?.filter ?? 'all'),
     [view, setView] = useState<string>(prefs?.view ?? 'masonry')
   const [scope, setScope] = useState<'current' | 'descendants'>(prefs?.scope ?? 'current'),
-    [grouped, setGrouped] = useState(prefs?.grouped ?? false)
+    [grouped, setGrouped] = useState(prefs?.grouped ?? false),
+    // R-486: undefined keeps the order the files are listed in (shown as name, ascending).
+    [sort, setSort] = useState<MediaSort | undefined>(prefs?.sort)
   const version = useRefreshNonce()
   const [overview, setOverview] = useState<{
     entries: OverviewEntry[]
@@ -100,9 +112,15 @@ export function MediaBrowser({
       mounted.current = true
       return
     }
-    const next: MediaPrefs = { scope, filter, view: view as MediaPrefs['view'], grouped }
+    const next: MediaPrefs = {
+      scope,
+      filter,
+      view: view as MediaPrefs['view'],
+      grouped,
+      ...(sort ? { sort } : {}),
+    }
     if (JSON.stringify(next) !== JSON.stringify({ ...prefs })) onPrefs?.(next)
-  }, [scope, filter, view, grouped])
+  }, [scope, filter, view, grouped, sort])
   useEffect(() => {
     if (scope !== 'descendants') return
     let active = true
@@ -155,10 +173,36 @@ export function MediaBrowser({
     [scope, overview.entries, entries, row.rowId, row.name, row.path]
   )
   const visible = useMemo(() => files.filter((entry) => visibleFile(entry)), [files])
-  const shown = useMemo(
-    () => visible.filter((entry) => matchesMedia(entry, filter)),
-    [visible, filter]
+  const shown = useMemo(() => {
+    const list = visible.filter((entry) => matchesMedia(entry, filter))
+    return sort ? sortMedia(list, sort) : list
+  }, [visible, filter, sort])
+  // R-488: how many files each type has (the filter chips); a type with none is left out unless it is the chosen one.
+  const typeNames: Record<MediaFilter, string> = {
+    all: tr('全部'),
+    video: tr('影片'),
+    image: tr('圖片'),
+    audio: tr('音樂'),
+    other: tr('其他'),
+  }
+  const counts = useMemo(() => {
+    const out = { all: 0, video: 0, image: 0, audio: 0, other: 0 } as Record<MediaFilter, number>
+    for (const entry of visible)
+      for (const type of ['all', 'video', 'image', 'audio', 'other'] as const)
+        if (matchesMedia(entry, type)) out[type]++
+    return out
+  }, [visible])
+  const types = (['all', 'video', 'image', 'audio', 'other'] as const).filter(
+    (type) => type === 'all' || counts[type] > 0 || type === filter
   )
+  const sortNames: Record<MediaSortField, string> = {
+    name: tr('名稱'),
+    kind: tr('類型'),
+    size: tr('大小'),
+    modified: tr('修改日期'),
+  }
+  const current = sort ?? { field: 'name' as const, asc: true },
+    sortSummary = sortNames[current.field] + ' ' + (current.asc ? '↑' : '↓')
   const folders = entries.filter((entry) => entry.kind === 'folder'),
     pending = scope === 'descendants' ? overview.loading : loading
   const playback = usePlayback()
@@ -238,77 +282,106 @@ export function MediaBrowser({
       }
       controls={
         <div className="mixed-media-toolbar">
-          <Select
-            className="media-scope-select"
-            aria-label={tr('檔案範圍')}
+          <Switch
+            className="media-scope-switch"
             size="xs"
-            allowDeselect={false}
-            value={scope}
+            label={tr('包含子資料夾')}
+            checked={scope === 'descendants'}
             disabled={busy || !!opening}
-            onChange={(value) => value && setScope(value as typeof scope)}
-            data={[
-              { value: 'current', label: tr('目前資料夾') },
-              { value: 'descendants', label: tr('包含子資料夾') },
-            ]}
+            onChange={(event) => setScope(event.currentTarget.checked ? 'descendants' : 'current')}
           />
+          <div className="media-type-chips" role="group" aria-label={tr('檔案類型')}>
+            {types.map((type) => (
+              <button
+                key={type}
+                type="button"
+                className={'media-type-chip' + (filter === type ? ' active' : '')}
+                aria-pressed={filter === type}
+                onClick={() => setFilter(type)}
+              >
+                {typeNames[type]} <span>{counts[type]}</span>
+              </button>
+            ))}
+          </div>
           <Select
+            className="media-type-select"
             aria-label={tr('檔案類型')}
             size="xs"
             allowDeselect={false}
             value={filter}
             onChange={(value) => value && setFilter(value as MediaFilter)}
-            data={(['all', 'video', 'image', 'audio', 'other'] as const).map((value) => ({
-              value,
-              label: tr(
-                { all: '全部', video: '影片', image: '圖片', audio: '音樂', other: '其他' }[value]
-              ),
+            data={types.map((type) => ({
+              value: type,
+              label: typeNames[type] + ' ' + counts[type],
             }))}
-          />
-          <Select
-            className="media-view-select"
-            aria-label={tr('檔案展示方式')}
-            size="xs"
-            allowDeselect={false}
-            value={view}
-            onChange={(value) => value && setView(value)}
-            data={[
-              { value: 'masonry', label: tr('瀑布流') },
-              { value: 'tiles', label: tr('縮圖') },
-              { value: 'list', label: tr('列表') },
-            ]}
           />
           <Menu position="bottom-end">
             <Menu.Target>
-              <ActionIcon variant="subtle" aria-label={tr('更多檔案選項')}>
-                <Icon name="more" />
-              </ActionIcon>
+              <Button
+                size="xs"
+                variant="default"
+                className="media-sort-button"
+                aria-label={tr('排序：{0}', sortSummary)}
+                leftSection={<Icon name="sort" size={15} />}
+              >
+                <span className="media-sort-summary">{sortSummary}</span>
+              </Button>
             </Menu.Target>
             <Menu.Dropdown>
-              <Menu.Label>{tr('檔案展示方式')}</Menu.Label>
-              {(
-                [
-                  ['masonry', '瀑布流'],
-                  ['tiles', '縮圖'],
-                  ['list', '列表'],
-                ] as const
-              ).map(([value, label]) => (
+              <Menu.Label>{tr('排序依據')}</Menu.Label>
+              {mediaSortFields.map((field) => (
                 <Menu.Item
-                  key={value}
-                  leftSection={view === value ? <Icon name="check" /> : null}
-                  onClick={() => setView(value)}
+                  key={field}
+                  leftSection={current.field === field ? <Icon name="check" /> : null}
+                  onClick={() => setSort({ field, asc: current.asc })}
                 >
-                  {tr(label)}
+                  {sortNames[field]}
                 </Menu.Item>
               ))}
               <Menu.Divider />
-              <Menu.Item
-                leftSection={grouped ? <Icon name="check" /> : null}
-                onClick={() => setGrouped((value) => !value)}
-              >
-                {tr('依來源分組')}
-              </Menu.Item>
+              {([true, false] as const).map((asc) => (
+                <Menu.Item
+                  key={String(asc)}
+                  leftSection={current.asc === asc ? <Icon name="check" /> : null}
+                  onClick={() => setSort({ field: current.field, asc })}
+                >
+                  {asc ? tr('由小到大（↑）') : tr('由大到小（↓）')}
+                </Menu.Item>
+              ))}
             </Menu.Dropdown>
           </Menu>
+          <SegmentedControl
+            className="media-view-select"
+            aria-label={tr('檔案展示方式')}
+            size="xs"
+            value={view}
+            onChange={setView}
+            data={(
+              [
+                ['masonry', 'masonry', '瀑布流'],
+                ['tiles', 'grid', '縮圖'],
+                ['list', 'list', '列表'],
+              ] as const
+            ).map(([value, icon, label]) => ({ value, label: iconLabel(icon, tr(label)) }))}
+          />
+          <Tooltip
+            label={
+              scope === 'descendants' ? tr('依來源分組') : tr('依來源分組（要先包含子資料夾）')
+            }
+            withArrow
+          >
+            <Button
+              size="xs"
+              variant={grouped ? 'light' : 'default'}
+              className="media-group-button"
+              aria-label={tr('依來源分組')}
+              aria-pressed={grouped}
+              disabled={scope !== 'descendants'}
+              onClick={() => setGrouped((value) => !value)}
+            >
+              <Icon name="folder" size={15} />
+            </Button>
+          </Tooltip>
         </div>
       }
       notice={

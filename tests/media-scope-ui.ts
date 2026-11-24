@@ -54,13 +54,13 @@ page.setDefaultTimeout(15000)
 await page.evaluate('window.__name=(target)=>target')
 const errors: string[] = []
 page.on('pageerror', (error) => errors.push(error.message))
-const select = async (label: string, name: string) => {
-  await page.getByRole('textbox', { name: label, exact: true }).click()
-  await page.getByRole('option', { name, exact: true }).click()
-}
+// R-488: scope is a switch, grouping a toggle button and the layout three icon buttons.
+const scopeSwitch = () => page.getByRole('switch', { name: '包含子資料夾', exact: true })
 const grouped = async () => {
-  await page.getByRole('button', { name: '更多檔案選項', exact: true }).click()
-  await page.getByRole('menuitem', { name: '依來源分組', exact: true }).click()
+  await page.getByRole('button', { name: '依來源分組', exact: true }).click()
+}
+const layout = async (name: string) => {
+  await page.locator('.media-view-select label').filter({ hasText: name }).click()
 }
 try {
   await app.evaluate(({ BrowserWindow }) =>
@@ -68,16 +68,34 @@ try {
   )
   await page.getByRole('button', { name: '開啟專案 Media scope', exact: true }).first().click()
   await page.locator('.media-thumbnail').waitFor()
-  assert.equal(
-    await page.getByRole('textbox', { name: '檔案範圍', exact: true }).inputValue(),
-    '目前資料夾'
-  )
+  assert.equal(await scopeSwitch().isChecked(), false)
   assert.equal(await page.locator('.media-thumbnail').count(), 1)
-  await select('檔案範圍', '包含子資料夾')
+  await scopeSwitch().check()
   await page.waitForFunction(() => document.querySelectorAll('.media-thumbnail').length === 5)
+  // R-486: the sort button orders the files by one field and a direction (name, ascending, until it is changed).
+  const fileNames = () =>
+    page
+      .locator('.media-thumbnail')
+      .evaluateAll((nodes) =>
+        nodes.map((node) => (node.getAttribute('title') ?? '').split(/[\\/]/).pop()!)
+      )
+  const collator = new Intl.Collator('zh-Hant', { numeric: true, sensitivity: 'base' })
+  await page.getByRole('button', { name: '排序：名稱 ↑', exact: true }).click()
+  await page.getByRole('menuitem', { name: '由大到小（↓）', exact: true }).click()
+  await page.getByRole('button', { name: '排序：名稱 ↓', exact: true }).waitFor()
+  const down = await fileNames()
+  assert.deepEqual(
+    down,
+    [...down].sort((a, b) => collator.compare(b, a))
+  )
+  await page.getByRole('button', { name: '排序：名稱 ↓', exact: true }).click()
+  await page.getByRole('menuitem', { name: '由小到大（↑）', exact: true }).click()
+  await page.getByRole('button', { name: '排序：名稱 ↑', exact: true }).waitFor()
+  const up = await fileNames()
+  assert.deepEqual(up, [...up].sort(collator.compare))
   await grouped()
   for (const view of ['瀑布流', '縮圖', '列表']) {
-    await select('檔案展示方式', view)
+    await layout(view)
     await page.locator('.gallery-source-header').first().waitFor()
     assert.equal(await page.locator('.gallery-source-header').count(), 3)
     const a = page
@@ -108,10 +126,7 @@ try {
   await page.getByRole('button', { name: '退出閱讀器', exact: true }).click()
   await page.locator('.media-viewer-shell').waitFor({ state: 'detached' })
   assert.equal((await page.locator('.breadcrumb-current').innerText()).trim(), 'Media')
-  assert.equal(
-    await page.getByRole('textbox', { name: '檔案範圍', exact: true }).inputValue(),
-    '包含子資料夾'
-  )
+  assert.equal(await scopeSwitch().isChecked(), true)
   assert.equal(await page.locator('.media-thumbnail').count(), 5)
   // The panel's own back button is hidden while the center is visible; read its state from the DOM.
   assert.equal(
@@ -119,14 +134,13 @@ try {
     true
   )
   await page.screenshot({ path: path.join(root, 'grouped.png') })
+  await fs.mkdir(path.resolve('.test-output', 'shot'), { recursive: true })
+  await page.screenshot({ path: path.resolve('.test-output', 'shot', 'r488-file-toolbar.png') })
   // Scope, layout and grouping are remembered per project after leaving and reopening it.
   await page.getByRole('button', { name: '返回首頁', exact: true }).click()
   await page.getByRole('button', { name: '開啟專案 Media scope', exact: true }).first().click()
   await page.locator('.media-thumbnail').first().waitFor()
-  assert.equal(
-    await page.getByRole('textbox', { name: '檔案範圍', exact: true }).inputValue(),
-    '包含子資料夾'
-  )
+  assert.equal(await scopeSwitch().isChecked(), true)
   assert.equal(await page.locator('.gallery-source-header').count(), 3)
   assert.equal(await page.locator('.media-thumbnail').count(), 5)
   await page
@@ -146,7 +160,6 @@ try {
   await page.mouse.down()
   await page.mouse.move(divider.x + 102, divider.y + 50, { steps: 5 })
   await page.mouse.up()
-  await page.locator('.media-view-select').waitFor({ state: 'hidden' })
   await app.evaluate(({ BrowserWindow }) => {
     const win = BrowserWindow.getAllWindows()[0]
     win.setMinimumSize(0, 0)
@@ -157,9 +170,7 @@ try {
       .locator('.mixed-media-toolbar')
       .evaluate((node) => node.scrollWidth <= node.clientWidth + 1)
   )
-  await page.getByRole('button', { name: '更多檔案選項', exact: true }).click()
-  await page.getByRole('menuitem', { name: '縮圖', exact: true }).click()
-  await page.getByRole('menu').waitFor({ state: 'hidden' })
+  await layout('縮圖')
   await page.screenshot({ path: path.join(root, 'narrow.png') })
   for (const [file, bytes] of originals) {
     if (file === folderFile(path.join(media, 'A'))) {

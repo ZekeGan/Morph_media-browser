@@ -81,7 +81,7 @@ export const sampleOf = (entries: { kind: string; name?: string }[]): KindSample
 const attachmentName =
     /^(cover|covers|credits?|info|colophon|end|ending|back|front|toc|thumbs?|thumbnail|folder|omake|bonus|extra)$/i,
   notPagePrefix =
-    /^(danbooru|yande[._ ]?re|konachan|gelbooru|sankaku|safebooru|zerochan|img|dsc[nf]?|pxl|mvimg|image|photo|pict|screenshot|screen[ _-]?shot|wp|snap|capture|(19|20)\d{2}[-_.]?\d{2}[-_.]?\d{2})/i,
+    /^(danbooru|yande[._ ]?re|konachan|gelbooru|img_|dsc_|pxl_|(19|20)\d{2}[-_.]?\d{2}[-_.]?\d{2})/i,
   pageName = /^(.*?)(\d+)([a-z])?(?:-(\d+))?$/i
 export function pageNumbered(names: string[]): number {
   const stems = names
@@ -91,7 +91,8 @@ export function pageNumbered(names: string[]): number {
   const groups = new Map<string, number[][]>()
   for (const stem of stems) {
     const m = pageName.exec(stem)
-    if (!m || m[2].length > 4 || notPagePrefix.test(m[1])) continue
+    // A page number is at most 9999; padding may make the digits longer (00200) but not past six.
+    if (!m || m[2].length > 6 || Number(m[2]) > 9999 || notPagePrefix.test(m[1])) continue
     const prefix = m[1].toLowerCase().replace(/[\s_-]+$/, ''),
       key = /^(p|pg|page)$/.test(prefix) ? 'p' : prefix,
       from = Number(m[2]),

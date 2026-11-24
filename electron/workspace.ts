@@ -221,7 +221,11 @@ export function validateWorkspace(v: unknown): asserts v is WorkspacePrefs {
             (b.media.filter !== undefined &&
               !['all', 'video', 'image', 'audio', 'other'].includes(b.media.filter)) ||
             (b.media.view !== undefined && !['masonry', 'tiles', 'list'].includes(b.media.view)) ||
-            (b.media.grouped !== undefined && typeof b.media.grouped !== 'boolean')))
+            (b.media.grouped !== undefined && typeof b.media.grouped !== 'boolean') ||
+            (b.media.sort !== undefined &&
+              (!object(b.media.sort) ||
+                !['name', 'kind', 'size', 'modified'].includes(b.media.sort.field as string) ||
+                typeof b.media.sort.asc !== 'boolean'))))
     )
   )
     throw new Error('檔案總覽偏好不合法')

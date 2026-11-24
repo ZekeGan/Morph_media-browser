@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- File list toolbar: "include subfolders" is a switch, file types are chips with counts (a dropdown in a very narrow list), a sort button (name, type, size or date, ascending or descending), three icon buttons for the layout and a group-by-source toggle; the "⋯" menu is gone (R-486, R-488).
 - The file list no longer has "show hidden files" and "show dot files": files with the system Hidden attribute are never listed, names starting with a dot always are; a preference an older version saved is kept and ignored (R-485).
 - Layout window: the four sources (type, level, default, own) have their own colours in each theme (blue, amber, grey, magenta), a 5px bar on each folder row and solid labels that the legend repeats; rules that follow the default are a little dimmer, set ones have their source colour on the left (R-489, R-490).
 - The hints hidden by hand (card display settings, folders without picture components, source choice memory, the layout window's "如…" example and renamed headings) are removed for good with their texts (R-491).

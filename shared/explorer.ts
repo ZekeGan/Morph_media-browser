@@ -11,6 +11,8 @@ export interface MediaPrefs {
   filter?: 'all' | 'video' | 'image' | 'audio' | 'other'
   view?: 'masonry' | 'tiles' | 'list'
   grouped?: boolean
+  // R-486: one field and a direction; absent means the order the files are listed in.
+  sort?: { field: 'name' | 'kind' | 'size' | 'modified'; asc: boolean }
 }
 export interface BrowseState {
   mode: BrowseMode

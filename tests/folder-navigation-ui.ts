@@ -291,7 +291,7 @@ try {
   // Outside the folder workspace, native commands do not navigate it.
   await side(-1, '.sidebar-section', false)
   await current('B')
-  await button('更多檔案選項').click()
+  await page.getByRole('button', { name: /^排序：/ }).click()
   await page.getByRole('menu').waitFor()
   await side(-1, '.react-flow')
   await current('B')

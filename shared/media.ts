@@ -24,3 +24,28 @@ export const mediaIdentity = (entry: MediaEntry) =>
 // Queue identity and order are inherited from the displayed direct-folder results.
 export const mediaQueue = (entries: MediaEntry[], selected: MediaEntry) =>
   entries.filter((entry) => entry.kind === selected.kind && canPreviewMedia(entry))
+
+// R-486: the file list's sort, one field and a direction. Without one the files stay in the order they are listed.
+export type MediaSortField = 'name' | 'kind' | 'size' | 'modified'
+export interface MediaSort {
+  field: MediaSortField
+  asc: boolean
+}
+export const mediaSortFields: MediaSortField[] = ['name', 'kind', 'size', 'modified']
+const names = new Intl.Collator('zh-Hant', { numeric: true, sensitivity: 'base' })
+// Files that tie on the field are ordered by name (natural: 2 before 10), then by id; an empty size or date goes last.
+export function sortMedia<T extends MediaEntry>(entries: T[], sort: MediaSort): T[] {
+  const sign = sort.asc ? 1 : -1
+  return [...entries].sort((a, b) => {
+    let by = 0
+    if (sort.field === 'name') by = names.compare(a.name, b.name) * sign
+    else if (sort.field === 'kind') by = a.kind.localeCompare(b.kind) * sign
+    else {
+      const av = (sort.field === 'size' ? a.size : a.modified) || 0,
+        bv = (sort.field === 'size' ? b.size : b.modified) || 0
+      if (!av !== !bv) return !av ? 1 : -1
+      by = (av - bv) * sign
+    }
+    return by || names.compare(a.name, b.name) || a.id.localeCompare(b.id)
+  })
+}

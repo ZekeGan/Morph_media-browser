@@ -1,10 +1,4 @@
 {
-  "檔案範圍": {
-    "zh-CN": "文件范围",
-    "en": "File scope",
-    "ja": "ファイルの範囲",
-    "es": "Ámbito de archivos"
-  },
   "內嵌封面無法讀取，仍可選擇資料夾圖片": {
     "zh-CN": "无法读取内嵌封面，仍可选择文件夹图片",
     "en": "Embedded artwork could not be read; you can still choose a folder image",
@@ -3490,12 +3484,6 @@
     "en": "Thumbnails",
     "ja": "サムネイル",
     "es": "Miniaturas"
-  },
-  "更多檔案選項": {
-    "en": "More file options",
-    "ja": "ファイルのその他の操作",
-    "es": "Más opciones de archivos",
-    "zh-CN": "更多文件选项"
   },
   "尚未建立或受保護": {
     "en": "Not initialized or protected",
@@ -13468,5 +13456,29 @@
     "en": "Where the list starts",
     "ja": "リストの開始フォルダー",
     "es": "Carpeta donde empieza la lista"
+  },
+  "排序依據": {
+    "zh-CN": "排序依据",
+    "en": "Sort by",
+    "ja": "並べ替えの基準",
+    "es": "Ordenar por"
+  },
+  "由小到大（↑）": {
+    "zh-CN": "由小到大（↑）",
+    "en": "Ascending (↑)",
+    "ja": "昇順（↑）",
+    "es": "Ascendente (↑)"
+  },
+  "由大到小（↓）": {
+    "zh-CN": "由大到小（↓）",
+    "en": "Descending (↓)",
+    "ja": "降順（↓）",
+    "es": "Descendente (↓)"
+  },
+  "依來源分組（要先包含子資料夾）": {
+    "zh-CN": "按来源分组（需先包含子文件夹）",
+    "en": "Group by source (include subfolders first)",
+    "ja": "ソース別にグループ化（先にサブフォルダーを含める）",
+    "es": "Agrupar por origen (incluye subcarpetas primero)"
   }
 }

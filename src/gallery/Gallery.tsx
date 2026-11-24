@@ -554,7 +554,11 @@ export function Gallery({
     <div className="gallery">
       <Group justify="space-between" mb="sm">
         <strong>
-          {images.length} {mixed ? tr('個檔案') : tr('張圖片')}
+          {!mixed && (
+            <>
+              {images.length} {tr('張圖片')}
+            </>
+          )}
           {loading && (
             <small className="gallery-loading" role="status">
               {' '}

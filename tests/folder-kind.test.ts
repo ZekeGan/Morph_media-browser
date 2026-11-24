@@ -445,6 +445,8 @@ test('R-479: pictures make a manga only when their file names are page numbers',
   // 80% of the pictures must follow the pattern.
   assert.equal(pageNumbered(list(...range(1, 8), 'sketch', 'wallpaper')), 8)
   assert.equal(pageNumbered(list(...range(1, 5), 'a', 'b', 'c', 'd')), 0)
+  // Padding may be long (Image 00200), the number itself stays under 10000.
+  assert.equal(pageNumbered(list('Image 00000', 'Image 00001', 'Image 00002', 'Image 00003')), 4)
   // Gallery-site and camera names are not pages.
   assert.equal(pageNumbered(list('IMG_0001', 'IMG_0002', 'IMG_0003')), 0)
   assert.equal(pageNumbered(list('DSC_0001', 'DSC_0002', 'DSC_0003')), 0)
