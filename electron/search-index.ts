@@ -285,12 +285,14 @@ export class SearchIndex {
       .join(' OR ')
     const where = (projectId ? 'd.project=? AND ' : '') + `(${conditions})`,
       args = projectId ? [projectId, ...params] : params
+    // The same folder (same path) in several projects is one result that lists every project (R-477).
+    const same = process.platform === 'win32' ? 'path COLLATE NOCASE' : 'path'
     const total = Number(
-      this.db.prepare(`SELECT count(*) n FROM docs d WHERE ${where}`).get(...args)!.n
+      this.db.prepare(`SELECT count(DISTINCT ${same}) n FROM docs d WHERE ${where}`).get(...args)!.n
     )
     const hits = this.db
       .prepare(
-        `SELECT id rowId,project projectId,name,path FROM docs d WHERE ${where} ORDER BY name COLLATE NOCASE,id LIMIT ? OFFSET ?`
+        `SELECT min(id) rowId,project projectId,name,path,group_concat(project || char(31) || id, char(30)) shared FROM docs d WHERE ${where} GROUP BY ${same} ORDER BY name COLLATE NOCASE,min(id) LIMIT ? OFFSET ?`
       )
       .all(...args, limit, offset)
       .map((v) => ({
@@ -298,6 +300,12 @@ export class SearchIndex {
         projectId: String(v.projectId),
         name: String(v.name),
         path: String(v.path),
+        projects: String(v.shared)
+          .split('\x1e')
+          .map((item) => {
+            const [projectId, rowId] = item.split('\x1f')
+            return { projectId, rowId }
+          }),
         matched: this.db
           .prepare('SELECT key,text FROM vals WHERE doc=?')
           .all(String(v.rowId))

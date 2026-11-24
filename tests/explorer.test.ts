@@ -273,10 +273,14 @@ test('SQLite supports Unicode substrings, comma AND, quotes, exclusion, OR, date
     ],
   })
   await assert.rejects(explorer.request({ action: 'search', query: 'tag:game' }), /多個身分/)
-  assert.equal(
-    (await explorer.request({ action: 'search', query: 'tag@tags:game' })).search!.total,
-    2
-  )
+  // The same folder in both projects is one result that names both projects (R-477).
+  const merged = (await explorer.request({ action: 'search', query: 'tag@tags:game' })).search!
+  assert.equal(merged.total, 1)
+  assert.equal(merged.hits.length, 1)
+  assert.deepEqual(merged.hits[0].projects.map((v) => v.projectId).sort(), [
+    ...[p.projectId, p2.projectId].sort(),
+  ])
+  assert.equal(merged.hits[0].projects[0].rowId, merged.hits[0].rowId)
   const seen = new Set<string>()
   for (let offset = 0; offset < 6; offset += 2) {
     const page = (await explorer.request({ action: 'search', query: '', offset, limit: 2 })).search!
@@ -285,11 +289,11 @@ test('SQLite supports Unicode substrings, comma AND, quotes, exclusion, OR, date
       seen.add(hit.rowId)
     }
   }
-  assert.equal(seen.size, 6)
+  assert.equal(seen.size, 3, 'three folders, each listed once')
   const rebuilt = new SearchIndex(path.join(path.dirname(explorer.index.file), 'rebuilt.sqlite'))
   try {
     rebuilt.sync(lib.snapshot())
-    assert.equal(rebuilt.search('tag@tags:game').total, 2)
+    assert.equal(rebuilt.search('tag@tags:game').total, 1)
   } finally {
     rebuilt.close()
   }

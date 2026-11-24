@@ -245,6 +245,8 @@ export interface SearchHit {
   projectId: string
   name: string
   path: string
+  // Every project that holds this folder; the first is projectId/rowId.
+  projects: { projectId: string; rowId: string }[]
   matched: string[]
 }
 export interface SearchResult {

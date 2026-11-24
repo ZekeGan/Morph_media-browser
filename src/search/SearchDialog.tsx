@@ -152,7 +152,10 @@ export function SearchDialog({
     setSavedOpen(!!value.trim() && !!savedSearches.length)
   }
   const open = (target = hit) => {
-    if (target && !busy && !saving && !error && onSelect(target.projectId, target.rowId)) close()
+    // A folder that sits in several projects opens in the current one when it is among them.
+    const place = target?.projects.find((p) => p.projectId === selected) ?? target?.projects[0]
+    if (target && place && !busy && !saving && !error && onSelect(place.projectId, place.rowId))
+      close()
   }
   const cancelSave = () => {
     setSaveOpen(false)
@@ -436,7 +439,13 @@ export function SearchDialog({
                 }}
               >
                 <strong>{r.name}</strong>
-                <span>{projects.find((p) => p.projectId === r.projectId)?.project?.name}</span>
+                <span className="search-projects">
+                  {r.projects.map((p) => (
+                    <em key={p.projectId}>
+                      {projects.find((item) => item.projectId === p.projectId)?.project?.name}
+                    </em>
+                  ))}
+                </span>
                 <small>{r.path}</small>
                 {!!r.matched.length && (
                   <small>

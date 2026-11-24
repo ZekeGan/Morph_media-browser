@@ -208,6 +208,8 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .search-results > button { width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 12px; border: 0; border-bottom: 1px solid var(--line); text-align: left; background: transparent; color: inherit; }
 .search-results > button:hover { background: var(--selected); }
 .search-results > button > span { color: var(--accent-ink); font-size: 11px; }
+.search-projects { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; align-content: flex-start; }
+.search-projects > em { font-style: normal; padding: 0 6px; border: 1px solid var(--line); border-radius: 999px; }
 .search-results small { grid-column: 1 / -1; color: var(--muted); overflow-wrap: anywhere; }
 @media (max-width: 1100px) {
   .content { padding: 20px; }
