@@ -27,6 +27,9 @@ export interface KindSample {
   epubs?: number
   comics?: number
   sidecars?: number
+  // R-479: the pictures whose file names are page numbers, when they make up a whole book (see pageNumbered); 0
+  // otherwise. Counted while scanning or listing, never saved.
+  pages?: number
   total: number
 }
 const comicTypes = ['.cbz', '.cbr', '.cb7'],
@@ -39,6 +42,7 @@ export const emptySample = (): Required<KindSample> => ({
   epubs: 0,
   comics: 0,
   sidecars: 0,
+  pages: 0,
   total: 0,
 })
 // One file added to a sample. `kind` is what the listing calls the file; the name only gives the extension, so the
@@ -58,12 +62,60 @@ export function countFile(sample: Required<KindSample>, kind: string, name = '')
   return sample
 }
 export const sampleOf = (entries: { kind: string; name?: string }[]): KindSample => {
-  const sample = emptySample()
+  const sample = emptySample(),
+    pictures: string[] = []
   for (const entry of entries)
-    if (entry.kind !== 'folder' && entry.kind !== 'subtitle')
+    if (entry.kind !== 'folder' && entry.kind !== 'subtitle') {
       countFile(sample, entry.kind, entry.name)
+      if (entry.kind === 'image' && entry.name) pictures.push(entry.name)
+    }
+  sample.pages = pageNumbered(pictures)
   return sample
 }
+
+// R-479: do the pictures' file names read as the pages of one book? Returns how many do, or 0 when they are not
+// a book. Page names are plain numbers (any zero padding), p／page before the number, or one shared prefix with a
+// number counting up (Pixiv's id_p0, id_p1). Cover, credit and info files are left out of the count; gallery-site
+// and camera names (danbooru_…, IMG_0001, a date) are not pages. At least 80% of the pictures must follow the same
+// pattern, the smallest page is 0 or 1, and the numbers run mostly without gaps.
+const attachmentName =
+    /^(cover|covers|credits?|info|colophon|end|ending|back|front|toc|thumbs?|thumbnail|folder|omake|bonus|extra)$/i,
+  notPagePrefix =
+    /^(danbooru|yande[._ ]?re|konachan|gelbooru|sankaku|safebooru|zerochan|img|dsc[nf]?|pxl|mvimg|image|photo|pict|screenshot|screen[ _-]?shot|wp|snap|capture|(19|20)\d{2}[-_.]?\d{2}[-_.]?\d{2})/i,
+  pageName = /^(.*?)(\d+)([a-z])?(?:-(\d+))?$/i
+export function pageNumbered(names: string[]): number {
+  const stems = names
+    .map((name) => (name.lastIndexOf('.') > 0 ? name.slice(0, name.lastIndexOf('.')) : name).trim())
+    .filter((stem) => !attachmentName.test(stem))
+  if (stems.length < 3) return 0
+  const groups = new Map<string, number[][]>()
+  for (const stem of stems) {
+    const m = pageName.exec(stem)
+    if (!m || m[2].length > 4 || notPagePrefix.test(m[1])) continue
+    const prefix = m[1].toLowerCase().replace(/[\s_-]+$/, ''),
+      key = /^(p|pg|page)$/.test(prefix) ? 'p' : prefix,
+      from = Number(m[2]),
+      to = m[4] === undefined ? from : Number(m[4])
+    groups.set(key, [...(groups.get(key) ?? []), [from, Math.max(from, to)]])
+  }
+  const best = [...groups.values()].sort((a, b) => b.length - a.length)[0]
+  if (!best || best.length * 5 < stems.length * 4) return 0
+  const covered = new Set<number>()
+  for (const [from, to] of best)
+    for (let n = from; n <= Math.min(to, from + 9999); n++) covered.add(n)
+  const first = Math.min(...covered),
+    last = Math.max(...covered)
+  return first <= 1 && covered.size * 5 >= (last - first + 1) * 4 ? best.length : 0
+}
+
+// R-479: signs that a folder of pictures is a manga whatever its file names say: it was filled from a manga site
+// or has been read in manga mode.
+const mangaSites = ['eh', 'exh', 'hitomi', 'nhentai', 'mangadex', 'mangaupdates']
+const readAsManga = (row: FolderRow) =>
+  row.record?.details?.reading?.mode === 'manga' ||
+  !!row.record?.attributes.some(
+    (a) => a.sourceRecord && mangaSites.includes(a.sourceRecord.provider)
+  )
 
 export type KindSource = 'manual' | 'game' | 'content' | 'default'
 export interface DetectedKind {
@@ -103,11 +155,10 @@ export function detectFolderKind(
     // many scans, a book with drama tracks), and an undecidable folder is general. Pictures alone do not decide it
     // inside a music or video folder, or in a folder named like album extras (R-404).
     const extras = parentKind === 'music' || parentKind === 'video' || isExtrasFolderName(row.name)
-    if (
-      videos === 0 &&
-      audio === 0 &&
-      ((images >= 3 && images * 2 > total && !extras) || (sample.comics ?? 0) >= 1)
-    )
+    // R-479: pictures alone make a manga only when their names are page numbers (or it was read or imported as one).
+    const pictures =
+      images >= 3 && images * 2 > total && !extras && ((sample.pages ?? 0) > 0 || readAsManga(row))
+    if (videos === 0 && audio === 0 && (pictures || (sample.comics ?? 0) >= 1))
       return { kind: 'book', source: 'content' }
   }
   return { kind: 'general', source: 'default' }

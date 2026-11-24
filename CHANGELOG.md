@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Folder type: a folder of pictures is a manga only when the file names are page numbers (1, 001, p12, id_p0 … with zero padding, covers and credits ignored, mostly without gaps, at least 80% of the pictures); other picture folders are general. Folders set by hand, with comic archives, read in manga mode or filled in from a manga site stay manga (R-479).
 - Search: the same folder (same path) in several projects is one result, with every project listed beside it; it opens in the current project when that is one of them (R-477).
 - Settings tidy-up: theme descriptions and the hidden hint texts are removed for good; the remaining setting explanations sit in a "?" tooltip beside their title; the external source language order is reordered by dragging the grip or Alt+↑/↓ (R-475, R-476, R-478).
 - Built-in right panels are laid out by the shape of the cover: music a square cover with the album name, artist · year and tracks · length beside it; books and videos a tall cover with the name and their own small components (a book its card fields; 繼續閱讀 stays in the book page's own actions); games a wide cover with the name below (the game page no longer draws a fixed banner, and the candidate note sits with the confirm buttons). The album facts, video facts and book card components are gone: saved layouts get the small components in their place when read (project format v4; older versions of M:orph open v4 projects read-only) (R-469).

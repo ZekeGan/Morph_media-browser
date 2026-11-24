@@ -1,7 +1,7 @@
 import { fmt } from '../shared/message'
 import { mediaTypes } from './media-files'
 import { imageTypes } from '../shared/images'
-import { countFile, emptySample } from '../shared/kind'
+import { countFile, emptySample, pageNumbered } from '../shared/kind'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { createHash } from 'node:crypto'
@@ -194,7 +194,8 @@ export async function scan(ex: Library) {
       }
       if ((!p.scanAll && depth >= p.depth.level) || ex.cancelled) return []
       const children: ScanEntry[] = []
-      const contents = emptySample()
+      const contents = emptySample(),
+        pictures: string[] = []
       try {
         for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
           if (entry.name.toLowerCase() === DATA_DIR) continue
@@ -204,11 +205,9 @@ export async function scan(ex: Library) {
             const ext = path.extname(entry.name).toLowerCase()
             // Subtitles are left out here as the opened folder's sample leaves them out, so both totals agree.
             if (mediaTypes[ext]?.[0] === 'subtitle') continue
-            countFile(
-              contents,
-              imageTypes[ext.slice(1)] ? 'image' : (mediaTypes[ext]?.[0] ?? 'other'),
-              entry.name
-            )
+            const isImage = !!imageTypes[ext.slice(1)]
+            countFile(contents, isImage ? 'image' : (mediaTypes[ext]?.[0] ?? 'other'), entry.name)
+            if (isImage) pictures.push(entry.name)
             continue
           }
           if (entry.isSymbolicLink()) {
@@ -222,6 +221,7 @@ export async function scan(ex: Library) {
               readonly: readonly || !!boundary,
             })
         }
+        contents.pages = pageNumbered(pictures)
         row.contents = contents
       } catch (e) {
         problems.push(`${dir}: ${message(e)}`)

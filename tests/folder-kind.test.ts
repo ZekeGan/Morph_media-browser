@@ -4,7 +4,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { Library } from '../electron/library'
 import { Explorer, type DesktopOperations } from '../electron/explorer'
-import { detectFolderKind, sampleOf } from '../shared/kind'
+import { detectFolderKind, pageNumbered, sampleOf } from '../shared/kind'
 import { readFolder } from '../electron/files'
 import { isGameFolder, isToolFolder } from '../shared/media'
 import type { FolderRow } from '../shared/model'
@@ -12,11 +12,12 @@ import type { FolderRow } from '../shared/model'
 const row = (details?: object, boundary?: object) =>
   ({
     boundary,
-    record: details ? { details: { schemaVersion: 1, ...details } } : undefined,
+    record: details ? { attributes: [], details: { schemaVersion: 1, ...details } } : undefined,
   }) as unknown as FolderRow
 const files = (images: number, videos = 0, audio = 0, names: string[] = []) =>
   sampleOf([
-    ...Array.from({ length: images }, () => ({ kind: 'image' })),
+    // Pictures are numbered like the pages of a book unless a test names them (R-479).
+    ...Array.from({ length: images }, (_, i) => ({ kind: 'image', name: `${i + 1}.jpg` })),
     ...Array.from({ length: videos }, () => ({ kind: 'video' })),
     ...Array.from({ length: audio }, () => ({ kind: 'audio' })),
     // Named files get the kind the folder listing gives them.
@@ -95,6 +96,7 @@ test('folder kind by content: video, music, text book, manga, in that order (R-3
     epubs: 1,
     comics: 1,
     sidecars: 1,
+    pages: 0,
     total: 6,
   })
 })
@@ -114,6 +116,8 @@ test('the scan counts what a folder holds the way an opened folder does', async 
     Comic: ['v1.cbr', 'notes.bin'],
     Clips: ['a.mp4', 'a.jpg'],
     Papers: ['a.pdf', 'b.zip'],
+    Pages: ['001.jpg', '002.jpg', '003.jpg', 'cover.jpg'],
+    Photos: ['IMG_0001.jpg', 'IMG_0002.jpg', 'IMG_0003.jpg'],
   }
   for (const [name, list] of Object.entries(folders)) {
     await fs.mkdir(path.join(media, name), { recursive: true })
@@ -131,10 +135,18 @@ test('the scan counts what a folder holds the way an opened folder does', async 
     epubs: 0,
     comics: 0,
     sidecars: 2,
+    pages: 0,
     total: 5,
   })
   const detected = (name: string) => detectFolderKind(rowOf(name), rowOf(name).contents).kind
-  assert.deepEqual(Object.keys(folders).map(detected), ['music', 'book', 'video', 'general'])
+  assert.deepEqual(Object.keys(folders).map(detected), [
+    'music',
+    'book',
+    'video',
+    'general',
+    'book',
+    'general',
+  ])
 })
 
 test('the folderKind request stores or clears the manual kind and rejects unknown kinds', async (t) => {
@@ -406,4 +418,65 @@ test('R-457: a folder set as a tool is a protected ROOT that is not a game; choo
     state: 'not-game',
   })
   assert.equal((await readFolder(path.join(media, 'Tool'))).details?.boundary?.role, undefined)
+})
+
+test('R-479: pictures make a manga only when their file names are page numbers', () => {
+  const list = (...names: string[]) => names.map((n) => n + '.jpg')
+  const range = (from: number, to: number, pad = 3, prefix = '') =>
+    Array.from({ length: to - from + 1 }, (_, i) => prefix + String(from + i).padStart(pad, '0'))
+  // Plain numbers, zero padding does not matter and may differ (01 = 001 = 1).
+  assert.equal(pageNumbered(list(...range(1, 12, 2))), 12)
+  assert.equal(pageNumbered(list(...range(1, 12, 1))), 12)
+  assert.equal(pageNumbered(list('1', '2', '3', '004', '005', '0006')), 6)
+  assert.equal(pageNumbered(list(...range(8, 12, 2), ...range(1, 7, 2))), 12)
+  // Starting at page 0 (000 as the cover) or 1; later starts are not a whole book.
+  assert.equal(pageNumbered(list(...range(0, 9))), 10)
+  assert.equal(pageNumbered(list(...range(5, 14))), 0)
+  // p／page prefixes, one shared prefix counting up, Pixiv's id_p0.
+  assert.equal(pageNumbered(list(...range(1, 6, 2, 'p'))), 6)
+  assert.equal(pageNumbered(list(...range(1, 6, 3, 'page_'))), 6)
+  assert.equal(pageNumbered(list(...range(1, 6, 2, 'Chapter 3 - '))), 6)
+  assert.equal(pageNumbered(list(...range(0, 5, 0, '12345678_p'))), 6)
+  // Same page 001a／001b, spread 002-003, and files that only accompany the book.
+  assert.equal(pageNumbered(list('001a', '001b', '002-003', '004', '005', 'cover', 'credit')), 5)
+  // Mostly without gaps: one missing page is fine, many are not.
+  assert.equal(pageNumbered(list(...range(1, 10).filter((n) => n !== '005'))), 9)
+  assert.equal(pageNumbered(list('001', '020', '040', '060', '080')), 0)
+  // 80% of the pictures must follow the pattern.
+  assert.equal(pageNumbered(list(...range(1, 8), 'sketch', 'wallpaper')), 8)
+  assert.equal(pageNumbered(list(...range(1, 5), 'a', 'b', 'c', 'd')), 0)
+  // Gallery-site and camera names are not pages.
+  assert.equal(pageNumbered(list('IMG_0001', 'IMG_0002', 'IMG_0003')), 0)
+  assert.equal(pageNumbered(list('DSC_0001', 'DSC_0002', 'DSC_0003')), 0)
+  assert.equal(
+    pageNumbered(list('PXL_20240101_120000', 'PXL_20240101_120100', 'PXL_20240101_120200')),
+    0
+  )
+  assert.equal(pageNumbered(list('20240101_120000', '20240101_120100', '20240101_120200')), 0)
+  assert.equal(
+    pageNumbered(list('2024-01-01 12.30.15', '2024-01-01 12.31.15', '2024-01-01 12.32.15')),
+    0
+  )
+  assert.equal(
+    pageNumbered(list('danbooru_10273822_a1', 'danbooru_10273823_b2', 'danbooru_10273824_c3')),
+    0
+  )
+  assert.equal(pageNumbered(list('yande.re 1001', 'yande.re 1002', 'yande.re 1003')), 0)
+  assert.equal(pageNumbered(list('10273822', '10273823', '10273824')), 0)
+  // The detector: a folder of numbered pictures is a manga, the same count of other pictures is general.
+  const sample = (...names: string[]) =>
+    sampleOf(list(...names).map((name) => ({ name, kind: 'image' })))
+  assert.equal(detectFolderKind(row({}), sample(...range(1, 5))).kind, 'book')
+  assert.equal(detectFolderKind(row({}), sample('a1b2', 'c3d4', 'sunset')).kind, 'general')
+  // Exceptions: set by hand, read in manga mode, or filled in from a manga site.
+  const odd = sample('sunset', 'beach', 'forest', 'city')
+  assert.equal(detectFolderKind(row({ kind: 'book' }), odd).kind, 'book')
+  assert.equal(detectFolderKind(row({ reading: { mode: 'manga' } }), odd).kind, 'book')
+  assert.equal(detectFolderKind(row({ reading: { mode: 'image' } }), odd).kind, 'general')
+  const imported = (provider: string) =>
+    ({
+      record: { attributes: [{ sourceRecord: { provider } }] },
+    }) as unknown as FolderRow
+  assert.equal(detectFolderKind(imported('nhentai'), odd).kind, 'book')
+  assert.equal(detectFolderKind(imported('danbooru'), odd).kind, 'general')
 })

@@ -305,7 +305,13 @@ export class SearchIndex {
           .map((item) => {
             const [projectId, rowId] = item.split('\x1f')
             return { projectId, rowId }
-          }),
+          })
+          // The listed row first (group_concat keeps no order), the others by id so the order is stable.
+          .sort(
+            (a, b) =>
+              Number(b.rowId === String(v.rowId)) - Number(a.rowId === String(v.rowId)) ||
+              a.rowId.localeCompare(b.rowId)
+          ),
         matched: this.db
           .prepare('SELECT key,text FROM vals WHERE doc=?')
           .all(String(v.rowId))
