@@ -177,6 +177,8 @@ export function MediaBrowser({
     const list = visible.filter((entry) => matchesMedia(entry, filter))
     return sort ? sortMedia(list, sort) : list
   }, [visible, filter, sort])
+  // The viewer and the play queue follow the order the list shows (R-486).
+  const ordered = useMemo(() => (sort ? sortMedia(visible, sort) : visible), [visible, sort])
   // R-488: how many files each type has (the filter chips); a type with none is left out unless it is the chosen one.
   const typeNames: Record<MediaFilter, string> = {
     all: tr('全部'),
@@ -230,7 +232,7 @@ export function MediaBrowser({
       )
       if (source?.record && ['audio', 'video'].includes(entry.kind) && playback) {
         await playback.open(
-          { row: source, project, entries: visible.filter((file) => file.rowId === source.rowId) },
+          { row: source, project, entries: ordered.filter((file) => file.rowId === source.rowId) },
           entry
         )
         return
@@ -245,7 +247,7 @@ export function MediaBrowser({
   // The album list replaces the picture list for this folder's own tracks; other files (booklet scans, cue sheets)
   // follow under it. Looking through subfolders or at one other type shows the usual list.
   const asAlbum = album && scope === 'current' && (filter === 'all' || filter === 'audio')
-  const sourceFiles = session ? visible.filter((entry) => entry.rowId === session.source.rowId) : []
+  const sourceFiles = session ? ordered.filter((entry) => entry.rowId === session.source.rowId) : []
   const viewerFiles = session
     ? sourceFiles.filter(
         (entry) => entry.kind === 'subtitle' || matchesMedia(entry, session.filter)
@@ -443,7 +445,7 @@ export function MediaBrowser({
                             {
                               row: source,
                               project,
-                              entries: visible.filter((file) => file.rowId === source.rowId),
+                              entries: ordered.filter((file) => file.rowId === source.rowId),
                             },
                             group
                           )
