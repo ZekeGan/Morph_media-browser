@@ -1487,12 +1487,6 @@
     "en": "image source",
     "es": "origen de imagen"
   },
-  "目前版面沒有圖片組件，無須為每個資料夾指定圖片。": {
-    "ja": "このレイアウトに画像コンポーネントはありません。各フォルダーの画像指定は不要です。",
-    "zh-CN": "目前版面没有图片组件，无须为每个文件夹指定图片。",
-    "en": "This layout has no image components; folder images are optional.",
-    "es": "Este diseño no tiene componentes de imagen; no es necesario asignar imágenes a las carpetas."
-  },
   "遊戲封面": {
     "ja": "ゲームのカバー",
     "zh-CN": "游戏封面",
@@ -11387,18 +11381,6 @@
     "ja": "1 階層ずつ",
     "es": "Nivel por nivel"
   },
-  "往下找到每個作品就停；只裝資料夾的分類會直接穿過。": {
-    "zh-CN": "往下找到每个作品就停；只装文件夹的分类会直接穿过。",
-    "en": "Goes down to each work and stops there; folders that only hold folders are passed through.",
-    "ja": "各作品まで下りてそこで止まります。フォルダーだけを入れた分類は通り抜けます。",
-    "es": "Baja hasta cada obra y se detiene; las carpetas que solo contienen carpetas se atraviesan."
-  },
-  "像檔案總管一樣，一次看一層。": {
-    "zh-CN": "像文件资源管理器一样，一次看一层。",
-    "en": "Like File Explorer: one level at a time.",
-    "ja": "エクスプローラーのように 1 階層ずつ表示します。",
-    "es": "Como el Explorador de archivos: un nivel cada vez."
-  },
   "最多往下幾層": {
     "zh-CN": "最多往下几层",
     "en": "How many levels down",
@@ -12425,12 +12407,6 @@
     "ja": "検索するソース",
     "es": "Fuentes de búsqueda"
   },
-  "依資料夾類型記住你的選擇；沒選過時用該類型的預設。": {
-    "zh-CN": "按文件夹类型记住你的选择；没选过时使用该类型的默认值。",
-    "en": "Your choice is remembered per folder type; until you choose, the type's defaults are used.",
-    "ja": "選択はフォルダーの種類ごとに記憶されます。未選択の間は、その種類の既定値を使います。",
-    "es": "Tu elección se recuerda por tipo de carpeta; hasta que elijas, se usan los valores predeterminados del tipo."
-  },
   "{0}（需要金鑰）": {
     "zh-CN": "{0}（需要密钥）",
     "en": "{0} (key required)",
@@ -12611,12 +12587,6 @@
     "ja": "右側",
     "es": "Panel derecho"
   },
-  "依層級（類型沒有設定時）": {
-    "zh-CN": "按层级（类型没有设置时）",
-    "en": "By level (when the kind has none)",
-    "ja": "階層別（種類に設定がないとき）",
-    "es": "Por nivel (cuando el tipo no tiene)"
-  },
   "{0} 的更多選項": {
     "zh-CN": "{0} 的更多选项",
     "en": "More options for {0}",
@@ -12791,12 +12761,6 @@
     "ja": "使用中 {0}／全 {1} 件",
     "es": "En uso {0} de {1}"
   },
-  "，如「{0}」": {
-    "zh-CN": "，如「{0}」",
-    "en": ", e.g. “{0}”",
-    "ja": "（例：「{0}」）",
-    "es": ", p. ej. «{0}»"
-  },
   "顯示哪些資料夾": {
     "zh-CN": "显示哪些文件夹",
     "en": "Which folders to show",
@@ -12832,12 +12796,6 @@
     "en": "Expand preview",
     "ja": "プレビューを展開",
     "es": "Expandir vista previa"
-  },
-  "其他全部（以上都沒設定時）": {
-    "zh-CN": "其他全部（以上都没设置时）",
-    "en": "Everything else (when nothing above applies)",
-    "ja": "その他すべて（上のどれも設定されていないとき）",
-    "es": "Todo lo demás (si nada de lo anterior aplica)"
   },
   "預設版面 · {0}": {
     "zh-CN": "默认版面 · {0}",

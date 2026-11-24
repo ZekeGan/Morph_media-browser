@@ -263,7 +263,6 @@ export function LayoutConfig({
       // R-444: how many folders each rule could apply to (before folders' own choices), and one of them by name.
       kindTotals: {} as Record<string, number>,
       levelTotals: [] as number[],
-      levelExamples: [] as string[],
     }
     for (const row of rows) {
       const kind = kindOf(row),
@@ -271,7 +270,6 @@ export function LayoutConfig({
       if (panel || work(row)) out.kindTotals[kind] = (out.kindTotals[kind] ?? 0) + 1
       if (levelRuled(row)) {
         out.levelTotals[level] = (out.levelTotals[level] ?? 0) + 1
-        out.levelExamples[level] ??= row.name
       }
       const { source } = choice(row)
       if (source === 'default') out.default++
@@ -499,8 +497,7 @@ export function LayoutConfig({
   const levelsShown = Array.from({ length: deepest }, (_, i) => i).filter(
     (i) => reach.levelTotals[i]
   )
-  const ruleReach = (used = 0, total = 0, example?: string) =>
-    tr('使用中 {0}／共 {1} 個', used, total)
+  const ruleReach = (used = 0, total = 0) => tr('使用中 {0}／共 {1} 個', used, total)
   return (
     <Modal
       opened={opened}
@@ -579,7 +576,7 @@ export function LayoutConfig({
                       }}
                     />
                     <span className="layout-config-reach">
-                      {ruleReach(reach.levels[i], reach.levelTotals[i], reach.levelExamples[i])}
+                      {ruleReach(reach.levels[i], reach.levelTotals[i])}
                     </span>
                   </div>
                 ))}

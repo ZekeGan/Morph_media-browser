@@ -162,11 +162,6 @@ export function FolderImages({
           </section>
         )
       })}
-      {/* {!imageCells.length && (
-        <Text size="sm" c="dimmed">
-          {tr('目前版面沒有圖片組件，無須為每個資料夾指定圖片。')}
-        </Text>
-      )} */}
       {!!row.record && (
         <section className="settings-section">
           <Text fw={600} mb="sm">

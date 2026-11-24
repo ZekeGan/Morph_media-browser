@@ -335,9 +335,6 @@ export function FolderSourceImport({
                 </Button>
               </Popover.Target>
               <Popover.Dropdown className="source-search-menu">
-                {/* <Text size="xs" c="dimmed" mb={6}>
-                  {tr('依資料夾類型記住你的選擇；沒選過時用該類型的預設。')}
-                </Text> */}
                 {sourceGroups.map((group) => (
                   <div key={group.label} className="source-search-group">
                     <Text size="xs" fw={600}>
