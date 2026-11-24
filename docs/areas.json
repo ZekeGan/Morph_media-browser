@@ -239,6 +239,7 @@
         "src/cells/folderCover*",
         "src/cells/PanelContent*",
         "src/cells/PanelParts*",
+        "src/cells/MediaInfoCell*",
         "src/cells/GameExtraCell*",
         "src/cells/panelContext*",
         "src/cells/CellStyleEditor*",

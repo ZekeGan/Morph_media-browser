@@ -20,6 +20,7 @@ import { httpUrl } from '../../shared/fields'
 import { useFolderStats } from '../browse/folderStats'
 import { formatLastPlayed, formatPlayTime, usePlaytime } from '../game/playtime'
 import { latestNovel } from '../../shared/novel'
+import { isMediaInfo, MediaButton, MediaInfo } from './MediaInfoCell'
 import { cellColors } from './cellStyle'
 import { folderCoverAsset, folderCoverPicture, sourceImageAsset } from './folderCover'
 import { PanelPart, panelPartKinds } from './PanelParts'
@@ -196,6 +197,10 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
     return <span style={{ whiteSpace: 'pre-wrap' }}>{ruleText(cell, row, project)}</span>
   if (cell.kind === 'spacer')
     return preview ? <span className="spacer-preview" aria-label={tr('空白間距')} /> : null
+  if (cell.kind === 'system-info' && isMediaInfo(cell.systemInfo))
+    return <MediaInfo cell={cell} row={row} />
+  if (cell.kind === 'video-play' || cell.kind === 'book-continue')
+    return <MediaButton cell={cell} row={row} project={project} />
   if (cell.kind === 'system-info' && cell.systemInfo === 'engine')
     return (
       <span>

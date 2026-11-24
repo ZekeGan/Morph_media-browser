@@ -155,6 +155,8 @@ function validCell(c: unknown): boolean {
       'divider',
       'open-folder',
       'game-launch',
+      'video-play',
+      'book-continue',
       'album-facts',
       'video-facts',
       'book-card',
@@ -171,6 +173,16 @@ function validCell(c: unknown): boolean {
         'readProgress',
         'lastRead',
         'engine',
+        'albumName',
+        'albumArtist',
+        'albumYear',
+        'trackCount',
+        'totalLength',
+        'videoCount',
+        'bookTitle',
+        'bookAuthor',
+        'pages',
+        'readPage',
       ].includes(c.systemInfo)) &&
     (c.presentation === undefined ||
       (c.presentation === 'badge' && ['field-enum', 'field-boolean'].includes(c.kind)) ||

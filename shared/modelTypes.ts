@@ -23,6 +23,9 @@ export type CellKind =
   // R-437 (provisional): the right panel's facts about an album (name, artist and year, tracks and length) and a
   // video folder (video count and 播放); on a card or in the editor they only name themselves. The cover beside
   // them is an image component set to the folder cover.
+  // R-438 (provisional): the buttons 播放影片／繼續觀看 and 繼續閱讀 of the right panel.
+  | 'video-play'
+  | 'book-continue'
   | 'album-facts'
   | 'video-facts'
   | 'book-card'
@@ -75,6 +78,9 @@ export interface Cell {
   // playTime / lastPlayed: games started from M:orph (R-308), from the local play record.
   // readProgress / lastRead: the text book read most recently in the folder (R-282).
   // engine (R-409): the game engines the scan found.
+  // R-438 (provisional): the album's name, artist, year, track count and length, the video count, an EPUB's title and
+  // author, and a comic's page count and place; read by the right panel's page, "—" where nothing is read.
+  //
   systemInfo?:
     | 'category'
     | 'files'
@@ -84,6 +90,16 @@ export interface Cell {
     | 'readProgress'
     | 'lastRead'
     | 'engine'
+    | 'albumName'
+    | 'albumArtist'
+    | 'albumYear'
+    | 'trackCount'
+    | 'totalLength'
+    | 'videoCount'
+    | 'bookTitle'
+    | 'bookAuthor'
+    | 'pages'
+    | 'readPage'
   presentation?: 'badge' | 'rating' | 'progress'
   // 'blur': the whole picture, with its own blurred copy filling the leftover space.
   imageFit?: 'contain' | 'cover' | 'blur'

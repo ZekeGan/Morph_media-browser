@@ -9,6 +9,9 @@ export interface PanelContent {
   album?: ReturnType<typeof useAlbum>
   // The one EPUB of a folder of text books, shown as a book card.
   epub?: MediaEntry
+  // R-438: 繼續閱讀 / 開始閱讀 as the page offers it (what it opens is the page's own), and the place it shows.
+  readOn?: { label: string; detail?: string; open: () => void }
+  readPlace?: { page: number; total: number }
 }
 export const PanelContentContext = createContext<PanelContent | undefined>(undefined)
 export const usePanelContent = () => useContext(PanelContentContext)

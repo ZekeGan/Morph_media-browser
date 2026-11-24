@@ -606,6 +606,16 @@ export function EditorInspector(props: EditorInspectorProps) {
                           { value: 'engine', label: tr('遊戲引擎') },
                           { value: 'readProgress', label: tr('閱讀進度') },
                           { value: 'lastRead', label: tr('最後閱讀') },
+                          { value: 'albumName', label: tr('專輯名稱') },
+                          { value: 'albumArtist', label: tr('演出者') },
+                          { value: 'albumYear', label: tr('年份') },
+                          { value: 'trackCount', label: tr('曲數') },
+                          { value: 'totalLength', label: tr('總長度') },
+                          { value: 'videoCount', label: tr('影片數') },
+                          { value: 'bookTitle', label: tr('書名') },
+                          { value: 'bookAuthor', label: tr('作者') },
+                          { value: 'pages', label: tr('頁數') },
+                          { value: 'readPage', label: tr('讀到第幾頁') },
                         ]}
                         onChange={(value) =>
                           updateCell({ systemInfo: value as Cell['systemInfo'] })

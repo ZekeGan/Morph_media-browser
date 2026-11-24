@@ -13222,5 +13222,119 @@
     "en": "Right panel: album name, artist, year, track count and total length",
     "ja": "右側：アルバム名、アーティスト、年、曲数、総再生時間",
     "es": "Panel derecho: nombre del álbum, artista, año, pistas y duración total"
+  },
+  "右側：專輯的名稱，沒有標籤時用資料夾名稱": {
+    "zh-CN": "右侧：专辑的名称，没有标签时用文件夹名称",
+    "en": "Right panel: the album's name (the folder's name without tags)",
+    "ja": "右側：アルバム名（タグがなければフォルダー名）",
+    "es": "Panel derecho: nombre del álbum (el de la carpeta si no hay etiquetas)"
+  },
+  "右側：專輯的演出者": {
+    "zh-CN": "右侧：专辑的演出者",
+    "en": "Right panel: the album's artist",
+    "ja": "右側：アルバムのアーティスト",
+    "es": "Panel derecho: artista del álbum"
+  },
+  "右側：專輯的年份（播客不顯示）": {
+    "zh-CN": "右侧：专辑的年份（播客不显示）",
+    "en": "Right panel: the album's year (not shown for podcasts)",
+    "ja": "右側：アルバムの年（ポッドキャストでは非表示）",
+    "es": "Panel derecho: año del álbum (no se muestra en podcasts)"
+  },
+  "右側：曲數（播客顯示集數）": {
+    "zh-CN": "右侧：曲数（播客显示集数）",
+    "en": "Right panel: track count (episodes for a podcast)",
+    "ja": "右側：曲数（ポッドキャストではエピソード数）",
+    "es": "Panel derecho: número de pistas (episodios en un podcast)"
+  },
+  "右側：專輯的總長度，讀完才顯示": {
+    "zh-CN": "右侧：专辑的总时长，读完才显示",
+    "en": "Right panel: the album's total length, shown once every track is read",
+    "ja": "右側：アルバムの総再生時間（全曲を読み終えてから表示）",
+    "es": "Panel derecho: duración total, una vez leídas todas las pistas"
+  },
+  "右側：資料夾裡的影片數": {
+    "zh-CN": "右侧：文件夹里的视频数",
+    "en": "Right panel: how many videos the folder holds",
+    "ja": "右側：フォルダー内の動画数",
+    "es": "Panel derecho: cuántos vídeos hay en la carpeta"
+  },
+  "右側：只有一本 EPUB 的資料夾顯示它的書名": {
+    "zh-CN": "右侧：只有一本 EPUB 的文件夹显示它的书名",
+    "en": "Right panel: the title of the one EPUB in the folder",
+    "ja": "右側：EPUB が 1 冊だけのフォルダーでその書名",
+    "es": "Panel derecho: título del único EPUB de la carpeta"
+  },
+  "右側：只有一本 EPUB 的資料夾顯示它的作者": {
+    "zh-CN": "右侧：只有一本 EPUB 的文件夹显示它的作者",
+    "en": "Right panel: the author of the one EPUB in the folder",
+    "ja": "右側：EPUB が 1 冊だけのフォルダーでその著者",
+    "es": "Panel derecho: autor del único EPUB de la carpeta"
+  },
+  "最近讀的文字書讀到的百分比": {
+    "zh-CN": "最近读的文字书读到的百分比",
+    "en": "How far the text book read most recently has been read",
+    "ja": "最後に読んだテキスト本の進捗（％）",
+    "es": "Porcentaje leído del libro de texto más reciente"
+  },
+  "右側：漫畫的頁數": {
+    "zh-CN": "右侧：漫画的页数",
+    "en": "Right panel: a comic's page count",
+    "ja": "右側：マンガのページ数",
+    "es": "Panel derecho: número de páginas del cómic"
+  },
+  "右側：漫畫讀到的頁": {
+    "zh-CN": "右侧：漫画读到的页",
+    "en": "Right panel: the page a comic was read to",
+    "ja": "右側：マンガの読んだページ",
+    "es": "Panel derecho: página hasta la que se leyó el cómic"
+  },
+  "右側：播放影片，影片中斷過時改為繼續觀看": {
+    "zh-CN": "右侧：播放视频，视频中断过时改为继续观看",
+    "en": "Right panel: play the videos, or continue watching one left partway",
+    "ja": "右側：動画を再生（途中のものがあれば続きを再生）",
+    "es": "Panel derecho: reproducir los vídeos o seguir viendo uno a medias"
+  },
+  "右側：繼續閱讀或開始閱讀": {
+    "zh-CN": "右侧：继续阅读或开始阅读",
+    "en": "Right panel: continue or start reading",
+    "ja": "右側：続きを読む／読み始める",
+    "es": "Panel derecho: seguir o empezar a leer"
+  },
+  "專輯名稱": {
+    "zh-CN": "专辑名称",
+    "en": "Album name",
+    "ja": "アルバム名",
+    "es": "Nombre del álbum"
+  },
+  "總長度": {
+    "zh-CN": "总时长",
+    "en": "Total length",
+    "ja": "総再生時間",
+    "es": "Duración total"
+  },
+  "影片數": {
+    "zh-CN": "视频数",
+    "en": "Videos",
+    "ja": "動画数",
+    "es": "Vídeos"
+  },
+  "書名": {
+    "zh-CN": "书名",
+    "en": "Title",
+    "ja": "書名",
+    "es": "Título"
+  },
+  "讀到第幾頁": {
+    "zh-CN": "读到第几页",
+    "en": "Page read",
+    "ja": "読んだページ",
+    "es": "Página leída"
+  },
+  "{0} 頁": {
+    "zh-CN": "{0} 页",
+    "en": "{0} pages",
+    "ja": "{0} ページ",
+    "es": "{0} páginas"
   }
 }

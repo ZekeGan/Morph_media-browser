@@ -370,7 +370,30 @@ export function FolderContent({
           project={project}
           row={row}
           kind={folderKind}
-          content={{ entries: content.entries, epub: bookCard }}
+          content={{
+            entries: content.entries,
+            epub: bookCard,
+            // The same button and place the actions row below shows (R-438).
+            readPlace: place && { page: place.page, total: place.total },
+            readOn:
+              !firstPage && lastRead
+                ? {
+                    label: tr('繼續閱讀'),
+                    detail: lastRead.name.replace(/\.(txt|epub|md)$/i, ''),
+                    open: () => setDocumentFile(lastRead),
+                  }
+                : firstPage
+                  ? {
+                      label:
+                        (place?.resumes ??
+                        (!!content.nextCursor && (row.record?.details?.reading?.page ?? 0) > 0))
+                          ? tr('繼續閱讀')
+                          : tr('開始閱讀'),
+                      detail: place ? tr('讀到 {0} / {1} 頁', place.page, place.total) : undefined,
+                      open: () => setGalleryFile(firstPage),
+                    }
+                  : undefined,
+          }}
           builtin={(k) =>
             bookCard ? withBookCard(builtinPanel(project, k)) : builtinPanel(project, k)
           }

@@ -70,7 +70,7 @@ export function useAlbum(row: FolderRow, entries: MediaEntry[]) {
   return { files, tracks, tags, discs, summary, ordered, newest }
 }
 // Whether this folder is shown as a podcast on this computer.
-function usePodcast(row: FolderRow) {
+export function usePodcast(row: FolderRow) {
   const store = usePodcasts(),
     folder = podcastFolder(row)
   return { folder, podcast: store.folders.includes(folder), places: store.episodes }

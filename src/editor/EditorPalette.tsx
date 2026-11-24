@@ -65,6 +65,8 @@ const kindIcons: Partial<Record<CellKind, IconName>> = {
   divider: 'minus',
   'game-launch': 'play',
   'game-extra': 'external',
+  'video-play': 'play',
+  'book-continue': 'book',
   'album-facts': 'music',
   'video-facts': 'video',
   'book-card': 'book',
@@ -72,9 +74,39 @@ const kindIcons: Partial<Record<CellKind, IconName>> = {
 
 // R-452: the main visuals of the right panel, one section per kind of folder.
 const kindSections: { id: string; title: string; kind: FolderKind; kinds: PaletteKey[] }[] = [
-  { id: 'album', title: '專輯', kind: 'music', kinds: ['album-facts'] },
-  { id: 'video', title: '影片', kind: 'video', kinds: ['video-facts'] },
-  { id: 'book', title: '書籍', kind: 'book', kinds: ['book-card'] },
+  {
+    id: 'album',
+    title: '專輯',
+    kind: 'music',
+    kinds: [
+      'system-info:albumName',
+      'system-info:albumArtist',
+      'system-info:albumYear',
+      'system-info:trackCount',
+      'system-info:totalLength',
+      'album-facts',
+    ],
+  },
+  {
+    id: 'video',
+    title: '影片',
+    kind: 'video',
+    kinds: ['system-info:videoCount', 'video-play', 'video-facts'],
+  },
+  {
+    id: 'book',
+    title: '書籍',
+    kind: 'book',
+    kinds: [
+      'system-info:bookTitle',
+      'system-info:bookAuthor',
+      'system-info:readProgress',
+      'system-info:pages',
+      'system-info:readPage',
+      'book-continue',
+      'book-card',
+    ],
+  },
 ]
 
 // The left-hand materials panel: find something and put it on the card. Four sections share one heading style
@@ -446,6 +478,21 @@ export function EditorPalette(props: EditorPaletteProps) {
     'system-info:playTime': [tr('遊玩時間'), tr('從 M:orph 啟動的累計遊玩時間'), 'sliders'],
     'system-info:lastPlayed': [tr('最後遊玩'), tr('最後一次從 M:orph 啟動的時間'), 'sliders'],
     'system-info:engine': [tr('遊戲引擎'), tr('掃描時偵測到的遊戲引擎'), 'game'],
+    'system-info:albumName': [
+      tr('專輯名稱'),
+      tr('右側：專輯的名稱，沒有標籤時用資料夾名稱'),
+      'music',
+    ],
+    'system-info:albumArtist': [tr('演出者'), tr('右側：專輯的演出者'), 'music'],
+    'system-info:albumYear': [tr('年份'), tr('右側：專輯的年份（播客不顯示）'), 'music'],
+    'system-info:trackCount': [tr('曲數'), tr('右側：曲數（播客顯示集數）'), 'music'],
+    'system-info:totalLength': [tr('總長度'), tr('右側：專輯的總長度，讀完才顯示'), 'music'],
+    'system-info:videoCount': [tr('影片數'), tr('右側：資料夾裡的影片數'), 'video'],
+    'system-info:bookTitle': [tr('書名'), tr('右側：只有一本 EPUB 的資料夾顯示它的書名'), 'book'],
+    'system-info:bookAuthor': [tr('作者'), tr('右側：只有一本 EPUB 的資料夾顯示它的作者'), 'book'],
+    'system-info:readProgress': [tr('閱讀進度'), tr('最近讀的文字書讀到的百分比'), 'book'],
+    'system-info:pages': [tr('頁數'), tr('右側：漫畫的頁數'), 'book'],
+    'system-info:readPage': [tr('讀到第幾頁'), tr('右側：漫畫讀到的頁'), 'book'],
   }
   const labelOf = (key: PaletteKey) => presetLabels[key]?.[0] ?? labels[key as CellKind],
     hintOf = (key: PaletteKey) => presetLabels[key]?.[1] ?? hints[key as CellKind],
