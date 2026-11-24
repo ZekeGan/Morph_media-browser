@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Alert, Button, Group, Text } from '@mantine/core'
 import { t as tr } from '../i18n'
+import { HelpTip } from '../common/HelpTip'
 import { describeError } from '../notices/errors'
 
 // Application settings (R-309): where Locale Emulator's LEProc.exe is. The file is picked in a main-process dialog;
@@ -31,10 +32,14 @@ export function LocaleEmulatorSetting({ opened }: { opened: boolean }) {
   }
   return (
     <section className="settings-section" aria-label="Locale Emulator">
-      <Text fw={600}>Locale Emulator</Text>
-      <Text size="sm" c="dimmed" mb="xs">
-        {tr('指定 LEProc.exe 後，遊戲的 EXE 操作可以選擇用 Locale Emulator 的語系設定檔啟動。')}
-      </Text>
+      <Group gap={4} wrap="nowrap" mb="xs">
+        <Text fw={600}>Locale Emulator</Text>
+        <HelpTip
+          text={tr(
+            '指定 LEProc.exe 後，遊戲的 EXE 操作可以選擇用 Locale Emulator 的語系設定檔啟動。'
+          )}
+        />
+      </Group>
       <Text size="sm" className="path" title={file}>
         {file ?? tr('尚未指定')}
       </Text>

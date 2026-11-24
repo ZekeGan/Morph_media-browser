@@ -1,8 +1,7 @@
-import { Button, Group, Menu, Stack, Text } from '@mantine/core'
+import { Button, Menu, Stack, Text } from '@mantine/core'
 import type { ExplorerRequest, ExplorerResponse } from '../../shared/explorer'
 import type { Asset, Cell, FolderRow, Request, Response } from '../../shared/model'
 import { t as tr } from '../i18n'
-import { HelpTip } from '../common/HelpTip'
 import { Icon } from '../common/icons'
 import { ImageUrlImport } from '../metadata/ImageUrlImport'
 
@@ -120,12 +119,6 @@ export function FolderImages({
   }
   return (
     <Stack>
-      <div>
-        <Group gap={4} wrap="nowrap">
-          <Text fw={600}>{tr('選用圖片')}</Text>
-          <HelpTip text={tr('每個圖片組件可分別選圖。沒有圖片的資料夾可以留空。')} />
-        </Group>
-      </div>
       {imageCells.map((cell, index) => {
         const assigned = details?.cellImages?.[cell.attributeId ?? cell.cellId],
           label = tr('圖片 ') + (index + 1) + tr(' 的來源')

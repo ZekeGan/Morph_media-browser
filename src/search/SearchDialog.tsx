@@ -223,7 +223,6 @@ export function SearchDialog({
                 className="search-query"
                 aria-label={tr('資料夾名稱、路徑或欄位值')}
                 placeholder={tr('搜尋資料夾名稱、路徑或欄位值…')}
-                aria-describedby="search-input-hint"
                 data-autofocus
                 value={query}
                 maxLength={2000}
@@ -391,9 +390,6 @@ export function SearchDialog({
               </Stack>
             </Popover.Dropdown>
           </Popover>
-          <Text id="search-input-hint" size="xs" c="dimmed">
-            {tr('輸入會搜尋資料夾，並配對常用搜尋名稱與條件；按 + 保存目前條件。')}
-          </Text>
           {error && (
             <Alert color="red" title={tr('搜尋未完成')}>
               {error}
@@ -477,9 +473,6 @@ export function SearchDialog({
           />
         )}
         <Group className="search-footer" justify="space-between">
-          <Text size="xs" c="dimmed">
-            {tr('選取結果後開啟，也可雙擊直接進入。')}
-          </Text>
           <Group gap="xs">
             <Button variant="default" onClick={close}>
               {tr('取消')}

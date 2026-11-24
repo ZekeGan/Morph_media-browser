@@ -18,9 +18,6 @@ export function SiteKeys({ opened, focus }: { opened: boolean; focus?: string })
   }, [opened])
   return (
     <Stack gap="md">
-      <Text size="sm" c="dimmed">
-        {tr('金鑰只存在這台電腦、加密保存，只在向該網站查資料時使用；不會寫進資料夾記錄或設定包。')}
-      </Text>
       {error && <Alert color="orange">{error}</Alert>}
       {keySites.map((site) => (
         <KeyRow

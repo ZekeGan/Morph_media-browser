@@ -377,12 +377,6 @@
     "en": "Interface language",
     "es": "Idioma de la interfaz"
   },
-  "選擇你的介面風格": {
-    "ja": "インターフェースのスタイルを選択",
-    "zh-CN": "选择你的介面风格",
-    "en": "Choose your interface style",
-    "es": "Elige el estilo de la interfaz"
-  },
   "介面主題": {
     "ja": "インターフェースのテーマ",
     "zh-CN": "介面主题",
@@ -1487,12 +1481,6 @@
     "en": "Optional images",
     "es": "Imágenes opcionales"
   },
-  "每個圖片組件可分別選圖。沒有圖片的資料夾可以留空。": {
-    "ja": "画像コンポーネントごとに画像を選択できます。画像がない場合は空欄にできます。",
-    "zh-CN": "每个图片组件可分别选图。没有图片的文件夹可以留空。",
-    "en": "Choose an image for each component. Folders without images may leave slots empty.",
-    "es": "Elige una imagen para cada componente. Las carpetas sin imágenes pueden dejar las ranuras vacías."
-  },
   "的來源": {
     "ja": "の画像ソース",
     "zh-CN": "的来源",
@@ -2249,12 +2237,6 @@
     "en": "Open a project to save searches.",
     "es": "Abre un proyecto para guardar búsquedas."
   },
-  "選取結果後開啟，也可雙擊直接進入。": {
-    "ja": "結果を選んで開くか、ダブルクリックで直接移動します。",
-    "zh-CN": "选取结果後开启，也可双击直接进入。",
-    "en": "Select a result to open, or double-click to enter.",
-    "es": "Selecciona un resultado para abrirlo o haz doble clic para entrar."
-  },
   "處理進度": {
     "ja": "処理状況",
     "zh-CN": "处理进度",
@@ -2471,35 +2453,17 @@
     "en": "Classic dark",
     "es": "Oscuro clásico"
   },
-  "石墨灰介面與柔和青綠，保留熟悉的閱讀氛圍。": {
-    "ja": "グラファイトと柔らかな青緑で、落ち着いた読書空間に。",
-    "zh-CN": "石墨灰介面与柔和青绿，保留熟悉的阅读氛围。",
-    "en": "Graphite and soft teal for a familiar, calm reading space.",
-    "es": "Grafito y verde azulado suave para una lectura tranquila y familiar."
-  },
   "霧白玻璃": {
     "ja": "ホワイトグラス",
     "zh-CN": "雾白玻璃",
     "en": "Frosted glass",
     "es": "Cristal blanco"
   },
-  "通透白色、柔和藍光與輕盈層次，靈感來自 macOS。": {
-    "ja": "透ける白、柔らかな青と軽やかな奥行き。macOSをヒントに。",
-    "zh-CN": "通透白色、柔和蓝光与轻盈层次，灵感来自 macOS。",
-    "en": "Translucent whites, soft blue light and airy layers inspired by macOS.",
-    "es": "Blancos translúcidos, luz azul suave y capas ligeras inspiradas en macOS."
-  },
   "暖紙墨橘": {
     "ja": "ペーパー＆オレンジ",
     "zh-CN": "暖纸墨橘",
     "en": "Paper and ink",
     "es": "Papel y tinta"
-  },
-  "米白紙面、俐落黑線與醒目橘色，重現設計稿的編輯感。": {
-    "ja": "生成りの紙、くっきりした墨色の線、鮮やかなオレンジの編集的な表情。",
-    "zh-CN": "米白纸面、俐落黑线与醒目橘色，重现设计稿的编辑感。",
-    "en": "Warm paper, crisp ink lines and bold orange for an editorial feel.",
-    "es": "Papel cálido, líneas de tinta nítidas y naranja intenso con aire editorial."
   },
   "第 {0} / {1} 頁": {
     "ja": "ページ {0} / {1}",
@@ -3286,12 +3250,6 @@
     "ja": "保存済み検索はまだありません",
     "zh-CN": "尚未保存常用搜索",
     "es": "Aún no hay búsquedas guardadas"
-  },
-  "輸入會搜尋資料夾，並配對常用搜尋名稱與條件；按 + 保存目前條件。": {
-    "en": "Type to search folders and match saved search names and conditions. Press + to save the current conditions.",
-    "ja": "入力するとフォルダーを検索し、保存済み検索の名前と条件も照合します。+ で現在の条件を保存できます。",
-    "zh-CN": "输入会搜索文件夹，并匹配常用搜索名称与条件；按 + 保存当前条件。",
-    "es": "Escribe para buscar carpetas y encontrar búsquedas guardadas por nombre o condiciones. Pulsa + para guardar las condiciones actuales."
   },
   "常用搜尋未更新": {
     "en": "Saved searches were not updated",
@@ -5219,12 +5177,6 @@
     "ja": "フォルダーの種類を更新しました",
     "es": "Tipo de carpeta actualizado"
   },
-  "選一個資料夾開始瀏覽；原始資料夾不會被搬移或刪除。": {
-    "zh-CN": "选一个文件夹开始浏览；原始文件夹不会被移动或删除。",
-    "en": "Pick a folder to start browsing. The original folder is never moved or deleted.",
-    "ja": "フォルダーを選んで閲覧を始めます。元のフォルダーは移動も削除もされません。",
-    "es": "Elige una carpeta para empezar. La carpeta original nunca se mueve ni se borra."
-  },
   "要瀏覽的資料夾": {
     "zh-CN": "要浏览的文件夹",
     "en": "Folder to browse",
@@ -5278,18 +5230,6 @@
     "en": "Stay here",
     "ja": "このまま残る",
     "es": "Quedarse aquí"
-  },
-  "套用到整個應用程式，下次開啟仍會使用。": {
-    "zh-CN": "套用到整个应用程序，下次打开仍会使用。",
-    "en": "Applies to the whole app and is kept next time.",
-    "ja": "アプリ全体に適用され、次回も使われます。",
-    "es": "Se aplica a toda la aplicación y se conserva."
-  },
-  "選了就套用；專案名稱與資料內容保持原樣。": {
-    "zh-CN": "选了就套用；项目名称与数据内容保持原样。",
-    "en": "Applies when chosen; project names and data stay as they are.",
-    "ja": "選ぶとすぐ適用されます。プロジェクト名とデータはそのままです。",
-    "es": "Se aplica al elegir; los nombres y datos no cambian."
   },
   "分組": {
     "zh-CN": "分组",
@@ -5458,12 +5398,6 @@
     "en": "Nothing needs attention right now.",
     "ja": "現在、対応が必要な問題はありません。",
     "es": "Ahora mismo no hay nada que atender."
-  },
-  "每一項旁邊的按鈕就是處理方式；點資料夾名稱可以直接跳過去查看。": {
-    "zh-CN": "每一项旁边的按钮就是处理方式；点文件夹名称可以直接跳过去查看。",
-    "en": "The button next to each item is how to fix it; click a folder name to jump to it.",
-    "ja": "各項目の横のボタンが対処方法です。フォルダー名をクリックするとそこへ移動します。",
-    "es": "El botón de cada elemento es la solución; haz clic en un nombre de carpeta para ir a ella."
   },
   "專案位置失效": {
     "zh-CN": "项目位置失效",
@@ -5806,12 +5740,6 @@
     "zh-CN": "接回原本的项目",
     "en": "Bring back the project",
     "es": "Recuperar el proyecto"
-  },
-  "把設定和所有專案的資訊（標籤、評分、封面）存一份。你的檔案（漫畫、圖片、影片）不會被複製。": {
-    "ja": "設定とすべてのプロジェクトの情報（タグ、評価、カバー）のコピーを保存します。あなたのファイル（マンガ、画像、動画）はコピーされません。",
-    "zh-CN": "把设定和所有项目的信息（标签、评分、封面）存一份。你的文件（漫画、图片、视频）不会被复制。",
-    "en": "Keeps a copy of your settings and the info of every project (tags, ratings, covers). Your files (manga, images, videos) are not copied.",
-    "es": "Guarda una copia de tus ajustes y de la información de todos los proyectos (etiquetas, valoraciones, portadas). Tus archivos (mangas, imágenes, vídeos) no se copian."
   },
   "從檔案還原…": {
     "ja": "フォルダーから復元…",
@@ -8224,12 +8152,6 @@
     "en": "Website keys",
     "ja": "サイトのキー",
     "es": "Claves de sitios"
-  },
-  "金鑰只存在這台電腦、加密保存，只在向該網站查資料時使用；不會寫進資料夾記錄或設定包。": {
-    "zh-CN": "密钥只存在这台电脑、加密保存，只在向该网站查询资料时使用；不会写进文件夹记录或设置包。",
-    "en": "Keys stay on this computer, encrypted, and are only used to ask that site. They never go into folder records or settings packages.",
-    "ja": "キーはこのパソコンにだけ暗号化して保存し、そのサイトへの問い合わせにのみ使います。フォルダー記録や設定パッケージには含めません。",
-    "es": "Las claves se guardan cifradas solo en este equipo y solo se usan para consultar ese sitio. Nunca van a los registros de carpetas ni a los paquetes de ajustes."
   },
   "可用": {
     "zh-CN": "可用",
@@ -13612,5 +13534,23 @@
     "en": "Show nodes as cards",
     "ja": "ノードをカードで表示",
     "es": "Mostrar nodos como tarjetas"
+  },
+  "介面風格": {
+    "zh-CN": "界面风格",
+    "en": "Interface style",
+    "ja": "インターフェースのスタイル",
+    "es": "Estilo de la interfaz"
+  },
+  "語言順序": {
+    "zh-CN": "语言顺序",
+    "en": "Language order",
+    "ja": "言語の順序",
+    "es": "Orden de idiomas"
+  },
+  "移動語言順序 {0}": {
+    "zh-CN": "移动语言顺序 {0}",
+    "en": "Move {0} in the language order",
+    "ja": "言語の順序で {0} を移動",
+    "es": "Mover {0} en el orden de idiomas"
   }
 }

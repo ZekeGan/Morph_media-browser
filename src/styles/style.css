@@ -505,7 +505,6 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .search-details { border-top: 1px solid var(--line); padding-top: 10px; }
 .search-details summary { cursor: pointer; font-size: 12px; color: var(--muted); }
 .folder-search-dialog .search-footer { padding:12px 0 0; border-top:1px solid var(--line); background:transparent; align-items:center; gap:12px; }
-.search-footer > .mantine-Text-root { flex:1 1 200px; }
 .search-footer > .mantine-Group-root { margin-left:auto; flex-shrink:0; }
 @media (max-width: 600px) {
   .folder-search-inputs { grid-template-columns: 1fr; }

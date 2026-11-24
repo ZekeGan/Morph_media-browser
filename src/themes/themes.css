@@ -91,7 +91,6 @@ button, input, select, textarea { font-family: inherit; }
 .theme-option-heading { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
 .theme-choice { width: 19px; height: 19px; border: 1px solid var(--line); border-radius: 50%; display: grid; place-items: center; color: var(--accent-contrast); }
 .selected .theme-choice { background: var(--accent); border-color: var(--accent); }
-.theme-description { color: var(--muted); font-size: 11px; line-height: 1.7; }
 .theme-sample { display: block; height: 108px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--app-backdrop); color: var(--text); overflow: hidden; }
 .sample-title { height: 20px; background: var(--titlebar); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; padding: 0 5px; }
 .sample-title > i { width: 46%; height: 6px; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); }
@@ -104,7 +103,7 @@ button, input, select, textarea { font-family: inherit; }
 .sample-panel { flex: 1; padding: 8px 4px; background: var(--panel); border-left: 1px solid var(--line); }
 .sample-panel i { display: block; height: 5px; margin-bottom: 6px; background: var(--line); }
 .sample-panel i:first-child { height: 30px; background: var(--selected); }
-@media (max-width:600px) { .theme-options { grid-template-columns: 1fr; }.theme-option { display: grid; grid-template-columns: 120px 1fr; column-gap: 14px; }.theme-sample { grid-row: 1 / 3; height: 96px; }.theme-option-heading { align-self: end; }.theme-description { grid-column: 2; }.global-settings { margin-inline: 0 3px; } }
+@media (max-width:600px) { .theme-options { grid-template-columns: 1fr; }.theme-option { display: grid; grid-template-columns: 120px 1fr; column-gap: 14px; }.theme-sample { grid-row: 1 / 3; height: 96px; }.theme-option-heading { align-self: end; }.global-settings { margin-inline: 0 3px; } }
 
 .mantine-Modal-header,.mantine-Modal-body,.mantine-Drawer-header,.mantine-Drawer-body { background:transparent; color:inherit; }
 

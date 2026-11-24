@@ -125,14 +125,10 @@ export function ProblemsDialog({
   return (
     <Modal opened={opened} onClose={close} title={tr('問題與復原')} size="xl">
       <Stack>
-        {!count && !others.length ? (
+        {!count && !others.length && (
           <Alert color="teal" variant="light">
             {tr('目前沒有需要處理的問題。')}
           </Alert>
-        ) : (
-          <Text size="sm" c="dimmed">
-            {tr('每一項旁邊的按鈕就是處理方式；點資料夾名稱可以直接跳過去查看。')}
-          </Text>
         )}
         {group(
           tr('專案位置失效'),

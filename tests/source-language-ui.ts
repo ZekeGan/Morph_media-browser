@@ -5,7 +5,7 @@ import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
 // R-381: application settings keep the order external sources are read in. It follows the interface language until
-// the user takes it over, moves with the arrow buttons, is kept on this computer, and goes back to "follow".
+// the user takes it over, moves with the grip (drag or Alt+arrows), is kept on this computer, and goes back to "follow".
 const base = path.resolve('.test-output')
 await fs.mkdir(path.join(base, 'shot'), { recursive: true })
 const root = await fs.mkdtemp(path.join(base, 'source-language-ui-')),
@@ -38,11 +38,10 @@ try {
   await section.getByRole('listitem').first().waitFor()
   assert.equal(await section.getByRole('listitem').count(), 5)
   assert.deepEqual(await saved(), ['zh-TW', 'ja', 'zh-CN', 'en', 'es'])
-  assert.equal(
-    await section.getByRole('button', { name: '上移 繁體中文', exact: true }).isDisabled(),
-    true
-  )
-  await section.getByRole('button', { name: '下移 繁體中文', exact: true }).click()
+  // Moved with the keyboard (Alt+↓ on the grip); the drag itself shares the sort menu's behaviour.
+  const grip = section.getByRole('button', { name: '移動語言順序 繁體中文', exact: true })
+  await grip.focus()
+  await page.keyboard.press('Alt+ArrowDown')
   await page.waitForFunction(
     async () => (await window.desktop.workspace()).prefs.sourceLanguages?.[0] === 'ja'
   )

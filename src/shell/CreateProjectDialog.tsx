@@ -56,9 +56,6 @@ export function CreateProjectDialog({
   return (
     <Modal opened={opened} onClose={close} title={tr('新增專案')} size="lg">
       <Stack>
-        <Text size="sm" c="dimmed">
-          {tr('選一個資料夾開始瀏覽；原始資料夾不會被搬移或刪除。')}
-        </Text>
         <div>
           <Text size="sm" fw={500} mb={4}>
             {tr('要瀏覽的資料夾')}

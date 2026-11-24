@@ -15,21 +15,18 @@ export const themes = [
   {
     id: 'dark',
     name: '深色經典',
-    description: '石墨灰介面與柔和青綠，保留熟悉的閱讀氛圍。',
     scheme: 'dark',
     accent: 'teal',
   },
   {
     id: 'glass',
     name: '霧白玻璃',
-    description: '通透白色、柔和藍光與輕盈層次，靈感來自 macOS。',
     scheme: 'light',
     accent: 'blue',
   },
   {
     id: 'paper',
     name: '暖紙墨橘',
-    description: '米白紙面、俐落黑線與醒目橘色，重現設計稿的編輯感。',
     scheme: 'light',
     accent: 'orange',
   },

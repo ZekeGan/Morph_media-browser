@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Alert, Button, Group, Text } from '@mantine/core'
 import { t as tr } from '../i18n'
+import { HelpTip } from '../common/HelpTip'
 import { describeError } from '../notices/errors'
 
 // Application settings (R-320): the program that plays .swf games (Flash Player projector or Ruffle desktop). It is
@@ -31,12 +32,14 @@ export function FlashPlayerSetting({ opened }: { opened: boolean }) {
   }
   return (
     <section className="settings-section" aria-label={tr('Flash 播放器')}>
-      <Text fw={600}>{tr('Flash 播放器')}</Text>
-      <Text size="sm" c="dimmed" mb="xs">
-        {tr(
-          '指定播放 .swf 的程式（Flash Player projector 或 Ruffle 桌面版）後，遊戲的「啟動遊戲」可以選 .swf 檔。'
-        )}
-      </Text>
+      <Group gap={4} wrap="nowrap" mb="xs">
+        <Text fw={600}>{tr('Flash 播放器')}</Text>
+        <HelpTip
+          text={tr(
+            '指定播放 .swf 的程式（Flash Player projector 或 Ruffle 桌面版）後，遊戲的「啟動遊戲」可以選 .swf 檔。'
+          )}
+        />
+      </Group>
       <Text size="sm" className="path" title={file}>
         {file ?? tr('尚未指定')}
       </Text>

@@ -25,7 +25,6 @@ import { LocaleEmulatorSetting } from '../game/LocaleEmulatorSetting'
 import { FlashPlayerSetting } from '../game/FlashPlayerSetting'
 import { VideoPlayerSetting } from '../video/VideoPlayerSetting'
 import { SiteKeys } from './SiteKeys'
-import { HelpLabel, HelpTip } from '../common/HelpTip'
 import { useEffect, useState } from 'react'
 import { Alert, Button, Checkbox, Group, Modal, Select, Stack, Tabs, Text } from '@mantine/core'
 import { localeOptions, type LocaleId } from '../../shared/locales'
@@ -191,12 +190,7 @@ export function ApplicationSettings({
         </Tabs.Panel>
         <Tabs.Panel value="general" pt="lg">
           <Select
-            label={
-              <HelpLabel
-                label={tr('介面語言')}
-                help={tr('選了就套用；專案名稱與資料內容保持原樣。')}
-              />
-            }
+            label={tr('介面語言')}
             data={localeOptions}
             value={appearance.locale}
             allowDeselect={false}
@@ -206,9 +200,8 @@ export function ApplicationSettings({
           />
           <Group gap={4} mb="lg" wrap="nowrap">
             <Text fw={600} size="sm">
-              {tr('選擇你的介面風格')}
+              {tr('介面風格')}
             </Text>
-            <HelpTip text={tr('套用到整個應用程式，下次開啟仍會使用。')} />
           </Group>
           <div className="theme-options" role="group" aria-label={tr('介面主題')}>
             {themes.map((theme) => (
@@ -252,7 +245,6 @@ export function ApplicationSettings({
                     {appearance.theme === theme.id && <Icon name="check" size={15} />}
                   </span>
                 </span>
-                <span className="theme-description">{tr(theme.description)}</span>
               </button>
             ))}
           </div>
@@ -303,11 +295,6 @@ export function ApplicationSettings({
                   </Group>
                 </Alert>
               )}
-              <Text size="sm" c="dimmed" mb="sm">
-                {tr(
-                  '把設定和所有專案的資訊（標籤、評分、封面）存一份。你的檔案（漫畫、圖片、影片）不會被複製。'
-                )}
-              </Text>
               <Group justify="space-between" gap="xs">
                 <Button disabled={busy || !!restorePreview} onClick={() => void createBackup()}>
                   {tr('建立備份')}

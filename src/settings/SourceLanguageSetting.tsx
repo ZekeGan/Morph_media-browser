@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { ActionIcon, Alert, Checkbox, Group, Stack, Text, Tooltip } from '@mantine/core'
+import { Alert, Checkbox, Group, Text, Tooltip } from '@mantine/core'
 import { t as tr } from '../i18n'
+import { HelpTip } from '../common/HelpTip'
+import { Icon } from '../common/icons'
 import { describeError } from '../notices/errors'
 import { localeIds, localeOptions, type LocaleId } from '../../shared/locales'
 
@@ -10,6 +12,7 @@ const nameOf = (id: LocaleId) => localeOptions.find((option) => option.value ===
 
 export function SourceLanguageSetting({ opened, locale }: { opened: boolean; locale: LocaleId }) {
   const [saved, setSaved] = useState<LocaleId[]>([]),
+    [drag, setDrag] = useState<number>(),
     [error, setError] = useState(''),
     [pending, setPending] = useState(false)
   useEffect(() => {
@@ -35,18 +38,21 @@ export function SourceLanguageSetting({ opened, locale }: { opened: boolean; loc
     }
   }
   const move = (from: number, to: number) => {
+    if (to < 0 || to >= order.length || from === to) return
     const next = [...order]
     next.splice(to, 0, ...next.splice(from, 1))
     void save(next)
   }
   return (
     <section className="settings-section" aria-label={tr('外部來源語言')}>
-      <Text fw={600}>{tr('外部來源語言')}</Text>
-      <Text size="sm" c="dimmed" mb="xs">
-        {tr(
-          '匯入外部來源時，標題與簡介依這個順序取來源有的語言，沒有就用網站預設；標籤固定一種語言，已匯入的資料不會改變。'
-        )}
-      </Text>
+      <Group gap={4} wrap="nowrap" mb="xs">
+        <Text fw={600}>{tr('外部來源語言')}</Text>
+        <HelpTip
+          text={tr(
+            '匯入外部來源時，標題與簡介依這個順序取來源有的語言，沒有就用網站預設；標籤固定一種語言，已匯入的資料不會改變。'
+          )}
+        />
+      </Group>
       <Checkbox
         label={tr('跟著介面語言')}
         checked={!custom}
@@ -58,40 +64,56 @@ export function SourceLanguageSetting({ opened, locale }: { opened: boolean; loc
         }
       />
       {custom && (
-        <Stack gap={4} mt="xs" component="ol" className="source-language-list">
+        <ol className="sort-keys source-language-list" aria-label={tr('語言順序')}>
           {order.map((id, index) => (
-            <Group key={id} gap="xs" wrap="nowrap" component="li">
+            <li
+              key={id}
+              className={'sort-key' + (drag === index ? ' dragging' : '')}
+              onDragOver={(e) => {
+                if (drag === undefined) return
+                e.preventDefault()
+                e.dataTransfer.dropEffect = 'move'
+              }}
+              onDrop={(e) => {
+                e.preventDefault()
+                if (drag !== undefined) move(drag, index)
+                setDrag(undefined)
+              }}
+            >
+              <Tooltip
+                label={tr('拖曳或 Alt+↑／↓ 調整順序')}
+                events={{ hover: true, focus: false, touch: false }}
+              >
+                <button
+                  type="button"
+                  className="sort-key-grip"
+                  draggable={!pending}
+                  disabled={pending}
+                  aria-label={tr('移動語言順序 {0}', nameOf(id))}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('text/plain', String(index))
+                    e.dataTransfer.effectAllowed = 'move'
+                    setDrag(index)
+                  }}
+                  onDragEnd={() => setDrag(undefined)}
+                  onKeyDown={(e) => {
+                    if (!e.altKey || !['ArrowUp', 'ArrowDown'].includes(e.key)) return
+                    e.preventDefault()
+                    move(index, index + (e.key === 'ArrowUp' ? -1 : 1))
+                  }}
+                >
+                  <Icon name="grip" size={15} />
+                </button>
+              </Tooltip>
               <Text size="sm" c="dimmed" w={16} ta="right">
                 {index + 1}
               </Text>
-              <Text size="sm" style={{ flex: 1 }}>
+              <Text size="sm" ml="xs" style={{ flex: 1 }}>
                 {nameOf(id)}
               </Text>
-              <Tooltip label={tr('上移')}>
-                <ActionIcon
-                  variant="default"
-                  size="sm"
-                  aria-label={tr('上移 {0}', nameOf(id))}
-                  disabled={pending || index === 0}
-                  onClick={() => move(index, index - 1)}
-                >
-                  <span aria-hidden>↑</span>
-                </ActionIcon>
-              </Tooltip>
-              <Tooltip label={tr('下移')}>
-                <ActionIcon
-                  variant="default"
-                  size="sm"
-                  aria-label={tr('下移 {0}', nameOf(id))}
-                  disabled={pending || index === order.length - 1}
-                  onClick={() => move(index, index + 1)}
-                >
-                  <span aria-hidden>↓</span>
-                </ActionIcon>
-              </Tooltip>
-            </Group>
+            </li>
           ))}
-        </Stack>
+        </ol>
       )}
       {error && (
         <Alert color="orange" mt="xs">
