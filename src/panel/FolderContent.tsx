@@ -5,7 +5,6 @@ import { isGameFolder, visibleFile } from '../../shared/media'
 import { effectiveKind, sampleOf, templateKind } from '../../shared/kind'
 import { savedPlace, sortVolumes } from '../../shared/reader'
 import { PanelSkeleton } from './PanelSkeleton'
-import { useFileVisibility } from '../files/useFileVisibility'
 import { DocumentViewer } from '../documents/DocumentViewer'
 import { cacheFolderStats } from '../browse/folderStats'
 import { useParentKind } from '../browse/folderKind'
@@ -84,7 +83,6 @@ export function FolderContent({
 }) {
   useLocale()
   const parentKind = useParentKind(row)
-  const { visibility } = useFileVisibility()
   const contentRow = useRef(row.rowId)
   const [galleryFile, setGalleryFile] = useState<ContentResult['entries'][number]>(),
     [galleryImmersive, setGalleryImmersive] = useState(false)
@@ -164,9 +162,7 @@ export function FolderContent({
     inherited = useRef(autoReadSettings)
   useEffect(() => {
     if (!readFirst.current || !content) return
-    const first = content.entries.find(
-      (entry) => entry.kind === 'image' && visibleFile(entry, visibility)
-    )
+    const first = content.entries.find((entry) => entry.kind === 'image' && visibleFile(entry))
     const immersive = readFirst.current === 'immersive'
     readFirst.current = undefined
     if (first) {
@@ -186,7 +182,7 @@ export function FolderContent({
       </p>
     )
   if (!content) return <PanelSkeleton />
-  const visibleEntries = content.entries.filter((entry) => visibleFile(entry, visibility))
+  const visibleEntries = content.entries.filter((entry) => visibleFile(entry))
   const selectedFile = visibleEntries.find((entry) => entry.id === selectedFileId) ?? selectedEntry
   // Music and video folders share one page and one content template (R-387).
   const folderKind = effectiveKind(row, sampleOf(content.entries), parentKind),

@@ -80,13 +80,6 @@ export function validateWorkspace(v: unknown): asserts v is WorkspacePrefs {
   )
     throw new Error('來源搜尋設定不合法')
   if (
-    v.fileVisibility !== undefined &&
-    (!object(v.fileVisibility) ||
-      typeof v.fileVisibility.hidden !== 'boolean' ||
-      typeof v.fileVisibility.dotfiles !== 'boolean')
-  )
-    throw new Error('檔案顯示設定不合法')
-  if (
     v.videoAudio !== undefined &&
     (!object(v.videoAudio) ||
       !Number.isFinite(v.videoAudio.volume) ||
@@ -609,12 +602,6 @@ export class WorkspaceStore {
             backups: backups.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 30),
           }
         }
-        case 'fileVisibility':
-          next.fileVisibility = {
-            hidden: bool(command.value?.hidden),
-            dotfiles: bool(command.value?.dotfiles),
-          }
-          break
         case 'videoAudio':
           if (!object(command.value)) throw new Error('影片音量設定不合法')
           next.videoAudio = structuredClone(command.value)

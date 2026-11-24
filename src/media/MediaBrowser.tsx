@@ -20,7 +20,6 @@ import { usePlayback } from './Playback'
 import { podcastFolder } from './podcast'
 import { placeProgress, useVideoPlaces, videoPlace } from './videoPlace'
 import { FolderPage } from '../panel/FolderPage'
-import { useFileVisibility } from '../files/useFileVisibility'
 import { useRefreshNonce } from '../browse/refresh'
 import { Icon } from '../common/icons'
 import { t as tr, useLocale } from '../i18n'
@@ -94,7 +93,6 @@ export function MediaBrowser({
       operation.current++
     }
   }, [])
-  const { visibility, save, error: visibilityError } = useFileVisibility()
   // Remember the list's choices per project (scope, type, layout, grouping) once the user changes them.
   const mounted = useRef(false)
   useEffect(() => {
@@ -156,10 +154,7 @@ export function MediaBrowser({
             })),
     [scope, overview.entries, entries, row.rowId, row.name, row.path]
   )
-  const visible = useMemo(
-    () => files.filter((entry) => visibleFile(entry, visibility)),
-    [files, visibility]
-  )
+  const visible = useMemo(() => files.filter((entry) => visibleFile(entry)), [files])
   const shown = useMemo(
     () => visible.filter((entry) => matchesMedia(entry, filter)),
     [visible, filter]
@@ -312,27 +307,15 @@ export function MediaBrowser({
               >
                 {tr('依來源分組')}
               </Menu.Item>
-              <Menu.Item
-                leftSection={visibility.hidden ? <Icon name="check" /> : null}
-                onClick={() => void save({ ...visibility, hidden: !visibility.hidden })}
-              >
-                {tr('顯示隱藏檔案')}
-              </Menu.Item>
-              <Menu.Item
-                leftSection={visibility.dotfiles ? <Icon name="check" /> : null}
-                onClick={() => void save({ ...visibility, dotfiles: !visibility.dotfiles })}
-              >
-                {tr('顯示點開頭檔案')}
-              </Menu.Item>
             </Menu.Dropdown>
           </Menu>
         </div>
       }
       notice={
         <>
-          {(error || visibilityError || overview.notices.length > 0) && (
+          {(error || overview.notices.length > 0) && (
             <p role="alert">
-              {[error, visibilityError, ...(scope === 'descendants' ? overview.notices : [])]
+              {[error, ...(scope === 'descendants' ? overview.notices : [])]
                 .filter(Boolean)
                 .join('\n')}
             </p>

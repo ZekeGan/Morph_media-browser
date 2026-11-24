@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- The file list no longer has "show hidden files" and "show dot files": files with the system Hidden attribute are never listed, names starting with a dot always are; a preference an older version saved is kept and ignored (R-485).
 - Layout window: the four sources (type, level, default, own) have their own colours in each theme (blue, amber, grey, magenta), a 5px bar on each folder row and solid labels that the legend repeats; rules that follow the default are a little dimmer, set ones have their source colour on the left (R-489, R-490).
 - The hints hidden by hand (card display settings, folders without picture components, source choice memory, the layout window's "如…" example and renamed headings) are removed for good with their texts (R-491).
 - The tree toolbar has the layout button too (R-481). The "show type icons" switch is gone: card badges always show the folder type (R-482). The layout window has a breadcrumb above the folder list that moves where the list starts up to any folder above, without closing the window (R-483). The folder setting "In All works" is removed; works are always worked out automatically, and values older versions saved are kept untouched and no longer read (R-484).

@@ -3497,18 +3497,6 @@
     "es": "Más opciones de archivos",
     "zh-CN": "更多文件选项"
   },
-  "顯示隱藏檔案": {
-    "en": "Show hidden files",
-    "ja": "隠しファイルを表示",
-    "es": "Mostrar archivos ocultos",
-    "zh-CN": "显示隐藏文件"
-  },
-  "顯示點開頭檔案": {
-    "en": "Show dotfiles",
-    "ja": "ドットで始まるファイルを表示",
-    "es": "Mostrar archivos con punto inicial",
-    "zh-CN": "显示点开头文件"
-  },
   "尚未建立或受保護": {
     "en": "Not initialized or protected",
     "ja": "未作成または保護されています",
@@ -10468,12 +10456,6 @@
     "en": "Invalid language setting",
     "ja": "言語設定が正しくありません",
     "es": "Configuración de idioma no válida"
-  },
-  "檔案顯示設定不合法": {
-    "zh-CN": "文件显示设置不合法",
-    "en": "Invalid file display setting",
-    "ja": "ファイル表示の設定が正しくありません",
-    "es": "Configuración de vista de archivos no válida"
   },
   "影片音量設定不合法": {
     "zh-CN": "视频音量设置不合法",

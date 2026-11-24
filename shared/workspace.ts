@@ -37,7 +37,6 @@ export interface WorkspacePrefs {
   searchSources?: Partial<Record<FolderKind, SearchSourceId[]>>
   videoAudio?: { volume: number; muted: boolean }
   playOrder?: PlayOrder
-  fileVisibility?: { hidden: boolean; dotfiles: boolean }
   // Locale Emulator's LEProc.exe (R-309), chosen in a main-process dialog; only main reads it to start a game.
   localeEmulator?: string
   // R-320: the program that plays .swf games (Flash Player projector or Ruffle), chosen like LEProc.exe.
@@ -76,7 +75,6 @@ export type WorkspaceCommand =
   | { action: 'listBackups' }
   | { action: 'videoAudio'; value: { volume: number; muted: boolean } }
   | { action: 'playOrder'; value: PlayOrder }
-  | { action: 'fileVisibility'; value: { hidden: boolean; dotfiles: boolean } }
   | { action: 'appearance'; theme: ThemeId; locale: LocaleId }
   | { action: 'sourceLanguages'; value: LocaleId[] }
   | { action: 'searchSources'; kind: FolderKind; value: SearchSourceId[] }

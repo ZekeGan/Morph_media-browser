@@ -60,16 +60,12 @@ test('queues use the displayed same-kind sequence, retain zero-result filters an
   assert.equal(matchesMedia(entry('folder', 'folder'), 'all'), false)
   assert.equal(visibleFile(entries[4]), true)
   assert.equal(visibleFile(entry('hidden', 'other', { hidden: true })), false)
-  assert.equal(visibleFile(entry('.dot'), { hidden: true, dotfiles: false }), false)
-  assert.equal(
-    visibleFile(entry('hidden', 'other', { hidden: true }), { hidden: true, dotfiles: false }),
-    true
-  )
-  const prefs = { ...defaultWorkspace(), fileVisibility: { hidden: true, dotfiles: false } }
-  validateWorkspace(prefs)
-  assert.throws(() =>
-    validateWorkspace({ ...prefs, fileVisibility: { hidden: 'yes', dotfiles: false } })
-  )
+  // R-485: a name starting with a dot is listed; a preference an older version saved is still accepted and ignored.
+  assert.equal(visibleFile(entry('.dot')), true)
+  validateWorkspace({
+    ...defaultWorkspace(),
+    fileVisibility: { hidden: true, dotfiles: false },
+  } as never)
 })
 test('candidate UI qualification does not override an explicit not-game record', () => {
   const row = {

@@ -1,5 +1,4 @@
 import { visibleFile } from '../../shared/media'
-import { useFileVisibility } from './useFileVisibility'
 import { createPortal } from 'react-dom'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -54,7 +53,6 @@ export function FileOverview({
   project: Project
 }) {
   const locale = useLocale()
-  const { visibility } = useFileVisibility()
   const [entries, setEntries] = useState<OverviewEntry[]>([]),
     [notices, setNotices] = useState<string[]>([]),
     [loading, setLoading] = useState(false),
@@ -110,13 +108,13 @@ export function FileOverview({
     () =>
       entries.filter(
         (entry) =>
-          visibleFile(entry, visibility) &&
+          visibleFile(entry) &&
           (filter === 'all' ||
             (filter === 'other'
               ? !['image', 'video', 'audio'].includes(entry.kind)
               : entry.kind === filter))
       ),
-    [entries, filter, visibility]
+    [entries, filter]
   )
   // Ctrl/Shift+click marks music and videos; right-click adds the marked ones to the play queue in list order,
   // without interrupting what is playing (R-295). Escape clears the marks.

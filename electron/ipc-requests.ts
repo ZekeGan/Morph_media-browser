@@ -217,7 +217,6 @@ const workspace: Record<WorkspaceCommand['action'], Shape> = {
   listBackups: {},
   videoAudio: { value: object },
   playOrder: { value: oneOf('stop', 'next', 'all', 'one') },
-  fileVisibility: { value: object },
   appearance: { theme: ref, locale: ref },
   sourceLanguages: { value: list(ref, 10) },
   searchSources: {

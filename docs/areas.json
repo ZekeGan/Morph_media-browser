@@ -99,7 +99,6 @@
       "docs": ["MEDIA_WORKSPACE.md#檔案總覽", "MEDIA_WORKSPACE.md#檔案顯示與隱藏規則"],
       "code": [
         "src/files/FileOverview*",
-        "src/files/useFileVisibility*",
         "electron/explorer-overview*",
         "electron/hidden*"
       ],
