@@ -326,19 +326,6 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
     return <GameExtraCell extra={cell.gameExtra ?? 'save'} row={row} preview={preview} />
   if ((panelPartKinds as readonly string[]).includes(cell.kind))
     return <PanelPart cell={cell} row={row} project={project} />
-  if (cell.kind === 'game-cover') {
-    const cover = folderCoverPicture(row)
-    return cover ? (
-      <CellPicture
-        src={cover.src}
-        alt={cover.alt}
-        fit={cell.imageFit ?? 'blur'}
-        empty={tr('尚無封面')}
-      />
-    ) : (
-      <span className="cell-image-placeholder">{tr('尚無封面')}</span>
-    )
-  }
   if (cell.kind === 'image') {
     const selected = row?.record?.details?.cellImages?.[cell.attributeId ?? cell.cellId],
       asset = selected

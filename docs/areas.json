@@ -121,7 +121,6 @@
         "src/media/useVideoAudio*",
         "src/media/MediaThumb*",
         "src/media/fileLabels*",
-        "src/media/FolderAlbumCover*",
         "src/media/AlbumView*",
         "src/media/podcast*",
         "src/media/videoPlace*",

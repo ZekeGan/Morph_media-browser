@@ -23,7 +23,14 @@ await lib.create(media, {
 })
 const style = { textColor: '#e4e6e8', backgroundColor: 'transparent' }
 const layout = (w: number, h: number): Cell[] => [
-  { cellId: 'cover', kind: 'game-cover', grid: { x: 0, y: 0, w, h }, style },
+  {
+    cellId: 'cover',
+    kind: 'image',
+    imageCover: true,
+    imageFit: 'blur',
+    grid: { x: 0, y: 0, w, h },
+    style,
+  },
   { cellId: 'name', kind: 'name', grid: { x: 0, y: h, w: 12, h: 1 }, style },
 ]
 const record = await readFolder(media),

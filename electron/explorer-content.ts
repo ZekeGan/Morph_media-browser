@@ -170,6 +170,35 @@ export async function file(ex: Explorer, rowId: string, id: string) {
 }
 
 // The n-th image file (by name) directly inside the folder, as a thumbnail; used by image cells that pick by position.
+// The files directly inside a folder, in reading order: not hidden, not links.
+async function folderFiles(row: { path: string }) {
+  let hidden = new Set<string>()
+  try {
+    hidden = await hiddenFileNames(row.path)
+  } catch {
+    // Without the attribute check, hidden files are simply not excluded.
+  }
+  return (await fs.readdir(row.path, { withFileTypes: true }))
+    .filter((entry) => entry.isFile() && !entry.isSymbolicLink() && !hidden.has(entry.name))
+    .map((entry) => entry.name)
+    .sort((a, b) => mediaNames.compare(a, b) || (a < b ? -1 : a > b ? 1 : 0))
+}
+// Makes a file inside the folder servable and returns its id (the same id the folder listing gives it).
+async function serveFile(
+  ex: Explorer,
+  row: { path: string },
+  rowId: string,
+  name: string,
+  mime: string
+) {
+  const file = path.join(row.path, name),
+    id = createHash('sha256').update(name).digest('hex')
+  await safePath(row.path, file)
+  ex.files.set(`${rowId}/${id}`, { rowId, name, file, mime })
+  return id
+}
+const imageMime = (name: string) => imageTypes[path.extname(name).slice(1).toLowerCase()]
+
 export async function nthImage(
   ex: Explorer,
   rowId: string,
@@ -179,32 +208,46 @@ export async function nthImage(
   if (!Number.isInteger(index) || index < 1 || index > 999)
     return new globalThis.Response(null, { status: 404 })
   const row = await ex.library.readableRow(rowId)
-  let hidden = new Set<string>()
-  try {
-    hidden = await hiddenFileNames(row.path)
-  } catch {
-    // Without the attribute check, hidden images are simply not excluded.
-  }
-  const names = (await fs.readdir(row.path, { withFileTypes: true }))
-    .filter(
-      (entry) =>
-        entry.isFile() &&
-        !entry.isSymbolicLink() &&
-        !hidden.has(entry.name) &&
-        imageTypes[path.extname(entry.name).slice(1).toLowerCase()]
-    )
-    .map((entry) => entry.name)
-    .sort((a, b) => mediaNames.compare(a, b) || (a < b ? -1 : a > b ? 1 : 0))
-  const name = names[index - 1]
+  const name = (await folderFiles(row)).filter(imageMime)[index - 1]
   if (!name) return new globalThis.Response(null, { status: 404 })
-  const file = path.join(row.path, name),
-    id = createHash('sha256').update(name).digest('hex')
-  await safePath(row.path, file)
-  ex.files.set(`${rowId}/${id}`, {
-    rowId,
-    name,
-    file,
-    mime: imageTypes[path.extname(name).slice(1).toLowerCase()],
-  })
-  return ex.stream(rowId, id, request, true)
+  return ex.stream(rowId, await serveFile(ex, row, rowId, name, imageMime(name)), request, true)
+}
+
+// R-437: the one rule for a folder's cover, whatever its kind, shared by the card and the right panel: the picture
+// chosen as cover, else the first picture of the record that is not a source extra, else (when the folder holds audio)
+// the first track's embedded cover, else the one image named cover, folder, front or artist, else the first image file.
+export async function folderCover(
+  ex: Explorer,
+  rowId: string,
+  request: globalThis.Request
+): Promise<globalThis.Response> {
+  const row = await ex.library.readableRow(rowId),
+    assets = row.record?.assets ?? [],
+    chosen =
+      assets.find((a) => a.assetId === row.record?.details?.bannerAssetId) ??
+      assets.find((a) => !a.role)
+  if (chosen)
+    try {
+      const { file, mediaType } = await ex.library.asset(rowId, chosen.assetId)
+      return new globalThis.Response(new Uint8Array(await fs.readFile(file)), {
+        headers: { 'Content-Type': mediaType, 'X-Content-Type-Options': 'nosniff' },
+      })
+    } catch {
+      // A picture whose file is gone: the next rule decides.
+    }
+  const names = await folderFiles(row),
+    track = names.find((name) => types[path.extname(name).toLowerCase()]?.[0] === 'audio')
+  if (track) {
+    const id = await serveFile(ex, row, rowId, track, types[path.extname(track).toLowerCase()][1])
+    const response = await ex.audioCover(rowId, id, request.signal)
+    if (response.status === 200) return response
+  }
+  const images = names.filter(imageMime),
+    named = images.filter((name) => /^(cover|folder|front|artist)\.[^.]+$/i.test(name)),
+    name = named.length === 1 ? named[0] : images[0]
+  if (!name) return new globalThis.Response(null, { status: 404 })
+  const id = await serveFile(ex, row, rowId, name, imageMime(name)),
+    small = await ex.stream(rowId, id, request, true)
+  // A picture the thumbnail maker cannot read is served as it is.
+  return small.ok ? small : ex.stream(rowId, id, request)
 }

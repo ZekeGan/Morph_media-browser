@@ -12,6 +12,14 @@ export const bookCover = (grid: Cell['grid'] = { x: 0, y: 0, w: 4, h: 4 }): Cell
   grid,
   style: { textColor: '#e4e6e8', backgroundColor: 'transparent' },
 })
+// R-437: the folder cover as a component of a built-in right panel (the same rule as a card's: shared by every kind).
+export const panelCover = (cellId: string, grid: Cell['grid']): Cell => ({
+  cellId,
+  kind: 'image',
+  imageCover: true,
+  grid,
+  style: { textColor: '#e4e6e8', backgroundColor: 'transparent' },
+})
 export function projectImageCells(project: Project): Cell[] {
   return [
     ...new Map(

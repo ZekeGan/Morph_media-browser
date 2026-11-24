@@ -1,4 +1,4 @@
-import { bookCover, visibleCells } from './layouts'
+import { bookCover, panelCover, visibleCells } from './layouts'
 export { bookCover }
 import type { MetadataSourceId, SearchSourceId } from './sources'
 import type { StableQuery } from './query'
@@ -590,34 +590,39 @@ export const cellType = (kind: string) =>
     'field-url': 'url',
     'field-date-only': 'date',
   })[kind] ?? 'string'
-// R-409: the right panel a kind shows until a layout is chosen for it: a book its template (cover and the card's
-// fields), music the album (cover and facts), video the video count with 播放; the others nothing, since the panel
-// header already names the folder. The editor starts an empty one with the name and path.
-const panelPart = (kind: Cell['kind'], h: number): Cell => ({
+// R-409, R-437: the right panel a kind shows until a layout is chosen for it: a book its template (cover and the
+// card's fields), music the cover with the album's facts, video the cover with the video count and 播放, a game the
+// cover (its page draws it); the others nothing, since the panel header already names the folder. The editor starts an
+// empty one with the name and path.
+const panelPart = (kind: Cell['kind'], grid: Cell['grid'] = { x: 0, y: 0, w: 12, h: 4 }): Cell => ({
   cellId: kind,
   kind,
-  grid: { x: 0, y: 0, w: 12, h },
+  grid,
   style: { textColor: '#e4e6e8', backgroundColor: 'transparent' },
 })
+const coverAndFacts = (cover: string, facts: Cell['kind']): Cell[] => [
+  panelCover(cover, { x: 0, y: 0, w: 4, h: 4 }),
+  panelPart(facts, { x: 4, y: 0, w: 8, h: 4 }),
+]
 export const builtinPanel = (project: { cells: Cell[] }, kind: string): Cell[] =>
   kind === 'book'
     ? bookTemplate(project)
     : kind === 'music'
-      ? [panelPart('album-info', 4)]
+      ? coverAndFacts('album-cover', 'album-facts')
       : kind === 'video'
-        ? [panelPart('video-info', 2)]
+        ? coverAndFacts('video-cover', 'video-facts')
         : []
-// The built-in panel of a page that has listed the folder: a video or other folder holding audio also shows the album
-// cover (R-294), as music does in its album info.
+// The built-in panel of a page that has listed the folder: another folder holding audio (not a video one, whose panel
+// has the cover already) also shows its cover (R-294), found by the one cover rule.
 export const builtinPanelFor = (
   project: { cells: Cell[] },
   kind: string,
   hasAudio: boolean
 ): Cell[] => {
   const cells = builtinPanel(project, kind)
-  if (!hasAudio || kind === 'music' || kind === 'book') return cells
+  if (!hasAudio || kind === 'music' || kind === 'book' || kind === 'video') return cells
   return [
-    panelPart('album-info', 4),
+    panelCover('album-cover', { x: 0, y: 0, w: 4, h: 4 }),
     ...cells.map((cell) => ({ ...cell, grid: { ...cell.grid, y: cell.grid.y + 4 } })),
   ]
 }
@@ -629,7 +634,7 @@ export const panelEditorStart = (project: { cells: Cell[] }, kind: string): Cell
 }
 // A folder of text books with one EPUB (and no pictures) shows its book card above the book template.
 export const withBookCard = (cells: Cell[]): Cell[] => [
-  panelPart('book-card', 4),
+  panelPart('book-card'),
   ...cells.map((cell) => ({ ...cell, grid: { ...cell.grid, y: cell.grid.y + 4 } })),
 ]
 

@@ -397,8 +397,13 @@ try {
     },
     path.join(album, '測試.webp')
   )
-  await page.getByRole('button', { name: '更換遊戲封面', exact: true }).click()
-  await page.getByRole('menuitem', { name: '匯入封面圖片', exact: true }).click()
+  // R-437: the cover is changed in the folder settings' picture page, for every kind alike.
+  await page.getByRole('button', { name: '自訂遊戲操作', exact: true }).click()
+  await page.getByRole('tab', { name: '圖片', exact: true }).click()
+  await page.getByRole('button', { name: '封面圖片', exact: true }).click()
+  await page.getByRole('menuitem', { name: '匯入新圖片…', exact: true }).click()
+  // Back to the content, where the page shows the new cover.
+  await page.getByRole('tab', { name: '內容', exact: true }).click()
   await page.waitForFunction(() => {
     const i = document.querySelector('.game-banner img') as HTMLImageElement
     return i?.complete && i.naturalWidth > 0
@@ -423,8 +428,10 @@ try {
       filePaths: [],
     })) as typeof dialog.showOpenDialog
   })
-  await page.getByRole('button', { name: '更換遊戲封面', exact: true }).click()
-  await page.getByRole('menuitem', { name: '匯入封面圖片', exact: true }).click()
+  await page.getByRole('tab', { name: /^設定/ }).click()
+  await page.getByRole('tab', { name: '圖片', exact: true }).click()
+  await page.getByRole('button', { name: '封面圖片', exact: true }).click()
+  await page.getByRole('menuitem', { name: '匯入新圖片…', exact: true }).click()
   await page.waitForFunction(() =>
     document.querySelector('.statusbar')?.textContent?.includes('就緒')
   )

@@ -235,6 +235,9 @@ export class Explorer {
   ): Promise<globalThis.Response> {
     return contentFns.nthImage(this, rowId, index, request)
   }
+  async folderCover(rowId: string, request: globalThis.Request): Promise<globalThis.Response> {
+    return contentFns.folderCover(this, rowId, request)
+  }
   async audioCover(rowId: string, id: string, signal?: AbortSignal): Promise<globalThis.Response> {
     return streamFns.audioCover(this, rowId, id, signal)
   }

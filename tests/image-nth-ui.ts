@@ -108,10 +108,7 @@ try {
       ).length === 2
   )
   assert.equal(await card('Pictures').locator('img.cell-image').count(), 2)
-  assert.equal(
-    await card('Pictures').locator('img.cell-image[src*="media://nth/"][src$="/1"]').count(),
-    1
-  )
+  assert.equal(await card('Pictures').locator('img.cell-image[src*="media://cover/"]').count(), 1)
   assert.equal(await card('Pictures').getByText('沒有圖片').count(), 1)
   // A folder without any image file shows nothing broken in both cells.
   await card('Empty').waitFor()

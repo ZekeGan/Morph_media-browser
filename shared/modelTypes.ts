@@ -19,11 +19,12 @@ export type CellKind =
   | 'image'
   | 'divider'
   | 'open-folder'
-  | 'game-cover'
   | 'game-launch'
-  // R-409 (provisional): the right panel's main visuals; on a card or in the editor they only name themselves.
-  | 'album-info'
-  | 'video-info'
+  // R-437 (provisional): the right panel's facts about an album (name, artist and year, tracks and length) and a
+  // video folder (video count and 播放); on a card or in the editor they only name themselves. The cover beside
+  // them is an image component set to the folder cover.
+  | 'album-facts'
+  | 'video-facts'
   | 'book-card'
   // R-409 (provisional): one of a game's extra buttons (`gameExtra`).
   | 'game-extra'
@@ -159,7 +160,7 @@ export interface FolderRecord {
 }
 export interface Project {
   kind: 'media-viewer.project'
-  schemaVersion: 2
+  schemaVersion: 3
   projectId: string
   rootFolderId: string
   revision: number

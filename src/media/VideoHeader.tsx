@@ -10,10 +10,10 @@ import { t as tr } from '../i18n'
 
 const names = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
 
-// R-390: a video folder's header: its name and how many videos it holds, and 播放, which makes the videos (in name
+// R-390, R-437: a video folder's facts (beside its cover, an image component): how many videos it holds, and 播放, which makes the videos (in name
 // order) the play queue and opens the first in the big viewer. When a video here was left partway (R-405, kept on this
 // computer), it reads 繼續觀看 and opens that video, which goes on from its place.
-export function VideoHeader({
+export function VideoFacts({
   row,
   project,
   entries,
@@ -37,9 +37,6 @@ export function VideoHeader({
     <div className="video-header">
       <div className="album-facts">
         <Text fw={700} size="lg" className="album-title">
-          {row.name}
-        </Text>
-        <Text size="sm" c="dimmed">
           {tr('{0} 部影片', videos.length)}
         </Text>
       </div>

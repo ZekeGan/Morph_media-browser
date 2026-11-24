@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Group, Menu, Tooltip } from '@mantine/core'
+import { ActionIcon, Button, Group, Tooltip } from '@mantine/core'
 import {
   gameActionTemplates,
   type ExplorerRequest,
@@ -68,58 +68,6 @@ export function GamePage({
             ) : (
               <span>{tr('沒有遊戲封面')}</span>
             )}
-            <Menu position="bottom-end">
-              <Menu.Target>
-                <ActionIcon
-                  className="cover-change"
-                  aria-label={tr('更換遊戲封面')}
-                  disabled={disabled}
-                  variant="default"
-                >
-                  <Icon name="edit" />
-                </ActionIcon>
-              </Menu.Target>
-              <Menu.Dropdown>
-                {row.record?.assets.map((a) => (
-                  <Menu.Item
-                    key={a.assetId}
-                    onClick={() =>
-                      void run({
-                        action: 'banner',
-                        rowId: row.rowId,
-                        revision: row.record!.revision,
-                        assetId: a.assetId,
-                      })
-                    }
-                  >
-                    {a.originalName}
-                  </Menu.Item>
-                ))}
-                <Menu.Item
-                  onClick={async () => {
-                    const result = await act({
-                        action: 'image',
-                        rowId: row.rowId,
-                        revision: row.record!.revision,
-                      }),
-                      next =
-                        result && !result.cancelled
-                          ? result.snapshot.structure?.find((r) => r.rowId === row.rowId)?.record
-                          : undefined,
-                      asset = next?.assets.at(-1)
-                    if (next && asset)
-                      await run({
-                        action: 'banner',
-                        rowId: row.rowId,
-                        revision: next.revision,
-                        assetId: asset.assetId,
-                      })
-                  }}
-                >
-                  {tr('匯入封面圖片')}
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
           </div>
         )
       }

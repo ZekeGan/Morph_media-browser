@@ -116,10 +116,9 @@ export function Editor({
     image: tr('圖片'),
     divider: tr('分隔線'),
     'open-folder': tr('開啟資料夾'),
-    'game-cover': tr('遊戲封面'),
     'game-launch': tr('啟動遊戲'),
-    'album-info': tr('專輯資訊'),
-    'video-info': tr('影片數與播放'),
+    'album-facts': tr('專輯資訊'),
+    'video-facts': tr('影片數與播放'),
     'book-card': tr('書籍資訊（EPUB）'),
     'game-extra': tr('遊戲附加按鈕'),
   }
@@ -141,10 +140,9 @@ export function Editor({
     image: tr('可為每個資料夾各自選圖，也可留空'),
     divider: tr('分隔線'),
     'open-folder': tr('一鍵開啟這個資料夾'),
-    'game-cover': tr('顯示這個遊戲資料夾的封面'),
     'game-launch': tr('一鍵啟動這個遊戲（使用資料夾綁定的啟動檔）'),
-    'album-info': tr('右側：專輯封面、名稱、演出者與曲數'),
-    'video-info': tr('右側：影片數與播放／繼續觀看'),
+    'album-facts': tr('右側：專輯名稱、演出者、年份、曲數與總長度'),
+    'video-facts': tr('右側：影片數與播放／繼續觀看'),
     'book-card': tr('右側：只有一本 EPUB 的資料夾顯示它的封面、書名與作者'),
     'game-extra': tr('開啟存檔資料夾、用 Steam 啟動或在商店開啟；不能用時變灰並說明原因'),
   }
@@ -387,7 +385,7 @@ export function Editor({
   const hasContent =
     !!selectedCell &&
     (isFieldKind(selectedCell.kind) ||
-      ['static-text', 'system-info', 'image', 'game-cover', 'game-launch', 'game-extra'].includes(
+      ['static-text', 'system-info', 'image', 'game-launch', 'game-extra'].includes(
         selectedCell.kind
       ))
   // The last inspector tab is remembered for the next component and the next time the editor opens.
@@ -570,7 +568,11 @@ export function Editor({
       })
     const base =
       template === 'game'
-        ? [cell('game-cover', 0, 3), cell('name', 3), cell('game-launch', 4)]
+        ? [
+            { ...cell('image', 0, 3), imageCover: true, imageFit: 'blur' as const },
+            cell('name', 3),
+            cell('game-launch', 4),
+          ]
         : [
             cell('name', 0),
             cell('path', 1),
@@ -638,7 +640,7 @@ export function Editor({
         x: 0,
         y,
         w: 12,
-        h: kind === 'image' || kind === 'game-cover' ? 3 : 1,
+        h: kind === 'image' ? 3 : 1,
       },
       style: { textColor: '#e4e6e8', backgroundColor: 'transparent' },
     }
@@ -1143,10 +1145,7 @@ export function Editor({
             change({ ...draft, fieldBindings: withSourceBinding(draft.fieldBindings, source) })
           }
           preview={preview}
-          hasGames={
-            rows.some(isGameFolder) ||
-            draft.cells.some((c) => c.kind === 'game-cover' || c.kind === 'game-launch')
-          }
+          hasGames={rows.some(isGameFolder) || draft.cells.some((c) => c.kind === 'game-launch')}
           dragImage={dragImage}
           act={act}
           add={add}
@@ -1185,11 +1184,11 @@ export function Editor({
               <div className="cell-overflow-fix">
                 <Icon name="flag" size={14} />
                 <span>
-                  {['image', 'game-cover'].includes(selectedCell.kind)
+                  {selectedCell.kind === 'image'
                     ? tr('這張圖片在預覽中被裁切')
                     : tr('這個組件的內容在預覽中被截掉')}
                 </span>
-                {['image', 'game-cover'].includes(selectedCell.kind) ? (
+                {selectedCell.kind === 'image' ? (
                   <>
                     <Button
                       size="compact-xs"

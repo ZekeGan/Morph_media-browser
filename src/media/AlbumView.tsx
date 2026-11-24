@@ -12,7 +12,6 @@ import {
   type AlbumTrack,
   type AudioTags,
 } from '../../shared/album'
-import { FolderAlbumCover } from './FolderAlbumCover'
 import { usePlayback } from './Playback'
 import { listenState, podcastFolder, setPodcast, usePodcasts } from './podcast'
 import { Icon } from '../common/icons'
@@ -78,15 +77,8 @@ function usePodcast(row: FolderRow) {
 }
 type Album = ReturnType<typeof useAlbum>
 
-export function AlbumHeader({
-  row,
-  entries,
-  album,
-}: {
-  row: FolderRow
-  entries: MediaEntry[]
-  album: Album
-}) {
+// R-437: the album's name, artist and year, track count and length, beside the cover (an image component).
+export function AlbumFacts({ row, album }: { row: FolderRow; album: Album }) {
   const { summary } = album
   const { podcast } = usePodcast(row)
   const facts = [
@@ -97,7 +89,6 @@ export function AlbumHeader({
   ].filter(Boolean)
   return (
     <div className="album-header">
-      <FolderAlbumCover row={row} files={entries} />
       <div className="album-facts">
         <Text fw={700} size="lg" className="album-title">
           {summary.album ?? row.name}

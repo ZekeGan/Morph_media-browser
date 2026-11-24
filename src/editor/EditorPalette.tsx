@@ -63,18 +63,17 @@ const kindIcons: Partial<Record<CellKind, IconName>> = {
   'static-text': 'edit',
   spacer: 'maximize',
   divider: 'minus',
-  'game-cover': 'image',
   'game-launch': 'play',
   'game-extra': 'external',
-  'album-info': 'music',
-  'video-info': 'video',
+  'album-facts': 'music',
+  'video-facts': 'video',
   'book-card': 'book',
 }
 
 // R-452: the main visuals of the right panel, one section per kind of folder.
 const kindSections: { id: string; title: string; kind: FolderKind; kinds: PaletteKey[] }[] = [
-  { id: 'album', title: '專輯', kind: 'music', kinds: ['album-info'] },
-  { id: 'video', title: '影片', kind: 'video', kinds: ['video-info'] },
+  { id: 'album', title: '專輯', kind: 'music', kinds: ['album-facts'] },
+  { id: 'video', title: '影片', kind: 'video', kinds: ['video-facts'] },
   { id: 'book', title: '書籍', kind: 'book', kinds: ['book-card'] },
 ]
 
@@ -712,7 +711,6 @@ export function EditorPalette(props: EditorPaletteProps) {
       {componentSection('layout', tr('排版'), ['static-text', 'spacer', 'divider'])}
       {hasGames &&
         componentSection('game', tr('遊戲'), [
-          'game-cover',
           'game-launch',
           'game-extra',
           'system-info:playTime',

@@ -2,6 +2,7 @@ import { plainMessage } from '../shared/message'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { Library } from '../electron/library'
 import { WorkspaceStore } from '../electron/workspace'
@@ -78,21 +79,21 @@ test('upgrade steps run in order, and a missing step or newer data is refused', 
     a: 1,
   })
   assert.throws(() => upgradeFormat('folder', { schemaVersion: 3 }), NewerFormatError)
-  FORMAT_VERSION.project = 4
+  FORMAT_VERSION.project = 5
   t.after(() => {
-    FORMAT_VERSION.project = 2
-    delete UPGRADE_STEPS.project[2]
+    FORMAT_VERSION.project = 3
     delete UPGRADE_STEPS.project[3]
+    delete UPGRADE_STEPS.project[4]
   })
-  UPGRADE_STEPS.project[2] = (v) => ({ ...v, trail: ['2→3'] })
+  UPGRADE_STEPS.project[3] = (v) => ({ ...v, trail: ['3→4'] })
   assert.throws(
-    () => upgradeFormat('project', { schemaVersion: 2 }),
-    (error) => /v3 → v4/.test(plainMessage(String(error)))
+    () => upgradeFormat('project', { schemaVersion: 3 }),
+    (error) => /v4 → v5/.test(plainMessage(String(error)))
   )
-  UPGRADE_STEPS.project[3] = (v) => ({ ...v, trail: [...(v.trail as string[]), '3→4'] })
-  const input = { schemaVersion: 2 }
-  assert.deepEqual(upgradeFormat('project', input), { schemaVersion: 4, trail: ['2→3', '3→4'] })
-  assert.deepEqual(input, { schemaVersion: 2 }, 'the value read is never changed in place')
+  UPGRADE_STEPS.project[4] = (v) => ({ ...v, trail: [...(v.trail as string[]), '4→5'] })
+  const input = { schemaVersion: 3 }
+  assert.deepEqual(upgradeFormat('project', input), { schemaVersion: 5, trail: ['3→4', '4→5'] })
+  assert.deepEqual(input, { schemaVersion: 3 }, 'the value read is never changed in place')
 })
 
 test('an older folder record is upgraded on read and written in the new format only on save', async (t) => {
@@ -287,7 +288,7 @@ test('projects v1 -> v2: book and content templates become panel layouts, older 
   ) as Record<string, unknown>
   const next = upgradeStored(v1) as Project
   validateProject(next)
-  assert.equal(next.schemaVersion, 2)
+  assert.equal(next.schemaVersion, 3)
   for (const key of [
     'contentCells',
     'contentCover',
@@ -320,6 +321,87 @@ test('projects v1 -> v2: book and content templates become panel layouts, older 
   assert.deepEqual(upgradeStored(next), next)
 })
 
+// R-437: a project as version 2 wrote it: game covers (one with its own fit) on the card, in a card layout and, album and
+// video info in a right-panel layout (one too narrow for a cover, one whose cover id is already taken), and a banner image.
+test('projects v2 -> v3: game cover, album info and video info become cover images and facts (R-437)', () => {
+  const v2 = JSON.parse(
+    readFileSync(path.resolve('tests/fixtures/project-v2.json'), 'utf8')
+  ) as Record<string, unknown>
+  const before = structuredClone(v2)
+  const next = upgradeStored(v2) as Project
+  assert.deepEqual(v2, before, 'the value read is never changed in place')
+  validateProject(next)
+  assert.equal(next.schemaVersion, 3)
+  const shape = (cells: Cell[]) =>
+    cells.map((c) => [c.cellId, c.kind, c.grid.x, c.grid.w, c.imageCover, c.imageFit])
+  assert.deepEqual(shape(next.cells).slice(1), [
+    ['gc', 'image', 0, 12, true, 'blur'],
+    ['gc2', 'image', 0, 6, true, 'cover'],
+  ])
+  assert.deepEqual(shape(next.layoutPresets!.find((p) => p.id === 'card-game')!.cells), [
+    ['gc', 'image', 0, 6, true, 'blur'],
+  ])
+  const album = next.panelPresets!.find((p) => p.id === 'album')!.cells
+  assert.deepEqual(shape(album), [
+    ['album-info-cover-2', 'image', 0, 4, true, undefined],
+    ['album-info', 'album-facts', 4, 8, undefined, undefined],
+    ['album-info-cover', 'name', 0, 12, undefined, undefined],
+    ['narrow', 'video-facts', 0, 1, undefined, undefined],
+    ['vi-cover', 'image', 0, 4, true, undefined],
+    ['vi', 'video-facts', 4, 8, undefined, undefined],
+    ['hero', 'image', 0, 12, undefined, undefined],
+  ])
+  // R-435's banner choice is untouched, and the rest of the project is kept as it was.
+  assert.equal(album.at(-1)!.imageRole, 'hero')
+  assert.deepEqual(next.panelPresets!.slice(0, -1), (v2.panelPresets as unknown[]).slice(0, -1))
+  assert.deepEqual(upgradeStored(next), next, 'upgrading again changes nothing')
+  // A v1 project goes the whole way in one read.
+  const whole = upgradeStored(
+    JSON.parse(readFileSync(path.resolve('tests/fixtures/project-v1.json'), 'utf8'))
+  ) as Project
+  assert.equal(whole.schemaVersion, 3)
+  validateProject(whole)
+})
+
+test('a v2 project is upgraded on read and written as v3 only on save; the v2 file stays as the backup (R-437)', async (t) => {
+  const root = await sandbox(t, 'upgrade-project-v2'),
+    media = path.join(root, 'media')
+  await fs.mkdir(media, { recursive: true })
+  await fs.writeFile(path.join(media, 'clip.mp4'), 'ORIGINAL')
+  const lib = new Library(path.join(root, 'local'), undefined, false)
+  await lib.init()
+  await lib.create(media, { name: 'P', scanAll: true, depth: { mode: 'through', level: 1 } })
+  const created = lib.snapshot().projects[0].project!
+  await lib.saveProject({ ...created, name: 'P2' })
+  const file = path.join(media, '.media-viewer', 'projects', `${created.projectId}.json`)
+  const current = (await readJson(file)) as Record<string, unknown>
+  const before = JSON.stringify({
+    ...JSON.parse(await fs.readFile(path.resolve('tests/fixtures/project-v2.json'), 'utf8')),
+    projectId: current.projectId,
+    rootFolderId: current.rootFolderId,
+    revision: current.revision,
+  })
+  await fs.writeFile(file, before)
+  const again = new Library(path.join(root, 'local'), undefined, false)
+  await again.init()
+  const project = again.snapshot().projects[0].project!
+  assert.equal(project.schemaVersion, 3)
+  assert.equal(
+    project.cells.some((c) => (c.kind as string) === 'game-cover'),
+    false
+  )
+  assert.equal(await fs.readFile(file, 'utf8'), before, 'reading never writes')
+  await again.saveProject({ ...project, name: 'Saved' })
+  const saved = (await readJson(file)) as { schemaVersion: number; cells: { kind: string }[] }
+  assert.equal(saved.schemaVersion, 3)
+  assert.equal(
+    saved.cells.some((c) => c.kind === 'game-cover'),
+    false
+  )
+  assert.equal(await fs.readFile(file + '.bak', 'utf8'), before)
+  assert.equal(await fs.readFile(path.join(media, 'clip.mp4'), 'utf8'), 'ORIGINAL')
+})
+
 test('an older project record is upgraded on read and written in the new format only on save (R-409)', async (t) => {
   const root = await sandbox(t, 'upgrade-project-v1'),
     media = path.join(root, 'media')
@@ -345,12 +427,12 @@ test('an older project record is upgraded on read and written in the new format 
   const again = new Library(path.join(root, 'local'), undefined, false)
   await again.init()
   const project = again.snapshot().projects[0].project!
-  assert.equal(project.schemaVersion, 2)
+  assert.equal(project.schemaVersion, 3)
   assert.equal(project.panelPresets?.length, 3)
   assert.equal(await fs.readFile(file, 'utf8'), before, 'reading never writes')
   await again.saveProject({ ...project, name: 'Saved' })
   const saved = (await readJson(file)) as Record<string, unknown>
-  assert.equal(saved.schemaVersion, 2)
+  assert.equal(saved.schemaVersion, 3)
   assert.equal('bookPresets' in saved, false)
   assert.equal(await fs.readFile(file + '.bak', 'utf8'), before, 'the v1 file stays as the backup')
   assert.equal(await fs.readFile(path.join(media, 'clip.mp4'), 'utf8'), 'ORIGINAL')

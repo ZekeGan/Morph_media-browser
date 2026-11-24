@@ -320,6 +320,14 @@ else {
             response.headers.set('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges')
             return response
           }
+          if (url.hostname === 'cover' && parts.length === 1) {
+            const response = await explorer.folderCover(parts[0], request)
+            response.headers.set(
+              'Access-Control-Allow-Origin',
+              devUrl ? new URL(devUrl).origin : 'app://ui'
+            )
+            return response
+          }
           if (url.hostname === 'nth' && parts.length === 2) {
             const response = await explorer.nthImage(parts[0], Number(parts[1]), request)
             response.headers.set(

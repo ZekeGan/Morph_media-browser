@@ -11,7 +11,7 @@ export type FormatKind = 'folder' | 'details' | 'project' | 'workspace' | 'setti
 export const FORMAT_VERSION: Record<FormatKind, number> = {
   folder: 2,
   details: 1,
-  project: 2,
+  project: 3,
   workspace: 1,
   settings: 1,
 }
@@ -33,6 +33,8 @@ export const UPGRADE_STEPS: Record<FormatKind, Partial<Record<number, Step>>> = 
     // 1 -> 2 (R-409): the right-panel layouts. Book templates, content templates and the older layout fields become
     // panel layouts and layout rules; see projectV1 below.
     1: (value) => projectV1(value),
+    // 2 -> 3 (R-437): the game cover, album info and video info components are gone; see projectV2 below.
+    2: (value) => projectV2(value),
   },
   workspace: {},
   settings: {},
@@ -178,6 +180,45 @@ export function settleFieldGroups(value: unknown): unknown {
   }
   const cells = (list: unknown) => (Array.isArray(list) ? list.map(cell) : list)
   return mapRawCellLists(next, cells)
+}
+
+// Project 2 -> 3 (R-437). What a component showed stays what it shows, as components that exist now:
+// - game-cover becomes an image component set to the folder cover, keeping its place and fit (blur unless set);
+// - album-info and video-info become that cover on the left third (at least one column, the rest of their width
+//   goes to the new album-facts / video-facts) - a component one column wide keeps only the facts.
+// Everything else, in every list (card, card layouts, right-panel layouts), is kept as it was.
+function projectV2(value: Record<string, unknown>): Record<string, unknown> {
+  const convert = (list: unknown) => {
+    if (!Array.isArray(list)) return list
+    const ids = new Set(list.map((cell) => (plain(cell) ? String(cell.cellId) : '')))
+    const unique = (id: string) => {
+      let next = id
+      for (let n = 2; ids.has(next); n++) next = id + '-' + n
+      ids.add(next)
+      return next
+    }
+    return list.flatMap((cell): unknown[] => {
+      if (!plain(cell) || !plain(cell.grid)) return [cell]
+      if (cell.kind === 'game-cover')
+        return [{ ...cell, kind: 'image', imageCover: true, imageFit: cell.imageFit ?? 'blur' }]
+      if (cell.kind !== 'album-info' && cell.kind !== 'video-info') return [cell]
+      const { x, w } = cell.grid as { x: number; w: number }
+      const facts = { ...cell, kind: cell.kind === 'album-info' ? 'album-facts' : 'video-facts' }
+      if (!(w >= 2)) return [facts]
+      const side = Math.max(1, Math.round(w / 3))
+      return [
+        {
+          cellId: unique(String(cell.cellId) + '-cover'),
+          kind: 'image',
+          imageCover: true,
+          ...(cell.style === undefined ? {} : { style: cell.style }),
+          grid: { ...cell.grid, w: side },
+        },
+        { ...facts, grid: { ...cell.grid, x: x + side, w: w - side } },
+      ]
+    })
+  }
+  return mapRawCellLists(value, convert)
 }
 
 // Project 1 -> 2 (R-409). What a folder showed stays what it shows:

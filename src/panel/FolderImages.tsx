@@ -14,7 +14,6 @@ export function FolderImages({
   row,
   assets,
   imageCells,
-  isGame,
   disabled,
   locked,
   act,
@@ -23,7 +22,6 @@ export function FolderImages({
   row: FolderRow
   assets: Asset[]
   imageCells: Cell[]
-  isGame: boolean
   disabled: boolean
   // Unsaved field edits block image changes, which would write the same record.
   locked: boolean
@@ -39,7 +37,7 @@ export function FolderImages({
           ? [tr('圖片') + (index + 1)]
           : []
       ),
-      ...(details?.bannerAssetId === assetId ? [tr('遊戲封面')] : []),
+      ...(details?.bannerAssetId === assetId ? [tr('封面')] : []),
     ]
     if (
       !window.confirm(
@@ -176,14 +174,14 @@ export function FolderImages({
           {tr('目前版面沒有圖片組件，無須為每個資料夾指定圖片。')}
         </Text>
       )}
-      {isGame && (
+      {!!row.record && (
         <section className="settings-section">
           <Text fw={600} mb="sm">
-            {tr('遊戲封面')}
+            {tr('封面')}
           </Text>
           {imageChooser({
             label: tr('封面圖片'),
-            current: details?.bannerAssetId ?? assets[0]?.assetId,
+            current: details?.bannerAssetId ?? assets.find((a) => !a.role)?.assetId,
             onPick: (assetId) =>
               void run({
                 action: 'banner',
@@ -191,8 +189,26 @@ export function FolderImages({
                 revision: row.record!.revision,
                 assetId,
               }),
-            onImport: () =>
-              void act({ action: 'image', rowId: row.rowId, revision: row.record!.revision }),
+            // An imported picture becomes the cover right away (the same as picking it from the list).
+            onImport: async () => {
+              const result = await act({
+                  action: 'image',
+                  rowId: row.rowId,
+                  revision: row.record!.revision,
+                }),
+                next =
+                  result && !result.cancelled
+                    ? result.snapshot.structure?.find((r) => r.rowId === row.rowId)?.record
+                    : undefined,
+                asset = next?.assets.at(-1)
+              if (next && asset)
+                await run({
+                  action: 'banner',
+                  rowId: row.rowId,
+                  revision: next.revision,
+                  assetId: asset.assetId,
+                })
+            },
           })}
           <ImageUrlImport row={row} run={run} disabled={disabled || locked} />
         </section>
@@ -212,7 +228,7 @@ export function FolderImages({
                       : ''
                   )
                   .filter(Boolean),
-                ...(isGame && (details?.bannerAssetId ?? assets[0]?.assetId) === a.assetId
+                ...((details?.bannerAssetId ?? assets.find((x) => !x.role)?.assetId) === a.assetId
                   ? [tr('封面')]
                   : []),
               ]

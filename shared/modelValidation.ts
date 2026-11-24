@@ -154,10 +154,9 @@ function validCell(c: unknown): boolean {
       'image',
       'divider',
       'open-folder',
-      'game-cover',
       'game-launch',
-      'album-info',
-      'video-info',
+      'album-facts',
+      'video-facts',
       'book-card',
       'game-extra',
     ].includes(c.kind) &&
@@ -177,8 +176,7 @@ function validCell(c: unknown): boolean {
       (c.presentation === 'badge' && ['field-enum', 'field-boolean'].includes(c.kind)) ||
       (['rating', 'progress'].includes(c.presentation) && c.kind === 'field-number')) &&
     (c.imageFit === undefined ||
-      (['contain', 'cover', 'blur'].includes(c.imageFit) &&
-        ['image', 'game-cover'].includes(c.kind))) &&
+      (['contain', 'cover', 'blur'].includes(c.imageFit) && c.kind === 'image')) &&
     (c.fallbackIds === undefined ||
       (c.kind.startsWith('field-') &&
         Array.isArray(c.fallbackIds) &&

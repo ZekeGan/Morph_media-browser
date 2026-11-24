@@ -194,7 +194,7 @@ try {
   await filter('全部')
   await page.locator('.album-track').filter({ hasText: 'track' }).waitFor()
   await page.waitForFunction(() => {
-    const img = document.querySelector('.album-header .album-cover img') as HTMLImageElement
+    const img = document.querySelector('.media-info-template img.cell-image') as HTMLImageElement
     return !!img && img.complete && img.naturalWidth > 0
   })
   // 全部播放 makes the album the play queue and marks the track playing; the previous queue can be put back.

@@ -30,10 +30,14 @@ test('R-362: a book starts with its cover on the left and the card fields on the
     bookTemplate({ cells: [card[0]] }).map((c) => c.cellId),
     ['book-cover']
   )
-  // Music and video start with their main visual; other kinds show nothing, and the editor starts them with the name.
+  // Music and video start with the cover and their facts (R-437); other kinds show nothing, and the editor starts them with the name.
   assert.deepEqual(
     builtinPanel({ cells: card }, 'music').map((c) => c.kind),
-    ['album-info']
+    ['image', 'album-facts']
+  )
+  assert.deepEqual(
+    builtinPanel({ cells: card }, 'video').map((c) => c.kind),
+    ['image', 'video-facts']
   )
   assert.deepEqual(builtinPanel({ cells: card }, 'game'), [])
   assert.deepEqual(

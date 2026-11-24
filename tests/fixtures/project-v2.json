@@ -1,0 +1,297 @@
+{
+  "kind": "media-viewer.project",
+  "schemaVersion": 2,
+  "projectId": "fixture-project-v2",
+  "rootFolderId": "fixture-root",
+  "revision": 7,
+  "name": "Fixture v2",
+  "depth": {
+    "mode": "through",
+    "level": 3
+  },
+  "fieldBindings": [
+    {
+      "alias": "TITLE",
+      "attributeId": "title",
+      "type": "string"
+    }
+  ],
+  "cells": [
+    {
+      "cellId": "name",
+      "kind": "name",
+      "grid": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 1
+      },
+      "style": {
+        "textColor": "#e4e6e8",
+        "backgroundColor": "transparent"
+      }
+    },
+    {
+      "cellId": "gc",
+      "kind": "game-cover",
+      "grid": {
+        "x": 0,
+        "y": 1,
+        "w": 12,
+        "h": 3
+      },
+      "style": {
+        "textColor": "#e4e6e8",
+        "backgroundColor": "transparent"
+      }
+    },
+    {
+      "cellId": "gc2",
+      "kind": "game-cover",
+      "grid": {
+        "x": 0,
+        "y": 4,
+        "w": 6,
+        "h": 2
+      },
+      "style": {
+        "textColor": "#e4e6e8",
+        "backgroundColor": "transparent"
+      },
+      "imageFit": "cover"
+    }
+  ],
+  "list": {
+    "itemsPerRow": 3,
+    "pageSize": 100
+  },
+  "excludedRelativePaths": [],
+  "layoutPresets": [
+    {
+      "id": "card-main",
+      "name": "預設版面",
+      "cells": [
+        {
+          "cellId": "name",
+          "kind": "name",
+          "grid": {
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 1
+          },
+          "style": {
+            "textColor": "#e4e6e8",
+            "backgroundColor": "transparent"
+          }
+        }
+      ]
+    },
+    {
+      "id": "card-game",
+      "name": "Game",
+      "cells": [
+        {
+          "cellId": "gc",
+          "kind": "game-cover",
+          "grid": {
+            "x": 0,
+            "y": 0,
+            "w": 6,
+            "h": 3
+          },
+          "style": {
+            "textColor": "#e4e6e8",
+            "backgroundColor": "transparent"
+          }
+        }
+      ]
+    },
+    {
+      "id": "card-media",
+      "name": "Media",
+      "cells": []
+    }
+  ],
+  "activeLayoutId": "card-main",
+  "futureNote": {
+    "kept": true
+  },
+  "layoutRules": {
+    "card": {
+      "types": {
+        "game": "card-game",
+        "music": "card-media",
+        "video": "card-media"
+      },
+      "folders": {
+        "folder-b": "card-main"
+      }
+    },
+    "panel": {
+      "folders": {
+        "folder-a": "own"
+      },
+      "types": {
+        "book": "default",
+        "game": "panel-game"
+      }
+    }
+  },
+  "panelPresets": [
+    {
+      "id": "default",
+      "name": "預設版面",
+      "cells": [
+        {
+          "cellId": "book-cover",
+          "kind": "image",
+          "imageIndex": 1,
+          "grid": {
+            "x": 0,
+            "y": 0,
+            "w": 4,
+            "h": 4
+          },
+          "style": {
+            "textColor": "#e4e6e8",
+            "backgroundColor": "transparent"
+          }
+        },
+        {
+          "cellId": "title",
+          "kind": "field-text",
+          "attributeId": "title",
+          "grid": {
+            "x": 4,
+            "y": 0,
+            "w": 8,
+            "h": 1
+          },
+          "style": {
+            "textColor": "#e4e6e8",
+            "backgroundColor": "transparent"
+          }
+        }
+      ]
+    },
+    {
+      "id": "own",
+      "name": "Folder A",
+      "cells": [
+        {
+          "cellId": "book-cover",
+          "kind": "image",
+          "imageIndex": 1,
+          "grid": {
+            "x": 0,
+            "y": 0,
+            "w": 4,
+            "h": 4
+          },
+          "style": {
+            "textColor": "#e4e6e8",
+            "backgroundColor": "transparent"
+          }
+        }
+      ]
+    },
+    {
+      "id": "panel-game",
+      "name": "遊戲 預設",
+      "cells": [
+        {
+          "cellId": "game-name",
+          "kind": "name",
+          "grid": {
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 1
+          },
+          "style": {
+            "textColor": "#e4e6e8",
+            "backgroundColor": "transparent"
+          }
+        }
+      ]
+    },
+    {
+      "id": "album",
+      "name": "Album",
+      "cells": [
+        {
+          "cellId": "album-info",
+          "kind": "album-info",
+          "grid": {
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 4
+          },
+          "style": {
+            "textColor": "#e4e6e8",
+            "backgroundColor": "transparent"
+          }
+        },
+        {
+          "cellId": "album-info-cover",
+          "kind": "name",
+          "grid": {
+            "x": 0,
+            "y": 4,
+            "w": 12,
+            "h": 1
+          },
+          "style": {
+            "textColor": "#e4e6e8",
+            "backgroundColor": "transparent"
+          }
+        },
+        {
+          "cellId": "narrow",
+          "kind": "video-info",
+          "grid": {
+            "x": 0,
+            "y": 5,
+            "w": 1,
+            "h": 2
+          },
+          "style": {
+            "textColor": "#e4e6e8",
+            "backgroundColor": "transparent"
+          }
+        },
+        {
+          "cellId": "vi",
+          "kind": "video-info",
+          "grid": {
+            "x": 0,
+            "y": 7,
+            "w": 12,
+            "h": 2
+          },
+          "style": {
+            "textColor": "#e4e6e8",
+            "backgroundColor": "transparent"
+          }
+        },
+        {
+          "cellId": "hero",
+          "kind": "image",
+          "grid": {
+            "x": 0,
+            "y": 9,
+            "w": 12,
+            "h": 3
+          },
+          "style": {
+            "textColor": "#e4e6e8",
+            "backgroundColor": "transparent"
+          },
+          "imageRole": "hero"
+        }
+      ]
+    }
+  ]
+}

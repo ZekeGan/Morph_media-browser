@@ -45,7 +45,7 @@ export function modelProject(): Project {
   const cells = defaultCells(() => 'cell-' + id++, 'title')
   return {
     kind: 'media-viewer.project',
-    schemaVersion: 2,
+    schemaVersion: 3,
     projectId: 'project',
     rootFolderId: 'folder',
     revision: 1,

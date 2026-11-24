@@ -286,7 +286,6 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .game-content>.folder-details { margin-bottom:0; }
 .game-content>.game-banner { border:1px solid var(--line); border-radius:8px; padding:0; overflow:hidden; min-height:170px; }
 .game-content .game-banner img { max-height:340px; }
-.cover-change { position:absolute; top:8px; right:8px; }
 .game-actions { padding:0; }
 .game-actions>.mantine-ActionIcon-root { margin-left:auto; }
 @container center (max-width:700px) {

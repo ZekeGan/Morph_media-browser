@@ -1314,17 +1314,9 @@
 /* Where a dragged component will land: clear in every theme. */
 .canvas .react-grid-placeholder { background: color-mix(in srgb, var(--accent) 22%, transparent); border: 2px dashed var(--accent); border-radius: 6px; opacity: 1; z-index: 2; }
 
-/* R-294: the album cover at the top of a music folder's page, smaller than the player's. */
-.folder-album-cover {
-    width: min(100%, 200px);
-    margin: 0 auto 10px;
-}
-
 
 /* R-390: a music folder shown as an album */
 .album-header { display: flex; gap: 14px; align-items: flex-end; margin: 4px 0 10px; }
-.album-header .folder-album-cover { flex: none; width: 132px; margin: 0; }
-.album-header .folder-album-cover img { width: 132px; height: 132px; object-fit: cover; border-radius: var(--radius); }
 .album-facts { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .album-title { overflow-wrap: anywhere; }
 .album-actions { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }

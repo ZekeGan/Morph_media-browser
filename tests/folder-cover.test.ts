@@ -17,13 +17,13 @@ const row = (assets: Asset[], bannerAssetId?: string) =>
     record: { assets, details: bannerAssetId ? { bannerAssetId } : {} },
   }) as unknown as FolderRow
 
-test('the chosen cover wins, then the first plain picture, then the first image file', () => {
+test('the chosen cover wins, then the first plain picture, then the main process own search', () => {
   assert.equal(folderCoverAsset(row([asset('a'), asset('b')], 'b'))?.assetId, 'b')
   assert.equal(folderCoverAsset(row([asset('s', 'screenshot'), asset('a')]))?.assetId, 'a')
   // Source extras (screenshots, hero, logo, icon) are never taken as the cover by themselves.
   assert.equal(folderCoverAsset(row([asset('s', 'screenshot'), asset('h', 'hero')])), undefined)
   assert.deepEqual(folderCoverPicture(row([asset('h', 'hero')])), {
-    src: 'media://nth/r1/1',
+    src: 'media://cover/r1',
     alt: 'Folder',
   })
   assert.deepEqual(folderCoverPicture(row([asset('a')])), {

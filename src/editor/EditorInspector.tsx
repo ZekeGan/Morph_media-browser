@@ -648,14 +648,11 @@ export function EditorInspector(props: EditorInspectorProps) {
                           </Text>
                         </div>
                       )}
-                    {['image', 'game-cover'].includes(selectedCell.kind) && (
+                    {selectedCell.kind === 'image' && (
                       <Select
                         label={tr('圖片填滿方式')}
                         allowDeselect={false}
-                        value={
-                          selectedCell.imageFit ??
-                          (selectedCell.kind === 'game-cover' ? 'blur' : 'contain')
-                        }
+                        value={selectedCell.imageFit ?? 'contain'}
                         data={[
                           { value: 'blur', label: tr('完整顯示，空白處以模糊背景填滿') },
                           { value: 'cover', label: tr('填滿容器（裁切多餘部分）') },

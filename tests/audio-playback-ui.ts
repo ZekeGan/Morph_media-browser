@@ -156,7 +156,7 @@ try {
     await page.locator('.mixed-media-browser').waitFor()
     // R-294: a music folder's page shows the album cover (here the first track's embedded one).
     await page.waitForFunction(() => {
-      const image = document.querySelector<HTMLImageElement>('.folder-album-cover img')
+      const image = document.querySelector<HTMLImageElement>('.media-info-template img.cell-image')
       return !!image && image.complete && image.naturalWidth > 0
     })
     if (name === 'Audio media') {

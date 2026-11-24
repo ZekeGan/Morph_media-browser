@@ -200,7 +200,7 @@ export function FolderPanel({
     ).values(),
   ]
   const assets = row.record?.assets ?? []
-  const showImages = imageCells.length > 0 || assets.length > 0 || isGame
+  const showImages = imageCells.length > 0 || assets.length > 0 || !!row.record
   useEffect(() => {
     if (
       (tab === 'images' && !showImages) ||
@@ -917,7 +917,6 @@ export function FolderPanel({
             row={row}
             assets={assets}
             imageCells={imageCells}
-            isGame={isGame}
             disabled={disabled}
             locked={fieldDirty}
             act={act}

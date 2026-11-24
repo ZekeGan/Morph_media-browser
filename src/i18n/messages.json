@@ -1229,18 +1229,6 @@
     "en": "No game cover",
     "es": "Sin portada del juego"
   },
-  "更換遊戲封面": {
-    "ja": "ゲームのカバーを変更",
-    "zh-CN": "更换游戏封面",
-    "en": "Change game cover",
-    "es": "Cambiar portada del juego"
-  },
-  "匯入封面圖片": {
-    "ja": "カバー画像をインポート",
-    "zh-CN": "导入封面图片",
-    "en": "Import cover image",
-    "es": "Importar imagen de portada"
-  },
   "尚未綁定": {
     "ja": "未関連付け",
     "zh-CN": "尚未绑定",
@@ -1546,12 +1534,6 @@
     "zh-CN": "封面图片",
     "en": "Cover image",
     "es": "Imagen de portada"
-  },
-  "匯入封面": {
-    "ja": "カバーをインポート",
-    "zh-CN": "导入封面",
-    "en": "Import cover",
-    "es": "Importar portada"
   },
   "從網站補充資訊": {
     "ja": "Webから情報を補足",
@@ -3827,12 +3809,6 @@
     "ja": "カバーの保存に失敗しました。現在のカバーは変更されません",
     "es": "No se pudo guardar la portada; la portada actual no cambia"
   },
-  "尚無封面": {
-    "zh-CN": "暂无封面",
-    "en": "No cover yet",
-    "ja": "カバーなし",
-    "es": "Sin portada"
-  },
   "圖片填滿方式": {
     "zh-CN": "图片填充方式",
     "en": "Image fit",
@@ -3952,12 +3928,6 @@
     "en": "Opens this folder in one click",
     "ja": "ワンクリックでこのフォルダーを開きます",
     "es": "Abre esta carpeta con un clic"
-  },
-  "顯示這個遊戲資料夾的封面": {
-    "zh-CN": "显示这个游戏文件夹的封面",
-    "en": "Shows this game folder's cover",
-    "ja": "このゲームフォルダーのカバーを表示します",
-    "es": "Muestra la portada de esta carpeta de juego"
   },
   "文字欄位": {
     "zh-CN": "文本字段",
@@ -12875,12 +12845,6 @@
     "ja": "書籍情報（EPUB）",
     "es": "Información del libro (EPUB)"
   },
-  "右側：專輯封面、名稱、演出者與曲數": {
-    "zh-CN": "右侧：专辑封面、名称、艺人与曲数",
-    "en": "Right panel: album cover, title, artist and track count",
-    "ja": "右側：アルバムのカバー、タイトル、アーティストと曲数",
-    "es": "Panel derecho: portada, título, artista y número de pistas"
-  },
   "右側：影片數與播放／繼續觀看": {
     "zh-CN": "右侧：视频数与播放／继续观看",
     "en": "Right panel: video count and play / continue watching",
@@ -13252,5 +13216,11 @@
     "en": "First release date",
     "ja": "初回発売日",
     "es": "Primera publicación"
+  },
+  "右側：專輯名稱、演出者、年份、曲數與總長度": {
+    "zh-CN": "右侧：专辑名称、演出者、年份、曲数与总时长",
+    "en": "Right panel: album name, artist, year, track count and total length",
+    "ja": "右側：アルバム名、アーティスト、年、曲数、総再生時間",
+    "es": "Panel derecho: nombre del álbum, artista, año, pistas y duración total"
   }
 }

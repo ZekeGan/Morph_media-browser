@@ -25,7 +25,10 @@ test('portable validation accepts representative records without changing values
     const before = structuredClone(value)
     check(value)
     assert.deepEqual(value, before)
-    assert.equal(value.schemaVersion, check === validateDetails ? 1 : 2)
+    assert.equal(
+      value.schemaVersion,
+      check === validateDetails ? 1 : check === validateProject ? 3 : 2
+    )
     // Data a newer version wrote is reported as such, never as damaged.
     assert.throws(
       () => check({ ...value, schemaVersion: value.schemaVersion + 1 }),
