@@ -1,4 +1,4 @@
-import { createContext, useContext, useSyncExternalStore } from 'react'
+import { createContext, useContext } from 'react'
 import { Tooltip } from '@mantine/core'
 import type { FolderRow } from '../../shared/model'
 import { parentPath, pathKey } from '../../shared/browse'
@@ -72,21 +72,17 @@ export function KindIcon({ row, size = 16 }: { row: FolderRow; size?: number }) 
   )
 }
 
-// The badge on a card (R-344): the kind's icon, a plain folder for general folders or when kind badges are turned
-// off. Its tooltip says the kind and whether it was detected or set by hand; a click shows the folder contents.
+// The badge on a card (R-344): the kind's icon, a plain folder for general folders. Its tooltip says the kind and whether it was detected or set by hand; a click shows the folder contents.
 export function KindBadge({ row, show }: { row: FolderRow; show: () => void }) {
   useLocale()
   const { look, manual, candidate } = useKindLook(row)
-  const visible = useKindBadgeVisible()
-  const typed = visible && (look !== 'general' || candidate)
+  const typed = look !== 'general' || candidate
   const shown: KindLook = !typed ? 'general' : look === 'general' ? 'game' : look,
     unconfirmed = typed && candidate && look !== 'game',
-    kind = !visible
-      ? ''
-      : unconfirmed
-        ? tr('疑似遊戲 · 尚未確認')
-        : tr(looks[shown].label) + ' · ' + (manual ? tr('你指定的') : tr('自動判斷')),
-    label = kind ? kind + ' — ' + tr('顯示資料夾內容') : tr('顯示資料夾內容')
+    kind = unconfirmed
+      ? tr('疑似遊戲 · 尚未確認')
+      : tr(looks[shown].label) + ' · ' + (manual ? tr('你指定的') : tr('自動判斷')),
+    label = kind + ' — ' + tr('顯示資料夾內容')
   return (
     <Tooltip label={label} withArrow>
       <button
@@ -102,27 +98,4 @@ export function KindBadge({ row, show }: { row: FolderRow; show: () => void }) {
       </button>
     </Tooltip>
   )
-}
-
-// Showing the kind on card badges is this computer's choice (on unless turned off).
-const badgeKey = 'morph.kindBadge'
-const badgeListeners = new Set<() => void>()
-const readBadge = () => {
-  try {
-    return localStorage.getItem(badgeKey) !== 'off'
-  } catch {
-    return true
-  }
-}
-export function setKindBadgeVisible(value: boolean) {
-  try {
-    localStorage.setItem(badgeKey, value ? 'on' : 'off')
-  } catch {}
-  for (const listener of badgeListeners) listener()
-}
-export function useKindBadgeVisible() {
-  return useSyncExternalStore((callback) => {
-    badgeListeners.add(callback)
-    return () => badgeListeners.delete(callback)
-  }, readBadge)
 }

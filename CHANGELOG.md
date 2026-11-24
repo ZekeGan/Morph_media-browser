@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- The tree toolbar has the layout button too (R-481). The "show type icons" switch is gone: card badges always show the folder type (R-482). The layout window has a breadcrumb above the folder list that moves where the list starts up to any folder above, without closing the window (R-483). The folder setting "In All works" is removed; works are always worked out automatically, and values older versions saved are kept untouched and no longer read (R-484).
 - Dragging a row in the sort menu or the source language list shows a line where it will land (none where dropping changes nothing); both lists share one drag helper (R-480).
 - Folder type: a folder of pictures is a manga only when the file names are page numbers (1, 001, p12, id_p0 … with zero padding, covers and credits ignored, mostly without gaps, at least 80% of the pictures); other picture folders are general. Folders set by hand, with comic archives, read in manga mode or filled in from a manga site stay manga (R-479).
 - Search: the same folder (same path) in several projects is one result, with every project listed beside it; it opens in the current project when that is one of them (R-477).

@@ -585,16 +585,6 @@ export class Explorer {
           notice: { level: 'success' as const, message: '已更新資料夾類型' },
         }
       }
-      case 'browseAs': {
-        if (req.value !== null && req.value !== 'work' && req.value !== 'collection')
-          throw new Error('瀏覽方式不合法')
-        return this.after(
-          await this.details(req.rowId, req.revision, (d) => {
-            if (req.value === null) delete d.browseAs
-            else d.browseAs = req.value
-          })
-        )
-      }
       case 'folderKinds': {
         if (req.kind !== null && !isFolderKind(req.kind)) throw new Error('資料夾類型不合法')
         if (

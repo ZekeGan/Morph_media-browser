@@ -11225,12 +11225,6 @@
     "ja": "小説",
     "es": "Novela"
   },
-  "顯示類型圖示": {
-    "zh-CN": "显示类型图标",
-    "en": "Show kind icons",
-    "ja": "種類アイコンを表示",
-    "es": "Mostrar iconos de tipo"
-  },
   "疑似遊戲 · 尚未確認": {
     "zh-CN": "疑似游戏 · 尚未确认",
     "en": "Possible game · not confirmed",
@@ -11422,30 +11416,6 @@
     "en": "{0} levels",
     "ja": "{0} 階層",
     "es": "{0} niveles"
-  },
-  "在「所有作品」裡": {
-    "zh-CN": "在「所有作品」里",
-    "en": "In \"All works\"",
-    "ja": "「すべての作品」では",
-    "es": "En «Todas las obras»"
-  },
-  "自動：裝著自己的圖片、影片、音樂或文字書，或是一套分集的資料夾，就算一部作品；只裝資料夾的會被穿過。": {
-    "zh-CN": "自动：装着自己的图片、视频、音乐或文字书，或是一套分集的文件夹，就算一部作品；只装文件夹的会被穿过。",
-    "en": "Automatic: a folder holding its own pictures, videos, music or books, or a set of numbered volumes, is one work; a folder holding only folders is passed through.",
-    "ja": "自動：自分の画像・動画・音楽・本を入れたフォルダー、または巻ごとのフォルダーのまとまりは 1 作品。フォルダーだけを入れたものは通り抜けます。",
-    "es": "Automático: una carpeta con sus propias imágenes, vídeos, música o libros, o un conjunto de volúmenes numerados, es una obra; una carpeta que solo contiene carpetas se atraviesa."
-  },
-  "算一部作品": {
-    "zh-CN": "算一部作品",
-    "en": "One work",
-    "ja": "1 作品として扱う",
-    "es": "Una obra"
-  },
-  "是分類，往裡面找": {
-    "zh-CN": "是分类，往里面找",
-    "en": "A category: look inside",
-    "ja": "分類として中を探す",
-    "es": "Una categoría: buscar dentro"
   },
   "瀏覽方式不合法": {
     "zh-CN": "浏览方式不合法",
@@ -13552,5 +13522,11 @@
     "en": "Move {0} in the language order",
     "ja": "言語の順序で {0} を移動",
     "es": "Mover {0} en el orden de idiomas"
+  },
+  "清單從哪個資料夾開始": {
+    "zh-CN": "列表从哪个文件夹开始",
+    "en": "Where the list starts",
+    "ja": "リストの開始フォルダー",
+    "es": "Carpeta donde empieza la lista"
   }
 }

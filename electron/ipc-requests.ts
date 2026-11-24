@@ -163,7 +163,6 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
   openExternalPlayer: { rowId: ref, fileId: ref, time: opt(num) },
   subtitleTrack: { ...revisionRow, name: opt(text), language: opt(text) },
   removeSource: { ...revisionRow, provider: ref },
-  browseAs: { ...revisionRow, value: (v) => v === null || v === 'work' || v === 'collection' },
   targetLocale: {
     ...revisionRow,
     templateId: ref,

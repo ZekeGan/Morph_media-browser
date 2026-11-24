@@ -840,36 +840,6 @@ export function FolderPanel({
               />
             )}
             {row.record && (
-              // R-340: how this folder counts in the "all works" view.
-              <Select
-                label={
-                  <HelpLabel
-                    label={tr('在「所有作品」裡')}
-                    help={tr(
-                      '自動：裝著自己的圖片、影片、音樂或文字書，或是一套分集的資料夾，就算一部作品；只裝資料夾的會被穿過。'
-                    )}
-                  />
-                }
-                allowDeselect={false}
-                value={row.record.details?.browseAs ?? 'auto'}
-                data={[
-                  { value: 'auto', label: tr('自動判斷') },
-                  { value: 'work', label: tr('算一部作品') },
-                  { value: 'collection', label: tr('是分類，往裡面找') },
-                ]}
-                disabled={disabled || fieldDirty}
-                onChange={(value) =>
-                  value &&
-                  void run({
-                    action: 'browseAs',
-                    rowId: row.rowId,
-                    revision: row.record!.revision,
-                    value: value === 'auto' ? null : (value as 'work' | 'collection'),
-                  })
-                }
-              />
-            )}
-            {row.record && (
               <div className="folder-layouts" role="group" aria-label={tr('此資料夾的版面')}>
                 <HelpLabel
                   label={<Text size="sm">{tr('此資料夾的版面')}</Text>}

@@ -230,7 +230,7 @@
         "shared/layoutRules*",
         "src/browse/LayoutConfig*"
       ],
-      "ui": ["cell-editor-ui", "layout-config-ui", "field-edit-ui", "editor-fields-ui", "decided-ui", "yes-no-wording-ui", "condition-rules-ui", "date-field-ui"],
+      "ui": ["cell-editor-ui", "layout-config-ui", "layout-breadcrumb-ui", "field-edit-ui", "editor-fields-ui", "decided-ui", "yes-no-wording-ui", "condition-rules-ui", "date-field-ui"],
       "tests": ["decided.test.ts", "field-types.test.ts", "field-groups.test.ts", "date-fields.test.ts", "layout-rules.test.ts"]
     },
     {

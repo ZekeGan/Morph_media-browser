@@ -1,5 +1,4 @@
 import '../media/media-workspace.css'
-import { setKindBadgeVisible, useKindBadgeVisible } from './folderKind'
 import { t as tr } from '../i18n'
 import { Icon } from '../common/icons'
 import { iconLabel } from '../common/IconLabel'
@@ -13,7 +12,6 @@ import {
   SegmentedControl,
   Select,
   Stack,
-  Switch,
   Text,
   TextInput,
   Tooltip,
@@ -81,7 +79,6 @@ export function BrowseToolbar(props: Props) {
     state,
     switchMode,
   } = props
-  const kindBadge = useKindBadgeVisible()
   return (
     <>
       <div className={'workspace-toolbar' + (folderMode ? '' : ' file-mode-toolbar')}>
@@ -136,9 +133,10 @@ export function BrowseToolbar(props: Props) {
             className="workspace-file-tools"
             style={{ display: folderMode ? 'none' : undefined }}
           />
-          {folderMode && browse.mode === 'CARD' && (
+          {folderMode && browse.mode !== 'TABLE' && (
             // R-413: which layout each folder uses is set in the layout configuration window. R-470: one button, with
-            // the layout icon every layout entry uses; a narrow toolbar keeps only the icon.
+            // the layout icon every layout entry uses; a narrow toolbar keeps only the icon. R-481: the tree has it
+            // too, since its nodes can be the folders' cards.
             <Tooltip label={tr('版面配置') + '：' + layoutLabel} withArrow>
               <Button
                 size="xs"
@@ -293,12 +291,6 @@ export function BrowseToolbar(props: Props) {
                       setDensity({ ...density, pageSize: value })
                       changedCard()
                     }}
-                  />
-                  <Switch
-                    size="xs"
-                    label={tr('顯示類型圖示')}
-                    checked={kindBadge}
-                    onChange={(event) => setKindBadgeVisible(event.currentTarget.checked)}
                   />
                   {cardSaveError && (
                     <Button size="compact-xs" color="red" variant="subtle" onClick={changedCard}>

@@ -94,6 +94,8 @@ export function LayoutConfig({
     base = bases[target],
     setBase = (id: string) => setBases((now) => ({ ...now, [target]: id })),
     [picked, setPicked] = useState<string>(),
+    // R-483: the folder the list starts at, moved up with the breadcrumb; the folder being browsed until then.
+    [anchorId, setAnchorId] = useState<string>(),
     [query, setQuery] = useState(''),
     [closed, setClosed] = useState<string[]>([]),
     // R-444: show only the folders with their own layout, or only those changed and not saved yet.
@@ -170,11 +172,37 @@ export function LayoutConfig({
       return !open
     })
   // The list: the folder being browsed and everything below it (the whole project at its root).
-  const scope = useMemo(() => {
-    if (!start) return rows
+  const scopeOf = (from?: FolderRow) => {
+    if (!from) return rows
+    const key = pathKey(from.path)
+    return rows.filter((r) => r.rowId === from.rowId || pathKey(r.path).startsWith(key + '/'))
+  }
+  const anchor = rows.find((r) => r.rowId === anchorId) ?? start
+  const scope = useMemo(() => scopeOf(anchor), [rows, anchor])
+  // R-483: the folders from the project's top down to the folder being browsed, each one a place the list can start at.
+  const crumbs = useMemo(() => {
+    if (!start) return []
     const key = pathKey(start.path)
-    return rows.filter((r) => r.rowId === start.rowId || pathKey(r.path).startsWith(key + '/'))
+    return rows
+      .filter((r) => r.rowId === start.rowId || key.startsWith(pathKey(r.path) + '/'))
+      .sort((a, b) => a.depth - b.depth)
   }, [rows, start])
+  // Two levels below the list's first folder are open; deeper branches start closed.
+  const closedBelow = (list: FolderRow[]) => {
+    const kids = treeStructure(list).children,
+      top = list.reduce((min, r) => Math.min(min, r.depth), Infinity)
+    return list.filter((r) => r.depth - top >= 2 && kids.get(r.rowId)?.length).map((r) => r.rowId)
+  }
+  const goUp = (row: FolderRow) => {
+    const list = scopeOf(row)
+    setAnchorId(row.rowId)
+    setClosed(closedBelow(list))
+    setPicked((now) => (list.some((r) => r.rowId === now) ? now : row.rowId))
+    setMarked((now) => now.filter((id) => list.some((r) => r.rowId === id)))
+  }
+  useEffect(() => {
+    if (!opened) setAnchorId(undefined)
+  }, [opened])
   const structure = useMemo(() => treeStructure(scope), [scope])
   const savedRules = (): Record<Target, LayoutRule> => ({
       card: structuredClone(cardRule(project) ?? {}),
@@ -193,13 +221,7 @@ export function LayoutConfig({
     setQuery('')
     setOnly('all')
     setMarked([])
-    // Two levels below the starting folder are open; deeper branches start closed.
-    const top = scope.reduce((min, r) => Math.min(min, r.depth), Infinity)
-    setClosed(
-      scope
-        .filter((r) => r.depth - top >= 2 && structure.children.get(r.rowId)?.length)
-        .map((r) => r.rowId)
-    )
+    setClosed(closedBelow(scope))
   }, [opened])
   // A panel without a layout shows its kind's built-in panel ('' stands for it).
   const name = (id: string) => {
@@ -637,6 +659,29 @@ export function LayoutConfig({
               ))}
             </span>
           </div>
+          {crumbs.length > 1 && (
+            <nav className="layout-config-crumbs" aria-label={tr('清單從哪個資料夾開始')}>
+              {crumbs.map((r, i) => (
+                <span key={r.rowId}>
+                  {i > 0 && <span aria-hidden="true">{String.fromCharCode(92)}</span>}
+                  {r.rowId === anchor?.rowId ? (
+                    <span aria-current="page" className="breadcrumb-current" title={r.path}>
+                      {r.name}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="breadcrumb-link"
+                      title={r.path}
+                      onClick={() => goUp(r)}
+                    >
+                      {r.name}
+                    </button>
+                  )}
+                </span>
+              ))}
+            </nav>
+          )}
           {marked.length > 1 && (
             <div className="layout-config-batch" role="group" aria-label={tr('所選資料夾')}>
               <Text size="xs">{tr('已選 {0} 個資料夾', marked.length)}</Text>

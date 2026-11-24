@@ -232,8 +232,6 @@ function isSeries(children: FolderRow[], kids: Map<string, FolderRow[]>) {
   )
 }
 export function isWork(row: FolderRow, kids: Map<string, FolderRow[]>) {
-  const mark = row.record?.details?.browseAs
-  if (mark) return mark === 'work'
   if (row.boundary || row.record?.details?.boundary?.state) return true
   if (row.record?.details?.kind && row.record.details.kind !== 'general') return true
   if (holdsMedia(row.contents)) return true

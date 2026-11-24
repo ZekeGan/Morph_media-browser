@@ -1,6 +1,6 @@
 # 資料格式參考
 
-> 最後確認：2026-11-24（R-469）。可攜記錄與應用程式資料的格式；型別以 `shared/model.ts`、`shared/workspace.ts` 為準，升級在 `shared/upgrade.ts`。
+> 最後確認：2026-11-25（R-481,R-482,R-483,R-484）。可攜記錄與應用程式資料的格式；型別以 `shared/model.ts`、`shared/workspace.ts` 為準，升級在 `shared/upgrade.ts`。
 
 M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是可重建的副本。此頁列出各檔案的位置與欄位，讓其他工具或貢獻者能讀懂；設計理由見 [資料模型](FOLDER_PROJECT_MODEL.md) 與 [儲存安全](STORAGE_OPTIONS.md)，型別定義的原始碼是 [shared/model.ts](../shared/model.ts)、[shared/explorer.ts](../shared/explorer.ts)、[shared/workspace.ts](../shared/workspace.ts)，驗證在同檔的 `validate*` 函式。
 
@@ -49,7 +49,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 - `targets`：遊戲動作目標 `{ <actionId>: { kind: 'exe' | 'folder' | 'file-app' | 'url' | 'shortcut' | 'file', path, relative, args, localeEmulator? } }`；`shortcut` 只能是遊戲資料夾內最上層的 `.lnk`／`.url` 檔名；`file`（R-306）是遊戲資料夾內的說明文件（`relative: true`、沒有參數、副檔名限 pdf／html／htm／txt／md／rtf），用系統預設程式開啟；`localeEmulator`（R-309、R-319）只用於 `exe`：`true` 表示用 Locale Emulator 的預設（日文）啟動，GUID 字串表示用該設定檔啟動。`exe` 目標的檔案可以是 `.exe` 或 `.swf`（R-320，用應用程式設定的 Flash 播放程式開啟）。
 - `saveFolder`（R-305）：使用者指定的存檔資料夾 `{ path, relative }`（遊戲外的只接受本機磁碟路徑，不接受網路路徑）；沒有時依引擎推算。
 - `hiddenActions`：這個遊戲不在按鈕列顯示的動作 id。
-- `browseAs`（R-340）：在「所有作品」裡，這個資料夾算一部作品（`work`）或是要往裡面找的分類（`collection`）；沒有時自動判斷。
+- `browseAs`（R-340，已停用）：舊版寫入的「所有作品」手動標記（`work`／`collection`）；R-484 起介面沒有這個選項、程式不讀也不寫，已有的值原樣保留。
 - `shownExtras`（R-315）：這個遊戲按鈕列要顯示的自動操作，`steam`／`store`／`save` 的子集；沒有時都不顯示。
 - `cellImages`：圖片組件各自選定的資產；`bannerAssetId`：封面資產。
 - 刪除已保存圖片（`deleteImage`）：同一次原子寫入（含版本檢查）移除 `assets` 項目並清掉 `cellImages`／`bannerAssetId` 對它的引用；寫入成功後才刪除 `.media-viewer/assets/` 內的受管檔案（需通過 `safePath`、必須是一般檔案、且無其他項目共用同一路徑）。寫入失敗則檔案與記錄都保留；使用者原始媒體檔不會被觸碰。刪除後不保留副本，但 `.bak` 仍含舊記錄，不會復活檔案。

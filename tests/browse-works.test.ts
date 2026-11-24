@@ -37,33 +37,16 @@ test('R-340: "all works" follows each branch to its first work and passes collec
     // A collection with one stray image is still a collection.
     row('L/Music', { contents: { ...none, images: 1, total: 1 } }),
     row('L/Music/Album', { contents: { ...none, audio: 12, total: 12 } }),
-    // Hand marks win: a collection that looks like a work, a work that holds only folders.
-    row('L/Notes', {
-      contents: pictures,
-      record: { details: { browseAs: 'collection' } } as never,
-    }),
-    row('L/Notes/Trip'),
-    row('L/Box', { record: { details: { browseAs: 'work' } } as never }),
-    row('L/Box/Disc 1', { contents: pictures }),
   ]
   assert.deepEqual(names(worksBelow(rows, 'L', Infinity)), [
     'Album',
-    'Box',
     'Game A',
     'Game B',
     'One shot',
     'Series',
-    'Trip',
   ])
   // A depth limit stops at that level even inside collections.
-  assert.deepEqual(names(worksBelow(rows, 'L', 1)), [
-    'Box',
-    'Game A',
-    'Manga',
-    'Music',
-    'Notes',
-    'RPG',
-  ])
+  assert.deepEqual(names(worksBelow(rows, 'L', 1)), ['Game A', 'Manga', 'Music', 'RPG'])
   // Folders named without numbers are separate works, not volumes.
   const plain = [
     row('M'),

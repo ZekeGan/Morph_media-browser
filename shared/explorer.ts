@@ -110,6 +110,7 @@ export interface FolderDetails {
   // Set by hand; without it the kind is detected (see shared/kind.ts).
   kind?: import('./kind').FolderKind
   // R-340 (provisional): in "all works", this folder is one work, or a collection to look through, whatever it holds.
+  // Kept as written by older versions (R-340); nothing reads or sets it any more (R-484).
   browseAs?: 'work' | 'collection'
   cellImages?: Record<string, string>
   // Game actions whose button is not shown in this folder's action row.
@@ -314,7 +315,6 @@ export type ExplorerRequest =
   | { action: 'visit'; rowId: string }
   | { action: 'attributes'; rowId: string; revision: number; values: Attribute[]; private: boolean }
   | { action: 'removeSource'; rowId: string; revision: number; provider: string }
-  | { action: 'browseAs'; rowId: string; revision: number; value: 'work' | 'collection' | null }
   | {
       action: 'batch'
       rows: { rowId: string; revision: number }[]

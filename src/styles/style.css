@@ -395,6 +395,8 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .layout-config-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .layout-config-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 10px; border-bottom: 1px solid var(--line); }
 .layout-config-search { width: 220px; }
+.layout-config-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; padding: 5px 10px; font-size: 12px; border-bottom: 1px solid var(--line); }
+.layout-config-crumbs > span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 .layout-config-legend { display: flex; gap: 10px; margin-left: auto; font-size: 11px; color: var(--muted); flex-wrap: wrap; }
 .layout-config-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; background: var(--layout-source); }
 .layout-config .from-type { --layout-source: var(--selected-text); } .layout-config .from-level { --layout-source: var(--warning); } .layout-config .from-default { --layout-source: var(--muted); } .layout-config .from-folder { --layout-source: var(--accent); }
