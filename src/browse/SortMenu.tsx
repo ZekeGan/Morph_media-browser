@@ -1,7 +1,7 @@
-import { useState } from 'react'
 import { ActionIcon, Button, Popover, Select, Stack, Switch, Text, Tooltip } from '@mantine/core'
 import { MAX_SORT_KEYS, sortChoices, type SortKey } from '../../shared/browse'
 import { Icon } from '../common/icons'
+import { useListDrag } from '../common/useListDrag'
 import { t as tr } from '../i18n'
 
 type Column = { id: string; label: string }
@@ -22,7 +22,6 @@ export function SortMenu({
   busy: boolean
   onChange: (keys: SortKey[], foldersFirst: boolean) => void
 }) {
-  const [drag, setDrag] = useState<number>()
   const choices = sortChoices(columns),
     label = (field: string) => columns.find((c) => c.id === field)?.label ?? field,
     arrow = (asc: boolean) => (asc ? '↑' : '↓'),
@@ -40,6 +39,7 @@ export function SortMenu({
     next.splice(to, 0, key)
     set(next)
   }
+  const dnd = useListDrag(move)
   const unused = choices.filter((c) => !shown.some((k) => k.field === c.id))
   return (
     <Popover position="bottom-start" shadow="md" trapFocus>
@@ -65,21 +65,12 @@ export function SortMenu({
               {tr('依資料夾名稱排序')}
             </Text>
           )}
-          <ol className="sort-keys" aria-label={tr('排序條件')}>
+          <ol className="sort-keys" aria-label={tr('排序條件')} {...dnd.list}>
             {shown.map((key, index) => (
               <li
                 key={key.field}
-                className={'sort-key' + (drag === index ? ' dragging' : '')}
-                onDragOver={(e) => {
-                  if (drag === undefined) return
-                  e.preventDefault()
-                  e.dataTransfer.dropEffect = 'move'
-                }}
-                onDrop={(e) => {
-                  e.preventDefault()
-                  if (drag !== undefined) move(drag, index)
-                  setDrag(undefined)
-                }}
+                {...dnd.row(index)}
+                className={'sort-key' + dnd.row(index).className}
               >
                 <Tooltip
                   label={tr('拖曳或 Alt+↑／↓ 調整順序')}
@@ -88,14 +79,8 @@ export function SortMenu({
                   <button
                     type="button"
                     className="sort-key-grip"
-                    draggable
                     aria-label={tr('移動排序條件 {0}', label(key.field))}
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData('text/plain', String(index))
-                      e.dataTransfer.effectAllowed = 'move'
-                      setDrag(index)
-                    }}
-                    onDragEnd={() => setDrag(undefined)}
+                    {...dnd.grip(index)}
                     onKeyDown={(e) => {
                       if (!e.altKey || !['ArrowUp', 'ArrowDown'].includes(e.key)) return
                       e.preventDefault()

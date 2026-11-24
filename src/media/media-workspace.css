@@ -1331,6 +1331,30 @@
     border-radius: var(--radius);
 }
 
+.sort-key {
+    position: relative;
+}
+
+.sort-key.drop-before::before,
+.sort-key.drop-after::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--accent);
+    pointer-events: none;
+}
+
+.sort-key.drop-before::before {
+    top: -3px;
+}
+
+.sort-key.drop-after::after {
+    bottom: -3px;
+}
+
 .sort-key.dragging {
     opacity: 0.5;
 }

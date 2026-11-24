@@ -3,6 +3,7 @@ import { Alert, Checkbox, Group, Text, Tooltip } from '@mantine/core'
 import { t as tr } from '../i18n'
 import { HelpTip } from '../common/HelpTip'
 import { Icon } from '../common/icons'
+import { useListDrag } from '../common/useListDrag'
 import { describeError } from '../notices/errors'
 import { localeIds, localeOptions, type LocaleId } from '../../shared/locales'
 
@@ -12,7 +13,6 @@ const nameOf = (id: LocaleId) => localeOptions.find((option) => option.value ===
 
 export function SourceLanguageSetting({ opened, locale }: { opened: boolean; locale: LocaleId }) {
   const [saved, setSaved] = useState<LocaleId[]>([]),
-    [drag, setDrag] = useState<number>(),
     [error, setError] = useState(''),
     [pending, setPending] = useState(false)
   useEffect(() => {
@@ -43,6 +43,7 @@ export function SourceLanguageSetting({ opened, locale }: { opened: boolean; loc
     next.splice(to, 0, ...next.splice(from, 1))
     void save(next)
   }
+  const dnd = useListDrag(move, pending)
   return (
     <section className="settings-section" aria-label={tr('外部來源語言')}>
       <Group gap={4} wrap="nowrap" mb="xs">
@@ -64,22 +65,9 @@ export function SourceLanguageSetting({ opened, locale }: { opened: boolean; loc
         }
       />
       {custom && (
-        <ol className="sort-keys source-language-list" aria-label={tr('語言順序')}>
+        <ol className="sort-keys source-language-list" aria-label={tr('語言順序')} {...dnd.list}>
           {order.map((id, index) => (
-            <li
-              key={id}
-              className={'sort-key' + (drag === index ? ' dragging' : '')}
-              onDragOver={(e) => {
-                if (drag === undefined) return
-                e.preventDefault()
-                e.dataTransfer.dropEffect = 'move'
-              }}
-              onDrop={(e) => {
-                e.preventDefault()
-                if (drag !== undefined) move(drag, index)
-                setDrag(undefined)
-              }}
-            >
+            <li key={id} {...dnd.row(index)} className={'sort-key' + dnd.row(index).className}>
               <Tooltip
                 label={tr('拖曳或 Alt+↑／↓ 調整順序')}
                 events={{ hover: true, focus: false, touch: false }}
@@ -87,15 +75,9 @@ export function SourceLanguageSetting({ opened, locale }: { opened: boolean; loc
                 <button
                   type="button"
                   className="sort-key-grip"
-                  draggable={!pending}
                   disabled={pending}
                   aria-label={tr('移動語言順序 {0}', nameOf(id))}
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('text/plain', String(index))
-                    e.dataTransfer.effectAllowed = 'move'
-                    setDrag(index)
-                  }}
-                  onDragEnd={() => setDrag(undefined)}
+                  {...dnd.grip(index)}
                   onKeyDown={(e) => {
                     if (!e.altKey || !['ArrowUp', 'ArrowDown'].includes(e.key)) return
                     e.preventDefault()

@@ -50,6 +50,52 @@ try {
     (await section.getByRole('listitem').first().innerText()).replace(/\s+/g, ' '),
     /1 日本語/
   )
+  // R-480: while dragging, a line on the row's top or bottom edge shows where the row will land, and no line shows
+  // where dropping changes nothing; dropping puts the row there.
+  const rows = section.getByRole('listitem')
+  const fire = (index: number, type: string, half: 'top' | 'bottom' | 'none') =>
+    rows.nth(index).evaluate(
+      (el, [type, half]) => {
+        const box = el.getBoundingClientRect(),
+          data = new DataTransfer()
+        el.dispatchEvent(
+          new DragEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            dataTransfer: data,
+            clientY: half === 'top' ? box.top + 2 : box.bottom - 2,
+          })
+        )
+      },
+      [type, half]
+    )
+  const marks = () =>
+    rows.evaluateAll((list) => list.map((el) => el.className.replace(/sort-key ?/, '')))
+  await rows
+    .nth(0)
+    .getByRole('button')
+    .first()
+    .dispatchEvent('dragstart', {
+      dataTransfer: await page.evaluateHandle(() => new DataTransfer()),
+    })
+  await fire(3, 'dragover', 'bottom')
+  assert.deepEqual(await marks(), ['dragging', '', '', 'drop-after', ''])
+  await fire(3, 'dragover', 'top')
+  assert.deepEqual(await marks(), ['dragging', '', '', 'drop-before', ''])
+  await page.screenshot({ path: path.join(base, 'shot', 'r480-drop-line.png') })
+  await fire(1, 'dragover', 'top')
+  assert.deepEqual(
+    await marks(),
+    ['dragging', '', '', '', ''],
+    'no line where nothing would change'
+  )
+  await fire(3, 'dragover', 'bottom')
+  await fire(3, 'drop', 'bottom')
+  await page.waitForFunction(
+    async () => (await window.desktop.workspace()).prefs.sourceLanguages?.[3] === 'ja'
+  )
+  assert.deepEqual(await saved(), ['zh-TW', 'zh-CN', 'en', 'ja', 'es'])
+  assert.deepEqual(await marks(), ['', '', '', '', ''])
   await page.screenshot({ path: path.join(base, 'shot', 'r381-source-languages.png') })
   await follow.click()
   await page.waitForFunction(async () => !(await window.desktop.workspace()).prefs.sourceLanguages)

@@ -367,6 +367,7 @@
         "src/common/IconLabel*",
         "src/common/BrandMark*",
         "src/common/HelpTip*",
+        "src/common/useListDrag*",
         "src/common/inputModality*",
         "shared/themes*",
         "shared/locales*",

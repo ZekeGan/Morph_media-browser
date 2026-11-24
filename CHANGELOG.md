@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Dragging a row in the sort menu or the source language list shows a line where it will land (none where dropping changes nothing); both lists share one drag helper (R-480).
 - Folder type: a folder of pictures is a manga only when the file names are page numbers (1, 001, p12, id_p0 … with zero padding, covers and credits ignored, mostly without gaps, at least 80% of the pictures); other picture folders are general. Folders set by hand, with comic archives, read in manga mode or filled in from a manga site stay manga (R-479).
 - Search: the same folder (same path) in several projects is one result, with every project listed beside it; it opens in the current project when that is one of them (R-477).
 - Settings tidy-up: theme descriptions and the hidden hint texts are removed for good; the remaining setting explanations sit in a "?" tooltip beside their title; the external source language order is reordered by dragging the grip or Alt+↑/↓ (R-475, R-476, R-478).
