@@ -234,11 +234,11 @@ export function BrowseToolbar(props: Props) {
                         changedCard()
                       }}
                     />
-                    <Text size="xs" c="dimmed" mt={4}>
+                    {/* <Text size="xs" c="dimmed" mt={4}>
                       {display.works
                         ? tr('往下找到每個作品就停；只裝資料夾的分類會直接穿過。')
                         : tr('像檔案總管一樣，一次看一層。')}
-                    </Text>
+                    </Text> */}
                   </div>
                   {display.works && (
                     <details className="card-display-advanced">
