@@ -481,4 +481,9 @@ test('R-479: pictures make a manga only when their file names are page numbers',
     }) as unknown as FolderRow
   assert.equal(detectFolderKind(imported('nhentai'), odd).kind, 'book')
   assert.equal(detectFolderKind(imported('danbooru'), odd).kind, 'general')
+  // The manga reader always saves the direction; a folder read there stays a manga. The picture viewer saves none.
+  assert.equal(detectFolderKind(row({ reading: { page: 3, rtl: true } }), odd).kind, 'book')
+  assert.equal(detectFolderKind(row({ reading: { page: 3, fit: 'width' } }), odd).kind, 'general')
+  // A large book is read in one pass (names are added to their group, not copied for each one).
+  assert.equal(pageNumbered(Array.from({ length: 9999 }, (_, i) => `${i + 1}.jpg`)), 9999)
 })

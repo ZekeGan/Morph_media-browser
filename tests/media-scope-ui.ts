@@ -106,6 +106,17 @@ try {
     await a.locator('button[aria-expanded]').click()
     assert.equal(await page.locator('.media-thumbnail').count(), 5)
   }
+  // Grouping is by source folder: with subfolders left out nothing is grouped and the toggle is off and unavailable;
+  // including them again brings the grouping back.
+  await scopeSwitch().uncheck()
+  await page.waitForFunction(() => document.querySelectorAll('.media-thumbnail').length === 1)
+  assert.equal(await page.locator('.gallery-source-header').count(), 0)
+  const groupButton = page.getByRole('button', { name: '依來源分組', exact: true })
+  assert.equal(await groupButton.getAttribute('aria-pressed'), 'false')
+  assert.equal(await groupButton.isDisabled(), true)
+  await scopeSwitch().check()
+  await page.locator('.gallery-source-header').first().waitFor()
+  assert.equal(await groupButton.getAttribute('aria-pressed'), 'true')
   const sourcePath = path.join(media, 'A') + '/001.png'
   await page
     .locator('.media-thumbnail')

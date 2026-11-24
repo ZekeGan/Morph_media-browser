@@ -374,10 +374,10 @@ export function MediaBrowser({
           >
             <Button
               size="xs"
-              variant={grouped ? 'light' : 'default'}
+              variant={grouped && scope === 'descendants' ? 'light' : 'default'}
               className="media-group-button"
               aria-label={tr('依來源分組')}
-              aria-pressed={grouped}
+              aria-pressed={grouped && scope === 'descendants'}
               disabled={scope !== 'descendants'}
               onClick={() => setGrouped((value) => !value)}
             >
@@ -410,7 +410,7 @@ export function MediaBrowser({
               presentation={view}
               suspended={!!session}
               loading={pending}
-              groupBySource={grouped}
+              groupBySource={grouped && scope === 'descendants'}
               sourceRoot={row.path}
               onSource={(id) => {
                 if (

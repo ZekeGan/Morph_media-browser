@@ -97,7 +97,9 @@ export function pageNumbered(names: string[]): number {
       key = /^(p|pg|page)$/.test(prefix) ? 'p' : prefix,
       from = Number(m[2]),
       to = m[4] === undefined ? from : Number(m[4])
-    groups.set(key, [...(groups.get(key) ?? []), [from, Math.max(from, to)]])
+    const group = groups.get(key) ?? []
+    group.push([from, Math.max(from, to)])
+    groups.set(key, group)
   }
   const best = [...groups.values()].sort((a, b) => b.length - a.length)[0]
   if (!best || best.length * 5 < stems.length * 4) return 0
@@ -110,10 +112,12 @@ export function pageNumbered(names: string[]): number {
 }
 
 // R-479: signs that a folder of pictures is a manga whatever its file names say: it was filled from a manga site
-// or has been read in manga mode.
+// or has been read in manga mode. The manga reader saves the reading direction (`rtl`) every time it saves the
+// place; the picture viewer only keeps one that is already there. `mode` is in records from before R-411.
 const mangaSites = ['eh', 'exh', 'hitomi', 'nhentai', 'mangadex', 'mangaupdates']
 const readAsManga = (row: FolderRow) =>
   row.record?.details?.reading?.mode === 'manga' ||
+  row.record?.details?.reading?.rtl !== undefined ||
   !!row.record?.attributes.some(
     (a) => a.sourceRecord && mangaSites.includes(a.sourceRecord.provider)
   )

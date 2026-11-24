@@ -11,7 +11,7 @@ import { useParentKind } from '../browse/folderKind'
 import { GamePage } from '../game/GamePage'
 import { t as tr, useLocale } from '../i18n'
 import { useRefreshNonce } from '../browse/refresh'
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@mantine/core'
 import { PanelCard } from '../cells/PanelContent'
 import { FolderPage, folderPageKind } from './FolderPage'
@@ -96,6 +96,11 @@ export function FolderContent({
     [, setReader] = useState(false),
     [fileReader, setFileReader] = useState(false),
     [documentFile, setDocumentFile] = useState<ContentResult['entries'][number]>()
+  // What the folder holds decides its kind; counted once per listing, not on every render (R-479 reads names).
+  const sample = useMemo(
+    () => (content ? sampleOf(content.entries) : undefined),
+    [content?.entries]
+  )
   // R-282: after the last page of a text book, the next text book in this folder. R-415: a comic archive (CBZ) goes on
   // to the next archive the same way.
   const nextText = (file: ContentResult['entries'][number]) => {
@@ -185,7 +190,7 @@ export function FolderContent({
   const visibleEntries = content.entries.filter((entry) => visibleFile(entry))
   const selectedFile = visibleEntries.find((entry) => entry.id === selectedFileId) ?? selectedEntry
   // Music and video folders share one page and one content template (R-387).
-  const folderKind = effectiveKind(row, sampleOf(content.entries), parentKind),
+  const folderKind = effectiveKind(row, sample, parentKind),
     kind = templateKind(folderKind)
   // R-389: every kind is drawn by the same skeleton (FolderPage); the kind only picks its page. Everything that is
   // not a game main folder or a book uses the unified file page.

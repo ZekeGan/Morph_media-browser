@@ -46,6 +46,17 @@ try {
     async () => (await window.desktop.workspace()).prefs.sourceLanguages?.[0] === 'ja'
   )
   assert.deepEqual(await saved(), ['ja', 'zh-TW', 'zh-CN', 'en', 'es'])
+  // The grip keeps keyboard focus while the move is saved, so it can be moved again right away.
+  assert.equal(await grip.evaluate((node) => node === document.activeElement), true)
+  await page.keyboard.press('Alt+ArrowDown')
+  await page.waitForFunction(
+    async () => (await window.desktop.workspace()).prefs.sourceLanguages?.[2] === 'zh-TW'
+  )
+  assert.equal(await grip.evaluate((node) => node === document.activeElement), true)
+  await page.keyboard.press('Alt+ArrowUp')
+  await page.waitForFunction(
+    async () => (await window.desktop.workspace()).prefs.sourceLanguages?.[1] === 'zh-TW'
+  )
   assert.match(
     (await section.getByRole('listitem').first().innerText()).replace(/\s+/g, ' '),
     /1 日本語/

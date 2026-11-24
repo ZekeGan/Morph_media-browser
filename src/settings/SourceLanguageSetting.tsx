@@ -38,7 +38,7 @@ export function SourceLanguageSetting({ opened, locale }: { opened: boolean; loc
     }
   }
   const move = (from: number, to: number) => {
-    if (to < 0 || to >= order.length || from === to) return
+    if (pending || to < 0 || to >= order.length || from === to) return
     const next = [...order]
     next.splice(to, 0, ...next.splice(from, 1))
     void save(next)
@@ -75,7 +75,7 @@ export function SourceLanguageSetting({ opened, locale }: { opened: boolean; loc
                 <button
                   type="button"
                   className="sort-key-grip"
-                  disabled={pending}
+                  aria-disabled={pending || undefined}
                   aria-label={tr('移動語言順序 {0}', nameOf(id))}
                   {...dnd.grip(index)}
                   onKeyDown={(e) => {

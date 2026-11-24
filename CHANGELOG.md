@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Review fixes: a folder of pictures read in the manga reader stays a manga whatever its file names (the reader's saved direction counts, not only the old reading mode) (R-479); the page-number check no longer slows large folders and the right panel counts a folder's files once per listing (R-479); the source language grip keeps keyboard focus while a move is saved (R-476); with subfolders left out nothing stays grouped by source behind the unavailable toggle (R-488).
 - The picture viewer and the play queue opened from the file list follow the list's sort order: sorted from large to small, the next picture is the one shown below, not the one above (R-486).
 - File list toolbar: "include subfolders" is a switch, file types are chips with counts (a dropdown in a very narrow list), a sort button (name, type, size or date, ascending or descending), three icon buttons for the layout and a group-by-source toggle; the "⋯" menu is gone (R-486, R-488).
 - The file list no longer has "show hidden files" and "show dot files": files with the system Hidden attribute are never listed, names starting with a dot always are; a preference an older version saved is kept and ignored (R-485).
