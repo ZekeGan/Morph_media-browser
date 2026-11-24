@@ -309,7 +309,11 @@ export async function previewRemoveProject(
         files.push({ path: folderFile(dir), hash: await fingerprint(folderFile(dir)) })
       }
       const boundary = record?.details?.boundary
-      if (boundary?.state !== 'not-game' && (boundary || (await detectGame(dir)))) {
+      if (
+        boundary?.state !== 'not-game' &&
+        (boundary ||
+          (await detectGame(dir, { sources: path.resolve(dir) !== path.resolve(linked.root) })))
+      ) {
         skipped.push(fmt('{0}: 遊戲內部記錄保留', dir))
         continue
       }

@@ -88,7 +88,7 @@ const library: Record<Request['action'], Shape> = {
   restore: { rowId: ref },
   copyIdentity: { rowId: ref },
   resume: { rowId: ref },
-  cleanupPreview: { rowId: ref, scope: oneOf('folder', 'private') },
+  cleanupPreview: { rowId: ref, scope: oneOf('folder', 'private', 'tree') },
   cleanup: { token: ref, restart: bool },
   createBackup: {},
   listBackups: {},

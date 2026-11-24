@@ -109,7 +109,11 @@ export async function scan(ex: Library) {
         if (insideAppBundle(dir)) readonly = true
         if (existing?.details?.boundary?.state !== 'not-game' || insideAppBundle(dir)) {
           const saved = existing?.details?.boundary
-          const detected = saved?.state === 'root' ? saved : ((await detectGame(dir)) ?? saved)
+          const detected =
+            saved?.state === 'root'
+              ? saved
+              : ((await detectGame(dir, { sources: keyPath(dir) !== keyPath(linked.root) })) ??
+                saved)
           if (detected)
             boundary = { ...detected, state: saved?.state === 'root' ? 'root' : 'candidate' }
         }
@@ -297,7 +301,11 @@ export async function visit(ex: Library, rowId: string) {
   if (saved?.state === 'not-game') row.boundary = undefined
   else
     try {
-      const boundary = saved?.state === 'root' ? saved : ((await detectGame(row.path)) ?? saved)
+      const boundary =
+        saved?.state === 'root'
+          ? saved
+          : ((await detectGame(row.path, { sources: keyPath(row.path) !== keyPath(root) })) ??
+            saved)
       row.boundary = boundary
         ? { ...boundary, state: saved?.state === 'root' ? 'root' : 'candidate' }
         : undefined

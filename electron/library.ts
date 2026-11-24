@@ -610,7 +610,7 @@ export class Library {
   }
   async previewCleanup(
     rowId?: string,
-    scope: 'folder' | 'private' | 'all' = 'folder'
+    scope: 'folder' | 'private' | 'tree' | 'all' = 'folder'
   ): Promise<CleanupPreview> {
     return cleanupFns.previewCleanup(this, rowId, scope)
   }

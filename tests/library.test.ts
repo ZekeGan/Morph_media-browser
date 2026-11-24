@@ -672,3 +672,60 @@ test('recovery copy or root cleanup failure keeps readable primary identity and 
     assert.equal((await lib.create(p1, input)).projects[0].error, undefined)
   }
 })
+
+test('R-464: a folder and every folder below it are cleared together; another project inside is left alone', async (t) => {
+  const { p1, lib } = await fixture(t)
+  await fs.writeFile(path.join(p1, 'B', 'C', 'original.txt'), 'original media')
+  await fs.mkdir(path.join(p1, 'B', 'D', 'E'), { recursive: true })
+  await fs.mkdir(path.join(p1, 'B', 'Inner', 'F'), { recursive: true })
+  let s = await lib.create(p1, { ...input, depth: { mode: 'through' as const, level: 4 } })
+  // A second project rooted inside the tree that is cleared.
+  s = await lib.create(path.join(p1, 'B', 'Inner'), input)
+  // A project removed from the list earlier keeps its definition in its root folder; it is not cleared either.
+  await fs.mkdir(path.join(p1, 'B', 'Gone'), { recursive: true })
+  s = await lib.create(path.join(p1, 'B', 'Gone'), { ...input, name: 'Gone' })
+  s = await lib.unlink(s.projects.find((p) => p.project?.name === 'Gone')!.projectId)
+  // A folder with a saved tool decision keeps its record, so its protection stays.
+  const d = await readFolder(path.join(p1, 'B', 'D'))
+  d.details = {
+    ...(d.details ?? { schemaVersion: 1 }),
+    boundary: { state: 'root', engines: [], evidence: ['使用者指定'], role: 'tool' },
+  }
+  await saveFolder(path.join(p1, 'B', 'D'), d, d.revision)
+  s = await lib.scan()
+  const b = s.rows.find((r) => r.path === path.join(p1, 'B'))!
+  for (const dir of ['B', 'B/C', 'B/D', 'B/D/E'])
+    assert.equal(await exists(folderFile(path.join(p1, dir))), true, dir)
+  // The project's own root is refused: that is the project's "remove completely".
+  const top = s.rows.find((r) => r.path === p1)!
+  await assert.rejects(lib.previewCleanup(top.rowId, 'tree'), /完全移除/)
+  const preview = await lib.previewCleanup(b.rowId, 'tree')
+  assert.equal(preview.scope, 'tree')
+  assert.equal(preview.count, 3, 'B, C and E (D keeps its tool decision)')
+  // Skip lines are messages carrying the folder as a JSON value.
+  for (const kept of ['Inner', 'Gone', path.join('B', 'D')])
+    assert.ok(
+      preview.skipped.some((line) =>
+        line.includes(
+          JSON.stringify(path.join(p1, kept.includes(path.sep) ? kept : path.join('B', kept)))
+        )
+      ),
+      kept + ' is listed as kept'
+    )
+  assert.ok(!preview.paths.some((p) => p.includes(path.join('B', 'Inner'))))
+  await lib.cleanup(preview.token, false)
+  for (const dir of ['B', 'B/C', 'B/D/E'])
+    assert.equal(await exists(path.join(p1, dir, DATA_DIR)), false, dir + ' is cleared')
+  assert.equal((await readFolder(path.join(p1, 'B', 'D'))).details?.boundary?.role, 'tool')
+  assert.equal(await exists(path.join(p1, 'B', 'Gone', DATA_DIR, 'projects')), true)
+  assert.equal(
+    await exists(folderFile(path.join(p1, 'B', 'Inner'))),
+    true,
+    'the other project keeps its root'
+  )
+  assert.equal(await exists(folderFile(path.join(p1, 'B', 'Inner', 'F'))), true)
+  assert.equal(await fs.readFile(path.join(p1, 'B', 'C', 'original.txt'), 'utf8'), 'original media')
+  // They stay cleared: the cleared folders stop recording, so a rescan does not make them again.
+  await lib.scan()
+  assert.equal(await exists(folderFile(path.join(p1, 'B', 'D', 'E'))), false)
+})

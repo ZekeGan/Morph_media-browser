@@ -13504,5 +13504,65 @@
     "en": "The source site took too long to answer and timed out; try again later",
     "ja": "ソースのサイトの応答が遅く、タイムアウトしました。しばらくしてからもう一度お試しください",
     "es": "El sitio de origen tardó demasiado en responder y se agotó el tiempo; inténtalo más tarde"
+  },
+  ".git（程式原始碼的版本庫）": {
+    "zh-CN": ".git（程序源代码的版本库）",
+    "en": ".git (a source code repository)",
+    "ja": ".git（プログラムのソースコードのリポジトリ）",
+    "es": ".git (repositorio de código fuente)"
+  },
+  "專案設定檔（pyproject.toml、Cargo.toml、settings.gradle、.sln 或 package.json＋node_modules）": {
+    "zh-CN": "项目配置文件（pyproject.toml、Cargo.toml、settings.gradle、.sln 或 package.json＋node_modules）",
+    "en": "Project file (pyproject.toml, Cargo.toml, settings.gradle, .sln, or package.json + node_modules)",
+    "ja": "プロジェクトファイル（pyproject.toml、Cargo.toml、settings.gradle、.sln、または package.json＋node_modules）",
+    "es": "Archivo de proyecto (pyproject.toml, Cargo.toml, settings.gradle, .sln o package.json + node_modules)"
+  },
+  "{0}: 另一個專案的根目錄，保留": {
+    "zh-CN": "{0}: 另一个项目的根目录，保留",
+    "en": "{0}: another project's root folder, kept",
+    "ja": "{0}: 別のプロジェクトのルートフォルダーのため保持",
+    "es": "{0}: carpeta raíz de otro proyecto, se conserva"
+  },
+  "{0}: 資料夾太多，之後的沒有列入": {
+    "zh-CN": "{0}: 文件夹太多，之后的没有列入",
+    "en": "{0}: too many folders; the rest are not included",
+    "ja": "{0}: フォルダーが多すぎるため、以降は含めていません",
+    "es": "{0}: demasiadas carpetas; el resto no se incluye"
+  },
+  "請選擇要清理的資料夾": {
+    "zh-CN": "请选择要清理的文件夹",
+    "en": "Choose the folder to clear",
+    "ja": "クリアするフォルダーを選んでください",
+    "es": "Elige la carpeta que quieres limpiar"
+  },
+  "這是專案的根目錄；要清除整個專案的資訊，請用專案的「完全移除」": {
+    "zh-CN": "这是项目的根目录；要清除整个项目的信息，请用项目的「完全移除」",
+    "en": "This is the project's root folder; to clear the whole project, use the project's Remove completely",
+    "ja": "これはプロジェクトのルートフォルダーです。プロジェクト全体の情報を消すには、プロジェクトの「完全に削除」を使ってください",
+    "es": "Esta es la carpeta raíz del proyecto; para borrar todo el proyecto, usa Eliminar por completo en el proyecto"
+  },
+  "預覽清除此資料夾與底下所有資料夾的資料": {
+    "zh-CN": "预览清除此文件夹与下面所有文件夹的数据",
+    "en": "Preview clearing this folder and every folder below it",
+    "ja": "このフォルダーと配下のすべてのフォルダーのデータ削除をプレビュー",
+    "es": "Previsualizar la limpieza de esta carpeta y de todas las que contiene"
+  },
+  "移除此資料夾與底下所有資料夾的資訊與圖片（底下另一個專案的根目錄保留）": {
+    "zh-CN": "移除此文件夹与下面所有文件夹的信息与图片（下面另一个项目的根目录保留）",
+    "en": "Removes the information and pictures of this folder and every folder below it (another project's root folder below it is kept)",
+    "ja": "このフォルダーと配下のすべてのフォルダーの情報と画像を削除します（配下にある別のプロジェクトのルートフォルダーは保持）",
+    "es": "Elimina la información y las imágenes de esta carpeta y de todas las que contiene (se conserva la carpeta raíz de otro proyecto que haya dentro)"
+  },
+  "{0}: 有遊戲／工具的判定，保留": {
+    "zh-CN": "{0}: 有游戏／工具的判定，保留",
+    "en": "{0}: has a game or tool decision, kept",
+    "ja": "{0}: ゲーム／ツールの判定があるため保持",
+    "es": "{0}: tiene una decisión de juego o herramienta, se conserva"
+  },
+  "此資料夾為唯讀，不能清理": {
+    "zh-CN": "此文件夹为只读，不能清理",
+    "en": "This folder is read-only and can't be cleared",
+    "ja": "このフォルダーは読み取り専用のため、クリアできません",
+    "es": "Esta carpeta es de solo lectura y no se puede limpiar"
   }
 }

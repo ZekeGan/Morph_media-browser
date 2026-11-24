@@ -41,7 +41,13 @@ export const insideAppBundle = (dir: string) =>
     .resolve(dir)
     .split(/[\\/]/)
     .some((part) => /\.app$/i.test(part))
-export async function detectGame(dir: string): Promise<GameDetection | undefined> {
+// `sources` (R-463) adds the source-code signs (.git, project files). Only the scan of a project's own folders asks
+// for them: checking every parent folder would protect everything below any git repository on the drive (this app's
+// own test folders sit in one), and a project's root folder is never a tool of its own.
+export async function detectGame(
+  dir: string,
+  options: { sources?: boolean } = {}
+): Promise<GameDetection | undefined> {
   let directoryCount = 0,
     entryCount = 0
   type Entry = { name: string; kind: 'file' | 'dir' | 'link' }
@@ -500,6 +506,23 @@ export async function detectGame(dir: string): Promise<GameDetection | undefined
       }
     } catch {
       signs = []
+    }
+    // R-463: a program's source code (no EXE needed): a git repository, or a project file of a common build tool.
+    if (!signs.length && options.sources) {
+      const entry = (name: string) => root.get(name.toLowerCase()),
+        isFile = (name: string) => entry(name)?.kind === 'file'
+      if (entry('.git')?.kind === 'dir' || isFile('.git')) signs.push('.git（程式原始碼的版本庫）')
+      else if (
+        isFile('pyproject.toml') ||
+        isFile('Cargo.toml') ||
+        isFile('settings.gradle') ||
+        isFile('settings.gradle.kts') ||
+        [...root.values()].some((e) => e.kind === 'file' && /\.sln$/i.test(e.name)) ||
+        (isFile('package.json') && entry('node_modules')?.kind === 'dir')
+      )
+        signs.push(
+          '專案設定檔（pyproject.toml、Cargo.toml、settings.gradle、.sln 或 package.json＋node_modules）'
+        )
     }
     if (signs.length) {
       for (const sign of signs) add(undefined, sign)

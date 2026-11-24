@@ -1176,3 +1176,35 @@ test('R-457: tools among the games are told apart by their runtime files, and a 
   // A folder with no EXE keeps its inside listed (it is not a tool).
   assert.ok(state.rows.some((r) => r.path === path.join(media, 'NoExe', 'platforms')))
 })
+
+test('R-463: a source-code folder inside a project is a tool candidate; a parent repository or the project root is not', async (t) => {
+  const { media, lib, files } = await fixture(t)
+  await files(path.join(media, 'Downloader'), [
+    '.git/HEAD',
+    'novel_downloader.py',
+    'android/app/src/main.kt',
+    'scripts/hooks/pre-commit',
+  ])
+  await files(path.join(media, 'WebTool'), ['package.json', 'node_modules/x/index.js', 'src/a.js'])
+  await files(path.join(media, 'Notes'), ['package.json', 'notes.md'])
+  // Only the scan of a project's own folders looks for these signs.
+  assert.equal(await detectGame(path.join(media, 'Downloader')), undefined)
+  assert.equal((await detectGame(path.join(media, 'Downloader'), { sources: true }))?.tool, true)
+  assert.equal((await detectGame(path.join(media, 'WebTool'), { sources: true }))?.tool, true)
+  assert.equal(
+    await detectGame(path.join(media, 'Notes'), { sources: true }),
+    undefined,
+    'package.json alone'
+  )
+  // The library itself is a git repository: it is still scanned, and only the repository inside stops.
+  await files(media, ['.git/HEAD'])
+  const state = await lib.create(media, { ...input, depth: { mode: 'through' as const, level: 4 } })
+  assert.ok(
+    state.rows.some((r) => r.name === 'Notes'),
+    'the project root is scanned'
+  )
+  assert.equal(state.rows.find((r) => r.name === 'Downloader')?.boundary?.tool, true)
+  for (const inner of ['android', 'scripts', 'src'])
+    assert.ok(!state.rows.some((r) => r.name === inner), inner + ' is not scanned into')
+  assert.equal(await exists(path.join(media, 'Downloader', 'android', DATA_DIR)), false)
+})

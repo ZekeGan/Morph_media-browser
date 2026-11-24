@@ -35,7 +35,7 @@ import { isNewerFormat } from '../shared/upgrade'
 export async function previewCleanup(
   ex: Library,
   rowId?: string,
-  scope: 'folder' | 'private' | 'all' = 'folder'
+  scope: 'folder' | 'private' | 'tree' | 'all' = 'folder'
 ): Promise<CleanupPreview> {
   const dirs = new Set<string>(),
     skipped: string[] = []
@@ -43,26 +43,65 @@ export async function previewCleanup(
   // Inside a game ROOT nothing is written: leftover records there can only be removed whole (R-245).
   if (scope === 'private' && row && (row.readonly || (await ex.protectedAncestor(row.path))))
     throw new Error('此資料夾在遊戲邊界保護內，只能整筆刪除記錄，不能只清私有覆寫')
-  if (row) dirs.add(row.path)
-  else {
-    const walk = async (dir: string, root: string): Promise<void> => {
-      try {
-        await safePath(root, dir)
-        if (await exists(path.join(dir, DATA_DIR))) dirs.add(dir)
-        for (const child of await fs.readdir(dir, { withFileTypes: true }))
-          if (child.isDirectory() && !child.isSymbolicLink() && child.name !== DATA_DIR)
-            await walk(path.join(dir, child.name), root)
-      } catch (e) {
-        skipped.push(`${dir}: ${message(e)}`)
+  if (scope === 'tree' && !row) throw new Error('請選擇要清理的資料夾')
+  // The window only offers it for a writable folder; main checks again, as a whole tree is at stake.
+  if (scope === 'tree' && row!.readonly) throw new Error('此資料夾為唯讀，不能清理')
+  // R-464: a project's own root takes the project with it; that is the project's "remove completely".
+  if (scope === 'tree' && ex.refs.some((r) => keyPath(r.root) === keyPath(row!.path)))
+    throw new Error('這是專案的根目錄；要清除整個專案的資訊，請用專案的「完全移除」')
+  // Every folder holding a record, below `root` (links and junctions are not followed). R-464: in a folder's tree,
+  // another project's root and everything under it is left alone and listed, and a very large tree stops early.
+  let visited = 0
+  const walk = async (dir: string, root: string, others: Set<string>): Promise<void> => {
+    try {
+      await safePath(root, dir)
+      if (others.has(keyPath(dir))) {
+        skipped.push(fmt('{0}: 另一個專案的根目錄，保留', dir))
+        return
       }
+      // An unlinked project's root keeps its definition too: it holds .media-viewer/projects/*.json.
+      if (scope === 'tree' && dir !== root) {
+        const projects = path.join(dir, DATA_DIR, 'projects')
+        if (
+          await fs
+            .readdir(projects)
+            .then((names) => names.some((name) => /\.json$/i.test(name)))
+            .catch(() => false)
+        ) {
+          skipped.push(fmt('{0}: 另一個專案的根目錄，保留', dir))
+          return
+        }
+      }
+      if (++visited > 20000) {
+        if (visited === 20001) skipped.push(fmt('{0}: 資料夾太多，之後的沒有列入', dir))
+        return
+      }
+      if (await exists(path.join(dir, DATA_DIR))) dirs.add(dir)
+      for (const child of await fs.readdir(dir, { withFileTypes: true }))
+        if (child.isDirectory() && !child.isSymbolicLink() && child.name !== DATA_DIR)
+          await walk(path.join(dir, child.name), root, others)
+    } catch (e) {
+      skipped.push(`${dir}: ${message(e)}`)
     }
-    for (const root of new Set(ex.refs.map((r) => r.root))) await walk(root, root)
   }
+  if (scope === 'tree')
+    await walk(
+      row!.path,
+      row!.path,
+      new Set(ex.refs.map((r) => keyPath(r.root)).filter((root) => root !== keyPath(row!.path)))
+    )
+  else if (row) dirs.add(row.path)
+  else for (const root of new Set(ex.refs.map((r) => r.root))) await walk(root, root, new Set())
   const entries: PlanEntry[] = []
   for (const dir of dirs) {
     try {
-      const record = await readFolder(dir),
-        files = [folderFile(dir)],
+      const record = await readFolder(dir)
+      // R-464: a game or tool decision (ROOT, not-game) is kept, so its protection does not go with the tree.
+      if (scope === 'tree' && record.details?.boundary) {
+        skipped.push(fmt('{0}: 有遊戲／工具的判定，保留', dir))
+        continue
+      }
+      const files = [folderFile(dir)],
         records = [record],
         meta = path.join(dir, DATA_DIR)
       if (await exists(`${folderFile(dir)}.bak`)) {

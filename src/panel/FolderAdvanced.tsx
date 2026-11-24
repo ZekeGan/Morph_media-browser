@@ -240,7 +240,7 @@ export function FolderAdvanced({
   const [cleanup, setCleanup] = useState<CleanupPreview>(),
     [cleanupResult, setCleanupResult] = useState<CleanupResult>(),
     [restart, setRestart] = useState(false)
-  const previewCleanup = async (scope: 'folder' | 'private') => {
+  const previewCleanup = async (scope: 'folder' | 'private' | 'tree') => {
     setCleanupResult(undefined)
     setRestart(false)
     const result = await act({ action: 'cleanupPreview', rowId: row.rowId, scope })
@@ -317,6 +317,16 @@ export function FolderAdvanced({
             >
               {tr('預覽清除此資料夾資料')}
             </Button>
+            {/* R-464: this folder and every folder below it (another project's root inside is left alone). */}
+            <Button
+              size="xs"
+              variant="default"
+              color="red"
+              disabled={busy || fieldDirty || row.readonly}
+              onClick={() => void previewCleanup('tree')}
+            >
+              {tr('預覽清除此資料夾與底下所有資料夾的資料')}
+            </Button>
             {!!row.record?.projectOverrides[row.projectId]?.length && (
               <Button
                 size="xs"
@@ -334,7 +344,9 @@ export function FolderAdvanced({
               <Alert color="orange" title={tr('清理預覽')}>
                 {cleanup.scope === 'private'
                   ? tr('只移除目前專案的資訊')
-                  : tr('移除此資料夾的資訊與圖片')}
+                  : cleanup.scope === 'tree'
+                    ? tr('移除此資料夾與底下所有資料夾的資訊與圖片（底下另一個專案的根目錄保留）')
+                    : tr('移除此資料夾的資訊與圖片')}
                 {tr('；共')}
                 {cleanup.count} {tr('筆。未知檔案、離線與未連結副本不在範圍。')}
               </Alert>
@@ -348,7 +360,7 @@ export function FolderAdvanced({
                   {tr(s)}
                 </Text>
               ))}
-              {cleanup.scope === 'folder' && (
+              {(cleanup.scope === 'folder' || cleanup.scope === 'tree') && (
                 <Checkbox
                   label={tr('清除後立即重新開始記錄')}
                   description={tr('預設停止記錄，避免下次掃描立即建立資料。')}

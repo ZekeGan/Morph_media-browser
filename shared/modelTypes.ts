@@ -268,7 +268,7 @@ export interface CleanupPreview {
   paths: string[]
   skipped: string[]
   count: number
-  scope: 'folder' | 'private' | 'all'
+  scope: 'folder' | 'private' | 'tree' | 'all'
 }
 export interface CleanupResult {
   removed: number
@@ -351,7 +351,7 @@ export type Request =
   | { action: 'saveFolder'; rowId: string; revision: number; values: Record<string, string> }
   | { action: 'image'; rowId: string; revision: number; cellId?: string }
   | { action: 'open' | 'restore' | 'copyIdentity' | 'resume'; rowId: string }
-  | { action: 'cleanupPreview'; rowId: string; scope: 'folder' | 'private' }
+  | { action: 'cleanupPreview'; rowId: string; scope: 'folder' | 'private' | 'tree' }
   | { action: 'cleanup'; token: string; restart: boolean }
   | { action: 'createBackup' | 'listBackups' }
   | { action: 'deleteBackup' | 'exportBackup'; id: string }
