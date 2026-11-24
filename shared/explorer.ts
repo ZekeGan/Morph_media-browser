@@ -261,6 +261,25 @@ export interface MetadataPreview {
   // R-422: the source's pictures (screenshots, hero, logo, icon) as data addresses, in the order main keeps them;
   // the import names the ones to keep by position. n is the screenshot's number.
   images?: { role: AssetRole; n?: number; image: string }[]
+  // R-449: a MusicBrainz album's versions (releases), the one merged in (absent: album data only), whether it was
+  // chosen because its track count matches the folder's music files ('match'), or as the earliest official version
+  // when none matched ('fallback'), and the album's own cover beside the version's.
+  versions?: MetadataVersion[]
+  version?: string
+  versionPick?: 'match' | 'fallback' | 'chosen'
+  albumImage?: string
+}
+// R-449: one version of an album as the version menu lists it.
+export interface MetadataVersion {
+  id: string
+  date?: string
+  country?: string
+  formats?: string
+  tracks?: number
+  label?: string
+  catalog?: string
+  official: boolean
+  matches?: boolean
 }
 export type ExplorerRequest =
   | { action: 'archive'; rowId: string; fileId: string }
@@ -425,7 +444,15 @@ export type ExplorerRequest =
     }
   | { action: 'imageUrlPreview'; url: string }
   | { action: 'imageUrlApply'; rowId: string; revision: number; token: string; cover: boolean }
-  | { action: 'metadataPreview'; source: string; provider?: MetadataSourceId }
+  | {
+      action: 'metadataPreview'
+      source: string
+      provider?: MetadataSourceId
+      // R-449 (MusicBrainz albums): the version to merge in (a release ID), null for album data only, absent to pick
+      // one; trackCount is the folder's music file count the pick compares with.
+      release?: string | null
+      trackCount?: number
+    }
   | { action: 'metadataSearch'; query: string; sources?: SearchSourceId[] }
   | {
       action: 'metadataApply'
@@ -437,6 +464,8 @@ export type ExplorerRequest =
       mode?: 'fill' | 'replace'
       // R-422: positions in the preview's images to keep.
       images?: number[]
+      // R-449: also keep the album's own cover (MusicBrainz), beside or instead of the version's.
+      albumImage?: boolean
     }
   | { action: 'rebuildIndex' }
 export interface ExplorerResponse {

@@ -64,6 +64,7 @@ export async function coverResponse(
 type Result = {
   preview: Omit<MetadataPreview, 'token'>
   cover?: { bytes: Buffer; mime: string; ext: string }
+  albumCover?: { bytes: Buffer; mime: string; ext: string }
 }
 // One adapter per site in electron/sources/; their hosts, headers and cover hosts are in sources/config.ts.
 const adapters: Record<PublicSourceId, Adapter> = {
@@ -104,6 +105,8 @@ export async function publicMetadata(
     keyFor?: (site: string) => Promise<Record<string, string> | undefined>
     // R-381: the languages to take titles and descriptions in, first choice first (locale ids).
     languages?: string[]
+    release?: string | null
+    trackCount?: number
   } = {}
 ): Promise<Result> {
   const config = sourceConfig[provider]
@@ -173,6 +176,8 @@ export async function publicMetadata(
     json: async (url, body, extra) => sourceJson(await request(url, body, extra)),
     keys,
     languages: options.languages ?? [],
+    release: options.release,
+    trackCount: options.trackCount,
     text(key, value) {
       const result = clean(value)
       if (result) values.push({ key, type: 'string', value: result })
@@ -186,7 +191,8 @@ export async function publicMetadata(
         values.push({ key, type: 'number', value })
     },
   }
-  const { title, canonical, image, related } = await adapters[provider](site)
+  const { title, canonical, image, albumImage, related, versions, version, versionPick } =
+    await adapters[provider](site)
   if (!title.trim()) throw new SourceError('format')
   values.unshift(
     { key: 'TITLE', type: 'string', value: title },
@@ -206,11 +212,18 @@ export async function publicMetadata(
       })
   }
   const result: Result = {
-    preview: { provider, title: title.slice(0, 200), source: canonical, values, related },
+    preview: {
+      provider,
+      title: title.slice(0, 200),
+      source: canonical,
+      values,
+      related,
+      ...(versions ? { versions, version, versionPick } : {}),
+    },
   }
-  if (typeof image === 'string')
+  const download = async (address: string) => {
     try {
-      const url = new URL(image)
+      const url = new URL(address)
       if (
         url.protocol !== 'https:' ||
         url.port ||
@@ -228,10 +241,25 @@ export async function publicMetadata(
       )
       const type = imageType(bytes)
       if (!type) throw new Error('封面格式未支援')
-      result.cover = { bytes, ...type }
-      result.preview.image = 'data:' + type.mime + ';base64,' + bytes.toString('base64')
+      return { bytes, ...type }
     } catch {
-      values.push({ key: 'COVER_STATUS', type: 'string', value: '封面無法取得；可略過或手動匯入' })
+      return undefined
     }
+  }
+  const dataUrl = (cover: { bytes: Buffer; mime: string }) =>
+    'data:' + cover.mime + ';base64,' + cover.bytes.toString('base64')
+  const cover = typeof image === 'string' ? await download(image) : undefined,
+    // R-449: a MusicBrainz version's cover and the album's own; either may be missing.
+    album = typeof albumImage === 'string' ? await download(albumImage) : undefined
+  if (cover) {
+    result.cover = cover
+    result.preview.image = dataUrl(cover)
+  }
+  if (album) {
+    result.albumCover = album
+    result.preview.albumImage = dataUrl(album)
+  }
+  if ((typeof image === 'string' || typeof albumImage === 'string') && !cover && !album)
+    values.push({ key: 'COVER_STATUS', type: 'string', value: '封面無法取得；可略過或手動匯入' })
   return result
 }

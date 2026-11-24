@@ -13192,5 +13192,65 @@
     "en": "The icon imported from a website; left empty without one.",
     "ja": "サイトから取り込んだアイコン。ない場合は空欄。",
     "es": "El icono importado de un sitio web; vacío si no hay."
+  },
+  "版本": {
+    "zh-CN": "版本",
+    "en": "Version",
+    "ja": "バージョン",
+    "es": "Versión"
+  },
+  "不選版本，只用專輯資料": {
+    "zh-CN": "不选版本，只用专辑资料",
+    "en": "No version, album data only",
+    "ja": "バージョンを選ばずアルバムの情報だけ使う",
+    "es": "Sin versión, solo los datos del álbum"
+  },
+  "非正式": {
+    "zh-CN": "非正式",
+    "en": "Unofficial",
+    "ja": "非公式",
+    "es": "No oficial"
+  },
+  "曲數相符": {
+    "zh-CN": "曲数相符",
+    "en": "Track count matches",
+    "ja": "曲数が一致",
+    "es": "Coincide el número de pistas"
+  },
+  "沒有曲數與資料夾（{0} 首）相符的版本，先選了最早的正式版。": {
+    "zh-CN": "没有曲数与文件夹（{0} 首）相符的版本，先选了最早的正式版。",
+    "en": "No version has the folder's track count ({0}); the earliest official version is picked.",
+    "ja": "フォルダー（{0} 曲）と曲数が一致するバージョンがないため、最も早い公式版を選びました。",
+    "es": "Ninguna versión tiene el número de pistas de la carpeta ({0}); se eligió la versión oficial más antigua."
+  },
+  "同時保存這個版本的封面": {
+    "zh-CN": "同时保存这个版本的封面",
+    "en": "Also save this version's cover",
+    "ja": "このバージョンのジャケットも保存",
+    "es": "Guardar también la portada de esta versión"
+  },
+  "同時保存專輯的封面": {
+    "zh-CN": "同时保存专辑的封面",
+    "en": "Also save the album's cover",
+    "ja": "アルバムのジャケットも保存",
+    "es": "Guardar también la portada del álbum"
+  },
+  "本版發行日": {
+    "zh-CN": "本版发行日",
+    "en": "Release date of this version",
+    "ja": "このバージョンの発売日",
+    "es": "Fecha de esta versión"
+  },
+  "專輯網址": {
+    "zh-CN": "专辑网址",
+    "en": "Album address",
+    "ja": "アルバムのURL",
+    "es": "Dirección del álbum"
+  },
+  "最早發行日": {
+    "zh-CN": "最早发行日",
+    "en": "First release date",
+    "ja": "初回発売日",
+    "es": "Primera publicación"
   }
 }

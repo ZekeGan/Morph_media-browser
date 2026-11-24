@@ -6,6 +6,7 @@ import {
   Checkbox,
   Group,
   Popover,
+  Select,
   Stack,
   Text,
   TextInput,
@@ -26,6 +27,7 @@ import type {
   ExplorerResponse,
   MetadataCandidate,
   MetadataPreview,
+  MetadataVersion,
 } from '../../shared/explorer'
 import { errorMessage } from '../../shared/notifications'
 import type { FolderRow } from '../../shared/model'
@@ -42,6 +44,8 @@ export function useSourceImport() {
     [preview, setPreview] = useState<MetadataPreview>(),
     [keys, setKeys] = useState<string[]>([]),
     [cover, setCover] = useState(true),
+    // R-449: also keep the album's own cover (MusicBrainz), beside the version's.
+    [albumCover, setAlbumCover] = useState(false),
     // R-422: positions of the source's pictures picked for import (none by default).
     [images, setImages] = useState<number[]>([]),
     [result, setResult] = useState(''),
@@ -55,6 +59,8 @@ export function useSourceImport() {
     setKeys,
     cover,
     setCover,
+    albumCover,
+    setAlbumCover,
     images,
     setImages,
     result,
@@ -108,8 +114,13 @@ export function FolderSourceImport({
   setError: (error: string) => void
 }) {
   const sourceLabels = importedFieldLabels()
+  // R-449: MusicBrainz keeps the album's first release date apart from the version's own date.
+  const fieldLabel = (key: string) =>
+    preview?.provider === 'musicbrainz' && key === 'RELEASE_DATE'
+      ? tr('最早發行日')
+      : (sourceLabels[key] ?? key)
   const { source, setSource, preview, setPreview, keys, setKeys, cover, setCover } = importer,
-    { images, setImages } = importer
+    { images, setImages, albumCover, setAlbumCover } = importer
   const imageLabel = (image: { role: string; n?: number }) =>
     image.role === 'screenshot'
       ? tr('截圖 {0}', image.n ?? 0)
@@ -217,7 +228,9 @@ export function FolderSourceImport({
       new CustomEvent('morph:open-settings', { detail: { tab: 'keys', site: keyed?.id } })
     )
   // R-359: also called with the related work's address (the same game on VNDB) to preview that source instead.
-  const loadPreview = async (address = source.trim()) => {
+  // R-449: `release` asks a MusicBrainz album for one of its versions (null: album data only); switching versions keeps
+  // what was ticked (fields new to this version start ticked).
+  const loadPreview = async (address = source.trim(), release?: string | null) => {
     setError('')
     importer.setResult('')
     const provider = address === source.trim() ? detected : sourceForUrl(address)
@@ -225,18 +238,49 @@ export function FolderSourceImport({
       setError(tr('無法辨識這個網址的來源'))
       return
     }
+    const before = release !== undefined ? preview : undefined
     const result = await run({
       action: 'metadataPreview',
       source: address,
       provider,
+      ...(release !== undefined ? { release } : {}),
+      ...(row.contents?.audio ? { trackCount: row.contents.audio } : {}),
     })
     if (result?.preview) {
+      const next = result.preview,
+        all = next.values.filter((v) => !noteKeys.includes(v.key)).map((v) => v.key)
+      setPreview(next)
+      if (before) {
+        setKeys(
+          all.filter(
+            (key) => keys.includes(key) || !before.values.some((value) => value.key === key)
+          )
+        )
+        setCover((ticked) => (before.image ? ticked : true))
+        setAlbumCover((ticked) => (before.albumImage ? ticked : !next.image))
+        return
+      }
       importer.setReplace(false)
-      setPreview(result.preview)
-      setKeys(result.preview.values.filter((v) => !noteKeys.includes(v.key)).map((v) => v.key))
+      setKeys(all)
       setImages([])
+      setCover(true)
+      setAlbumCover(!next.image)
     }
   }
+  // R-449: how a version reads in the menu: a matching track count first (it would be cut off at the end), then date ·
+  // country · formats · tracks · label and catalogue number.
+  const versionLabel = (version: MetadataVersion) =>
+    [
+      version.matches ? '✓ ' + tr('曲數相符') : undefined,
+      version.date || '—',
+      version.country,
+      version.formats,
+      version.tracks ? tr('{0} 首', version.tracks) : undefined,
+      [version.label, version.catalog].filter(Boolean).join(' '),
+      version.official ? undefined : tr('非正式'),
+    ]
+      .filter(Boolean)
+      .join(' · ')
   return (
     <Stack gap="sm" className="folder-source">
       <div>
@@ -497,6 +541,42 @@ export function FolderSourceImport({
               </Text>
             </div>
           </Group>
+          {preview.versions && (
+            <Stack gap={4} mt="sm">
+              <Select
+                label={tr('版本')}
+                allowDeselect={false}
+                disabled={disabled || busy}
+                value={preview.version ?? ''}
+                data={[
+                  ...preview.versions.map((version) => ({
+                    value: version.id,
+                    label: versionLabel(version),
+                  })),
+                  { value: '', label: tr('不選版本，只用專輯資料') },
+                ]}
+                onChange={(value) =>
+                  value !== null &&
+                  value !== (preview.version ?? '') &&
+                  void loadPreview(
+                    String(
+                      preview.values.find((v) => v.key === 'RELEASE_GROUP_URL')?.value ??
+                        preview.source
+                    ),
+                    value || null
+                  )
+                }
+              />
+              {preview.versionPick === 'fallback' && !!row.contents?.audio && (
+                <Text size="xs" c="orange">
+                  {tr(
+                    '沒有曲數與資料夾（{0} 首）相符的版本，先選了最早的正式版。',
+                    row.contents.audio
+                  )}
+                </Text>
+              )}
+            </Stack>
+          )}
           {preview.related && (
             <Alert color="blue" mt="sm" className="source-related">
               <Group gap="xs" justify="space-between" wrap="nowrap">
@@ -557,7 +637,7 @@ export function FolderSourceImport({
                     <tr key={v.key} className={same ? 'same' : undefined}>
                       <td>
                         <Checkbox
-                          aria-label={sourceLabels[v.key] ?? v.key}
+                          aria-label={fieldLabel(v.key)}
                           checked={keys.includes(v.key)}
                           onChange={(e) =>
                             setKeys((list) =>
@@ -568,7 +648,7 @@ export function FolderSourceImport({
                           }
                         />
                       </td>
-                      <th scope="row">{sourceLabels[v.key] ?? v.key}</th>
+                      <th scope="row">{fieldLabel(v.key)}</th>
                       <td>{current ? <LongValue text={current} /> : '—'}</td>
                       <td>{same ? tr('相同') : <LongValue text={next} />}</td>
                     </tr>
@@ -589,10 +669,20 @@ export function FolderSourceImport({
           {preview.image && (
             <Checkbox
               mt="md"
-              label={tr('同時保存封面圖片')}
+              label={preview.albumImage ? tr('同時保存這個版本的封面') : tr('同時保存封面圖片')}
               checked={cover}
               onChange={(e) => setCover(e.currentTarget.checked)}
             />
+          )}
+          {preview.albumImage && (
+            <Group gap="sm" mt="xs" wrap="nowrap">
+              <img className="metadata-cover small" src={preview.albumImage} alt={tr('專輯封面')} />
+              <Checkbox
+                label={tr('同時保存專輯的封面')}
+                checked={albumCover}
+                onChange={(e) => setAlbumCover(e.currentTarget.checked)}
+              />
+            </Group>
           )}
           {!!preview.images?.length && (
             <fieldset className="source-images">
@@ -626,7 +716,10 @@ export function FolderSourceImport({
               disabled={
                 disabled ||
                 fieldDirty ||
-                (!keys.length && !(preview.image && cover) && !images.length)
+                (!keys.length &&
+                  !(preview.image && cover) &&
+                  !(preview.albumImage && albumCover) &&
+                  !images.length)
               }
               onClick={async () => {
                 if (
@@ -637,6 +730,7 @@ export function FolderSourceImport({
                     token: preview.token,
                     keys,
                     image: !!preview.image && cover,
+                    ...(preview.albumImage && albumCover ? { albumImage: true } : {}),
                     mode: importer.replace ? 'replace' : 'fill',
                     ...(images.length ? { images } : {}),
                   })

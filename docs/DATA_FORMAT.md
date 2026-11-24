@@ -36,7 +36,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 
 | 欄位 | 說明 |
 | --- | --- |
-| `attributeId` | 屬性身分。匯入的來源屬性用 `<來源>-<鍵>`，例如 `eh-title`、`steam-store_url` |
+| `attributeId` | 屬性身分。匯入的來源屬性用 `<來源>-<鍵>`，例如 `eh-title`、`steam-store_url`；MusicBrainz 專輯版本（R-449，**暫定**，選用）另有 `musicbrainz-edition_date`（本版發行日，`date`）與 `musicbrainz-release_group_url`（專輯網址），`musicbrainz-release_date` 維持專輯的最早發行日 |
 | `key` | 來源或使用者的鍵名（如 `TITLE`、`TAGS`） |
 | `type` | `string`、`tags`、`number`、`datetime`、`boolean`、`enum`、`url`、`date` |
 | `value` | 依型別驗證；字串 ≤ 10000 字，標籤 ≤ 200 個、每個 ≤ 100 字 |

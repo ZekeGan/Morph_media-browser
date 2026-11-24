@@ -21,6 +21,9 @@ export const ref = (v: unknown): v is string =>
 const text: Check = (v) => typeof v === 'string' && v.length <= 100_000 && !v.includes('\0')
 const num: Check = (v) => typeof v === 'number' && Number.isFinite(v)
 const int: Check = (v) => Number.isSafeInteger(v)
+// R-449: a MusicBrainz ID.
+const uuid: Check = (v) =>
+  typeof v === 'string' && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(v)
 const bool: Check = (v) => typeof v === 'boolean'
 const object: Check = plain
 const any: Check = () => true
@@ -186,7 +189,12 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
   embeddedPictures: { rowId: ref, fileId: ref, track: int, early: opt(bool), time: opt(num) },
   imageUrlPreview: { url: text },
   imageUrlApply: { ...revisionRow, token: ref, cover: bool },
-  metadataPreview: { source: text, provider: opt(ref) },
+  metadataPreview: {
+    source: text,
+    provider: opt(ref),
+    release: opt(nullable(uuid)),
+    trackCount: opt((v) => int(v) && (v as number) >= 0 && (v as number) <= 100_000),
+  },
   metadataSearch: { query: text, sources: opt(list(isSearchSource, searchableSources.length)) },
   metadataApply: {
     ...revisionRow,
@@ -195,6 +203,7 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
     image: bool,
     mode: opt(oneOf('fill', 'replace')),
     images: opt(list(int, 15)),
+    albumImage: opt(bool),
   },
   rebuildIndex: {},
 }

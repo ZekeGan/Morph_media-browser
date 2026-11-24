@@ -17,6 +17,8 @@ import { parseDate } from '../shared/fields'
 const dateKeys: Record<string, 'date' | 'datetime'> = {
   GALLERY_POSTED_UTC: 'datetime',
   RELEASE_DATE: 'date',
+  // R-449: the MusicBrainz version's own release date.
+  EDITION_DATE: 'date',
   STORE_RELEASE_DATE: 'date',
 }
 export function importedValue<T extends { key: string; type: string; value: unknown }>(
@@ -39,11 +41,13 @@ export function importedValue<T extends { key: string; type: string; value: unkn
 export async function metadataPreview(
   ex: Explorer,
   source: string,
-  provider?: MetadataSourceId
+  provider?: MetadataSourceId,
+  version: { release?: string | null; trackCount?: number } = {}
 ): Promise<MetadataPreview> {
   const item = await metadata(source, fetch, provider, {
       keyFor: (site) => ex.desktop.keyStore?.get(site) ?? Promise.resolve(undefined),
       languages: ex.desktop.sourceLanguages?.(),
+      ...version,
     }),
     preview: MetadataPreview = { ...item.preview, token: randomUUID() }
   for (const [id, p] of ex.previews) if (p.expires < Date.now()) ex.previews.delete(id)
@@ -51,6 +55,7 @@ export async function metadataPreview(
   ex.previews.set(preview.token, {
     preview: { ...preview },
     cover: item.cover,
+    albumCover: item.albumCover,
     images: item.images,
     expires: Date.now() + 15 * 60 * 1000,
   })
@@ -177,36 +182,30 @@ export async function applyMetadata(
   }
   const added: string[] = [],
     provider = item.preview.provider ?? 'eh'
-  if (
-    req.image &&
-    item.cover &&
-    (req.mode === 'replace' ||
-      !record.assets.some((asset) =>
-        asset.originalName.startsWith((item.preview.provider ?? 'eh') + '-cover.')
-      ))
-  ) {
-    const { bytes, ext, mime } = item.cover,
-      assetId = randomUUID(),
-      relativePath = `assets/${assetId}.${ext}`,
-      target = path.join(row.path, DATA_DIR, relativePath)
-    await safePath(row.path, target)
-    await fs.mkdir(path.dirname(target), { recursive: true })
-    try {
-      await fs.writeFile(target, bytes, { flag: 'wx' })
-    } catch (error) {
-      // A cover cut short is removed (wx: the name is new, so it is ours).
-      await fs.unlink(target).catch(() => {})
-      throw error
-    }
-    added.push(target)
-    record.assets.push({
-      assetId,
-      relativePath,
-      originalName: provider + '-cover.' + ext,
-      mediaType: mime,
-    })
-  }
   try {
+    // The cover, and (R-449, MusicBrainz) the album's own cover beside the version's.
+    for (const [wanted, cover, name] of [
+      [req.image, item.cover, provider + '-cover.'],
+      [req.albumImage, item.albumCover, provider + '-album-cover.'],
+    ] as const) {
+      if (
+        !wanted ||
+        !cover ||
+        (req.mode !== 'replace' &&
+          record.assets.some((asset) => asset.originalName.startsWith(name)))
+      )
+        continue
+      const { bytes, ext, mime } = cover,
+        assetId = randomUUID(),
+        relativePath = `assets/${assetId}.${ext}`,
+        target = path.join(row.path, DATA_DIR, relativePath)
+      await safePath(row.path, target)
+      await fs.mkdir(path.dirname(target), { recursive: true })
+      // Listed before writing, so a cover cut short is removed too (wx: the name is new, so it is ours).
+      added.push(target)
+      await fs.writeFile(target, bytes, { flag: 'wx' })
+      record.assets.push({ assetId, relativePath, originalName: name + ext, mediaType: mime })
+    }
     // R-422: the chosen pictures, each kept with its role; one that was imported before (same name) is not added twice.
     for (const index of picked) {
       const image = pool[index],

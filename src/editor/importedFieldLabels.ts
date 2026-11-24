@@ -95,6 +95,9 @@ export const importedFieldLabels = (): Record<string, string> => ({
   DISC_COUNT: tr('片數'),
   MEDIA_FORMAT: tr('媒體格式'),
   TRACK_LIST: tr('曲目清單'),
+  // R-449: a MusicBrainz version's own date, and the album it belongs to
+  EDITION_DATE: tr('本版發行日'),
+  RELEASE_GROUP_URL: tr('專輯網址'),
   // R-418: Wikidata IDs on other sites
   WIKIDATA_ID: 'Wikidata ID',
   MUSICBRAINZ_ARTIST_ID: 'MusicBrainz artist ID',

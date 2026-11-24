@@ -142,6 +142,8 @@ export class Explorer {
     {
       preview: MetadataPreview
       cover?: { bytes: Buffer; mime: string; ext: string }
+      // R-449: the album's own cover (MusicBrainz), when the version's is the main one.
+      albumCover?: { bytes: Buffer; mime: string; ext: string }
       // R-422: the source's downloaded pictures; the preview names them by position.
       images?: SourceImage[]
       expires: number
@@ -1279,7 +1281,12 @@ export class Explorer {
         await this.applyImageUrl(req)
         break
       case 'metadataPreview':
-        return { preview: await this.metadataPreview(req.source, req.provider) }
+        return {
+          preview: await this.metadataPreview(req.source, req.provider, {
+            release: req.release,
+            trackCount: req.trackCount,
+          }),
+        }
       case 'metadataApply':
         await this.applyMetadata(req)
         break
@@ -1297,8 +1304,12 @@ export class Explorer {
     this.index.sync(snapshot)
     return { snapshot }
   }
-  async metadataPreview(source: string, provider?: MetadataSourceId): Promise<MetadataPreview> {
-    return sourceFns.metadataPreview(this, source, provider)
+  async metadataPreview(
+    source: string,
+    provider?: MetadataSourceId,
+    version?: { release?: string | null; trackCount?: number }
+  ): Promise<MetadataPreview> {
+    return sourceFns.metadataPreview(this, source, provider, version)
   }
   async imageUrlPreview(url: string) {
     return sourceFns.imageUrlPreview(this, url)

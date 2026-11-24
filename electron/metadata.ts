@@ -333,10 +333,14 @@ export async function metadata(
   options: WebOptions & {
     keyFor?: (site: string) => Promise<Record<string, string> | undefined>
     languages?: string[]
+    // R-449: the MusicBrainz album version to merge in, and the folder's music file count to pick one by.
+    release?: string | null
+    trackCount?: number
   } = {}
 ): Promise<{
   preview: Omit<MetadataPreview, 'token'>
   cover?: { bytes: Buffer; mime: string; ext: string }
+  albumCover?: { bytes: Buffer; mime: string; ext: string }
   // R-422: the source's picture lists (screenshots, hero, logo, icon), downloaded for the preview.
   images?: SourceImage[]
 }> {

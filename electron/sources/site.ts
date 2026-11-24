@@ -12,6 +12,10 @@ export interface Site {
   keys: Record<string, string>
   // R-381: the preferred languages as locale ids (zh-TW, ja, zh-CN, en, es), first choice first; empty = site default.
   languages: string[]
+  // R-449 (MusicBrainz albums): the version asked for (a release ID; null: album data only; absent: pick one) and the
+  // folder's music file count the pick compares with.
+  release?: string | null
+  trackCount?: number
   text(key: string, value: unknown): void
   // max: how many entries a long list may keep (200 by default).
   list(key: string, value: unknown, max?: number): void
@@ -29,6 +33,12 @@ export interface SiteResult {
   title: string
   canonical: string
   image?: string
+  // R-449: the album's own cover, offered beside the version's (image).
+  albumImage?: string
+  // R-449: the album's versions, the one merged in and why it was picked.
+  versions?: import('../../shared/explorer').MetadataVersion[]
+  version?: string
+  versionPick?: 'match' | 'fallback' | 'chosen'
   related?: { provider: 'vndb'; url: string; title: string }
 }
 export type Adapter = (site: Site) => Promise<SiteResult>

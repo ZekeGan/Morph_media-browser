@@ -379,6 +379,7 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .source-field { display:flex; flex-direction:column; gap:3px; }
 .source-field>span { font-size:12px; color:var(--muted); overflow-wrap:anywhere; }
 .source-preview .metadata-cover { max-width:140px; max-height:100px; object-fit:contain; }
+.source-preview .metadata-cover.small { max-width:64px; max-height:64px; }
 .cleanup-section .file-list { max-height:200px; }
 /* Branches are removed from the rendered graph and layout, not merely hidden. */
 .tree-canvas { position:relative; }
