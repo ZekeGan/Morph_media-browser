@@ -62,10 +62,11 @@ interface Props {
   save: (project: Project) => Promise<boolean>
   // Which layouts the window opens on.
   initialTarget?: Target
-  // Opens the right-panel editor for a kind at a layout (after the window is closed).
-  editPanel?: (kind: FolderKind, preset?: string) => void
+  // Opens the right-panel editor for a kind at a layout (after the window is closed); `rowId` is the folder it was
+  // opened for, shown as the editor's preview (R-460).
+  editPanel?: (kind: FolderKind, preset?: string, rowId?: string) => void
   // R-444: opens the card editor at a card layout without making it the default layout.
-  editCard?: (preset: string) => void
+  editCard?: (preset: string, rowId?: string) => void
 }
 type Target = 'card' | 'panel'
 export function LayoutConfig({
@@ -406,7 +407,7 @@ export function LayoutConfig({
     }
     if (await save(next)) {
       close()
-      editPanel?.(kind, id)
+      editPanel?.(kind, id, row.rowId)
     }
   }
   const reachText = (count = 0) => tr('{0} 個資料夾', count)
@@ -810,7 +811,7 @@ export function LayoutConfig({
                       onClick={() => {
                         const { id } = choice(pickedRow)
                         close()
-                        editPanel(kindOf(pickedRow), id || undefined)
+                        editPanel(kindOf(pickedRow), id || undefined, pickedRow.rowId)
                       }}
                     >
                       {tr('編輯右側版面')}
@@ -860,7 +861,7 @@ export function LayoutConfig({
                       onClick={() => {
                         const { id } = choice(pickedRow)
                         close()
-                        editCard(id)
+                        editCard(id, pickedRow.rowId)
                       }}
                     >
                       {tr('編輯卡片版面')}

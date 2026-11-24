@@ -145,6 +145,9 @@ try {
     BrowserWindow.getAllWindows()[0].setBounds({ x: 0, y: 0, width: 1500, height: 950 })
   )
   await page.waitForTimeout(300)
+  // R-459: Artist (a card at the top level of the browser) is selected before the editor is opened.
+  await card.click()
+  await page.locator('.folder-panel-header strong').getByText('Artist', { exact: true }).waitFor()
   await page
     .getByRole('button', { name: /^版面配置/ })
     .filter({ visible: true })
@@ -159,6 +162,25 @@ try {
   await palette.locator('.palette-section-toggle', { hasText: '專輯' }).waitFor()
   assert.equal(await palette.locator('.palette-section-toggle', { hasText: '書籍' }).count(), 0)
   assert.equal(await palette.locator('.palette-section-toggle', { hasText: '影片' }).count(), 0)
+  // R-460: the editor opens Album's own layout with Album's data in the preview.
+  await page.locator('.react-grid-layout').getByText('PANEL-A').waitFor()
+  assert.match(
+    await page.getByRole('textbox', { name: '使用真實資料預覽', exact: true }).inputValue(),
+    /^Album · /
+  )
+  // R-459: back in the browser it is where it was (Artist's card still listed: it did not go into Artist), with
+  // Artist still selected.
+  await page.getByRole('button', { name: '關閉', exact: true }).click()
+  await palette.waitFor({ state: 'hidden' })
+  await card.waitFor()
+  await page.locator('.folder-panel-header strong').getByText('Artist', { exact: true }).waitFor()
+  assert.equal(
+    (await page
+      .getByRole('button', { name: /^版面配置/ })
+      .filter({ visible: true })
+      .count()) > 0,
+    true
+  )
   assert.deepEqual(errors, [])
   passed = true
   console.log(

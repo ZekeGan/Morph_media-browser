@@ -1,5 +1,5 @@
 import { Icon } from '../common/icons'
-import type { FolderKind } from '../../shared/kind'
+import { effectiveKind, type FolderKind } from '../../shared/kind'
 import { t as tr, useLocale } from '../i18n'
 import { layoutName } from './layoutName'
 import { cellColors } from '../cells/cellStyle'
@@ -80,6 +80,7 @@ export function Editor({
   presetTools = false,
   panelKind,
   fromSaved,
+  previewRow,
 }: {
   project: Project
   rows: FolderRow[]
@@ -97,6 +98,8 @@ export function Editor({
   panelKind?: FolderKind
   // How a project saved elsewhere while editing (a field removal) maps back into what this editor shows.
   fromSaved?: (saved: Project) => Project
+  // R-460: the folder the editor was opened for, previewed first.
+  previewRow?: string
 }) {
   const presetUi = presets || presetTools
   const labels: Record<CellKind, string> = {
@@ -160,7 +163,15 @@ export function Editor({
   const [past, setPast] = useState<Project[]>([]),
     [future, setFuture] = useState<Project[]>([])
   const [selected, setSelected] = useState(''),
-    [previewId, setPreviewId] = useState<string | undefined>(rows[0]?.rowId)
+    // R-460: the folder it was opened for, else (a right panel) the first folder of that kind, else the first one.
+    [previewId, setPreviewId] = useState<string | undefined>(
+      () =>
+        rows.find((r) => r.rowId === previewRow)?.rowId ??
+        (panelKind
+          ? rows.find((r) => effectiveKind(r, r.contents) === panelKind)?.rowId
+          : undefined) ??
+        rows[0]?.rowId
+    )
   const [error, setError] = useState('')
   const [tab, setTab] = useState<InspectorTab>(() => {
       try {

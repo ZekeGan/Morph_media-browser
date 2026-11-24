@@ -146,6 +146,10 @@ export function App() {
   const [templateCategory, setTemplateCategory] = useState<string>()
   // R-363: the book template to open first (one folder's own); saving it then leaves the project default alone.
   const [templatePreset, setTemplatePreset] = useState<string>()
+  // R-460: the folder the editor was opened for, its first preview. R-459: the project whose browser comes back
+  // from the editor where it was.
+  const [templateRow, setTemplateRow] = useState<string>(),
+    [resumeProject, setResumeProject] = useState<string>()
   const [settings, setSettings] = useState<Project>(),
     [editor, setEditor] = useState(false),
     [detailsId, setDetailsId] = useState<string>(),
@@ -476,10 +480,13 @@ export function App() {
               )}
               busy={busy}
               save={saveEdited}
+              previewRow={templateRow}
               close={() => {
                 setEditor(false)
                 setTemplateCategory(undefined)
                 setTemplatePreset(undefined)
+                setTemplateRow(undefined)
+                setResumeProject(project.projectId)
               }}
             />
           ) : project && !linked?.error ? (
@@ -502,13 +509,16 @@ export function App() {
               onDirty={setDetailDirty}
               onOverlay={setSettingsOverlay}
               notify={notifyError}
-              edit={(category, preset) => {
+              edit={(category, preset, rowId) => {
                 if (!detailDirty || window.confirm(tr('放棄欄位草稿後編輯版面？'))) {
                   setTemplateCategory(category)
                   setTemplatePreset(preset)
+                  setTemplateRow(rowId)
                   setEditor(true)
                 }
               }}
+              resume={resumeProject === project.projectId}
+              onResumed={() => setResumeProject(undefined)}
             />
           ) : (
             <div className="empty">

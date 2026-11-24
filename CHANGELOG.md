@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Layout editor: opened for a folder (picked in the layout window, or Add field in its folder settings), it opens the layout that folder actually uses with that folder in the preview; a right panel opened without a folder previews the first folder of its kind. Closing the editor goes back to where the browser was, with the same folder selected, instead of going into it (R-459, R-460).
 - UI tests no longer close a running `pnpm dev` window (which ended it with ELIFECYCLE 4294967295); the runner now stops only Electron windows left over from earlier test runs (R-456).
 - Layout editor palette: a click only marks a component or field row (a component row then shows what it does); a double click, Enter or Space adds it at the bottom and dragging places it; field rows keep Ctrl+click for picking and gain "Add to layout" in their ⋯ menu (R-454). Preset rows such as Album name, Artist or Play time can now be dragged onto the canvas; before, only a click added them (R-453).
 - Card album facts come faster: names, artists and years no longer wait for other folders' total lengths, which have their own queue with the folders asked about last first; hidden files are not counted, a damaged index is rebuilt and the index is closed on quit; a folder's embedded track cover is shown as a small cached thumbnail (R-455).

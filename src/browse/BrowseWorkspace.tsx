@@ -76,9 +76,14 @@ interface Props {
   act: Act
   run: Run
   onDirty: (v: boolean) => void
-  edit: (category?: string, preset?: string) => void
+  // `rowId`: the folder the editor is opened for (its preview, R-460).
+  edit: (category?: string, preset?: string, rowId?: string) => void
   notify: (message: string) => void
   onOverlay: (v: boolean) => void
+  // R-459: coming back from the layout editor: stay where the browser was, keeping the selected folder selected
+  // without going into it.
+  resume?: boolean
+  onResumed?: () => void
 }
 // R-404: lets a folder's icon, badge and panel find the folder above it by path.
 export function BrowseWorkspace(props: Props) {
@@ -112,6 +117,8 @@ function BrowseWorkspaceBody({
   edit,
   notify,
   onOverlay,
+  resume,
+  onResumed,
 }: Props) {
   const locale = useLocale()
   const works = useContext(LayoutWorksContext),
@@ -181,7 +188,9 @@ function BrowseWorkspaceBody({
           next = {
             ...saved,
             location:
-              target && pathKey(target.path) !== pathKey(root) ? target.path : saved.location || '',
+              !resume && target && pathKey(target.path) !== pathKey(root)
+                ? target.path
+                : saved.location || '',
             locations: undefined,
             detailId: target?.rowId,
             panelVisible: saved.panelVisible ?? true,
@@ -193,6 +202,7 @@ function BrowseWorkspaceBody({
         setHighlight(target?.rowId)
         setReady(true)
         if (target?.record) onSelect(target.rowId)
+        if (resume) onResumed?.()
       })
       .catch((e) => {
         notify(String(e))
@@ -600,7 +610,16 @@ function BrowseWorkspaceBody({
         act={act}
         run={run}
         onDirty={reportDirty}
-        onEditLayout={() => edit()}
+        // R-460: the card layout this folder shows, with its data in the preview.
+        onEditLayout={() =>
+          config
+            ? edit(
+                undefined,
+                cardChoice(project, config, isLayoutWork(works, config.rowId)).id,
+                config.rowId
+              )
+            : edit()
+        }
         onLayoutConfig={(target) => {
           setLayoutsFrom({ row: config, target })
           setLayoutsOpen(true)
@@ -802,8 +821,8 @@ function BrowseWorkspaceBody({
         rows={all}
         start={layoutsFrom?.row ?? currentFolder}
         initialTarget={layoutsFrom?.target}
-        editPanel={(kind, preset) => edit(kind, preset)}
-        editCard={(preset) => edit(undefined, preset)}
+        editPanel={(kind, preset, rowId) => edit(kind, preset, rowId)}
+        editCard={(preset, rowId) => edit(undefined, preset, rowId)}
         busy={busy}
         save={async (next) => !!(await act({ action: 'saveProject', project: next }))}
       />
