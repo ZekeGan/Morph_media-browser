@@ -18,6 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Coming back to a folder listed before no longer makes its file list jump: the complete list stays while the folder is read again and is replaced once when the new list is complete (it used to drop to the first 96 files and grow back, re-sorting each time).
 - Review fixes: a folder of pictures read in the manga reader stays a manga whatever its file names (the reader's saved direction counts, not only the old reading mode) (R-479); the page-number check no longer slows large folders and the right panel counts a folder's files once per listing (R-479); the source language grip keeps keyboard focus while a move is saved (R-476); with subfolders left out nothing stays grouped by source behind the unavailable toggle (R-488).
 - The picture viewer and the play queue opened from the file list follow the list's sort order: sorted from large to small, the next picture is the one shown below, not the one above (R-486).
 - File list toolbar: "include subfolders" is a switch, file types are chips with counts (a dropdown in a very narrow list), a sort button (name, type, size or date, ascending or descending), three icon buttons for the layout and a group-by-source toggle; the "⋯" menu is gone (R-486, R-488).

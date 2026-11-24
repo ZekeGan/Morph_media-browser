@@ -117,7 +117,11 @@ export function FolderContent({
       contentRow.current = row.rowId
     }
     setError('')
-    const paged = !isGameFolder(row)
+    const paged = !isGameFolder(row),
+      // A folder listed before keeps showing that complete list while it is read again; the new list replaces it once,
+      // when it is complete. Swapping in each part would shrink the list to its first part and re-sort it as the rest
+      // comes in, so the page visibly jumps (a first visit still shows the parts as they come).
+      quiet = !!contentCache.get(row.rowId)
     void (async () => {
       let cursor: string | undefined
       const counted: ContentResult['entries'] = []
@@ -140,7 +144,7 @@ export function FolderContent({
                 notices: [...accumulated.notices, ...chunk.notices],
               }
             : chunk
-        setContent(accumulated)
+        if (!quiet || !chunk.nextCursor) setContent(accumulated)
         counted.push(...chunk.entries)
         cursor = chunk.nextCursor
         if (!cursor) {

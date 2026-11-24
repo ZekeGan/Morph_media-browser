@@ -102,7 +102,7 @@
         "electron/explorer-overview*",
         "electron/hidden*"
       ],
-      "ui": ["file-overview-ui", "media-scope-ui", "folder-navigation-ui"],
+      "ui": ["file-overview-ui", "media-scope-ui", "folder-navigation-ui", "folder-reload-ui"],
       "tests": ["decided-media.test.ts", "file-probe.test.ts"]
     },
     {
