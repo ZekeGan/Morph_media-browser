@@ -391,17 +391,19 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .layout-config-rule { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 2px 6px; align-items: center; font-size: 13px; }
 .layout-config-reach { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .layout-config-rule .layout-config-reach { grid-column: 2; }
-.layout-config .inherited select, .layout-config select.inherited { color: var(--muted); }
+/* R-489: a rule that follows the default is a little dimmer than one that is set; a set one has its source colour on the left. */
+.layout-config .inherited select, .layout-config select.inherited { color: var(--muted); background-color: color-mix(in srgb, var(--input-bg, var(--surface)) 72%, var(--inset)); }
+.layout-config .inherited select:is(:hover, :focus) { background-color: var(--input-bg, var(--surface)); color: var(--text); }
+.layout-config .set select { border-left: 4px solid var(--layout-source); }
 .layout-config-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .layout-config-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 10px; border-bottom: 1px solid var(--line); }
 .layout-config-search { width: 220px; }
 .layout-config-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; padding: 5px 10px; font-size: 12px; border-bottom: 1px solid var(--line); }
 .layout-config-crumbs > span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
-.layout-config-legend { display: flex; gap: 10px; margin-left: auto; font-size: 11px; color: var(--muted); flex-wrap: wrap; }
-.layout-config-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; background: var(--layout-source); }
-.layout-config .from-type { --layout-source: var(--selected-text); } .layout-config .from-level { --layout-source: var(--warning); } .layout-config .from-default { --layout-source: var(--muted); } .layout-config .from-folder { --layout-source: var(--accent); }
+.layout-config-legend { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+.layout-config .from-type { --layout-source: var(--source-type); } .layout-config .from-level { --layout-source: var(--source-level); } .layout-config .from-default { --layout-source: var(--source-default); } .layout-config .from-folder { --layout-source: var(--source-own); }
 .layout-config-list { flex: 1 1 0; min-height: 190px; overflow: auto; }
-.layout-config-item { display: grid; grid-template-columns: minmax(0, 1fr) minmax(140px, 220px) 48px auto; gap: 8px; align-items: center; padding: 3px 10px 3px 7px; border-bottom: 1px solid var(--line); border-left: 3px solid var(--layout-source); cursor: default; }
+.layout-config-item { display: grid; grid-template-columns: minmax(0, 1fr) minmax(140px, 220px) 48px auto; gap: 8px; align-items: center; padding: 3px 10px 3px 7px; border-bottom: 1px solid var(--line); border-left: 5px solid var(--layout-source); cursor: default; }
 .layout-config-item.picked { background: var(--selected); }
 .layout-config-name { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .layout-config-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -417,11 +419,11 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .layout-config-item.from-folder .layout-config-value { color: var(--text); font-weight: 600; }
 .layout-config-item:not(:hover):not(.picked):not(:focus-within) .layout-config-pick .mantine-NativeSelect-root { opacity: 0; }
 .layout-config-item:is(:hover, .picked, :focus-within) .layout-config-value { display: none; }
-.layout-config-item.from-folder:not(.picked) { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.layout-config-item.from-folder:not(.picked) { background: color-mix(in srgb, var(--source-own) 8%, transparent); }
 .layout-config-item.from-folder .layout-config-title { font-weight: 600; }
-.layout-config-source { justify-self: start; font-size: 11px; line-height: 16px; padding: 0 6px; border-radius: 8px; color: var(--layout-source); border: 1px solid color-mix(in srgb, var(--layout-source) 55%, transparent); background: color-mix(in srgb, var(--layout-source) 14%, transparent); white-space: nowrap; }
+.layout-config-source { justify-self: start; font-size: 11px; font-weight: 600; line-height: 17px; padding: 0 7px; border-radius: 9px; color: var(--source-on); background: var(--layout-source); white-space: nowrap; }
 .layout-config-item.picked { color: var(--selected-text); }
-.layout-config-item.picked .layout-config-source, .layout-config-item.picked .mantine-ActionIcon { color: inherit; --ai-color: currentColor; border-color: currentColor; background: transparent; }
+.layout-config-item.picked .mantine-ActionIcon { color: inherit; --ai-color: currentColor; border-color: currentColor; background: transparent; }
 .layout-config-item.picked .layout-config-name, .layout-config-item.picked .layout-config-title { color: inherit; }
 .layout-config-fallback { border-top: 1px solid var(--line); padding-top: 12px; }
 .layout-config-list { user-select: none; }

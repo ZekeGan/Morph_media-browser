@@ -532,7 +532,7 @@ export function LayoutConfig({
                     <NativeSelect
                       size="xs"
                       aria-label={tr('{0}的版面', tr(label))}
-                      className={draft.types?.[kind] ? undefined : 'inherited'}
+                      className={draft.types?.[kind] ? 'set from-type' : 'inherited'}
                       value={draft.types?.[kind] ?? ''}
                       data={inherit(followDefault)}
                       onChange={(e) => {
@@ -562,7 +562,7 @@ export function LayoutConfig({
                     <NativeSelect
                       size="xs"
                       aria-label={tr('第 {0} 層的版面', i + 1)}
-                      className={draft.levels?.[i] ? undefined : 'inherited'}
+                      className={draft.levels?.[i] ? 'set from-level' : 'inherited'}
                       value={draft.levels?.[i] ?? ''}
                       data={inherit(followDefault)}
                       onChange={(e) => {
@@ -589,6 +589,7 @@ export function LayoutConfig({
                 <NativeSelect
                   size="xs"
                   aria-label={tr('預設版面')}
+                  className="set from-default"
                   value={base}
                   data={panel ? [{ value: '', label: tr('內建右側') }, ...choices] : choices}
                   onChange={(e) => setBase(e.currentTarget.value)}
@@ -649,8 +650,7 @@ export function LayoutConfig({
             />
             <span className="layout-config-legend" aria-hidden="true">
               {(['type', 'level', 'default', 'folder'] as const).map((source) => (
-                <span key={source}>
-                  <i className={'from-' + source} />
+                <span key={source} className={'layout-config-source from-' + source}>
                   {tr(sources[source])}
                 </span>
               ))}
