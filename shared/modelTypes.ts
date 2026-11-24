@@ -20,15 +20,9 @@ export type CellKind =
   | 'divider'
   | 'open-folder'
   | 'game-launch'
-  // R-437 (provisional): the right panel's facts about an album (name, artist and year, tracks and length) and a
-  // video folder (video count and 播放); on a card or in the editor they only name themselves. The cover beside
-  // them is an image component set to the folder cover.
   // R-438 (provisional): the buttons 播放影片／繼續觀看 and 繼續閱讀 of the right panel.
   | 'video-play'
   | 'book-continue'
-  | 'album-facts'
-  | 'video-facts'
-  | 'book-card'
   // R-409 (provisional): one of a game's extra buttons (`gameExtra`).
   | 'game-extra'
 export interface Cell {
@@ -176,7 +170,7 @@ export interface FolderRecord {
 }
 export interface Project {
   kind: 'media-viewer.project'
-  schemaVersion: 3
+  schemaVersion: 4
   projectId: string
   rootFolderId: string
   revision: number

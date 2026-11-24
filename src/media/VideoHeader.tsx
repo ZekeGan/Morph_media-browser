@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Button, Text } from '@mantine/core'
+import { Button } from '@mantine/core'
 import type { MediaEntry } from '../../shared/explorer'
 import type { FolderRow, Project } from '../../shared/model'
 import { usePlayback } from './Playback'
@@ -45,49 +45,5 @@ export function VideoPlayButton({
         ? tr('繼續觀看：{0}（{1}）', resume.video.name, clockText(resume.place.time))
         : tr('播放影片')}
     </Button>
-  )
-}
-export function VideoFacts({
-  row,
-  project,
-  entries,
-}: {
-  row: FolderRow
-  project: Project
-  entries: MediaEntry[]
-}) {
-  const playback = usePlayback(),
-    places = useVideoPlaces()
-  const videos = useMemo(
-    () =>
-      entries
-        .filter((entry) => entry.kind === 'video')
-        .sort((a, b) => names.compare(a.name, b.name)),
-    [entries]
-  )
-  if (!videos.length) return null
-  const resume = continueTarget(places, podcastFolder(row), videos)
-  return (
-    <div className="video-header">
-      <div className="album-facts">
-        <Text fw={700} size="lg" className="album-title">
-          {tr('{0} 部影片', videos.length)}
-        </Text>
-      </div>
-      {playback && (
-        <Button
-          size="xs"
-          leftSection={<Icon name="play" size={14} />}
-          title={resume?.video.name}
-          onClick={() =>
-            playback.replace({ row, project, entries }, videos, resume?.index ?? 0, true)
-          }
-        >
-          {resume
-            ? tr('繼續觀看：{0}（{1}）', resume.video.name, clockText(resume.place.time))
-            : tr('播放影片')}
-        </Button>
-      )}
-    </div>
   )
 }

@@ -11,7 +11,7 @@ export type FormatKind = 'folder' | 'details' | 'project' | 'workspace' | 'setti
 export const FORMAT_VERSION: Record<FormatKind, number> = {
   folder: 2,
   details: 1,
-  project: 3,
+  project: 4,
   workspace: 1,
   settings: 1,
 }
@@ -35,6 +35,8 @@ export const UPGRADE_STEPS: Record<FormatKind, Partial<Record<number, Step>>> = 
     1: (value) => projectV1(value),
     // 2 -> 3 (R-437): the game cover, album info and video info components are gone; see projectV2 below.
     2: (value) => projectV2(value),
+    // 3 -> 4 (R-469): the album facts, video facts and book card components become small components; see projectV3.
+    3: (value) => projectV3(value),
   },
   workspace: {},
   settings: {},
@@ -180,6 +182,80 @@ export function settleFieldGroups(value: unknown): unknown {
   }
   const cells = (list: unknown) => (Array.isArray(list) ? list.map(cell) : list)
   return mapRawCellLists(next, cells)
+}
+
+// Project 3 -> 4 (R-469). The album facts, video facts and book card become the small components that show the same
+// things, one line each inside the box the old component had (as many lines as it was tall, at most three), two side by
+// side where the box is at least two columns wide:
+// - album-facts: the album name; artist and year; track count and total length;
+// - video-facts: the video count; the 播放影片 button;
+// - book-card: the book's title; its author.
+// The first keeps the old component's id and style; the others get new unique ids and the same style. Everything else
+// is kept as it was.
+const factLines: Record<string, string[][]> = {
+  'album-facts': [['albumName'], ['albumArtist', 'albumYear'], ['trackCount', 'totalLength']],
+  'video-facts': [['videoCount'], ['@video-play']],
+  'book-card': [['bookTitle'], ['bookAuthor']],
+}
+// A list holds at most 50 components (see validateProject): when the split ones would not fit, each old component
+// becomes only its first small component, over its whole box. New ids stay within the 100 characters an id may have.
+const MAX_LIST_CELLS = 50
+function projectV3(value: Record<string, unknown>): Record<string, unknown> {
+  const convert = (list: unknown) => {
+    if (!Array.isArray(list)) return list
+    const ids = new Set(list.map((cell) => (plain(cell) ? String(cell.cellId) : '')))
+    const unique = (id: string) => {
+      let next = id
+      for (let n = 2; ids.has(next); n++) next = id + '-' + n
+      ids.add(next)
+      return next
+    }
+    const old = (cell: unknown): cell is Record<string, unknown> =>
+      plain(cell) && plain(cell.grid) && typeof cell.kind === 'string' && !!factLines[cell.kind]
+    const linesOf = (cell: Record<string, unknown>, whole: boolean) => {
+      const { w, h } = cell.grid as { w: number; h: number }
+      const lines = factLines[cell.kind as string].slice(0, whole ? 1 : Math.max(1, Math.min(h, 3)))
+      return lines.map((line) => (w >= 2 ? line : line.slice(0, 1)))
+    }
+    const grown = list.reduce(
+      (count: number, cell) => count + (old(cell) ? linesOf(cell, false).flat().length - 1 : 0),
+      list.length
+    )
+    const whole = grown > MAX_LIST_CELLS
+    return list.flatMap((cell): unknown[] => {
+      if (!old(cell)) return [cell]
+      const { x, y, w, h } = cell.grid as { x: number; y: number; w: number; h: number }
+      const { kind: _kind, cellId, ...rest } = cell
+      const lines = linesOf(cell, whole)
+      const out: unknown[] = []
+      lines.forEach((parts, i) => {
+        const left = Math.ceil(w / parts.length)
+        parts.forEach((part, j) => {
+          const box = {
+            x: x + j * left,
+            y: y + i,
+            w: j ? w - left : parts.length > 1 ? left : w,
+            // The last line takes what is left of the old height.
+            h: i === lines.length - 1 ? Math.max(1, h - i) : 1,
+          }
+          const name = part.replace('@', '')
+          out.push({
+            // Each new component gets its own copy of the old one's style and other settings.
+            ...structuredClone(rest),
+            cellId: out.length
+              ? unique(String(cellId).slice(0, 100 - name.length - 5) + '-' + name)
+              : cellId,
+            ...(part.startsWith('@')
+              ? { kind: part.slice(1) }
+              : { kind: 'system-info', systemInfo: part }),
+            grid: box,
+          })
+        })
+      })
+      return out
+    })
+  }
+  return mapRawCellLists(value, convert)
 }
 
 // Project 2 -> 3 (R-437). What a component showed stays what it shows, as components that exist now:

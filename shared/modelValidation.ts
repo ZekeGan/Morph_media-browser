@@ -157,9 +157,6 @@ function validCell(c: unknown): boolean {
       'game-launch',
       'video-play',
       'book-continue',
-      'album-facts',
-      'video-facts',
-      'book-card',
       'game-extra',
     ].includes(c.kind) &&
     (c.text === undefined || text(c.text, 10000)) &&

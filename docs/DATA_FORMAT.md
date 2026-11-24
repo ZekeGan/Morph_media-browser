@@ -1,10 +1,10 @@
 # 資料格式參考
 
-> 最後確認：2026-11-24（R-438）。可攜記錄與應用程式資料的格式；型別以 `shared/model.ts`、`shared/workspace.ts` 為準，升級在 `shared/upgrade.ts`。
+> 最後確認：2026-11-24（R-469）。可攜記錄與應用程式資料的格式；型別以 `shared/model.ts`、`shared/workspace.ts` 為準，升級在 `shared/upgrade.ts`。
 
 M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是可重建的副本。此頁列出各檔案的位置與欄位，讓其他工具或貢獻者能讀懂；設計理由見 [資料模型](FOLDER_PROJECT_MODEL.md) 與 [儲存安全](STORAGE_OPTIONS.md)，型別定義的原始碼是 [shared/model.ts](../shared/model.ts)、[shared/explorer.ts](../shared/explorer.ts)、[shared/workspace.ts](../shared/workspace.ts)，驗證在同檔的 `validate*` 函式。
 
-> 欄位以現行程式為準；`schemaVersion` 與應用程式版本號無關；資料夾記錄是 `2`、專案記錄是 `3`，其餘都是 `1`。改格式時的自動升級規則見[格式升級與相容規則](#格式升級與相容規則)。
+> 欄位以現行程式為準；`schemaVersion` 與應用程式版本號無關；資料夾記錄是 `2`、專案記錄是 `4`，其餘都是 `1`。改格式時的自動升級規則見[格式升級與相容規則](#格式升級與相容規則)。
 
 ## 檔案位置
 
@@ -78,7 +78,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 
 ## 專案檔 `projects/<projectId>.json`
 
-`kind: "media-viewer.project"`、`schemaVersion: 3`（v1、v2 讀取時升級，見下方「已有的升級步驟」）。
+`kind: "media-viewer.project"`、`schemaVersion: 4`（v1～v3 讀取時升級，見下方「已有的升級步驟」）。
 
 | 欄位 | 說明 |
 | --- | --- |
@@ -96,7 +96,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 | `list`、`cardView`、`excludedRelativePaths`、`scanAll`、`traversal` | 列表、顯示範圍、排除與掃描設定；`cardView.works`（R-340）為 `true` 時是「所有作品」，舊版讀到時依 `mode: multi` 顯示全部層 |
 | `savedSearches` | 儲存的搜尋 |
 
-**組件 `Cell`**：`cellId`、`kind`（`name`、`path`、`field-text`、`field-tags`、`field-number`、`field-date`、`field-boolean`、`field-enum`、`field-url`、`field-date-only`、`static-text`、`spacer`、`system-info`、`image`、`divider`、`open-folder`、`game-launch`，以及 R-409／R-437／R-438 暫定的右側專屬元件 `video-play`、`book-continue`、`album-facts`、`video-facts`、`book-card` 與遊戲附加按鈕 `game-extra`；舊的 `game-cover`、`album-info`、`video-info` 已在 v3 取消，讀取時轉換）、`grid`（12 欄、最多 100 列，組件不能重疊）、`style`，以及依型別的選用欄位：`attributeId`、`fallbackIds`（備用欄位，最多 5 個、同型別或文字／標籤相容顯示；舊設定，新設定用群組）、`groupId`（顯示欄位群組，此時 `attributeId` 為其成員之一、不可同時有 `fallbackIds`）、`condition`（顯示條件）、`wrap`／`scroll`／`growMax`（R-398，**暫定**，不升 `schemaVersion`：整數 1～20，內容比組件高時最多多佔的列數；只限文字欄位、標籤、版面文字、名稱、路徑，不可與 `scroll` 並存，缺省維持原高度）、`unit`／`decimals`／`maximum`、`presentation`、`imageFit`、`imageIndex`、`gameExtra`（R-409，**暫定**：`game-extra` 的按鈕 `save`／`steam`／`store`）、`systemInfo` 新增 `engine`（R-409）與 R-438（**暫定**）的 `albumName`、`albumArtist`、`albumYear`、`trackCount`、`totalLength`、`videoCount`、`bookTitle`、`bookAuthor`、`pages`、`readPage`、`imageCover`（R-409，**暫定**：`true` 表示沒有手動選圖時顯示資料夾封面，不可與 `imageIndex` 並存）、`imageRole`（R-435，**暫定**：`hero`／`logo`／`icon`，沒有手動選圖時顯示從網站匯入的那種圖片，不可與 `imageIndex`、`imageCover` 並存）、`actionId`／`fallbackActionIds`、`tagColors`／`tagPrefix`。完整樣式欄位見 [CELL 目錄](CELL_CATALOG.md#組件樣式2026-11-02-新增)。
+**組件 `Cell`**：`cellId`、`kind`（`name`、`path`、`field-text`、`field-tags`、`field-number`、`field-date`、`field-boolean`、`field-enum`、`field-url`、`field-date-only`、`static-text`、`spacer`、`system-info`、`image`、`divider`、`open-folder`、`game-launch`，以及 R-409／R-437／R-438 暫定的右側專屬元件 `video-play`、`book-continue` 與遊戲附加按鈕 `game-extra`；舊的 `game-cover`、`album-info`、`video-info` 已在 v3 取消，`album-facts`、`video-facts`、`book-card` 已在 v4 取消，讀取時轉換）、`grid`（12 欄、最多 100 列，組件不能重疊）、`style`，以及依型別的選用欄位：`attributeId`、`fallbackIds`（備用欄位，最多 5 個、同型別或文字／標籤相容顯示；舊設定，新設定用群組）、`groupId`（顯示欄位群組，此時 `attributeId` 為其成員之一、不可同時有 `fallbackIds`）、`condition`（顯示條件）、`wrap`／`scroll`／`growMax`（R-398，**暫定**，不升 `schemaVersion`：整數 1～20，內容比組件高時最多多佔的列數；只限文字欄位、標籤、版面文字、名稱、路徑，不可與 `scroll` 並存，缺省維持原高度）、`unit`／`decimals`／`maximum`、`presentation`、`imageFit`、`imageIndex`、`gameExtra`（R-409，**暫定**：`game-extra` 的按鈕 `save`／`steam`／`store`）、`systemInfo` 新增 `engine`（R-409）與 R-438（**暫定**）的 `albumName`、`albumArtist`、`albumYear`、`trackCount`、`totalLength`、`videoCount`、`bookTitle`、`bookAuthor`、`pages`、`readPage`、`imageCover`（R-409，**暫定**：`true` 表示沒有手動選圖時顯示資料夾封面，不可與 `imageIndex` 並存）、`imageRole`（R-435，**暫定**：`hero`／`logo`／`icon`，沒有手動選圖時顯示從網站匯入的那種圖片，不可與 `imageIndex`、`imageCover` 並存）、`actionId`／`fallbackActionIds`、`tagColors`／`tagPrefix`。完整樣式欄位見 [CELL 目錄](CELL_CATALOG.md#組件樣式2026-11-02-新增)。
 
 **顯示條件與依條件文字（R-239）**：`condition` 的 `operator` 另有 `within`／`older`（`value` 為 1～36500 的天數，只用於日期與日期時間欄位，依今天計算「距今 N 天內／超過 N 天」；只有日期的值以本機日曆日比較，含時間的值以當下時間比較，未來的日期算「N 天內」）。`moreConditions`（1～4 個，需先有 `condition`）與 `conditionMode: "any"`（只在有 `moreConditions` 時）讓組件有多個條件：預設全部符合才顯示，`any` 為任一符合。`textRules`（只限版面文字，1～10 條 `{ when, text }`，文字最多 1000 字，空白表示符合時不顯示）由上往下比對，第一個符合的顯示其文字，都不符合時顯示 `text`。刪除欄位時，讀它的額外條件與文字規則會被移除，主條件讀它時組件照舊一併移除。舊版程式讀到 `within`／`older` 會把專案視為不合法，Alpha 期間不另做相容。
 
@@ -137,7 +137,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 - **版本衝突**：`revision` 不符的寫入一律拒絕，保留使用者草稿。
 - **未知資料保留**：程式不認得的檔案與資料夾不會被清理；清理只移除 M:orph 自己建立的受管資料，並先預覽。
 - **遊戲保護**：遊戲根目錄可以有自己的記錄，內部不建立記錄、不修改原始檔。
-- **升級**：資料夾記錄是 `schemaVersion: 2`、專案記錄是 `3`，其餘是 `1`；舊版記錄讀取時自動升級，規則見下節。
+- **升級**：資料夾記錄是 `schemaVersion: 2`、專案記錄是 `4`，其餘是 `1`；舊版記錄讀取時自動升級，規則見下節。
 
 ## 格式升級與相容規則
 
@@ -180,6 +180,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 
 | 格式 | 步驟 | 內容 |
 | --- | --- | --- |
+| 專案記錄 | v3 → v4（R-469） | 取消 `album-facts`、`video-facts`、`book-card` 三種組件，卡片、卡片版面與右側版面的每份清單一起轉換：每個舊組件換成在**原位置內**一行一個的小組件（`album-facts`：專輯名稱；演出者、年份；曲數、總長度。`video-facts`：影片數；`video-play` 按鈕。`book-card`：書名；作者。除 `video-play` 外都是 `system-info`）。行數取舊組件的高度（最多三行），最後一行佔滿剩下的高度；寬至少兩欄時同一行兩個組件左右平分（左邊取整數上限），只有一欄時每行只留第一個。第一個沿用原 ID，其餘為「原 ID-種類」，重複時加數字；全部沿用原樣式。其他組件、其他欄位與不認得的欄位不變，重複升級結果相同。舊版程式讀到 v4 專案時唯讀 |
 | 專案記錄 | v2 → v3（R-437） | 取消 `game-cover`、`album-info`、`video-info` 三種組件，卡片、卡片版面與右側版面的每份清單一起轉換：`game-cover` 成為 `imageCover: true` 的圖片組件，位置與 `imageFit` 不變（沒設定時寫成 `blur`，維持原本的預設）；`album-info`／`video-info` 成為左邊三分之一寬（至少一欄）的資料夾封面圖片組件，加上其餘寬度的新組件 `album-facts`／`video-facts`（寬度只有一欄時只留新組件）；轉出的封面組件 ID 為「原 ID-cover」，重複時加數字。其他組件（包括 R-435 的 `imageRole`）、其他欄位與不認得的欄位不變，重複升級結果相同。新組件為**暫定**。舊版程式讀到 v3 專案時唯讀 |
 | 專案記錄 | v1 → v2（R-409） | 右側版面獨立成 `panelPresets`：`bookPresets` 照原 ID 與名稱搬入，`bookPresetId` 成為 `layoutRules.panel.types.book`；沒有 `bookPresets` 時，編輯過的 `contentCells.book` 成為「書籍 預設」（沒有 `contentCover` 的 R-362 前模板補上左側封面組件，其餘縮進右側三分之二，放不下時維持原樣）；非空的 `contentCells.game`／`media`／`general` 成為「遊戲 預設」「音樂／影片 預設」「一般 預設」並指定給對應類型（`media` 給音樂與影片，空清單原本就不顯示，捨棄）。沒有 `layoutRules` 時，`kindLayouts`（`media` 給音樂與影片）、`folderLayouts`、`folderBookPresets` 換算成卡片與右側規則；已有的規則一律不覆蓋。移除 `contentCells`、`contentCover`、`bookPresets`、`bookPresetId`、`folderBookPresets`、`kindLayouts`、`folderLayouts`；其他欄位與不認得的欄位不變。名稱重複時加「 (2)」。舊版程式讀到 v2 專案時唯讀 |
 | 資料夾記錄 | v1 → v2（R-387） | 資料夾類型的「影音」拆成 `music` 與 `video`。`details.kind` 是 `media` 時移除這個鍵（之後依內容自動判斷）；其他欄位、其他類型值與不認得的欄位都不變。`details` 自己的 `schemaVersion` 仍是 `1`。舊版程式讀到 v2 的記錄時依「較新版本的資料」處理（唯讀）。專案匯出包的 `EXPORT_VERSION` 不變：包內的 v1 記錄匯入時走同一個步驟；舊版程式匯入這一版的匯出包時，包裝版本檢查會通過，但包內的 v2 記錄在寫入前的驗證就被判定為「較新版本的資料」，整份匯入拒絕、什麼都不寫 |

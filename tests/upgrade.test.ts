@@ -79,21 +79,22 @@ test('upgrade steps run in order, and a missing step or newer data is refused', 
     a: 1,
   })
   assert.throws(() => upgradeFormat('folder', { schemaVersion: 3 }), NewerFormatError)
-  FORMAT_VERSION.project = 5
+  const real = FORMAT_VERSION.project
+  FORMAT_VERSION.project = real + 2
   t.after(() => {
-    FORMAT_VERSION.project = 3
-    delete UPGRADE_STEPS.project[3]
-    delete UPGRADE_STEPS.project[4]
+    FORMAT_VERSION.project = real
+    delete UPGRADE_STEPS.project[real]
+    delete UPGRADE_STEPS.project[real + 1]
   })
-  UPGRADE_STEPS.project[3] = (v) => ({ ...v, trail: ['3→4'] })
+  UPGRADE_STEPS.project[real] = (v) => ({ ...v, trail: ['a'] })
   assert.throws(
-    () => upgradeFormat('project', { schemaVersion: 3 }),
-    (error) => /v4 → v5/.test(plainMessage(String(error)))
+    () => upgradeFormat('project', { schemaVersion: real }),
+    (error) => plainMessage(String(error)).includes(`v${real + 1} → v${real + 2}`)
   )
-  UPGRADE_STEPS.project[4] = (v) => ({ ...v, trail: [...(v.trail as string[]), '4→5'] })
-  const input = { schemaVersion: 3 }
-  assert.deepEqual(upgradeFormat('project', input), { schemaVersion: 5, trail: ['3→4', '4→5'] })
-  assert.deepEqual(input, { schemaVersion: 3 }, 'the value read is never changed in place')
+  UPGRADE_STEPS.project[real + 1] = (v) => ({ ...v, trail: [...(v.trail as string[]), 'b'] })
+  const input = { schemaVersion: real }
+  assert.deepEqual(upgradeFormat('project', input), { schemaVersion: real + 2, trail: ['a', 'b'] })
+  assert.deepEqual(input, { schemaVersion: real }, 'the value read is never changed in place')
 })
 
 test('an older folder record is upgraded on read and written in the new format only on save', async (t) => {
@@ -271,7 +272,10 @@ test('a project record from a newer version is not replaced by its backup', asyn
   const project = lib.snapshot().projects[0].project!
   await lib.saveProject({ ...project, name: 'P2' })
   const file = path.join(media, '.media-viewer', 'projects', `${project.projectId}.json`)
-  const newer = JSON.stringify({ ...((await readJson(file)) as object), schemaVersion: 4 })
+  const newer = JSON.stringify({
+    ...((await readJson(file)) as object),
+    schemaVersion: FORMAT_VERSION.project + 1,
+  })
   await fs.writeFile(file, newer)
   const again = new Library(path.join(root, 'local'), undefined, false)
   await again.init()
@@ -288,7 +292,7 @@ test('projects v1 -> v2: book and content templates become panel layouts, older 
   ) as Record<string, unknown>
   const next = upgradeStored(v1) as Project
   validateProject(next)
-  assert.equal(next.schemaVersion, 3)
+  assert.equal(next.schemaVersion, FORMAT_VERSION.project)
   for (const key of [
     'contentCells',
     'contentCover',
@@ -328,10 +332,12 @@ test('projects v2 -> v3: game cover, album info and video info become cover imag
     readFileSync(path.resolve('tests/fixtures/project-v2.json'), 'utf8')
   ) as Record<string, unknown>
   const before = structuredClone(v2)
-  const next = upgradeStored(v2) as Project
+  // The 2 -> 3 step alone (R-469 changes the facts components again, checked below).
+  const next = {
+    ...UPGRADE_STEPS.project[2]!(structuredClone(v2)),
+    schemaVersion: 3,
+  } as unknown as Project
   assert.deepEqual(v2, before, 'the value read is never changed in place')
-  validateProject(next)
-  assert.equal(next.schemaVersion, 3)
   const shape = (cells: Cell[]) =>
     cells.map((c) => [c.cellId, c.kind, c.grid.x, c.grid.w, c.imageCover, c.imageFit])
   assert.deepEqual(shape(next.cells).slice(1), [
@@ -354,13 +360,97 @@ test('projects v2 -> v3: game cover, album info and video info become cover imag
   // R-435's banner choice is untouched, and the rest of the project is kept as it was.
   assert.equal(album.at(-1)!.imageRole, 'hero')
   assert.deepEqual(next.panelPresets!.slice(0, -1), (v2.panelPresets as unknown[]).slice(0, -1))
-  assert.deepEqual(upgradeStored(next), next, 'upgrading again changes nothing')
-  // A v1 project goes the whole way in one read.
+  // A v2 project goes on to the current version in one read, and a v1 project the whole way.
+  validateProject(upgradeStored(v2) as Project)
   const whole = upgradeStored(
     JSON.parse(readFileSync(path.resolve('tests/fixtures/project-v1.json'), 'utf8'))
   ) as Project
-  assert.equal(whole.schemaVersion, 3)
+  assert.equal(whole.schemaVersion, FORMAT_VERSION.project)
   validateProject(whole)
+})
+
+// R-469: a project as version 3 wrote it: album facts four rows tall, video facts one column wide and two columns wide,
+// and a book card whose second id is already taken.
+test('projects v3 -> v4: album facts, video facts and the book card become small components in their place (R-469)', () => {
+  const v3 = JSON.parse(
+    readFileSync(path.resolve('tests/fixtures/project-v3.json'), 'utf8')
+  ) as Record<string, unknown>
+  const before = structuredClone(v3)
+  const next = upgradeStored(v3) as Project
+  assert.deepEqual(v3, before, 'the value read is never changed in place')
+  validateProject(next)
+  assert.equal(next.schemaVersion, 4)
+  const shape = (cells: Cell[]) =>
+    cells.map((c) => [c.cellId, c.systemInfo ?? c.kind, c.grid.x, c.grid.y, c.grid.w, c.grid.h])
+  const preset = (id: string) => next.panelPresets!.find((p) => p.id === id)!.cells
+  assert.deepEqual(shape(preset('album')), [
+    ['album-info-cover-2', 'image', 0, 0, 4, 4],
+    ['album-info', 'albumName', 4, 0, 8, 1],
+    ['album-info-albumArtist', 'albumArtist', 4, 1, 4, 1],
+    ['album-info-albumYear', 'albumYear', 8, 1, 4, 1],
+    ['album-info-trackCount', 'trackCount', 4, 2, 4, 2],
+    ['album-info-totalLength', 'totalLength', 8, 2, 4, 2],
+    ['album-info-cover', 'name', 0, 4, 12, 1],
+    ['narrow', 'videoCount', 0, 5, 1, 1],
+    ['narrow-video-play', 'video-play', 0, 6, 1, 1],
+    ['vi-cover', 'image', 0, 7, 4, 2],
+    ['vi', 'videoCount', 4, 7, 8, 1],
+    ['vi-video-play', 'video-play', 4, 8, 8, 1],
+    ['hero', 'image', 0, 9, 12, 3],
+  ])
+  assert.deepEqual(shape(preset('epub')), [
+    ['bc', 'bookTitle', 0, 0, 12, 1],
+    ['bc-bookAuthor-2', 'bookAuthor', 0, 1, 12, 3],
+    ['bc-bookAuthor', 'name', 0, 4, 12, 1],
+  ])
+  // Every new component keeps the old one's style; nothing else in the project changes.
+  assert.ok(
+    preset('epub')
+      .slice(0, 2)
+      .every((c) => c.style.backgroundColor === '#202020')
+  )
+  const kinds = JSON.stringify(next)
+  assert.equal(/album-facts|video-facts|book-card/.test(kinds), false)
+  assert.deepEqual(next.cells, (v3 as unknown as Project).cells)
+  assert.deepEqual(next.layoutPresets, (v3 as unknown as Project).layoutPresets)
+  assert.deepEqual(upgradeStored(next), next, 'upgrading again changes nothing')
+})
+
+test('projects v3 -> v4: a list that the split would take past 50 components keeps one per old one; long ids stay valid (R-469)', () => {
+  const v3 = JSON.parse(
+    readFileSync(path.resolve('tests/fixtures/project-v3.json'), 'utf8')
+  ) as Record<string, unknown>
+  const style = { textColor: '#e4e6e8', backgroundColor: 'transparent' }
+  const long = 'a'.repeat(100)
+  // 47 one-row fillers below an album facts box 12 wide and 3 tall: split, it would be 52 components.
+  const cells = [
+    { cellId: long, kind: 'album-facts', grid: { x: 0, y: 0, w: 12, h: 3 }, style },
+    ...Array.from({ length: 47 }, (_, i) => ({
+      cellId: 'n' + i,
+      kind: 'spacer',
+      grid: { x: 0, y: 3 + i, w: 12, h: 1 },
+      style,
+    })),
+  ]
+  const full = { ...v3, panelPresets: [{ id: 'full', name: 'Full', cells }] }
+  const next = upgradeStored(full) as Project
+  validateProject(next)
+  const list = next.panelPresets![0].cells
+  assert.equal(list.length, 48)
+  assert.deepEqual(
+    [list[0].cellId, list[0].systemInfo, list[0].grid],
+    [long, 'albumName', { x: 0, y: 0, w: 12, h: 3 }]
+  )
+  // Room enough: split, and the new ids are cut to fit.
+  const roomy = upgradeStored({
+    ...v3,
+    panelPresets: [{ id: 'r', name: 'R', cells: cells.slice(0, 2) }],
+  }) as Project
+  validateProject(roomy)
+  const split = roomy.panelPresets![0].cells
+  assert.equal(split.length, 6)
+  assert.ok(split.every((c) => c.cellId.length <= 100))
+  assert.notEqual(split[1].style, split[2].style, 'each new component has its own style object')
 })
 
 test('a v2 project is upgraded on read and written as v3 only on save; the v2 file stays as the backup (R-437)', async (t) => {
@@ -385,7 +475,7 @@ test('a v2 project is upgraded on read and written as v3 only on save; the v2 fi
   const again = new Library(path.join(root, 'local'), undefined, false)
   await again.init()
   const project = again.snapshot().projects[0].project!
-  assert.equal(project.schemaVersion, 3)
+  assert.equal(project.schemaVersion, 4)
   assert.equal(
     project.cells.some((c) => (c.kind as string) === 'game-cover'),
     false
@@ -393,7 +483,7 @@ test('a v2 project is upgraded on read and written as v3 only on save; the v2 fi
   assert.equal(await fs.readFile(file, 'utf8'), before, 'reading never writes')
   await again.saveProject({ ...project, name: 'Saved' })
   const saved = (await readJson(file)) as { schemaVersion: number; cells: { kind: string }[] }
-  assert.equal(saved.schemaVersion, 3)
+  assert.equal(saved.schemaVersion, 4)
   assert.equal(
     saved.cells.some((c) => c.kind === 'game-cover'),
     false
@@ -427,12 +517,12 @@ test('an older project record is upgraded on read and written in the new format 
   const again = new Library(path.join(root, 'local'), undefined, false)
   await again.init()
   const project = again.snapshot().projects[0].project!
-  assert.equal(project.schemaVersion, 3)
+  assert.equal(project.schemaVersion, 4)
   assert.equal(project.panelPresets?.length, 3)
   assert.equal(await fs.readFile(file, 'utf8'), before, 'reading never writes')
   await again.saveProject({ ...project, name: 'Saved' })
   const saved = (await readJson(file)) as Record<string, unknown>
-  assert.equal(saved.schemaVersion, 3)
+  assert.equal(saved.schemaVersion, 4)
   assert.equal('bookPresets' in saved, false)
   assert.equal(await fs.readFile(file + '.bak', 'utf8'), before, 'the v1 file stays as the backup')
   assert.equal(await fs.readFile(path.join(media, 'clip.mp4'), 'utf8'), 'ORIGINAL')

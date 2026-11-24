@@ -189,7 +189,7 @@ export class Library {
       throw new Error(fmt('此位置受遊戲／App 邊界保護，請選擇外層資料夾：{0}', protectedBy))
     const p: Project = {
       kind: 'media-viewer.project',
-      schemaVersion: 3,
+      schemaVersion: 4,
       projectId: randomUUID(),
       rootFolderId: 'pending',
       revision: 1,

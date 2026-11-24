@@ -67,9 +67,6 @@ const kindIcons: Partial<Record<CellKind, IconName>> = {
   'game-extra': 'external',
   'video-play': 'play',
   'book-continue': 'book',
-  'album-facts': 'music',
-  'video-facts': 'video',
-  'book-card': 'book',
 }
 
 // R-452: the main visuals of the right panel, one section per kind of folder.
@@ -84,14 +81,13 @@ const kindSections: { id: string; title: string; kind: FolderKind; kinds: Palett
       'system-info:albumYear',
       'system-info:trackCount',
       'system-info:totalLength',
-      'album-facts',
     ],
   },
   {
     id: 'video',
     title: '影片',
     kind: 'video',
-    kinds: ['system-info:videoCount', 'video-play', 'video-facts'],
+    kinds: ['system-info:videoCount', 'video-play'],
   },
   {
     id: 'book',
@@ -104,7 +100,6 @@ const kindSections: { id: string; title: string; kind: FolderKind; kinds: Palett
       'system-info:pages',
       'system-info:readPage',
       'book-continue',
-      'book-card',
     ],
   },
 ]

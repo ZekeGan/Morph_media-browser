@@ -1211,12 +1211,6 @@
     "en": "Loading player…",
     "es": "Cargando reproductor…"
   },
-  "沒有遊戲封面": {
-    "ja": "ゲームのカバー画像がありません",
-    "zh-CN": "没有游戏封面",
-    "en": "No game cover",
-    "es": "Sin portada del juego"
-  },
   "尚未綁定": {
     "ja": "未関連付け",
     "zh-CN": "尚未绑定",
@@ -12791,36 +12785,6 @@
     "ja": "右側のレイアウト配置…",
     "es": "Diseños del panel derecho…"
   },
-  "專輯資訊": {
-    "zh-CN": "专辑信息",
-    "en": "Album info",
-    "ja": "アルバム情報",
-    "es": "Información del álbum"
-  },
-  "影片數與播放": {
-    "zh-CN": "视频数与播放",
-    "en": "Video count and play",
-    "ja": "動画数と再生",
-    "es": "Número de vídeos y reproducir"
-  },
-  "書籍資訊（EPUB）": {
-    "zh-CN": "书籍信息（EPUB）",
-    "en": "Book info (EPUB)",
-    "ja": "書籍情報（EPUB）",
-    "es": "Información del libro (EPUB)"
-  },
-  "右側：影片數與播放／繼續觀看": {
-    "zh-CN": "右侧：视频数与播放／继续观看",
-    "en": "Right panel: video count and play / continue watching",
-    "ja": "右側：動画数と再生／続きを見る",
-    "es": "Panel derecho: número de vídeos y reproducir / seguir viendo"
-  },
-  "右側：只有一本 EPUB 的資料夾顯示它的封面、書名與作者": {
-    "zh-CN": "右侧：只有一本 EPUB 的文件夹显示它的封面、书名与作者",
-    "en": "Right panel: a folder with a single EPUB shows its cover, title and author",
-    "ja": "右側：EPUB が 1 冊だけのフォルダーはそのカバー、書名、著者を表示",
-    "es": "Panel derecho: una carpeta con un solo EPUB muestra su portada, título y autor"
-  },
   "在商店開啟": {
     "zh-CN": "在商店打开",
     "en": "Open in store",
@@ -13180,12 +13144,6 @@
     "en": "First release date",
     "ja": "初回発売日",
     "es": "Primera publicación"
-  },
-  "右側：專輯名稱、演出者、年份、曲數與總長度": {
-    "zh-CN": "右侧：专辑名称、演出者、年份、曲数与总时长",
-    "en": "Right panel: album name, artist, year, track count and total length",
-    "ja": "右側：アルバム名、アーティスト、年、曲数、総再生時間",
-    "es": "Panel derecho: nombre del álbum, artista, año, pistas y duración total"
   },
   "右側：專輯的名稱，沒有標籤時用資料夾名稱": {
     "zh-CN": "右侧：专辑的名称，没有标签时用文件夹名称",

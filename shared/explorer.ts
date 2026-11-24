@@ -612,28 +612,54 @@ export const cellType = (kind: string) =>
     'field-url': 'url',
     'field-date-only': 'date',
   })[kind] ?? 'string'
-// R-409, R-437: the right panel a kind shows until a layout is chosen for it: a book its template (cover and the
-// card's fields), music the cover with the album's facts, video the cover with the video count and 播放, a game the
-// cover (its page draws it); the others nothing, since the panel header already names the folder. The editor starts an
-// empty one with the name and path.
-const panelPart = (kind: Cell['kind'], grid: Cell['grid'] = { x: 0, y: 0, w: 12, h: 4 }): Cell => ({
-  cellId: kind,
+// R-409, R-469: the right panel a kind shows until a layout is chosen for it, laid out by the shape of its cover: music
+// a square cover on the left (5 × 4) with the album name, artist · year and tracks · length beside it; a book or a video
+// a tall cover on the left (4 × 6) with the name and that kind's small components; a game a wide cover on top (12 × 6)
+// with the name below. The others nothing, since the panel header already names the folder. The editor starts an empty
+// one with the name and path.
+const panelStyle = { textColor: '#e4e6e8', backgroundColor: 'transparent' }
+const panelCell = (
+  cellId: string,
+  kind: Cell['kind'],
+  grid: Cell['grid'],
+  more: Partial<Cell> = {}
+): Cell => ({
+  cellId,
   kind,
   grid,
-  style: { textColor: '#e4e6e8', backgroundColor: 'transparent' },
+  style: panelStyle,
+  ...more,
 })
-const coverAndFacts = (cover: string, facts: Cell['kind']): Cell[] => [
-  panelCover(cover, { x: 0, y: 0, w: 4, h: 4 }),
-  panelPart(facts, { x: 4, y: 0, w: 8, h: 4 }),
+const info = (systemInfo: NonNullable<Cell['systemInfo']>, grid: Cell['grid']) =>
+  panelCell(systemInfo, 'system-info', grid, { systemInfo })
+const musicPanel = (): Cell[] => [
+  panelCover('album-cover', { x: 0, y: 0, w: 5, h: 4 }),
+  info('albumName', { x: 5, y: 0, w: 7, h: 1 }),
+  info('albumArtist', { x: 5, y: 1, w: 4, h: 1 }),
+  info('albumYear', { x: 9, y: 1, w: 3, h: 1 }),
+  info('trackCount', { x: 5, y: 2, w: 4, h: 1 }),
+  info('totalLength', { x: 9, y: 2, w: 3, h: 1 }),
+]
+const videoPanel = (): Cell[] => [
+  panelCover('video-cover', { x: 0, y: 0, w: 4, h: 6 }),
+  panelCell('name', 'name', { x: 4, y: 0, w: 8, h: 1 }),
+  info('videoCount', { x: 4, y: 1, w: 8, h: 1 }),
+  panelCell('video-play', 'video-play', { x: 4, y: 2, w: 8, h: 1 }),
+]
+const gamePanel = (): Cell[] => [
+  { ...panelCover('game-cover', { x: 0, y: 0, w: 12, h: 6 }), imageFit: 'blur' },
+  panelCell('name', 'name', { x: 0, y: 6, w: 12, h: 1 }),
 ]
 export const builtinPanel = (project: { cells: Cell[] }, kind: string): Cell[] =>
   kind === 'book'
     ? bookTemplate(project)
     : kind === 'music'
-      ? coverAndFacts('album-cover', 'album-facts')
+      ? musicPanel()
       : kind === 'video'
-        ? coverAndFacts('video-cover', 'video-facts')
-        : []
+        ? videoPanel()
+        : kind === 'game'
+          ? gamePanel()
+          : []
 // The built-in panel of a page that has listed the folder: another folder holding audio (not a video one, whose panel
 // has the cover already) also shows its cover (R-294), found by the one cover rule.
 export const builtinPanelFor = (
@@ -642,7 +668,7 @@ export const builtinPanelFor = (
   hasAudio: boolean
 ): Cell[] => {
   const cells = builtinPanel(project, kind)
-  if (!hasAudio || kind === 'music' || kind === 'book' || kind === 'video') return cells
+  if (!hasAudio || ['music', 'book', 'video', 'game'].includes(kind)) return cells
   return [
     panelCover('album-cover', { x: 0, y: 0, w: 4, h: 4 }),
     ...cells.map((cell) => ({ ...cell, grid: { ...cell.grid, y: cell.grid.y + 4 } })),
@@ -654,20 +680,33 @@ export const panelEditorStart = (project: { cells: Cell[] }, kind: string): Cell
     ? cells
     : visibleCells(project).filter((c) => ['name', 'path'].includes(c.kind))
 }
-// A folder of text books with one EPUB (and no pictures) shows its book card above the book template.
+// A folder of text books with one EPUB (and no pictures) shows that book's title and author under the name (R-469).
 export const withBookCard = (cells: Cell[]): Cell[] => [
-  panelPart('book-card'),
-  ...cells.map((cell) => ({ ...cell, grid: { ...cell.grid, y: cell.grid.y + 4 } })),
+  ...cells.map((cell) =>
+    cell.grid.x >= 4 && cell.grid.y >= 1
+      ? { ...cell, grid: { ...cell.grid, y: cell.grid.y + 2 } }
+      : cell
+  ),
+  info('bookTitle', { x: 4, y: 1, w: 8, h: 1 }),
+  info('bookAuthor', { x: 4, y: 2, w: 8, h: 1 }),
 ]
 
-// The template a book starts with: the cover on the left and, on the right, the fields the project's cards show.
+// The template a book starts with (R-469): a tall cover on the left and, on the right, the name and the fields the
+// project's cards show. 繼續閱讀 is not added: the book page has it in its own actions already.
 export function bookTemplate(project: { cells: Cell[] }): Cell[] {
-  let y = 0
+  let y = 1
   const fields: Cell[] = []
   for (const cell of visibleCells(project).filter((cell) => cell.kind.startsWith('field-'))) {
-    if (y + cell.grid.h > 100 || fields.length >= 49) break
+    if (y + cell.grid.h > 100 || fields.length >= 48) break
     fields.push({ ...cell, grid: { x: 4, y, w: 8, h: cell.grid.h } })
     y += cell.grid.h
   }
-  return [bookCover({ x: 0, y: 0, w: 4, h: Math.min(8, Math.max(4, y)) }), ...fields]
+  // The card's fields keep their ids; the template's own components step aside when one is taken.
+  const taken = new Set(fields.map((cell) => cell.cellId)),
+    own = (id: string) => (taken.has(id) ? id + '-panel' : id)
+  return [
+    bookCover({ x: 0, y: 0, w: 4, h: 6 }),
+    panelCell(own('name'), 'name', { x: 4, y: 0, w: 8, h: 1 }),
+    ...fields,
+  ]
 }

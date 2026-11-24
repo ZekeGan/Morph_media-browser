@@ -1293,9 +1293,6 @@
 
 
 /* R-390: a music folder shown as an album */
-.album-header { display: flex; gap: 14px; align-items: flex-end; margin: 4px 0 10px; }
-.album-facts { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.album-title { overflow-wrap: anywhere; }
 .album-actions { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
 .album-undo { display: flex; align-items: center; gap: 4px; }
 .album-tracks { margin-bottom: 12px; }
@@ -1309,9 +1306,6 @@
 .album-track[aria-current='true'] .album-track-no { color: var(--accent); }
 .album-track-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .album-track-time { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-.video-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 4px 0 10px; }
-.book-card { display: flex; gap: 14px; align-items: flex-end; margin: 4px 0 10px; }
-.book-card-cover { flex: none; width: 96px; max-height: 140px; object-fit: contain; border-radius: var(--radius); }
 /* R-405: how far a video was watched, a thin line along the bottom of its thumbnail. */
 .media-thumbnail .video-progress { position: absolute; inset: auto auto 0 0; height: 3px; min-height: 0; background: var(--accent); pointer-events: none; }
 

@@ -23,7 +23,6 @@ import { latestNovel } from '../../shared/novel'
 import { isMediaInfo, MediaButton, MediaInfo } from './MediaInfoCell'
 import { cellColors } from './cellStyle'
 import { folderCoverAsset, folderCoverPicture, sourceImageAsset } from './folderCover'
-import { PanelPart, panelPartKinds } from './PanelParts'
 import { GameExtraCell } from './GameExtraCell'
 import './cells.css'
 import { yesNo } from '../editor/fieldTypes'
@@ -329,8 +328,6 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
   if (cell.kind === 'divider') return <hr className="cell-divider" />
   if (cell.kind === 'game-extra')
     return <GameExtraCell extra={cell.gameExtra ?? 'save'} row={row} preview={preview} />
-  if ((panelPartKinds as readonly string[]).includes(cell.kind))
-    return <PanelPart cell={cell} row={row} project={project} />
   if (cell.kind === 'image') {
     const selected = row?.record?.details?.cellImages?.[cell.attributeId ?? cell.cellId],
       asset = selected

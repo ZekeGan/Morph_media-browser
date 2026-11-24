@@ -116,9 +116,6 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .other-file { display: flex; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 11px; }
 .other-file > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .other-file small { color: var(--muted); }
-.game-banner { position: relative; min-height: 150px; background: var(--viewer-bg); border-radius: 8px; display: grid; place-items: center; gap: 8px; padding-bottom: 8px; }
-.game-banner img { display: block; width: 100%; max-height: 300px; object-fit: contain; }
-.game-banner > .mantine-Select-root { max-width: 95%; }
 .metadata-cover { max-width: 100%; max-height: 240px; object-fit: contain; }
 .reader { display: flex; flex-direction: column; }
 .reader-toolbar { padding: 10px 14px; flex-shrink: 0; border-bottom: 1px solid var(--line); background: var(--panel); }
@@ -276,8 +273,6 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .toolbar-right>.mantine-ActionIcon-root { flex-shrink:0; }
 .game-content { display:flex; flex-direction:column; gap:12px; }
 .game-content>.folder-details { margin-bottom:0; }
-.game-content>.game-banner { border:1px solid var(--line); border-radius:8px; padding:0; overflow:hidden; min-height:170px; }
-.game-content .game-banner img { max-height:340px; }
 .game-actions { padding:0; }
 .game-actions>.mantine-ActionIcon-root { margin-left:auto; }
 @container center (max-width:700px) {

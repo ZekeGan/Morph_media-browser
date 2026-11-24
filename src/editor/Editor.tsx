@@ -122,9 +122,6 @@ export function Editor({
     'game-launch': tr('啟動遊戲'),
     'video-play': tr('播放影片'),
     'book-continue': tr('繼續閱讀'),
-    'album-facts': tr('專輯資訊'),
-    'video-facts': tr('影片數與播放'),
-    'book-card': tr('書籍資訊（EPUB）'),
     'game-extra': tr('遊戲附加按鈕'),
   }
   // One line saying what each component is for; shown as palette tooltips and under the inspector title.
@@ -148,9 +145,6 @@ export function Editor({
     'game-launch': tr('一鍵啟動這個遊戲（使用資料夾綁定的啟動檔）'),
     'video-play': tr('右側：播放影片，影片中斷過時改為繼續觀看'),
     'book-continue': tr('右側：繼續閱讀或開始閱讀'),
-    'album-facts': tr('右側：專輯名稱、演出者、年份、曲數與總長度'),
-    'video-facts': tr('右側：影片數與播放／繼續觀看'),
-    'book-card': tr('右側：只有一本 EPUB 的資料夾顯示它的封面、書名與作者'),
     'game-extra': tr('開啟存檔資料夾、用 Steam 啟動或在商店開啟；不能用時變灰並說明原因'),
   }
 

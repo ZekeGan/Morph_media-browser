@@ -77,30 +77,6 @@ export function usePodcast(row: FolderRow) {
 }
 type Album = ReturnType<typeof useAlbum>
 
-// R-437: the album's name, artist and year, track count and length, beside the cover (an image component).
-export function AlbumFacts({ row, album }: { row: FolderRow; album: Album }) {
-  const { summary } = album
-  const { podcast } = usePodcast(row)
-  const facts = [
-    summary.artist,
-    summary.year && !podcast ? String(summary.year) : undefined,
-    podcast ? tr('{0} 集', summary.count) : tr('{0} 首', summary.count),
-    summary.duration !== undefined ? trackClock(summary.duration) : undefined,
-  ].filter(Boolean)
-  return (
-    <div className="album-header">
-      <div className="album-facts">
-        <Text fw={700} size="lg" className="album-title">
-          {summary.album ?? row.name}
-        </Text>
-        <Text size="sm" c="dimmed">
-          {facts.join(' · ')}
-        </Text>
-      </div>
-    </div>
-  )
-}
-
 // 全部播放 and 隨機播放 replace the play queue with the album; a line offers to put the previous queue back.
 export function AlbumActions({
   row,

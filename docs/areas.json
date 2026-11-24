@@ -241,7 +241,6 @@
         "src/cells/Card*",
         "src/cells/folderCover*",
         "src/cells/PanelContent*",
-        "src/cells/PanelParts*",
         "src/cells/MediaInfoCell*",
         "src/cells/folderFacts*",
         "electron/media-facts*",

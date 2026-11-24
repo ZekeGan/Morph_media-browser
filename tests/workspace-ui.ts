@@ -386,7 +386,9 @@ try {
   assert.equal(await page.getByRole('textbox', { name: '遊戲資料夾篩選' }).count(), 0)
   await card('Game').dblclick()
   await header().getByText('Game', { exact: true }).waitFor()
-  await page.locator('.game-content .game-banner').waitFor()
+  // R-469: the game page shows its built-in right-panel layout (a wide cover with the name), not a fixed banner.
+  await page.locator('.game-content .media-info-template').waitFor()
+  assert.equal(await page.locator('.game-banner').count(), 0)
   // R-390: the game page has no field table; its fields are in the folder details.
   assert.equal(await page.locator('.game-fields').count(), 0)
   const grip = (await page.getByRole('separator', { name: '調整資料夾內容寬度' }).boundingBox())!
@@ -394,16 +396,9 @@ try {
   await page.mouse.down()
   await page.mouse.move(grip.x - 320, grip.y + grip.height / 2, { steps: 6 })
   await page.mouse.up()
-  assert.equal(await page.locator('.game-content .game-banner').count(), 1)
+  assert.equal(await page.locator('.game-content .media-info-template').count(), 1)
   assert.equal(await page.locator('.game-content .game-actions').count(), 1)
   assert.equal(await page.locator('.game-content .content-subfolders').count(), 0)
-  assert.equal(
-    await page
-      .locator('.game-content .game-banner')
-      .evaluate((e) => parseFloat(getComputedStyle(e).borderTopWidth) > 0),
-    true,
-    'banner is framed'
-  )
   await app.evaluate(
     ({ dialog }, file) => {
       dialog.showOpenDialog = (async () => ({
@@ -421,7 +416,7 @@ try {
   // Back to the content, where the page shows the new cover.
   await page.getByRole('tab', { name: '內容', exact: true }).click()
   await page.waitForFunction(() => {
-    const i = document.querySelector('.game-banner img') as HTMLImageElement
+    const i = document.querySelector('.game-content .media-info-template img') as HTMLImageElement
     return i?.complete && i.naturalWidth > 0
   })
   assert.equal(

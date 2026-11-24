@@ -425,10 +425,10 @@ try {
     storyBytes,
     'the book is never written'
   )
-  // R-390: the folder's one EPUB shows its title and author above the shelf, and 繼續閱讀 goes back to the book
-  // read last.
+  // R-390, R-469: the folder's one EPUB shows its title and author in the panel layout, and 繼續閱讀 goes back to the
+  // book read last.
   await page
-    .locator('.book-card')
+    .locator('.media-info-template')
     .filter({ hasText: 'Picture Book' })
     .filter({ hasText: 'Ann Author' })
     .waitFor()

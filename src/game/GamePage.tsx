@@ -11,10 +11,7 @@ import { FolderPage } from '../panel/FolderPage'
 import { GameExtraButtons } from './GameExtras'
 import { t as tr, useLocale } from '../i18n'
 import './game-actions.css'
-import { useState } from 'react'
-import { folderCoverPicture } from '../cells/folderCover'
 import { PanelCard } from '../cells/PanelContent'
-import { panelChoice } from '../../shared/layouts'
 
 // The page of a game main folder (R-389: the fill-ins of the shared folder page). Main visual: the cover; actions:
 // confirming a possible game and the launch buttons. Its fields are in the folder details (R-390), which list every
@@ -35,8 +32,6 @@ export function GamePage({
   configure: (tab?: 'game') => void
 }) {
   useLocale()
-  const cover = folderCoverPicture(row),
-    [coverFailed, setCoverFailed] = useState('')
   const disabled = busy || !row.record || row.readonly || row.stopped || !!row.error
   return (
     <FolderPage
@@ -46,30 +41,14 @@ export function GamePage({
       openFolder={() => void act({ action: 'open', rowId: row.rowId })}
       busy={busy}
       visual={
-        // R-409: a right-panel layout chosen for games replaces the built-in cover with its change menu.
-        panelChoice(project, row, 'game') ? (
-          <PanelCard
-            project={project}
-            row={row}
-            kind="game"
-            content={{ entries: [] }}
-            open={() => void act({ action: 'open', rowId: row.rowId })}
-          />
-        ) : (
-          <div className="game-banner">
-            {(row.boundary?.state === 'candidate' ||
-              row.record?.details?.boundary?.state === 'candidate') && (
-              <small className="game-candidate" role="status">
-                {row.boundary?.tool ? tr('可能是工具（程式），尚未確認') : tr('候選遊戲，尚未確認')}
-              </small>
-            )}
-            {cover && coverFailed !== cover.src ? (
-              <img src={cover.src} alt={cover.alt} onError={() => setCoverFailed(cover.src)} />
-            ) : (
-              <span>{tr('沒有遊戲封面')}</span>
-            )}
-          </div>
-        )
+        // R-409, R-469: the right-panel layout chosen for games, else the built-in one (a wide cover with the name).
+        <PanelCard
+          project={project}
+          row={row}
+          kind="game"
+          content={{ entries: [] }}
+          open={() => void act({ action: 'open', rowId: row.rowId })}
+        />
       }
       actions={
         <>
@@ -77,6 +56,12 @@ export function GamePage({
             row.record?.details?.boundary?.state === 'candidate') &&
             row.record && (
               <Group className="game-candidate-actions" gap="xs">
+                {/* R-469: the candidate note sits with the buttons that settle it. */}
+                <small className="game-candidate" role="status">
+                  {row.boundary?.tool
+                    ? tr('可能是工具（程式），尚未確認')
+                    : tr('候選遊戲，尚未確認')}
+                </small>
                 <Button
                   size="xs"
                   disabled={disabled}

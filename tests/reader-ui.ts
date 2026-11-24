@@ -54,6 +54,19 @@ const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
 page.setDefaultTimeout(12000)
 page.on('pageerror', (error) => errors.push(error.message))
 await page.evaluate('window.__name=(target)=>target')
+// The panel's thumbnails are drawn only near the view, so first and last on screen depend on how far the panel is
+// scrolled and how tall the layout above them is (R-469). A page is picked by its number: the panel is scrolled
+// to it at once and the click waits for that page's thumbnail.
+const thumbnail = async (index: number) => {
+  await page
+    .locator('.folder-panel-body')
+    .evaluate(
+      (element, end) =>
+        element.scrollTo({ top: end ? element.scrollHeight : 0, behavior: 'instant' }),
+      index > 0
+    )
+  await page.locator(`.manga-gallery [data-index="${index}"] .media-thumbnail`).click()
+}
 const waitPages = async (value: string) =>
   page.waitForFunction(
     (pages) =>
@@ -409,8 +422,9 @@ try {
   await page.waitForTimeout(200)
   if (await reader().isVisible()) await page.keyboard.press('Escape')
   await reader().waitFor({ state: 'hidden' })
-  // R-322: a page picked by hand opens there and offers the saved page, without writing anything when left alone.
-  await page.locator('.manga-gallery .media-thumbnail').last().click()
+  // R-322: a page picked by hand opens there and offers the saved page. C-145: leaving with ESC keeps the page that
+  // was open as the new reading place (page 13, not the last spread, which would count as finished).
+  await thumbnail(12)
   const offer = reader().locator('.reader-notice')
   await offer.waitFor()
   assert.equal(
@@ -418,16 +432,18 @@ try {
     String(leftAt).split('–')[0]
   )
   await offer.getByRole('button', { name: /^跳到第 \d+ 頁$/ }).waitFor()
+  const picked = await page.locator('.reader-frame-layer.is-active').getAttribute('data-pages')
+  assert.ok(picked?.startsWith('13'), 'the picked page opens: ' + picked)
   await page.keyboard.press('Escape')
   await page.waitForTimeout(200)
   if (await reader().isVisible()) await page.keyboard.press('Escape')
   await reader().waitFor({ state: 'hidden' })
-  await page.locator('.manga-gallery .media-thumbnail').first().click()
+  await thumbnail(0)
   // R-253: opening from the first page continues where the reader was left, with a way back to the start.
   const resume = reader().locator('.reader-notice')
-  await waitPages(String(leftAt))
+  await waitPages(String(picked))
   await page.waitForTimeout(300)
-  assert.match((await resume.textContent()) ?? '', /^從第 \d+ 頁繼續/)
+  assert.match((await resume.textContent()) ?? '', /^從第 13 頁繼續/)
   await resume.getByRole('button', { name: '從頭開始', exact: true }).click()
   await waitPages('1–2')
   const dragBox = (await reader().locator('.reader-stage').boundingBox())!

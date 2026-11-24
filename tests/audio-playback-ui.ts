@@ -187,8 +187,9 @@ try {
     )
     if (name === 'Audio media') {
       await page.screenshot({ path: path.join(base, 'shot', 'r294-album-cover.png') })
-      // R-390: with a video among its files this is a video folder; the header counts the videos and offers to play.
-      await page.locator('.video-header').filter({ hasText: '1 部影片' }).waitFor()
+      // R-390, R-469: with a video among its files this is a video folder; its panel counts the videos and offers to
+      // play.
+      await page.locator('.media-info-template').filter({ hasText: '1 部影片' }).waitFor()
       await page.getByRole('button', { name: '播放影片', exact: true }).waitFor()
     }
     if (name === 'Audio legacy') {

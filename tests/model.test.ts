@@ -27,7 +27,7 @@ test('portable validation accepts representative records without changing values
     assert.deepEqual(value, before)
     assert.equal(
       value.schemaVersion,
-      check === validateDetails ? 1 : check === validateProject ? 3 : 2
+      check === validateDetails ? 1 : check === validateProject ? 4 : 2
     )
     // Data a newer version wrote is reported as such, never as damaged.
     assert.throws(
