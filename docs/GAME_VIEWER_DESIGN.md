@@ -1,12 +1,12 @@
 # 遊戲內容頁、動作與掃描邊界
 
-> 最後確認：2026-11-24（R-437）。遊戲內容頁與啟動按鈕的現行規則；辨識規則見 [GAME_ENGINE_DETECTION](GAME_ENGINE_DETECTION.md)，有效記錄與導覽邊界見 [工作區](WORKSPACE_REVISION.md)。程式：`src/game/GameActions.tsx`、`src/panel/FolderContent.tsx`、`shared/launchArgs.ts`、`electron/explorer.ts`；契約在 `shared/explorer.ts`；取捨見 [決策索引](DECISIONS.md)（C-78～C-80、C-85、C-92）。
+> 最後確認：2026-11-24（R-465）。遊戲內容頁與啟動按鈕的現行規則；辨識規則見 [GAME_ENGINE_DETECTION](GAME_ENGINE_DETECTION.md)，有效記錄與導覽邊界見 [工作區](WORKSPACE_REVISION.md)。程式：`src/game/GameActions.tsx`、`src/panel/FolderContent.tsx`、`shared/launchArgs.ts`、`electron/explorer.ts`；契約在 `shared/explorer.ts`；取捨見 [決策索引](DECISIONS.md)（C-78～C-80、C-85、C-92）。
 
 ## 遊戲內容頁
 
 此畫面位於「資料夾內容」區，可承接 CARD／TREE／TABLE 選取的遊戲資料夾。線稿只表達上下分區，不指定固定框線、比例或最終樣式。
 
-遊戲組件只用於人工 ROOT、自動辨識或遊戲候選資料夾（`shared/media.ts` 的 `isGameFolder`），候選需明示未確認；一般集合／一般目錄使用一般資料夾內容，不只依專案分類判定。CARD／TABLE 的「全部資料夾／邊界的資料夾」篩選與此呈現資格一致，TREE 不加此切換。顯示候選不等於保存 ROOT、不自動綁定／執行遊戲，也不放寬候選暫停與內部保護；明確 not-game 仍優先。
+遊戲組件只用於人工 ROOT、自動辨識或遊戲候選資料夾（`shared/media.ts` 的 `isGameFolder`），候選需明示未確認；一般集合／一般目錄使用一般資料夾內容，不只依專案分類判定。遊戲專案的 CARD／TABLE 不另設「只看遊戲資料夾」篩選，所有資料夾一律列出。顯示候選不等於保存 ROOT、不自動綁定／執行遊戲，也不放寬候選暫停與內部保護；明確 not-game 仍優先。
 
 | 區域 | 已確認要求 |
 | --- | --- |

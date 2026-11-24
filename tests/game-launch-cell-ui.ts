@@ -113,7 +113,10 @@ try {
   await page.getByRole('option', { name: 'Game - LE.lnk', exact: true }).click()
   await page.getByRole('button', { name: '綁定此捷徑', exact: true }).click()
   await page.locator('.game-target .path').filter({ hasText: 'Game - LE.lnk' }).waitFor()
-  await page.getByRole('button', { name: '關閉資料夾設定', exact: true }).click()
+  await page
+    .locator('.folder-panel-dock-tabs')
+    .getByRole('tab', { name: '內容', exact: true })
+    .click()
   assert.equal(
     await card('Unbound').getByRole('button', { name: '用 LE 啟動' }).isDisabled(),
     false

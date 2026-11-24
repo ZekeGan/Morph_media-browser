@@ -895,6 +895,7 @@ export function FolderPanel({
                       size="compact-sm"
                       variant="light"
                       disabled={busy || fieldDirty}
+                      leftSection={<Icon name="layout" size={14} />}
                       onClick={() => onLayoutConfig('card')}
                     >
                       {tr('卡片版面配置…')}
@@ -903,6 +904,7 @@ export function FolderPanel({
                       size="compact-sm"
                       variant="light"
                       disabled={busy || fieldDirty}
+                      leftSection={<Icon name="layout" size={14} />}
                       onClick={() => onLayoutConfig('panel')}
                     >
                       {tr('右側版面配置…')}

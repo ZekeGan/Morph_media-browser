@@ -247,6 +247,8 @@ try {
   console.log('PASS project drag/drop across groups and manual ordering')
   await card('A').dblclick()
   await header().getByText('A', { exact: true }).waitFor()
+  // The header can show A before its cards are drawn; wait for them instead of counting at once (R-462).
+  await card('B').waitFor()
   assert.equal(await card('B').count(), 1)
   assert.ok((await page.locator('.breadcrumb-path').innerText()).endsWith('A'))
   await mode('TREE')
@@ -272,6 +274,18 @@ try {
   )
   assert.equal(await page.getByLabel('組件 卡片外觀').count(), 0)
   assert.equal(await page.getByRole('button', { name: '卡片 顯示設定', exact: true }).count(), 0)
+  // R-466: the nodes can be drawn as the folders' cards, sized by their card layout, and back.
+  const cardNodes = page.getByRole('button', { name: '以卡片顯示節點', exact: true })
+  await cardNodes.click()
+  await page.locator('.react-flow__node-card .folder-card .card-grid').first().waitFor()
+  assert.equal(await cardNodes.getAttribute('aria-pressed'), 'true')
+  const cardHeight = await page
+    .locator('.react-flow__node-card')
+    .first()
+    .evaluate((node) => parseFloat((node as HTMLElement).style.height))
+  assert.ok(cardHeight > 76, 'a card node is as tall as its card layout')
+  await cardNodes.click()
+  await page.locator('.react-flow__node-card').first().waitFor({ state: 'detached' })
   await mode('TABLE')
   await page.locator('.folder-table').waitFor()
   assert.equal(
@@ -320,7 +334,10 @@ try {
   const drawer = page.getByRole('region', { name: '資料夾設定 · A', exact: true })
   await drawer.waitFor()
   assert.equal(await page.locator('.folder-panel-header strong').innerText(), 'A')
-  await page.getByRole('button', { name: '關閉資料夾設定', exact: true }).click()
+  await page
+    .locator('.folder-panel-dock-tabs')
+    .getByRole('tab', { name: '內容', exact: true })
+    .click()
   await drawer.waitFor({ state: 'hidden' })
   await page.getByRole('button', { name: '切換右側內容', exact: true }).click()
   await openLayoutEditor(page)
@@ -365,9 +382,8 @@ try {
     'PASS mode-specific navigation, missing-record guard, presets, drawer, pane and settings'
   )
   await open('遊戲收藏')
-  // The boundary filter lives in the top toolbar, not in its own row.
-  assert.equal(await page.locator('.toolbar-left .game-boundary-filter').count(), 1)
-  assert.equal(await page.locator('.game-boundary-filter').count(), 1)
+  // R-465: game projects have no all/boundary folder switch.
+  assert.equal(await page.getByRole('textbox', { name: '遊戲資料夾篩選' }).count(), 0)
   await card('Game').dblclick()
   await header().getByText('Game', { exact: true }).waitFor()
   await page.locator('.game-content .game-banner').waitFor()

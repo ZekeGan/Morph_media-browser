@@ -209,7 +209,19 @@ export function validateWorkspace(v: unknown): asserts v is WorkspacePrefs {
         (b.filePresentation !== undefined &&
           !['tiles', 'groups', 'list'].includes(b.filePresentation)) ||
         (b.fileScope !== undefined && !['current', 'descendants'].includes(b.fileScope)) ||
-        (b.gameFilter !== undefined && !['all', 'boundaries'].includes(b.gameFilter)) ||
+        (b.sortKeys !== undefined &&
+          (!Array.isArray(b.sortKeys) ||
+            b.sortKeys.length > 5 ||
+            b.sortKeys.some(
+              (k: unknown) =>
+                !object(k) ||
+                typeof k.field !== 'string' ||
+                !k.field ||
+                k.field.length > 300 ||
+                typeof k.asc !== 'boolean'
+            ))) ||
+        (b.foldersFirst !== undefined && typeof b.foldersFirst !== 'boolean') ||
+        (b.treeCards !== undefined && typeof b.treeCards !== 'boolean') ||
         (b.media !== undefined &&
           (!object(b.media) ||
             (b.media.scope !== undefined && !['current', 'descendants'].includes(b.media.scope)) ||

@@ -28,8 +28,12 @@ export interface BrowseState {
   contentMode?: 'folders' | 'files'
   filePresentation?: 'tiles' | 'groups' | 'list'
   fileScope?: 'current' | 'descendants'
-  // Game projects: show every folder or only the ones that are game boundaries.
-  gameFilter?: 'all' | 'boundaries'
+  // R-467: the sort keys (at most five, rows equal on all of them by name) and whether folders that only group other
+  // folders come before the works (default on).
+  sortKeys?: { field: string; asc: boolean }[]
+  foldersFirst?: boolean
+  // R-466: TREE draws each node as the folder's card (default off).
+  treeCards?: boolean
   media?: MediaPrefs
   scroll?: number
   scrolls?: Partial<Record<BrowseMode, number>>

@@ -124,7 +124,10 @@ try {
   await dialog.locator('.layout-config-item.picked').waitFor()
   await dialog.getByRole('button', { name: '取消', exact: true }).click()
   await dialog.waitFor({ state: 'hidden' })
-  await button('關閉資料夾設定').click()
+  await page
+    .locator('.folder-panel-dock-tabs')
+    .getByRole('tab', { name: '內容', exact: true })
+    .click()
   assert.equal(await fs.readFile(folderFile(media), 'utf8'), original)
   const body = page.locator('.folder-panel-body')
   // The content tab draws once the settings close; scroll only after it has.

@@ -65,7 +65,10 @@ try {
   assert.equal(await page.locator('.folder-table th').count(), 2)
   await page.keyboard.press('Alt+Enter')
   await page.locator('.folder-panel-dock-settings').waitFor()
-  await button('關閉資料夾設定').click()
+  await page
+    .locator('.folder-panel-dock-tabs')
+    .getByRole('tab', { name: '內容', exact: true })
+    .click()
   await page.locator('.workspace-toolbar').getByText('檔案', { exact: true }).click()
   await page.locator('.workspace-file-scope [aria-label="檔案總覽範圍設定"]').waitFor()
   // R-402, R-446: the first time the scope switch opens (in a popover still appearing), the chosen item is marked by

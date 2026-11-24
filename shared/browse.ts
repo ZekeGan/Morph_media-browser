@@ -110,33 +110,76 @@ export function visibleTreeRows(rows: FolderRow[], collapsed: string[]) {
   return visible
 }
 
-// Sorts by name, path, depth or a field; empty values go last, ties keep a stable order by row identity.
+// R-467: the sort is a list of up to five keys; rows equal on every key are ordered by name. Empty values go last in
+// either direction, remaining ties keep a stable order by row identity. `first` (folders first) puts the rows it
+// picks before the others, each part sorted the same way.
+export type SortKey = { field: string; asc: boolean }
+export const MAX_SORT_KEYS = 5
 export function sortRows(
   rows: FolderRow[],
-  sort: { field: string; asc: boolean },
+  sort: SortKey | SortKey[],
   locale: string,
-  value: (row: FolderRow, field: string) => unknown = fieldValue
+  value: (row: FolderRow, field: string) => unknown = fieldValue,
+  first?: (row: FolderRow) => boolean
 ) {
-  const get = (r: FolderRow) =>
-    sort.field === 'name'
+  const keys = (Array.isArray(sort) ? sort : [sort]).slice(0, MAX_SORT_KEYS)
+  const get = (r: FolderRow, field: string) =>
+    field === 'name'
       ? r.name
-      : sort.field === 'path'
+      : field === 'path'
         ? r.path
-        : sort.field === 'depth'
+        : field === 'depth'
           ? r.depth
-          : value(r, sort.field)
-  return [...rows].sort((a, b) => {
-    const av = get(a),
-      bv = get(b)
-    if (av == null || bv == null)
-      return av == null ? (bv == null ? a.rowId.localeCompare(b.rowId) : 1) : -1
+          : value(r, field)
+  const compare = (av: unknown, bv: unknown, asc: boolean) => {
+    const empty = (v: unknown) => v == null || v === ''
+    if (empty(av) || empty(bv)) return empty(av) ? (empty(bv) ? 0 : 1) : -1
     return (
       (typeof av === 'number' && typeof bv === 'number'
         ? av - bv
-        : String(av).localeCompare(String(bv), locale, { numeric: true })) * (sort.asc ? 1 : -1) ||
-      a.rowId.localeCompare(b.rowId)
+        : String(av).localeCompare(String(bv), locale, { numeric: true })) * (asc ? 1 : -1)
     )
+  }
+  const order = [
+    ...keys,
+    ...(keys.some((k) => k.field === 'name') ? [] : [{ field: 'name', asc: true }]),
+  ]
+  const marked = first ? new Map(rows.map((r) => [r.rowId, first(r)])) : undefined
+  return [...rows].sort((a, b) => {
+    if (marked) {
+      const am = marked.get(a.rowId),
+        bm = marked.get(b.rowId)
+      if (am !== bm) return am ? -1 : 1
+    }
+    for (const key of order) {
+      const result = compare(get(a, key.field), get(b, key.field), key.asc)
+      if (result) return result
+    }
+    return a.rowId.localeCompare(b.rowId)
   })
+}
+
+// The sort keys a click on a table header leaves (R-467): a plain click sorts by that column alone (again: the other
+// direction); Shift adds it as the next key, or turns a key already in the list around.
+export function headerSort(keys: SortKey[], field: string, add: boolean): SortKey[] {
+  const at = keys.findIndex((k) => k.field === field)
+  if (add) {
+    if (at >= 0) return keys.map((k, i) => (i === at ? { ...k, asc: !k.asc } : k))
+    return keys.length >= MAX_SORT_KEYS ? keys : [...keys, { field, asc: true }]
+  }
+  return [{ field, asc: keys.length === 1 && at === 0 ? !keys[0].asc : true }]
+}
+
+// The sort choices in the menu: rating, release date and name first, then the rest in column order.
+const RATING = /評分|評価|评分|rating|score|puntuaci/i,
+  RELEASE = /發售|発売|发售|發行|发行|release|lanzamiento/i
+export function sortChoices<T extends { id: string; label: string }>(columns: T[]): T[] {
+  const rank = (c: T) =>
+    RATING.test(c.label) ? 0 : RELEASE.test(c.label) ? 1 : c.id === 'name' ? 2 : 3
+  return columns
+    .map((c, i) => ({ c, i }))
+    .sort((a, b) => rank(a.c) - rank(b.c) || a.i - b.i)
+    .map(({ c }) => c)
 }
 
 // A card component with fallback fields also gets a table column: it shows, and sorts by, the first field in the

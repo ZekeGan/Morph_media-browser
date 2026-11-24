@@ -229,7 +229,7 @@ test('Steam launch, store page and save folder come from the game and its record
 test('Unity and Ren’Py save folders are worked out only from plain names and only when they exist', async (t) => {
   await fs.mkdir(base, { recursive: true })
   const root = await fs.mkdtemp(path.join(base, 'game-saves-'))
-  t.after(() => fs.rm(root, { recursive: true, force: true }))
+  t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }))
   const home = path.join(root, 'home'),
     unity = path.join(root, 'Unity'),
     renpy = path.join(root, 'RenPy')
@@ -366,7 +366,7 @@ test('play time is stored locally per folder and validated (R-308)', async (t) =
 test('Godot, RPG Maker 2000/2003 and packaged NW.js or Electron apps get save folders (R-384)', async (t) => {
   await fs.mkdir(base, { recursive: true })
   const root = await fs.mkdtemp(path.join(base, 'game-saves-engines-'))
-  t.after(() => fs.rm(root, { recursive: true, force: true }))
+  t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }))
   const home = path.join(root, 'home'),
     put = async (file: string, text = 'x') => {
       await fs.mkdir(path.dirname(file), { recursive: true })
@@ -433,7 +433,7 @@ test('Godot, RPG Maker 2000/2003 and packaged NW.js or Electron apps get save fo
 test('a known place that does not exist yet is "no saves yet", not "unknown" (R-384)', async (t) => {
   await fs.mkdir(base, { recursive: true })
   const root = await fs.mkdtemp(path.join(base, 'game-saves-pending-'))
-  t.after(() => fs.rm(root, { recursive: true, force: true }))
+  t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }))
   const home = path.join(root, 'home'),
     unity = path.join(root, 'Unity')
   await fs.mkdir(path.join(unity, 'Game_Data'), { recursive: true })
@@ -499,7 +499,7 @@ const rpa = (name: string, content: Buffer, key = 0x42) => {
 test('Ren’Py save names come from options.rpyc, loose or inside an .rpa, with size limits (R-384)', async (t) => {
   await fs.mkdir(base, { recursive: true })
   const root = await fs.mkdtemp(path.join(base, 'game-saves-renpy-'))
-  t.after(() => fs.rm(root, { recursive: true, force: true }))
+  t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }))
   const home = path.join(root, 'home'),
     loose = path.join(root, 'Loose'),
     packed = path.join(root, 'Packed'),

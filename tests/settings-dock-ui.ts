@@ -45,8 +45,12 @@ try {
   )
   await page.locator('.folder-panel-dock-settings').waitFor()
   assert.equal(await page.locator('.mantine-Drawer-content').count(), 0)
-  // The close button leaves settings.
-  await button('關閉資料夾設定').click()
+  // R-471: there is no separate close button; the 內容 tab leaves settings.
+  assert.equal(await page.getByRole('button', { name: '關閉資料夾設定' }).count(), 0)
+  await page
+    .locator('.folder-panel-dock-tabs')
+    .getByRole('tab', { name: '內容', exact: true })
+    .click()
   await page.locator('.folder-panel-dock-settings').waitFor({ state: 'detached' })
   // An older saved preference to use a drawer is ignored after a restart.
   await close(app)

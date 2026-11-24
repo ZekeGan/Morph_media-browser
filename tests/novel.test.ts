@@ -63,7 +63,7 @@ test('web-novel ruby, package paths and book progress', () => {
 test('an EPUB is read from its package, navigation and spine; scripts stay text and images stay inside', async (t) => {
   await fs.mkdir(base, { recursive: true })
   const root = await fs.mkdtemp(path.join(base, 'novel-'))
-  t.after(() => fs.rm(root, { recursive: true, force: true }))
+  t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }))
   const file = path.join(root, 'book.epub')
   const text = (name: string, value: string) => ({ name, bytes: Buffer.from(value) })
   await fs.writeFile(

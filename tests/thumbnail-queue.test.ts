@@ -12,7 +12,7 @@ const jpeg = Buffer.from([255, 216, 1, 2, 3, 255, 217])
 
 test('thumbnails are made a few at a time, newest first, skipping cancelled ones', async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'thumb-queue-'))
-  t.after(() => fs.rm(root, { recursive: true, force: true }))
+  t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }))
   let active = 0,
     most = 0
   const started: string[] = []

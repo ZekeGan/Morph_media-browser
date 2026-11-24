@@ -599,11 +599,6 @@
     border-radius: var(--radius);
 }
 
-.game-boundary-filter {
-    flex: 0 0 124px;
-    max-width: 124px;
-}
-
 @media(max-width:800px) {
     .reader-embedded .reader-info>span:last-child {
         display: none;
@@ -1105,30 +1100,12 @@
     border-bottom: 1px solid var(--line);
 }
 
-.folder-panel-dock-spacer {
-    flex: 1;
-}
-
 .folder-panel-dock-settings {
     padding: 4px 2px 16px;
 }
 
 .media-info-template:empty {
     display: none;
-}
-
-.compact-boundary {
-    display: none;
-}
-
-@container center (max-width: 760px) {
-    .game-boundary-filter {
-        display: none;
-    }
-
-    .compact-boundary {
-        display: flex;
-    }
 }
 
 .card-display-button {
@@ -1337,3 +1314,69 @@
 .book-card-cover { flex: none; width: 96px; max-height: 140px; object-fit: contain; border-radius: var(--radius); }
 /* R-405: how far a video was watched, a thin line along the bottom of its thumbnail. */
 .media-thumbnail .video-progress { position: absolute; inset: auto auto 0 0; height: 3px; min-height: 0; background: var(--accent); pointer-events: none; }
+
+/* R-467: the sort menu, one compact line per key: grip, field, direction, remove. */
+.sort-menu {
+    min-width: 280px;
+    max-width: 380px;
+}
+
+.sort-keys {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.sort-key {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    border-radius: var(--radius);
+}
+
+.sort-key.dragging {
+    opacity: 0.5;
+}
+
+.sort-key-field {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.sort-key-grip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--mantine-color-dimmed);
+    cursor: grab;
+}
+
+.sort-key-grip:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.sort-key-add {
+    align-self: flex-start;
+}
+
+.sort-menu-summary {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@container center (max-width: 760px) {
+    .sort-menu-summary {
+        max-width: 110px;
+    }
+}

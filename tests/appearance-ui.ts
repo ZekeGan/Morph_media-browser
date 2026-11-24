@@ -242,7 +242,10 @@ try {
       animations: 'disabled',
       path: path.join(screens, `${theme}-folder-settings.png`),
     })
-    await button('關閉資料夾設定').click()
+    await page
+      .locator('.folder-panel-dock-tabs')
+      .getByRole('tab', { name: '內容', exact: true })
+      .click()
     await page.locator('.folder-settings').waitFor({ state: 'hidden' })
     // Global settings remains reachable with the sidebar hidden.
     await button('切換專案欄').click()

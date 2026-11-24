@@ -278,6 +278,51 @@ test('TREE branch visibility is a local project preference and survives reload',
     assert.equal(await fs.readFile(store.file, 'utf8'), before)
   }
 })
+test('R-467: the sort keys and folders first are a local project preference, checked on save', async (t) => {
+  const { root, store } = await fixture(t),
+    ids = ['p1']
+  await store.read(ids)
+  const value = {
+    mode: 'CARD' as const,
+    location: '',
+    widths: {},
+    panelWidth: 420,
+    sortKeys: [
+      { field: 'rating', asc: false },
+      { field: 'name', asc: true },
+    ],
+    foldersFirst: false,
+    // R-466: tree nodes as cards.
+    treeCards: true,
+    // R-465: a choice saved by the removed game folder filter is left alone.
+    gameFilter: 'boundaries',
+  }
+  await store.update({ action: 'browse', projectId: 'p1', value }, ids)
+  const reopened = new WorkspaceStore(root)
+  await reopened.init()
+  const saved = (await reopened.read(ids)).prefs.browse?.p1
+  assert.deepEqual(saved?.sortKeys, value.sortKeys)
+  assert.equal(saved?.foldersFirst, false)
+  assert.equal(saved?.treeCards, true)
+  const before = await fs.readFile(store.file, 'utf8')
+  const six = Array.from({ length: 6 }, (_, i) => ({ field: 'f' + i, asc: true }))
+  for (const bad of [
+    { sortKeys: six },
+    { sortKeys: [{ field: '', asc: true }] },
+    { sortKeys: [{ field: 'name', asc: 'yes' }] },
+    { sortKeys: 'name' },
+    { foldersFirst: 1 },
+    { treeCards: 'yes' },
+  ]) {
+    await assert.rejects(
+      reopened.update(
+        { action: 'browse', projectId: 'p1', value: { ...value, ...bad } as typeof value },
+        ids
+      )
+    )
+    assert.equal(await fs.readFile(store.file, 'utf8'), before)
+  }
+})
 test('table visibility preserves names and saves independently of column order', async (t) => {
   const { root, store } = await fixture(t),
     ids = ['p1']

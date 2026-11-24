@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import path from 'node:path'
-import { browserRows, sortRows } from '../shared/browse'
+import { browserRows, headerSort, sortChoices, sortRows } from '../shared/browse'
 import type { FolderRow } from '../shared/model'
 import { modelFolder, modelProject } from './support/model-fixtures'
 
@@ -87,4 +87,71 @@ test('rows sort by name with numbers in order, by field with empty values last, 
     'a folder without the field goes last in either direction'
   )
   assert.deepEqual(names(list), ['item 10', 'item 2', 'item 1'], 'the input is not reordered')
+})
+test('R-467: several sort keys, ties by name, and folders first', () => {
+  const make = (name: string, score?: number, year?: number) => ({
+    ...row(name, 2),
+    record: {
+      ...modelFolder(),
+      attributes: [
+        ...(score === undefined
+          ? []
+          : [
+              {
+                attributeId: 'score',
+                key: 'score',
+                type: 'number',
+                value: score,
+                source: 'manual',
+              },
+            ]),
+        ...(year === undefined
+          ? []
+          : [{ attributeId: 'year', key: 'year', type: 'number', value: year, source: 'manual' }]),
+      ],
+    },
+  })
+  const list = [make('d', 5, 2001), make('b', 5, 2003), make('a', 4, 2003), make('c', 5, 2003)]
+  const names = (sorted: FolderRow[]) => sorted.map((r) => r.name)
+  assert.deepEqual(
+    names(
+      sortRows(
+        list,
+        [
+          { field: 'score', asc: false },
+          { field: 'year', asc: false },
+        ],
+        'en'
+      )
+    ),
+    ['b', 'c', 'd', 'a'],
+    'equal on every key: by name'
+  )
+  assert.deepEqual(names(sortRows(list, [], 'en')), ['a', 'b', 'c', 'd'], 'no keys: by name')
+  assert.deepEqual(
+    names(sortRows(list, [{ field: 'score', asc: true }], 'en', undefined, (r) => r.name === 'd')),
+    ['d', 'a', 'b', 'c'],
+    'folders first come before the works, each part sorted'
+  )
+  const six = Array.from({ length: 6 }, (_, i) => ({ field: 'f' + i, asc: true }))
+  assert.equal(headerSort(six.slice(0, 5), 'g', true).length, 5, 'at most five keys')
+  const two = [
+    { field: 'score', asc: false },
+    { field: 'year', asc: true },
+  ]
+  assert.deepEqual(headerSort(two, 'year', false), [{ field: 'year', asc: true }])
+  assert.deepEqual(headerSort([{ field: 'year', asc: true }], 'year', false), [
+    { field: 'year', asc: false },
+  ])
+  assert.deepEqual(headerSort(two, 'year', true), [two[0], { field: 'year', asc: false }])
+  assert.deepEqual(headerSort(two, 'name', true), [...two, { field: 'name', asc: true }])
+  assert.deepEqual(
+    sortChoices([
+      { id: 'path', label: '目前路徑' },
+      { id: 'name', label: '資料夾名稱' },
+      { id: 'd', label: '發售日' },
+      { id: 'r', label: '評分' },
+    ]).map((c) => c.id),
+    ['r', 'd', 'name', 'path']
+  )
 })

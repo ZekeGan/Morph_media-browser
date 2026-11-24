@@ -229,10 +229,6 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .workspace-content>.project-workspace { height:100%; display:flex; flex-direction:row; gap:0; overflow:hidden; min-height:0; }
 .center-pane { flex:1; min-width:0; min-height:0; display:flex; flex-direction:column; container-type:inline-size; container-name:center; }
 .workspace-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:6px 8px; padding:8px 10px; min-height:52px; flex-shrink:0; border-bottom:1px solid var(--line); }
-.preset-controls { display:flex; min-width:0; align-items:stretch; }
-.preset-controls>.mantine-Select-root { width:130px; min-width:65px; }
-.preset-controls .mantine-Select-input { border-top-right-radius:0; border-bottom-right-radius:0; }
-.preset-controls>.mantine-Button-root { border-top-left-radius:0; border-bottom-left-radius:0; margin-left:-1px; padding-inline:8px; height:30px; }
 .workspace-breadcrumb { display:flex; align-items:center; gap:6px; padding:5px 10px; min-height:40px; flex-shrink:0; border-bottom:1px solid var(--line); }
 .breadcrumb-path { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left; border:0; background:transparent; color:var(--text); font-size:12px; padding:5px 0; }
 .view-count { color:var(--muted); white-space:nowrap; font-size:10px; }
@@ -277,10 +273,6 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .sidebar-project { position:relative; }
 .sidebar-project.insert-before::before { content:''; position:absolute; top:-2px; left:6px; right:6px; height:2px; background:var(--accent); border-radius:1px; }
 .sidebar-footer>.mantine-Button-root { justify-content:flex-start; color:var(--muted); background:transparent; }
-.toolbar-left .preset-controls { align-items:center; }
-.toolbar-left .preset-controls>.mantine-Select-root { width:110px; }
-.preset-controls>.mantine-ActionIcon-root { height:30px; border-top-left-radius:0; border-bottom-left-radius:0; margin-left:-1px; }
-.compact-presets { display:none; }
 .toolbar-right>.mantine-ActionIcon-root { flex-shrink:0; }
 .game-content { display:flex; flex-direction:column; gap:12px; }
 .game-content>.folder-details { margin-bottom:0; }
@@ -289,9 +281,8 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .game-actions { padding:0; }
 .game-actions>.mantine-ActionIcon-root { margin-left:auto; }
 @container center (max-width:700px) {
-  .toolbar-left .preset-controls>.mantine-Select-root { display:none; }
-  .toolbar-left .preset-controls>.mantine-ActionIcon-root { border-radius:var(--mantine-radius-default); margin-left:0; }
-  .compact-presets { display:flex; }
+  .layout-config-button .layout-config-label { display:none; }
+  .layout-config-button .mantine-Button-section { margin-inline-end:0; }
   .workspace-breadcrumb { flex-wrap:wrap; }
   .view-count { margin-left:auto; }
 }
@@ -454,7 +445,7 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .folder-layouts dd { margin: 0; display: flex; gap: 8px; align-items: baseline; min-width: 0; }
 .folder-layouts dd small { color: var(--muted); font-size: 11px; }
 .layout-config-footer { align-items: center; }
-.layout-config-button { max-width: 180px; }
+.layout-config-button { max-width: 180px; flex-shrink: 0; }
 .layout-config-button .mantine-Button-label { overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 960px) { .layout-config { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); height: calc(100vh - 230px); } .layout-config-rules { max-height: 30vh; border-right: 0; border-bottom: 1px solid var(--line); } .layout-config-item { grid-template-columns: minmax(0, 1fr) minmax(120px, 170px) 40px; } }
 /* One scrollable sidebar; groups no longer create their own scrollbars. */

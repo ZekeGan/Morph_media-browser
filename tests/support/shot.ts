@@ -332,7 +332,10 @@ try {
   if (text)
     for (const part of text.split('|')) await page.getByText(part, { exact: true }).first().click()
   const click = option('click')
-  if (click) await page.getByRole('button', { name: click, exact: true }).first().click()
+  // Several buttons in turn: --click 'A|B'.
+  if (click)
+    for (const part of click.split('|'))
+      await page.getByRole('button', { name: part, exact: true }).first().click()
   const evaluate = option('eval')
   if (evaluate) console.log('eval:', await page.evaluate(evaluate))
   const press = option('press')

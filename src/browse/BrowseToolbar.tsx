@@ -21,8 +21,8 @@ import {
 import { cardDisplay } from '../../shared/browse'
 import { type FolderRow, type Project } from '../../shared/model'
 import type { BrowseMode, BrowseState } from '../../shared/explorer'
+import { SortMenu } from './SortMenu'
 type Props = {
-  boundariesOnly: boolean
   browse: BrowseState
   busy: boolean
   cardSaveError: string
@@ -34,7 +34,6 @@ type Props = {
   display: ReturnType<typeof cardDisplay>
   folderMode: boolean
   switchContent: (value: 'folders' | 'files') => void
-  hasGames: boolean
   openConfig: (id: string, tab?: string) => void
   orderedColumns: { id: string; label: string }[]
   persist: (next: BrowseState) => void
@@ -43,7 +42,6 @@ type Props = {
   openLayouts: () => void
   project: Project
   ready: boolean
-  setBoundariesOnly: (value: boolean) => void
   setColumnQuery: (value: string) => void
   setDensity: (value: { itemsPerRow: number | string; pageSize: number | string }) => void
   setDisplay: (value: ReturnType<typeof cardDisplay>) => void
@@ -57,7 +55,6 @@ type Props = {
 // The folder-mode toolbar (view mode, presets, filters, tools) and the CARD display controls under it.
 export function BrowseToolbar(props: Props) {
   const {
-    boundariesOnly,
     browse,
     busy,
     cardSaveError,
@@ -69,14 +66,12 @@ export function BrowseToolbar(props: Props) {
     display,
     folderMode,
     switchContent,
-    hasGames,
     openConfig,
     orderedColumns,
     persist,
     layoutLabel,
     openLayouts,
     ready,
-    setBoundariesOnly,
     setColumnQuery,
     setDensity,
     setDisplay,
@@ -142,85 +137,48 @@ export function BrowseToolbar(props: Props) {
             style={{ display: folderMode ? 'none' : undefined }}
           />
           {folderMode && browse.mode === 'CARD' && (
-            <>
-              <div className="preset-controls">
-                {/* R-413: which layout each folder uses is set in the layout configuration window. */}
-                <Button
-                  size="xs"
-                  variant="default"
-                  className="layout-config-button"
-                  leftSection={<Icon name="grid" size={14} />}
-                  title={tr('版面配置')}
-                  aria-label={tr('版面配置') + '：' + layoutLabel}
-                  disabled={busy}
-                  onClick={openLayouts}
-                >
-                  {layoutLabel}
-                </Button>
-                {/* R-445: layouts are edited from the layout window, at the layout a folder actually uses. */}
-              </div>
-              <Tooltip label={tr('版面配置')} withArrow>
-                <ActionIcon
-                  className="compact-presets"
-                  aria-label={tr('版面配置')}
-                  variant="subtle"
-                  disabled={busy}
-                  onClick={openLayouts}
-                >
-                  <Icon name="grid" />
-                </ActionIcon>
-              </Tooltip>
-            </>
-          )}
-          {folderMode && hasGames && browse.mode !== 'TREE' && (
-            <>
-              <Select
-                className="game-boundary-filter"
+            // R-413: which layout each folder uses is set in the layout configuration window. R-470: one button, with
+            // the layout icon every layout entry uses; a narrow toolbar keeps only the icon.
+            <Tooltip label={tr('版面配置') + '：' + layoutLabel} withArrow>
+              <Button
                 size="xs"
-                aria-label={tr('遊戲資料夾篩選')}
-                allowDeselect={false}
-                value={boundariesOnly ? 'boundaries' : 'all'}
-                data={[
-                  { value: 'all', label: tr('全部資料夾') },
-                  { value: 'boundaries', label: tr('邊界的資料夾') },
-                ]}
-                onChange={(value) => {
-                  setBoundariesOnly(value === 'boundaries')
-                  setPage(1)
-                }}
-              />
-              {/* Narrow toolbars swap the select for an icon menu so tools never overlap. */}
-              <Menu>
-                <Menu.Target>
-                  <ActionIcon
-                    className="compact-boundary"
-                    aria-label={tr('遊戲資料夾篩選')}
-                    variant={boundariesOnly ? 'light' : 'subtle'}
-                  >
-                    <Icon name="sliders" />
-                  </ActionIcon>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  {(
-                    [
-                      [false, '全部資料夾'],
-                      [true, '邊界的資料夾'],
-                    ] as const
-                  ).map(([only, label]) => (
-                    <Menu.Item
-                      key={label}
-                      leftSection={boundariesOnly === only ? <Icon name="check" /> : null}
-                      onClick={() => {
-                        setBoundariesOnly(only)
-                        setPage(1)
-                      }}
-                    >
-                      {tr(label)}
-                    </Menu.Item>
-                  ))}
-                </Menu.Dropdown>
-              </Menu>
-            </>
+                variant="default"
+                className="layout-config-button"
+                leftSection={<Icon name="layout" size={15} />}
+                aria-label={tr('版面配置') + '：' + layoutLabel}
+                disabled={busy}
+                onClick={openLayouts}
+              >
+                <span className="layout-config-label">{layoutLabel}</span>
+              </Button>
+            </Tooltip>
+          )}
+          {folderMode && browse.mode === 'TREE' && (
+            // R-466: nodes as the folders' cards, sized by the card layout each folder uses.
+            <Tooltip label={tr('以卡片顯示節點')} withArrow>
+              <ActionIcon
+                className="tree-cards-toggle"
+                variant={browse.treeCards ? 'light' : 'subtle'}
+                aria-label={tr('以卡片顯示節點')}
+                aria-pressed={!!browse.treeCards}
+                disabled={busy || !ready}
+                onClick={() => persist({ ...state.current, treeCards: !state.current.treeCards })}
+              >
+                <Icon name="grid" />
+              </ActionIcon>
+            </Tooltip>
+          )}
+          {folderMode && browse.mode !== 'TREE' && (
+            <SortMenu
+              columns={orderedColumns}
+              keys={browse.sortKeys ?? []}
+              foldersFirst={browse.foldersFirst !== false}
+              busy={busy || !ready}
+              onChange={(sortKeys, foldersFirst) => {
+                persist({ ...state.current, sortKeys, foldersFirst })
+                setPage(1)
+              }}
+            />
           )}
         </div>
         <div className="toolbar-right">

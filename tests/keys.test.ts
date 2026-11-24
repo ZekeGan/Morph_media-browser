@@ -166,7 +166,7 @@ test('the key test passes when the site accepts the key and fails when it refuse
   t.after(async () => {
     globalThis.fetch = original
     explorer.close()
-    await fs.rm(root, { recursive: true, force: true })
+    await fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
   await explorer.request({ action: 'setKey', site: 'tmdb', values: { token: 'good' } })
   globalThis.fetch = (async (input: RequestInfo | URL) =>

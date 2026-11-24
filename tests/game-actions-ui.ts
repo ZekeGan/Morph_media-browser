@@ -195,7 +195,10 @@ try {
     win.setBounds({ width: 620, height: 780 })
   })
   await page.screenshot({ path: path.join(screens, 'narrow.png'), animations: 'disabled' })
-  await button('關閉資料夾設定').click()
+  await page
+    .locator('.folder-panel-dock-tabs')
+    .getByRole('tab', { name: '內容', exact: true })
+    .click()
   await app.evaluate(({ BrowserWindow }) =>
     BrowserWindow.getAllWindows()[0].setBounds({ width: 1350, height: 900 })
   )

@@ -308,7 +308,10 @@ try {
   await side(1, '.react-flow')
   await current('B')
   await page.getByRole('region', { name: '資料夾設定 · B', exact: true }).waitFor()
-  await button('關閉資料夾設定').click()
+  await page
+    .locator('.folder-panel-dock-tabs')
+    .getByRole('tab', { name: '內容', exact: true })
+    .click()
   await page.locator('.folder-panel-dock-settings').waitFor({ state: 'detached' })
   await page.locator('.breadcrumb-link').first().click()
   await current('Media')

@@ -230,20 +230,6 @@ export function BrowsePanel(props: Props) {
               >
                 {tr('設定')}
               </Button>
-              <span className="folder-panel-dock-spacer" />
-              {config && (
-                <Tooltip label={tr('關閉資料夾設定')}>
-                  <ActionIcon
-                    variant="subtle"
-                    color="gray"
-                    size="sm"
-                    aria-label={tr('關閉資料夾設定')}
-                    onClick={closeConfig}
-                  >
-                    <Icon name="close" size={16} />
-                  </ActionIcon>
-                </Tooltip>
-              )}
             </div>
           }
           footer={
@@ -254,14 +240,25 @@ export function BrowsePanel(props: Props) {
                   size="compact-sm"
                   variant="default"
                   aria-label={tr('返回頂部')}
-                  onClick={() =>
-                    panelBody.current?.scrollTo({
+                  onClick={() => {
+                    const body = panelBody.current
+                    if (!body) return
+                    // R-462: pictures that finish loading during a smooth scroll can shift it (scroll anchoring), so
+                    // it may stop short of the top; once it ends, anything left is closed at once.
+                    body.addEventListener(
+                      'scrollend',
+                      () => body.scrollTop && body.scrollTo({ top: 0 }),
+                      {
+                        once: true,
+                      }
+                    )
+                    body.scrollTo({
                       top: 0,
                       behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
                         ? 'instant'
                         : 'smooth',
                     })
-                  }
+                  }}
                 >
                   <Icon name="arrow-up" size={15} />
                   {tr('返回頂部')}

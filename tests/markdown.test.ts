@@ -49,7 +49,7 @@ test('R-399: a .md file is one text chapter in the reader and does not make a fo
     assert.equal(book.title, 'note')
     assert.deepEqual(book.chapters, [{ title: '', text: '# Head\n\ntext\n' }])
   } finally {
-    await fs.rm(dir, { recursive: true, force: true })
+    await fs.rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   }
   const sample = emptySample()
   countFile(sample, 'text', 'README.md')

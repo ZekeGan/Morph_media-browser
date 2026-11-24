@@ -527,12 +527,6 @@
     "en": "Loading tree…",
     "es": "Cargando árbol…"
   },
-  "點擊排序；拖曳調整欄位順序（Alt+←／→）": {
-    "ja": "クリックで並べ替え、ドラッグで列を移動（Alt+←／→）",
-    "zh-CN": "点击排序；拖曳调整栏位顺序（Alt+←／→）",
-    "en": "Click to sort; drag to reorder columns (Alt+←/→)",
-    "es": "Haz clic para ordenar; arrastra para reordenar columnas (Alt+←/→)"
-  },
   "調整": {
     "ja": "調整",
     "zh-CN": "调整",
@@ -622,12 +616,6 @@
     "zh-CN": "文件夹设定 ·",
     "en": "Folder settings ·",
     "es": "Ajustes de carpeta ·"
-  },
-  "關閉資料夾設定": {
-    "ja": "フォルダー設定を閉じる",
-    "zh-CN": "关闭文件夹设定",
-    "en": "Close folder settings",
-    "es": "Cerrar ajustes de carpeta"
   },
   "載入設定…": {
     "ja": "設定を読み込み中…",
@@ -3539,23 +3527,11 @@
     "es": "No se guardaron los ajustes de vista. Reintentar",
     "zh-CN": "显示设置未保存，请重试"
   },
-  "遊戲資料夾篩選": {
-    "en": "Game folder filter",
-    "ja": "ゲームフォルダーの絞り込み",
-    "es": "Filtro de carpetas de juegos",
-    "zh-CN": "游戏文件夹筛选"
-  },
   "全部資料夾": {
     "en": "All folders",
     "ja": "すべてのフォルダー",
     "es": "Todas las carpetas",
     "zh-CN": "全部文件夹"
-  },
-  "邊界的資料夾": {
-    "en": "Game boundaries",
-    "ja": "ゲーム境界",
-    "es": "Límites de juegos",
-    "zh-CN": "边界文件夹"
   },
   "個檔案": {
     "en": "files",
@@ -13564,5 +13540,119 @@
     "en": "This folder is read-only and can't be cleared",
     "ja": "このフォルダーは読み取り専用のため、クリアできません",
     "es": "Esta carpeta es de solo lectura y no se puede limpiar"
+  },
+  "排序": {
+    "zh-CN": "排序",
+    "en": "Sort",
+    "ja": "並べ替え",
+    "es": "Ordenar"
+  },
+  "排序：{0}": {
+    "zh-CN": "排序：{0}",
+    "en": "Sort: {0}",
+    "ja": "並べ替え：{0}",
+    "es": "Ordenar: {0}"
+  },
+  "依資料夾名稱排序": {
+    "zh-CN": "按文件夹名称排序",
+    "en": "Sorted by folder name",
+    "ja": "フォルダー名で並べ替え",
+    "es": "Ordenado por nombre de carpeta"
+  },
+  "排序條件": {
+    "zh-CN": "排序条件",
+    "en": "Sort keys",
+    "ja": "並べ替え条件",
+    "es": "Criterios de orden"
+  },
+  "拖曳或 Alt+↑／↓ 調整順序": {
+    "zh-CN": "拖动或 Alt+↑／↓ 调整顺序",
+    "en": "Drag or Alt+↑/↓ to reorder",
+    "ja": "ドラッグまたは Alt+↑／↓ で順番を変更",
+    "es": "Arrastra o usa Alt+↑/↓ para reordenar"
+  },
+  "移動排序條件 {0}": {
+    "zh-CN": "移动排序条件 {0}",
+    "en": "Move sort key {0}",
+    "ja": "並べ替え条件 {0} を移動",
+    "es": "Mover criterio {0}"
+  },
+  "第 {0} 個排序條件": {
+    "zh-CN": "第 {0} 个排序条件",
+    "en": "Sort key {0}",
+    "ja": "{0} 番目の並べ替え条件",
+    "es": "Criterio {0}"
+  },
+  "遞增": {
+    "zh-CN": "递增",
+    "en": "Ascending",
+    "ja": "昇順",
+    "es": "Ascendente"
+  },
+  "遞減": {
+    "zh-CN": "递减",
+    "en": "Descending",
+    "ja": "降順",
+    "es": "Descendente"
+  },
+  "{0}：{1}": {
+    "zh-CN": "{0}：{1}",
+    "en": "{0}: {1}",
+    "ja": "{0}：{1}",
+    "es": "{0}: {1}"
+  },
+  "刪除排序條件": {
+    "zh-CN": "删除排序条件",
+    "en": "Remove sort key",
+    "ja": "並べ替え条件を削除",
+    "es": "Quitar criterio"
+  },
+  "刪除排序條件 {0}": {
+    "zh-CN": "删除排序条件 {0}",
+    "en": "Remove sort key {0}",
+    "ja": "並べ替え条件 {0} を削除",
+    "es": "Quitar criterio {0}"
+  },
+  "新增排序條件": {
+    "zh-CN": "新增排序条件",
+    "en": "Add sort key",
+    "ja": "並べ替え条件を追加",
+    "es": "Añadir criterio"
+  },
+  "資料夾優先": {
+    "zh-CN": "文件夹优先",
+    "en": "Folders first",
+    "ja": "フォルダーを先に",
+    "es": "Carpetas primero"
+  },
+  "只用來分類的資料夾排在作品前面": {
+    "zh-CN": "仅用于分类的文件夹排在作品前面",
+    "en": "Folders that only group others come before the works",
+    "ja": "分類用のフォルダーを作品より前に",
+    "es": "Las carpetas que solo agrupan van antes que las obras"
+  },
+  "點擊只依此欄排序，Shift+點擊加入排序條件；拖曳調整欄位順序（Alt+←／→）": {
+    "zh-CN": "点击只按此栏排序，Shift+点击加入排序条件；拖动调整栏位顺序（Alt+←／→）",
+    "en": "Click to sort by this column only, Shift+click to add it as a sort key; drag to reorder columns (Alt+←/→)",
+    "ja": "クリックでこの列だけで並べ替え、Shift+クリックで条件に追加。ドラッグで列の順番を変更（Alt+←／→）",
+    "es": "Clic para ordenar solo por esta columna, Mayús+clic para añadirla como criterio; arrastra para reordenar (Alt+←/→)"
+  },
+  "已達 {0} 個條件的上限": {
+    "zh-CN": "已达 {0} 个条件的上限",
+    "en": "Limit of {0} sort keys reached",
+    "ja": "条件は最大 {0} 個です",
+    "es": "Límite de {0} criterios alcanzado"
+  },
+  "全部相同時依名稱排": {
+    "zh-CN": "全部相同时按名称排",
+    "en": "Ties are ordered by name",
+    "ja": "すべて同じときは名前順",
+    "es": "Los empates se ordenan por nombre"
+  },
+  "以卡片顯示節點": {
+    "zh-CN": "以卡片显示节点",
+    "en": "Show nodes as cards",
+    "ja": "ノードをカードで表示",
+    "es": "Mostrar nodos como tarjetas"
   }
 }

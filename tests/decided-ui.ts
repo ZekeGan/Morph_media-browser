@@ -239,7 +239,10 @@ try {
   await drawer.locator('.mantine-Badge-root').filter({ hasText: 'Steam' }).waitFor()
   await page.screenshot({ path: path.join(screens, 'sources.png') })
   await address.fill('')
-  await page.getByRole('button', { name: '關閉資料夾設定', exact: true }).click()
+  await page
+    .locator('.folder-panel-dock-tabs')
+    .getByRole('tab', { name: '內容', exact: true })
+    .click()
 
   await page.locator('[aria-label="展示內容"]').getByText('檔案', { exact: true }).click()
   await page.locator('.file-overview-item').first().waitFor()

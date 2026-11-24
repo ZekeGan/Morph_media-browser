@@ -25,6 +25,7 @@ import { ActionIcon, Pagination, Tooltip } from '@mantine/core'
 import { BrowseNav } from './BrowseNav'
 import { isLayoutWork, KindRowsContext, LayoutWorksContext } from './folderKind'
 import { FolderCards } from './FolderCards'
+import { Card } from '../cells/Card'
 import { useCardSettings } from './useCardSettings'
 import { useTableColumns } from './useTableColumns'
 import { FolderTable } from './FolderTable'
@@ -40,6 +41,7 @@ import {
   pathKey,
   sortRows,
   treeStructure,
+  type SortKey,
 } from '../../shared/browse'
 import type { FolderRow, Project, Request, Response } from '../../shared/model'
 import type {
@@ -134,8 +136,7 @@ function BrowseWorkspaceBody({
     }>(),
     [ready, setReady] = useState(false),
     [page, setPage] = useState(1)
-  const [sort, setSort] = useState({ field: 'name', asc: true }),
-    [highlight, setHighlight] = useState<string>(),
+  const [highlight, setHighlight] = useState<string>(),
     [marked, setMarked] = useState<string[]>([]),
     [configId, setConfigId] = useState<string>(),
     [configDirty, setConfigDirty] = useState(false),
@@ -221,10 +222,6 @@ function BrowseWorkspaceBody({
         .updateWorkspace({ action: 'browse', projectId: project.projectId, value: next })
         .catch((e) => notify(String(e)))
   }
-  // The game folder filter is a saved choice, not session state.
-  const boundariesOnly = browse.gameFilter === 'boundaries'
-  const setBoundariesOnly = (only: boolean) =>
-    persist({ ...state.current, gameFilter: only ? 'boundaries' : 'all' })
   const reportDirty = useCallback(
     (value: boolean) => {
       setConfigDirty(value)
@@ -284,15 +281,43 @@ function BrowseWorkspaceBody({
         root,
         browse.mode,
         location
-      ).filter((row) => !boundariesOnly || browse.mode === 'TREE' || isGameFolder(row)),
-    [all, project, root, browse.mode, location, display, density, boundariesOnly]
+      ),
+    [all, project, root, browse.mode, location, display, density]
   )
   const plays = usePlaytimes()
+  // R-466: TREE nodes as cards, when chosen.
+  const treeCards = useMemo(
+    () =>
+      browse.treeCards
+        ? {
+            project,
+            isWork: (rowId: string) => isLayoutWork(works, rowId),
+            card: (row: FolderRow, open: () => void) => (
+              <Card project={project} row={row} open={open} />
+            ),
+          }
+        : undefined,
+    [browse.treeCards, project, works]
+  )
   const valueOf = (row: FolderRow, id: string) =>
     id.startsWith('@') ? playValue(row, id, plays) : columnValue(project, row, id)
+  // R-467: the sort keys and folders first are this project's saved browse choices (cards and table share them).
+  const sortKeys = useMemo(() => browse.sortKeys ?? [], [browse.sortKeys]),
+    foldersFirst = browse.foldersFirst !== false
+  const setSort = (keys: SortKey[]) => {
+    persist({ ...state.current, sortKeys: keys })
+    setPage(1)
+  }
   const filtered = useMemo(
-    () => sortRows(base, sort, currentLocale(), valueOf),
-    [base, sort, locale, project.cells, plays]
+    () =>
+      sortRows(
+        base,
+        sortKeys,
+        currentLocale(),
+        valueOf,
+        foldersFirst ? (row) => !isLayoutWork(works, row.rowId) : undefined
+      ),
+    [base, sortKeys, foldersFirst, works, locale, project.cells, plays]
   )
   const pageSize = browse.mode === 'CARD' ? liveList.pageSize : 100,
     pages = Math.max(1, Math.ceil(filtered.length / pageSize)),
@@ -596,7 +621,6 @@ function BrowseWorkspaceBody({
   const crumbs = folderBreadcrumbs(all, root, currentFolder?.path ?? root)
   const overviewRoot = currentFolder ?? rootRow
   const folderMode = browse.contentMode !== 'files'
-  const hasGames = all.some(isGameFolder)
   const panelOpen = !!detail && browse.panelVisible !== false
   const settingsBody = config && (
     <Suspense fallback={<p>{tr('載入設定…')}</p>}>
@@ -828,7 +852,6 @@ function BrowseWorkspaceBody({
       />
       <section className="center-pane" aria-label={tr('資料夾瀏覽區')}>
         <BrowseToolbar
-          boundariesOnly={boundariesOnly}
           browse={browse}
           busy={busy}
           cardSaveError={cardSaveError}
@@ -840,7 +863,6 @@ function BrowseWorkspaceBody({
           display={display}
           folderMode={folderMode}
           switchContent={switchContent}
-          hasGames={hasGames}
           openConfig={openConfig}
           orderedColumns={orderedColumns}
           persist={persist}
@@ -848,13 +870,12 @@ function BrowseWorkspaceBody({
           openLayouts={() => setLayoutsOpen(true)}
           project={project}
           ready={ready}
-          setBoundariesOnly={setBoundariesOnly}
           setColumnQuery={setColumnQuery}
           setDensity={setDensity}
           setDisplay={setDisplay}
           setOverviewTools={setOverviewTools}
-          setOverviewScope={setOverviewScope}
           setPage={setPage}
+          setOverviewScope={setOverviewScope}
           state={state}
           switchMode={switchMode}
         />
@@ -932,13 +953,14 @@ function BrowseWorkspaceBody({
                 onCollapsed={(treeCollapsed) => persist({ ...state.current, treeCollapsed })}
                 viewport={browse.viewport}
                 save={(viewport) => persist({ ...state.current, viewport })}
+                cards={treeCards}
               />
             </Suspense>
           ) : browse.mode === 'TABLE' ? (
             <FolderTable
               columns={columns}
               rows={current}
-              sort={sort}
+              sort={sortKeys}
               setSort={setSort}
               browse={browse}
               busy={busy}

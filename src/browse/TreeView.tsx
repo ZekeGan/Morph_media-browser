@@ -3,7 +3,7 @@ import { KindIcon } from './folderKind'
 import { Icon } from '../common/icons'
 import { BoundaryFlag } from '../game/BoundaryFlag'
 import { useAppTheme } from '../themes/ThemeProvider'
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   Background,
   ControlButton,
@@ -23,7 +23,11 @@ import {
   treeStructure,
   visibleTreeRows,
 } from '../../shared/browse'
-import type { FolderRow } from '../../shared/model'
+import type { FolderRow, Project } from '../../shared/model'
+import { TreeCardNode, TREE_CARD_WIDTH, treeCardHeight } from './TreeCardNode'
+
+// R-466: the custom node type for card nodes (defined once, so React Flow does not re-create it each render).
+const nodeTypes = { card: TreeCardNode }
 import type { BrowseState } from '../../shared/explorer'
 interface Props {
   rows: FolderRow[]
@@ -36,6 +40,14 @@ interface Props {
   onConfigure: (id: string) => void
   viewport?: BrowseState['viewport']
   save: (v: NonNullable<BrowseState['viewport']>) => void
+  // R-466: draw each node as its card (the card layout the folder uses), sized by that layout.
+  // The card itself is drawn by the caller: importing the card here would split its styles into a chunk of their own
+  // and change the order the app's styles apply in.
+  cards?: {
+    project: Project
+    isWork: (rowId: string) => boolean
+    card: (row: FolderRow, open: () => void) => ReactNode
+  }
 }
 export default function Tree({
   rows,
@@ -48,6 +60,7 @@ export default function Tree({
   onConfigure,
   viewport,
   save,
+  cards,
 }: Props) {
   const locale = useLocale()
 
@@ -68,7 +81,19 @@ export default function Tree({
         .setDefaultEdgeLabel(() => ({})),
       byPath = new Map(visible.map((r) => [pathKey(r.path), r.rowId])),
       edges: Edge[] = []
-    for (const row of visible) graph.setNode(row.rowId, { width: 240, height: 76 })
+    // Each node's size: the fixed label, or the card's width and the height of its card layout.
+    const sizes = new Map(
+      visible.map((row) => [
+        row.rowId,
+        cards
+          ? {
+              width: TREE_CARD_WIDTH,
+              height: treeCardHeight(cards.project, row, cards.isWork(row.rowId)),
+            }
+          : { width: 240, height: 76 },
+      ])
+    )
+    for (const row of visible) graph.setNode(row.rowId, sizes.get(row.rowId)!)
     for (const row of visible) {
       const above = byPath.get(pathKey(parentPath(row.path)))
       if (above) {
@@ -84,17 +109,42 @@ export default function Tree({
     dagre.layout(graph)
     const nodes: Node[] = visible.map((r) => {
       const pos = graph.node(r.rowId),
+        size = sizes.get(r.rowId)!,
         count = structure.children.get(r.rowId)?.length ?? 0,
         isClosed = closed.includes(r.rowId)
+      // The branch toggle, on the label and (R-466) on a card node.
+      const toggle = count > 0 && (
+        <button
+          className="tree-branch-toggle nodrag nopan"
+          aria-label={(isClosed ? tr('展開 ') : tr('收合 ')) + r.name + tr(' 子資料夾')}
+          aria-expanded={!isClosed}
+          title={isClosed ? tr('展開子資料夾') : tr('收合子資料夾')}
+          onPointerDown={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation()
+            const current = actions.current
+            current.onCollapsed(
+              current.closed.includes(r.rowId)
+                ? current.closed.filter((id) => id !== r.rowId)
+                : [...current.closed, r.rowId]
+            )
+          }}
+        >
+          <Icon name={isClosed ? 'plus' : 'minus'} size={15} />
+        </button>
+      )
       return {
         id: r.rowId,
-        initialWidth: 240,
-        initialHeight: 76,
-        position: { x: pos.x - 120, y: pos.y - 38 },
+        initialWidth: size.width,
+        initialHeight: size.height,
+        position: { x: pos.x - size.width / 2, y: pos.y - size.height / 2 },
         sourcePosition: 'right' as Node['sourcePosition'],
         targetPosition: 'left' as Node['targetPosition'],
         selected: false,
         data: {
+          toggle,
           label: (
             <div className="tree-node-label">
               <div
@@ -127,36 +177,24 @@ export default function Tree({
                   {count ? ' · ' + count + tr(' 個子資料夾') : ''}
                 </small>
               </div>
-              {count > 0 && (
-                <button
-                  className="tree-branch-toggle nodrag nopan"
-                  aria-label={(isClosed ? tr('展開 ') : tr('收合 ')) + r.name + tr(' 子資料夾')}
-                  aria-expanded={!isClosed}
-                  title={isClosed ? tr('展開子資料夾') : tr('收合子資料夾')}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onDoubleClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => e.stopPropagation()}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    const current = actions.current
-                    current.onCollapsed(
-                      current.closed.includes(r.rowId)
-                        ? current.closed.filter((id) => id !== r.rowId)
-                        : [...current.closed, r.rowId]
-                    )
-                  }}
-                >
-                  <Icon name={isClosed ? 'plus' : 'minus'} size={15} />
-                </button>
-              )}
+              {toggle}
             </div>
           ),
         },
-        style: { width: 240, height: 76, opacity: r.structural ? 0.4 : 1 },
+        style: { width: size.width, height: size.height, opacity: r.structural ? 0.4 : 1 },
       }
     })
+    if (cards)
+      nodes.forEach((node, i) => {
+        node.type = 'card'
+        node.data = {
+          card: cards.card(visible[i], () => actions.current.onOpen(visible[i].rowId)),
+          compact: node.data.label,
+          toggle: node.data.toggle,
+        }
+      })
     return { nodes, edges }
-  }, [visible, structure, closed, locale])
+  }, [visible, structure, closed, locale, cards])
   useLayoutEffect(() => {
     const focus = rows.find((r) => r.rowId === focusId)
     if (!focus) return
@@ -176,10 +214,14 @@ export default function Tree({
     const node = nodes.find((n) => n.id === focusId)
     if (flow && node && lastFocus.current !== focusId) {
       lastFocus.current = focusId
-      void flow.setCenter(node.position.x + 120, node.position.y + 38, {
-        zoom: flow.getZoom(),
-        duration: 0,
-      })
+      void flow.setCenter(
+        node.position.x + (node.initialWidth ?? 240) / 2,
+        node.position.y + (node.initialHeight ?? 76) / 2,
+        {
+          zoom: flow.getZoom(),
+          duration: 0,
+        }
+      )
     }
   }, [flow, focusId, nodes])
   useLayoutEffect(() => {
@@ -195,8 +237,8 @@ export default function Tree({
       for (const node of nodes) {
         minX = Math.min(minX, node.position.x)
         minY = Math.min(minY, node.position.y)
-        maxX = Math.max(maxX, node.position.x + 240)
-        maxY = Math.max(maxY, node.position.y + 76)
+        maxX = Math.max(maxX, node.position.x + (node.initialWidth ?? 240))
+        maxY = Math.max(maxY, node.position.y + (node.initialHeight ?? 76))
       }
       const zoom = Math.max(
           0.05,
@@ -232,6 +274,7 @@ export default function Tree({
           onInit={setFlow}
           nodes={nodes.map((n) => ({ ...n, selected: n.id === selected }))}
           edges={edges}
+          nodeTypes={nodeTypes}
           nodesDraggable={false}
           nodesConnectable={false}
           elementsSelectable

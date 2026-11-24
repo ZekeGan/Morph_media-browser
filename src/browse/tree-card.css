@@ -1,0 +1,38 @@
+/* R-466: TREE nodes drawn as cards; zoomed out they fall back to the compact label at the same size. */
+.react-flow__node-card {
+    padding: 0;
+    border: 0;
+    background: none;
+}
+
+.tree-card-node {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.tree-card-node.compact {
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+
+.react-flow__node-card.selected .tree-card-node {
+    box-shadow: 0 0 0 2px var(--accent);
+}
+
+.tree-card-node .react-flow__handle {
+    opacity: 0;
+}
+
+.tree-card-toggle {
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+}
+
+.tree-card-node.folder-card {
+    position: relative;
+}

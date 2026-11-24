@@ -14,6 +14,14 @@ import { Icon } from '../common/icons'
 import { BoundaryFlag } from '../game/BoundaryFlag'
 import type { FolderRow } from '../../shared/model'
 import type { BrowseState } from '../../shared/explorer'
+import { headerSort, type SortKey } from '../../shared/browse'
+
+// A header's sort mark: the arrow, numbered when there is more than one key (1↓, 2↑).
+const sortMark = (keys: SortKey[], id: string) => {
+  const at = keys.findIndex((k) => k.field === id)
+  if (at < 0) return ''
+  return ' ' + (keys.length > 1 ? at + 1 : '') + (keys[at].asc ? '↑' : '↓')
+}
 
 // The folders TABLE view: sortable, draggable and resizable columns, one row per folder.
 export function FolderTable({
@@ -46,8 +54,9 @@ export function FolderTable({
 }: {
   columns: { id: string; label: string }[]
   rows: FolderRow[]
-  sort: { field: string; asc: boolean }
-  setSort: Dispatch<SetStateAction<{ field: string; asc: boolean }>>
+  // R-467: the sort keys shared with the toolbar's sort button.
+  sort: SortKey[]
+  setSort: (keys: SortKey[]) => void
   browse: BrowseState
   busy: boolean
   dragColumn: string
@@ -124,7 +133,9 @@ export function FolderTable({
                 ]
                   .filter(Boolean)
                   .join(' ')}
-                aria-sort={sort.field === c.id ? (sort.asc ? 'ascending' : 'descending') : 'none'}
+                aria-sort={
+                  sort[0]?.field === c.id ? (sort[0].asc ? 'ascending' : 'descending') : 'none'
+                }
                 style={{
                   width: browse.widths[c.id] ?? 180,
                   minWidth: browse.widths[c.id] ?? 180,
@@ -157,7 +168,9 @@ export function FolderTable({
                   className="column-head"
                   disabled={busy}
                   draggable={!busy}
-                  title={tr('點擊排序；拖曳調整欄位順序（Alt+←／→）')}
+                  title={tr(
+                    '點擊只依此欄排序，Shift+點擊加入排序條件；拖曳調整欄位順序（Alt+←／→）'
+                  )}
                   onDragStart={(e) => {
                     e.dataTransfer.setData('application/x-media-viewer-column', c.id)
                     e.dataTransfer.effectAllowed = 'move'
@@ -172,12 +185,10 @@ export function FolderTable({
                       if (next) reorderColumn(c.id, next.id, e.key === 'ArrowRight')
                     }
                   }}
-                  onClick={() =>
-                    setSort((s) => ({ field: c.id, asc: s.field === c.id ? !s.asc : true }))
-                  }
+                  onClick={(e) => setSort(headerSort(sort, c.id, e.shiftKey))}
                 >
                   {c.label}
-                  {sort.field === c.id ? (sort.asc ? ' ↑' : ' ↓') : ''}
+                  {sortMark(sort, c.id)}
                 </button>
                 {c.id !== 'name' && (
                   <button
