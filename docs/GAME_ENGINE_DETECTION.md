@@ -1,6 +1,6 @@
 # 遊戲引擎辨識
 
-> 本頁只寫現行的辨識規則與邊界策略，不承擔畫面或工作進度。導覽能否進入依 [現行工作區](WORKSPACE_REVISION.md)，內容／動作見 [遊戲](GAME_VIEWER_DESIGN.md)；取捨與歷次診斷見 [DECISIONS](DECISIONS.md)（C-80 起）。程式：`electron/game-detection.ts`；測試：`tests/game-detection.test.ts`；唯讀試跑：`pnpm detect <資料夾> [--children]`。最後確認：2026-11-16（R-383 R-396）。
+> 本頁只寫現行的辨識規則與邊界策略，不承擔畫面或工作進度。導覽能否進入依 [現行工作區](WORKSPACE_REVISION.md)，內容／動作見 [遊戲](GAME_VIEWER_DESIGN.md)；取捨與歷次診斷見 [DECISIONS](DECISIONS.md)（C-80 起）。程式：`electron/game-detection.ts`；測試：`tests/game-detection.test.ts`；唯讀試跑：`pnpm detect <資料夾> [--children]`。最後確認：2026-11-24（R-383 R-396）。
 
 ## 目的與原則
 
@@ -81,6 +81,21 @@
 - **封裝應用**：EXE＋`resources/app.asar`，且 asar 最上層看不出 Tyrano。
 - **Steam 發行版**：其他規則都沒命中時，EXE＋`steam_api.dll`／`steam_api64.dll`。
 - **Pixel Game Maker MV**：`Player.exe`＋`Resources` 資料夾。找不到可信的公開部署說明，只列候選。
+
+### 工具（程式）資料夾（R-457）
+
+遊戲收藏裡常混著工具（翻譯工具、存檔編輯器、便攜軟體）。**遊戲規則都沒命中時**才看下列組合，每項都要與同一層的 EXE 一起出現，單一檔案不算；命中時列為「工具候選」（`tool`），一樣先停止深入，請使用者選「這是工具」「確認為遊戲」或「這不是遊戲／工具」：
+
+- **安裝程式的解除安裝檔**：`unins000.exe`＋同編號的 `unins000.dat`（Inno Setup）。
+- **Qt**：`Qt5Core.dll`／`Qt6Core.dll`＋`platforms/qwindows.dll`。
+- **CEF**：`libcef.dll`＋`locales/*.pak`。
+- **.NET**：與 EXE 同名的 `.runtimeconfig.json` 或 `.deps.json`。
+- **PyInstaller**：`_internal` 資料夾＋`python3*.dll`（同層或 `_internal` 內）。
+- **跨層**：外層沒有 EXE、`bin/` 內符合上述組合時，ROOT 是外層。
+
+確認為工具的資料夾保存為 ROOT 加 `role: 'tool'`（暫定，見 [DATA_FORMAT](DATA_FORMAT.md)）：內部保護與遊戲 ROOT 完全相同（不掃描、不寫入，唯讀查看內部也可用），但不算遊戲，類型照檔案內容判斷，不顯示遊戲頁。沒有任何線索的資料夾，可在資料夾設定的「進階」按「設為工具資料夾」；遊戲的「掃描範圍」區也有同一個按鈕。之後在資料夾類型選「遊戲」會改回遊戲（仍是同一個 ROOT），「這不是工具」改回一般資料夾。工具卡片的呈現見 R-458（擱置）。
+
+判斷依據以偵測規則的原句保存，畫面依介面語言顯示；資料夾名稱另列一行，不拼進句子。
 
 ## 漏判、誤判與 ROOT 定位規則
 

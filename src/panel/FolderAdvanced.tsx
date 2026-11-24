@@ -19,39 +19,113 @@ export function FolderBoundary({
 }: {
   row: FolderRow
   disabled: boolean
-  boundary: (state: 'root' | 'not-game' | 'candidate', traverse?: boolean) => void
+  boundary: (state: 'root' | 'not-game' | 'candidate', traverse?: boolean, tool?: boolean) => void
 }) {
+  // R-457: a folder confirmed as a tool, or one where only program (tool) signs were found.
+  const tool = row.record?.details?.boundary?.role === 'tool'
+  const toolButton = (
+    <Tooltip
+      multiline
+      maw={240}
+      withArrow
+      label={tr('把這個資料夾當成工具（程式）：資訊放在這一層，裡面的檔案受保護，不當成遊戲。')}
+    >
+      <Button
+        size="xs"
+        variant={row.boundary?.tool ? 'filled' : 'default'}
+        disabled={disabled}
+        onClick={() => boundary('root', false, true)}
+      >
+        {tr('設為工具資料夾')}
+      </Button>
+    </Tooltip>
+  )
   return (
     <section className="settings-section">
       <Group gap={4} wrap="nowrap">
         <Text fw={600}>{tr('掃描範圍')}</Text>
         <HelpTip
           text={tr(
-            '遊戲資料夾裡的檔案很多，也不該被改動。所以只把「遊戲主資料夾」這一層當成一筆資料夾資訊，裡面的子資料夾受保護，不會被掃描或寫入。'
+            '遊戲與工具資料夾裡的檔案很多，也不該被改動。所以只把它的主資料夾這一層當成一筆資料夾資訊，裡面的子資料夾受保護，不會被掃描或寫入。'
           )}
         />
       </Group>
-      {row.boundary ? (
+      {tool ? (
+        <>
+          <Text size="sm" mt={4}>
+            {tr('這個資料夾已設為工具資料夾，裡面的檔案受保護。')}
+          </Text>
+          <Group mt="sm">
+            <Button
+              size="xs"
+              variant="default"
+              disabled={disabled}
+              onClick={() => boundary('root')}
+            >
+              {tr('改為遊戲主資料夾')}
+            </Button>
+            <Tooltip
+              multiline
+              maw={240}
+              withArrow
+              label={tr('只查看裡面的檔案，不會在內部寫入任何東西。')}
+            >
+              <Button
+                size="xs"
+                variant="default"
+                disabled={disabled}
+                onClick={() => boundary('root', true, true)}
+              >
+                {tr('唯讀查看內部')}
+              </Button>
+            </Tooltip>
+            <Tooltip
+              multiline
+              maw={240}
+              withArrow
+              label={tr('取消工具設定，當成一般資料夾；之後不再提示。')}
+            >
+              <Button
+                size="xs"
+                variant="subtle"
+                disabled={disabled}
+                onClick={() => boundary('not-game')}
+              >
+                {tr('這不是工具')}
+              </Button>
+            </Tooltip>
+          </Group>
+        </>
+      ) : row.boundary ? (
         <>
           <Text size="sm" mt={4}>
             {row.boundary.engines.length
               ? tr('這個資料夾看起來是 {0} 遊戲。', row.boundary.engines.join('／'))
-              : tr('這個資料夾看起來像遊戲或封裝程式，但無法確定是哪種引擎。')}
+              : row.boundary.tool
+                ? tr('這個資料夾看起來是工具（程式），沒有遊戲引擎的線索。')
+                : tr('這個資料夾看起來像遊戲或封裝程式，但無法確定是哪種引擎。')}
           </Text>
           <Text size="xs" c="dimmed">
-            {tr('請確認它是不是遊戲：')}
+            {row.boundary.tool ? tr('請確認它是工具還是遊戲：') : tr('請確認它是不是遊戲：')}
           </Text>
           <Group mt="sm">
+            {row.boundary.tool && toolButton}
             <Tooltip
               multiline
               maw={240}
               withArrow
               label={tr('把這個資料夾當成遊戲主資料夾：資訊放在這一層，裡面的檔案受保護。')}
             >
-              <Button size="xs" disabled={disabled} onClick={() => boundary('root')}>
+              <Button
+                size="xs"
+                variant={row.boundary.tool ? 'default' : 'filled'}
+                disabled={disabled}
+                onClick={() => boundary('root')}
+              >
                 {tr('確認為遊戲主資料夾')}
               </Button>
             </Tooltip>
+            {!row.boundary.tool && toolButton}
             <Tooltip
               multiline
               maw={240}
@@ -87,18 +161,53 @@ export function FolderBoundary({
             <details className="boundary-evidence">
               <summary>{tr('判斷依據')}</summary>
               <ul>
+                {/* The evidence is stored as the detector's zh-TW sentence; shown in the window's language. */}
                 {row.boundary.evidence.map((item, index) => (
-                  <li key={index}>{item}</li>
+                  <li key={index}>{tr(item)}</li>
                 ))}
               </ul>
             </details>
           )}
         </>
       ) : (
-        <Button size="xs" mt="sm" disabled={disabled} onClick={() => boundary('root')}>
-          {tr('標記為遊戲主資料夾')}
-        </Button>
+        <Group mt="sm">
+          <Button size="xs" disabled={disabled} onClick={() => boundary('root')}>
+            {tr('標記為遊戲主資料夾')}
+          </Button>
+          {toolButton}
+        </Group>
       )}
+    </section>
+  )
+}
+// R-457: a folder nothing was detected in can still be made a tool by hand from its settings.
+function ToolMark({
+  disabled,
+  boundary,
+}: {
+  disabled: boolean
+  boundary: (state: 'root' | 'not-game' | 'candidate', traverse?: boolean, tool?: boolean) => void
+}) {
+  return (
+    <section className="settings-section">
+      <Group gap={4} wrap="nowrap">
+        <Text fw={600}>{tr('工具資料夾')}</Text>
+        <HelpTip
+          text={tr(
+            '工具（程式）資料夾裡的檔案很多，也不該被改動。設為工具資料夾後，只把這一層當成一筆資料夾資訊，裡面的子資料夾受保護，不會被掃描或寫入。'
+          )}
+        />
+      </Group>
+      <Group mt="sm">
+        <Button
+          size="xs"
+          variant="default"
+          disabled={disabled}
+          onClick={() => boundary('root', false, true)}
+        >
+          {tr('設為工具資料夾')}
+        </Button>
+      </Group>
     </section>
   )
 }
@@ -110,6 +219,7 @@ export function FolderAdvanced({
   busy,
   fieldDirty,
   showBoundary,
+  showToolMark,
   boundary,
   act,
   error,
@@ -120,7 +230,9 @@ export function FolderAdvanced({
   busy: boolean
   fieldDirty: boolean
   showBoundary: boolean
-  boundary: (state: 'root' | 'not-game' | 'candidate', traverse?: boolean) => void
+  // R-457: a folder with no boundary at all can be made a tool here.
+  showToolMark?: boolean
+  boundary: (state: 'root' | 'not-game' | 'candidate', traverse?: boolean, tool?: boolean) => void
   act: (request: Request) => Promise<Response | undefined>
   error: string
   setError: (message: string) => void
@@ -138,6 +250,7 @@ export function FolderAdvanced({
     <Tabs.Panel value="advanced" pt="md">
       <Stack>
         {showBoundary && <FolderBoundary row={row} disabled={disabled} boundary={boundary} />}
+        {!showBoundary && showToolMark && <ToolMark disabled={disabled} boundary={boundary} />}
         {(row.stopped || row.duplicate || row.error) && (
           <section className="settings-section">
             <Text fw={600} mb="sm">

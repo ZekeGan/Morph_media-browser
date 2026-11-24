@@ -52,7 +52,11 @@ export class MediaFacts {
   private filling = new Set<string>()
   private running = false
   private sizes = new Map<string, { key: string; size: number; at: number }>()
-  constructor(file: string) {
+  // `hiddenNames` reads a folder's hidden files; tests pass their own instead of hiding real files.
+  constructor(
+    file: string,
+    private hiddenNames: (folder: string) => Promise<Set<string>> = hiddenFileNames
+  ) {
     fs.mkdirSync(path.dirname(file), { recursive: true })
     let db: DatabaseSync | undefined
     try {
@@ -82,6 +86,7 @@ export class MediaFacts {
   }
   private closed = false
   close() {
+    if (this.closed) return
     this.closed = true
     this.waiting = []
     this.db.close()
@@ -135,7 +140,7 @@ export class MediaFacts {
     // Hidden files are left out, as the folder's own listing does (R-455).
     let hidden = new Set<string>()
     try {
-      hidden = await hiddenFileNames(folder)
+      hidden = await this.hiddenNames(folder)
     } catch {
       // Without the attribute check, hidden files are simply counted.
     }

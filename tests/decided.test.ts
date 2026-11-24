@@ -114,7 +114,7 @@ test('new portable fields save through real library paths without changing schem
     launch: async () => {},
     thumbnail: async () => Buffer.alloc(0),
   })
-  close = () => explorer.index.close()
+  close = () => explorer.close()
   let row = lib.snapshot().rows[0]
   await explorer.request({
     action: 'attributes',

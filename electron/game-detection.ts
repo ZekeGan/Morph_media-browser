@@ -7,6 +7,8 @@ export class GameProbeLimit extends Error {}
 export interface GameDetection {
   engines: string[]
   evidence: string[]
+  // R-457: only program (tool) signs matched, no game rule; the user decides whether it is a game or a tool.
+  tool?: boolean
 }
 // An Electron app.asar starts with a 16-byte pickle header followed by the JSON file tree. Only that tree's
 // top-level names are read (never file contents), and only up to a fixed size; anything unexpected gives undefined.
@@ -149,10 +151,17 @@ export async function detectGame(dir: string): Promise<GameDetection | undefined
       add('Godot', '同名 EXE + .console.exe（Godot 的主控台版本；PCK 內嵌，需人工確認）')
     for (const base of ['', 'www/']) {
       if (!(await folder(base + 'data')) || !(await folder(base + 'js'))) continue
+      // Whole sentences (not built from parts), so the window can show them in its language.
       if (await file(base + 'js/rmmz_core.js'))
-        add('RPG Maker MZ', base + 'js/rmmz_core.js + data + EXE')
+        add(
+          'RPG Maker MZ',
+          base ? 'www/js/rmmz_core.js + data + EXE' : 'js/rmmz_core.js + data + EXE'
+        )
       else if (await file(base + 'js/rpg_core.js'))
-        add('RPG Maker MV', base + 'js/rpg_core.js + data + EXE')
+        add(
+          'RPG Maker MV',
+          base ? 'www/js/rpg_core.js + data + EXE' : 'js/rpg_core.js + data + EXE'
+        )
     }
     if ((await Promise.all(['Game.rgssad', 'Game.rgss2a', 'Game.rgss3a'].map(file))).some(Boolean))
       add('RPG Maker XP/VX/Ace', 'RGSS 封包 + EXE；版本需確認')
@@ -184,15 +193,21 @@ export async function detectGame(dir: string): Promise<GameDetection | undefined
           (await file(base + '/data/system/Config.tjs')) &&
           (await folder(base + '/data/scenario')) &&
           (await files(base + '/data/scenario', /\.ks$/i)).length > 0
+        const asar = base === 'resources/app.asar'
         if (tyrano)
           add(
             'TyranoScript',
-            '外層 EXE + ' +
-              base +
-              '：package.json／index.html + Tyrano／KAG 核心 + Config.tjs + 劇本；ROOT 停在外層'
+            asar
+              ? '外層 EXE + resources/app.asar：package.json／index.html + Tyrano／KAG 核心 + Config.tjs + 劇本；ROOT 停在外層'
+              : '外層 EXE + resources/app：package.json／index.html + Tyrano／KAG 核心 + Config.tjs + 劇本；ROOT 停在外層'
           )
-        else if (entry || base === 'resources/app.asar')
-          add(undefined, '外層 EXE + ' + base + ' 解包應用候選；遊戲結構未完整確認，暫停深入')
+        else if (entry || asar)
+          add(
+            undefined,
+            asar
+              ? '外層 EXE + resources/app.asar 解包應用候選；遊戲結構未完整確認，暫停深入'
+              : '外層 EXE + resources/app 解包應用候選；遊戲結構未完整確認，暫停深入'
+          )
       }
     if ((await folder('renpy')) && (await folder('game'))) {
       let scripts = (await files('game', /\.(rpy|rpyc|rpa)$/i)).length > 0
@@ -417,11 +432,11 @@ export async function detectGame(dir: string): Promise<GameDetection | undefined
         )
           collection = true
       }
-    if (!collection)
-      add(
-        'Unreal',
-        '同名外層啟動器／產品資料夾 + ' + products[0] + '/Binaries/Win64 + Content/Paks'
-      )
+    // The folder's name is its own line: the sentence stays whole for translation.
+    if (!collection) {
+      add('Unreal', '同名外層啟動器／產品資料夾 + 產品資料夾內的 Binaries/Win64 + Content/Paks')
+      add(undefined, products[0] + '/')
+    }
   }
   if (!products.length && exes.length && (await folder('Engine'))) {
     const deployments: string[] = []
@@ -432,13 +447,65 @@ export async function detectGame(dir: string): Promise<GameDetection | undefined
         (await unreal(child.name + '/'))
       )
         deployments.push(child.name)
-    if (deployments.length)
-      add(
-        undefined,
-        '跨層 Unreal 部署與啟動器名稱不相符，可能為改名遊戲或集合：' +
-          deployments.join('／') +
-          '；需人工確認 ROOT'
+    if (deployments.length) {
+      add(undefined, '跨層 Unreal 部署與啟動器名稱不相符，可能為改名遊戲或集合；需人工確認 ROOT')
+      for (const name of deployments) add(undefined, name + '/')
+    }
+  }
+  // R-457: tools (programs) kept among the games. Only when no game rule matched: each sign is a runtime's own file
+  // set next to an EXE (an installer's uninstaller pair, Qt, CEF, .NET, PyInstaller), never one file alone. An
+  // outer folder whose program sits in bin/ is the tool's folder.
+  if (!result.evidence.length) {
+    const toolSigns = async (base: string) => {
+      const here = [...(await list(base.replace(/\/$/, ''))).values()],
+        names = here.filter((e) => e.kind === 'file').map((e) => e.name),
+        has = (pattern: RegExp) => names.some((name) => pattern.test(name)),
+        stems = names.filter((n) => /\.exe$/i.test(n)).map((n) => n.slice(0, -4).toLowerCase())
+      if (!stems.length) return []
+      const signs: string[] = []
+      if (
+        names.some(
+          (n) =>
+            /^unins\d{3}\.exe$/i.test(n) && has(new RegExp('^' + n.slice(0, -4) + '\\.dat$', 'i'))
+        )
       )
+        signs.push('unins000.exe + unins000.dat（安裝程式的解除安裝檔）')
+      if (has(/^qt[56]core\.dll$/i) && (await file(base + 'platforms/qwindows.dll')))
+        signs.push('Qt5Core／Qt6Core.dll + platforms/qwindows.dll（Qt 程式）')
+      if (has(/^libcef\.dll$/i) && (await files(base + 'locales', /\.pak$/i)).length)
+        signs.push('libcef.dll + locales/*.pak（CEF 程式）')
+      if (
+        names.some((n) => {
+          const m = /^(.+)\.(runtimeconfig|deps)\.json$/i.exec(n)
+          return !!m && stems.includes(m[1].toLowerCase())
+        })
+      )
+        signs.push('同名 EXE + .runtimeconfig.json／.deps.json（.NET 程式）')
+      if (
+        (await folder(base + '_internal')) &&
+        (has(/^python3\d*\.dll$/i) ||
+          (await files(base + '_internal', /^python3\d*\.dll$/i)).length)
+      )
+        signs.push('_internal + python3*.dll（PyInstaller 打包的程式）')
+      return signs
+    }
+    // Tool signs are extra: a link (junction) or the probe limit met while looking for them leaves the folder as it
+    // was before these rules, not detected, instead of failing the whole branch.
+    let signs: string[] = []
+    try {
+      signs = await toolSigns('')
+      if (!signs.length && !exes.length && (await folder('bin'))) {
+        signs = await toolSigns('bin/')
+        if (signs.length) signs.unshift('程式在 bin/ 內；ROOT 停在外層')
+      }
+    } catch {
+      signs = []
+    }
+    if (signs.length) {
+      for (const sign of signs) add(undefined, sign)
+      add(undefined, '只有程式（工具）線索、沒有遊戲引擎線索：請確認是工具、遊戲，或都不是')
+      result.tool = true
+    }
   }
   return result.evidence.length ? result : undefined
 }

@@ -151,7 +151,7 @@ test('a folder of text books opens in the novel reader and keeps its place in th
     thumbnail: async () => Buffer.alloc(0),
   })
   t.after(async () => {
-    explorer.index.close()
+    explorer.close()
     await fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
   await library.create(media, { name: 'Novels', depth: { mode: 'through', level: 1 } })

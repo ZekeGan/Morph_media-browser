@@ -241,7 +241,8 @@ export interface FolderRow {
   duplicate: boolean
   structural?: boolean
   readonly?: boolean
-  boundary?: { engines: string[]; evidence: string[]; state: string }
+  // `tool`: only program (tool) signs were found, no game engine (R-457); `role`: confirmed as a tool.
+  boundary?: { engines: string[]; evidence: string[]; state: string; tool?: boolean; role?: 'tool' }
   // R-340: the files directly inside, counted while scanning (not saved); absent where the scan did not look inside.
   contents?: Required<import('./kind').KindSample>
 }

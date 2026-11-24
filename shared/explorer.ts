@@ -39,6 +39,9 @@ export interface GameBoundary {
   state: 'root' | 'not-game' | 'candidate'
   engines: string[]
   evidence: string[]
+  // R-457 (provisional): a confirmed ROOT that is a tool (a program), not a game: protected the same way, not shown
+  // as a game.
+  role?: 'tool'
 }
 export interface ReadingPrefs {
   mode?: 'image' | 'manga'
@@ -340,6 +343,8 @@ export type ExplorerRequest =
       revision: number
       state: 'root' | 'not-game' | 'candidate'
       traverse?: boolean
+      // R-457: with state root, true makes it a tool; any other change leaves the folder a game or not-game.
+      tool?: boolean
     }
   | { action: 'banner'; rowId: string; revision: number; assetId: string }
   | { action: 'cellImage'; rowId: string; revision: number; cellId: string; assetId: string | null }

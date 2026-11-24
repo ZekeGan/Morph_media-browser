@@ -297,7 +297,7 @@ test('the explorer lists and returns embedded tracks through a cache that follow
     subtitleProgress: (value) => progress.push(value.fraction),
   }
   const explorer = new Explorer(library, local, desktop)
-  closers.push(() => explorer.index.close())
+  closers.push(() => explorer.close())
   const snapshot = await library.create(media, { name: 'P', depth: { mode: 'through', level: 1 } }),
     row = snapshot.rows[0],
     content = await explorer.content(row.rowId),
@@ -504,7 +504,7 @@ test('the explorer answers early with the track list and the cues read so far', 
     thumbnail: async () => Buffer.from('x'),
   }
   const explorer = new Explorer(library, local, desktop)
-  closers.push(() => explorer.index.close())
+  closers.push(() => explorer.close())
   const snapshot = await library.create(media, { name: 'P', depth: { mode: 'through', level: 1 } }),
     row = snapshot.rows[0],
     film = (await explorer.content(row.rowId)).entries.find((entry) => entry.name === 'film.mkv')!
@@ -894,7 +894,7 @@ test('the explorer answers with the picture cues around a time, from a cache tha
     subtitleProgress: (value) => progress.push(value.fraction),
   }
   const explorer = new Explorer(library, local, desktop)
-  closers.push(() => explorer.index.close())
+  closers.push(() => explorer.close())
   const snapshot = await library.create(media, { name: 'P', depth: { mode: 'through', level: 1 } }),
     row = snapshot.rows[0],
     entries = (await explorer.content(row.rowId)).entries,
@@ -1084,7 +1084,7 @@ test('a read can be stopped, and opening another video stops the one before', as
     thumbnail: async () => Buffer.from('x'),
     subtitleProgress: (value) => progress.push(value.fraction),
   })
-  closers.push(() => explorer.index.close())
+  closers.push(() => explorer.close())
   const snapshot = await library.create(media, { name: 'P', depth: { mode: 'through', level: 1 } }),
     row = snapshot.rows[0],
     bad = (await explorer.content(row.rowId)).entries.find((entry) => entry.name === 'bad.mkv')!

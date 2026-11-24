@@ -521,7 +521,7 @@ export function FolderPanel({
       !isFilled(effective(f.attributeId)) &&
       !editedFields.includes(f.attributeId)
   )
-  const boundary = (state: 'root' | 'not-game' | 'candidate', traverse = false) => {
+  const boundary = (state: 'root' | 'not-game' | 'candidate', traverse = false, tool = false) => {
     if (!row.record || (fieldDirty && !window.confirm(tr('套用邊界前放棄欄位草稿？')))) return
     void run({
       action: 'boundary',
@@ -529,6 +529,7 @@ export function FolderPanel({
       revision: row.record.revision,
       state,
       traverse,
+      tool,
     })
   }
   // Boundaries belong to games; other projects only see them when a game was actually detected in this folder.
@@ -955,6 +956,7 @@ export function FolderPanel({
           busy={busy}
           fieldDirty={fieldDirty}
           showBoundary={showBoundary}
+          showToolMark={!isGame && !gameDetected && !!row.record && !row.readonly}
           boundary={boundary}
           act={act}
           error={error}

@@ -349,7 +349,7 @@
         "src/metadata/FolderSourceImport*"
       ],
       "ui": ["media-feedback-ui", "keys-ui", "source-language-ui", "field-sources-ui", "source-search-sources-ui", "musicbrainz-version-ui"],
-      "tests": ["metadata.test.ts", "decided-media.test.ts", "keys.test.ts", "web-sources.test.ts", "vndb-store.test.ts", "source-languages.test.ts", "musicbrainz-versions.test.ts", "remove-source.test.ts", "date-fields.test.ts"]
+      "tests": ["metadata.test.ts", "decided-media.test.ts", "keys.test.ts", "web-sources.test.ts", "vndb-store.test.ts", "source-languages.test.ts", "musicbrainz-versions.test.ts", "remove-source.test.ts", "date-fields.test.ts", "source-busy.test.ts"]
     },
     {
       "id": "appearance",

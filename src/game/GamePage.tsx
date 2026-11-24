@@ -60,7 +60,7 @@ export function GamePage({
             {(row.boundary?.state === 'candidate' ||
               row.record?.details?.boundary?.state === 'candidate') && (
               <small className="game-candidate" role="status">
-                {tr('候選遊戲，尚未確認')}
+                {row.boundary?.tool ? tr('可能是工具（程式），尚未確認') : tr('候選遊戲，尚未確認')}
               </small>
             )}
             {cover && coverFailed !== cover.src ? (
@@ -90,6 +90,23 @@ export function GamePage({
                   }
                 >
                   {tr('確認為遊戲')}
+                </Button>
+                {/* R-457: or a tool kept among the games: protected the same way, not shown as a game. */}
+                <Button
+                  size="xs"
+                  variant={row.boundary?.tool ? 'filled' : 'default'}
+                  disabled={disabled}
+                  onClick={() =>
+                    void run({
+                      action: 'boundary',
+                      rowId: row.rowId,
+                      revision: row.record!.revision,
+                      state: 'root',
+                      tool: true,
+                    })
+                  }
+                >
+                  {tr('這是工具')}
                 </Button>
                 <Button
                   size="xs"

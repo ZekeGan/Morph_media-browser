@@ -23,7 +23,7 @@ test("R-339: removing a website's data keeps hand-changed values and other sourc
     thumbnail: async () => Buffer.alloc(0),
   })
   t.after(async () => {
-    explorer.index.close()
+    explorer.close()
     await fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
   await library.create(media, { name: 'Works', depth: { mode: 'through', level: 1 } })

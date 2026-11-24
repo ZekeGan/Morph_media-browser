@@ -76,18 +76,25 @@ async function artist(site: Site): Promise<ReturnType<Adapter>> {
 
 // R-449: MusicBrainz asks clients for at most one request a second; one preview's requests are spaced that far apart.
 // The spacing is kept across previews, so switching versions quickly does not go faster either.
+// R-461: every MusicBrainz request (name search too) takes its turn in one queue, so two at once wait for each other.
 export const pace = { ms: 1000 }
-let last = 0
-function paced(site: Site) {
-  return async (url: string) => {
+let last = 0,
+  queue: Promise<unknown> = Promise.resolve()
+export function musicBrainzTurn<T>(job: () => Promise<T>): Promise<T> {
+  const turn = queue.then(async () => {
     const wait = last + pace.ms - Date.now()
     if (last && wait > 0) await new Promise((resolve) => setTimeout(resolve, wait))
     try {
-      return await site.json(url)
+      return await job()
     } finally {
       last = Date.now()
     }
-  }
+  })
+  queue = turn.catch(() => {})
+  return turn
+}
+function paced(site: Site) {
+  return (url: string) => musicBrainzTurn(() => site.json(url))
 }
 type Ask = ReturnType<typeof paced>
 

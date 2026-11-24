@@ -1121,3 +1121,58 @@ test('cleanup inside a game ROOT only removes whole records, never rewrites them
   await lib.cleanup(preview.token, false)
   assert.equal(await exists(folderFile(child)), false)
 })
+
+test('R-457: tools among the games are told apart by their runtime files, and a game rule wins', async (t) => {
+  const { media, lib, files } = await fixture(t)
+  const samples: { name: string; names: string[]; tool?: boolean; engines?: string[] }[] = [
+    { name: 'Inno', names: ['Tool.exe', 'unins000.exe', 'unins000.dat'], tool: true },
+    { name: 'Qt', names: ['Editor.exe', 'Qt6Core.dll', 'platforms/qwindows.dll'], tool: true },
+    { name: 'Cef', names: ['Viewer.exe', 'libcef.dll', 'locales/en-US.pak'], tool: true },
+    {
+      name: 'DotNet',
+      names: ['Patcher.exe', 'Patcher.dll', 'Patcher.runtimeconfig.json'],
+      tool: true,
+    },
+    { name: 'PyInst', names: ['Translator.exe', '_internal/python312.dll'], tool: true },
+    {
+      name: 'Deep',
+      names: ['readme.txt', 'bin/Tool.exe', 'bin/Qt5Core.dll', 'bin/platforms/qwindows.dll'],
+      tool: true,
+    },
+    // One file alone is not enough.
+    { name: 'LoneUninstaller', names: ['Tool.exe', 'unins000.exe'] },
+    { name: 'LoneQt', names: ['Tool.exe', 'Qt5Core.dll'] },
+    { name: 'OtherConfig', names: ['Tool.exe', 'Other.runtimeconfig.json'] },
+    {
+      name: 'NoExe',
+      names: ['unins000.exe.bak', 'unins000.dat', 'Qt6Core.dll', 'platforms/qwindows.dll'],
+    },
+    // A game installed with Inno Setup is still the game.
+    {
+      name: 'UnityInno',
+      names: ['Game.exe', 'Game_Data/level0', 'UnityPlayer.dll', 'unins000.exe', 'unins000.dat'],
+      engines: ['Unity'],
+    },
+  ]
+  for (const sample of samples) await files(path.join(media, sample.name), sample.names)
+  for (const sample of samples) {
+    const found = await detectGame(path.join(media, sample.name))
+    if (sample.tool) {
+      assert.equal(found?.tool, true, sample.name)
+      assert.deepEqual(found?.engines, [], sample.name)
+    } else if (sample.engines) {
+      assert.deepEqual(found?.engines, sample.engines, sample.name)
+      assert.equal(found?.tool, undefined, sample.name)
+    } else assert.equal(found, undefined, sample.name)
+  }
+  // A tool candidate stops the scan like a game candidate: nothing is created inside it.
+  const state = await lib.create(media, { ...input, depth: { mode: 'through' as const, level: 3 } })
+  for (const name of ['Qt', 'Deep'])
+    assert.equal(state.rows.find((r) => r.name === name)?.boundary?.tool, true, name)
+  assert.equal(await exists(path.join(media, 'Qt', 'platforms', DATA_DIR)), false)
+  assert.equal(await exists(path.join(media, 'Deep', 'bin', DATA_DIR)), false)
+  const inside = [path.join(media, 'Qt', 'platforms'), path.join(media, 'Deep', 'bin')]
+  assert.ok(!state.rows.some((r) => inside.includes(r.path)))
+  // A folder with no EXE keeps its inside listed (it is not a tool).
+  assert.ok(state.rows.some((r) => r.path === path.join(media, 'NoExe', 'platforms')))
+})

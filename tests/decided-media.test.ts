@@ -28,7 +28,7 @@ async function fixture(t: { after: (fn: () => Promise<void>) => void }) {
     thumbnail: async () => tinyPng,
   })
   t.after(async () => {
-    explorer.index.close()
+    explorer.close()
     assert.ok((await fs.realpath(root)).startsWith(base + path.sep))
     await fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })

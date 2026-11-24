@@ -141,7 +141,7 @@ async function searchPipeline(template: Snapshot, root: string, count: number) {
       request,
     }
   } finally {
-    explorer.index.close()
+    explorer.close()
   }
 }
 

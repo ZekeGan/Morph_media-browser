@@ -148,8 +148,10 @@ test('R-418: a name search merges the five sources, in the preferred languages, 
     ]
   )
   assert.equal(seen.length, 7, 'one request per source; keyed sources without a key are not asked')
-  assert.deepEqual(seen[0].body.filters, ['search', '=', 'Ever17'])
-  assert.match(seen[4].url, /storesearch\/\?term=Ever17&l=japanese&cc=JP$/)
+  // Found by site: a MusicBrainz search waits its turn (R-461), so the order sent is not fixed.
+  const sent = (host: string) => seen.find((s) => new URL(s.url).hostname === host)!
+  assert.deepEqual(sent('api.vndb.org').body.filters, ['search', '=', 'Ever17'])
+  assert.match(sent('store.steampowered.com').url, /storesearch\/\?term=Ever17&l=japanese&cc=JP$/)
   for (const candidate of result.candidates)
     assert.equal(
       sourceForUrl(candidate.url),

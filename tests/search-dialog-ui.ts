@@ -50,7 +50,7 @@ await explorer.request({
   private: false,
   values: [{ attributeId: 'score-id', key: 'rating', type: 'number', value: 5, source: 'manual' }],
 })
-explorer.index.close()
+explorer.close()
 await lib.create(other, {
   name: 'Other project',
   depth: { mode: 'through', level: 2 },

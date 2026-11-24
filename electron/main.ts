@@ -219,10 +219,7 @@ else {
         },
       })
       warmHiddenHelper()
-      app.on('will-quit', () => {
-        explorer.index.close()
-        explorer.facts.close()
-      })
+      app.on('will-quit', () => explorer.close())
       ipcMain.handle('explorer:request', async (event, request: unknown) => {
         checkSender(event)
         if (!isExplorerRequest(request)) throw new Error('無效的操作')
@@ -388,6 +385,9 @@ else {
         },
       })
       win.setMenu(null)
+      // UI tests play test tones; the window is silent then (the players' own volume and mute still work and are
+      // what the tests check).
+      if (quietTest || watchTest) win.webContents.setAudioMuted(true)
       win.on('app-command', (event, command) => {
         if (command !== 'browser-backward' && command !== 'browser-forward') return
         event.preventDefault()

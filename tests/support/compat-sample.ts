@@ -56,7 +56,7 @@ export async function buildCompatSample(dir: string) {
       kind: 'general',
     })
   } finally {
-    explorer.index.close()
+    explorer.close()
   }
   const store = new WorkspaceStore(local, ['zh-TW'])
   await store.init()

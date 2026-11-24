@@ -130,7 +130,7 @@ test('cover from image URL is saved as a portable asset, and failures keep the o
   const explorer = new Explorer(lib, local, desktop)
   explorer.imageUrlOptions = { fetcher: (async () => respond(png)) as typeof fetch, lookup: pub }
   t.after(async () => {
-    explorer.index.close()
+    explorer.close()
     const target = await fs.realpath(root)
     if (!target.startsWith(base + path.sep)) throw new Error('Unsafe cleanup')
     await fs.rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })

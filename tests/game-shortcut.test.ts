@@ -88,7 +88,7 @@ test('shortcut actions are chosen from the folder, opened through the system and
   }
   const explorer = new Explorer(library, library.userData, desktop)
   t.after(async () => {
-    explorer.index.close()
+    explorer.close()
     const target = await fs.realpath(root)
     assert.ok(target.startsWith(base + path.sep))
     await fs.rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })

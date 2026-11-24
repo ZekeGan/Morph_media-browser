@@ -427,7 +427,9 @@ export function validateDetails(v: unknown): asserts v is FolderDetails {
       !Array.isArray(v.boundary.engines) ||
       !v.boundary.engines.every((x: unknown) => text(x, 100)) ||
       !Array.isArray(v.boundary.evidence) ||
-      !v.boundary.evidence.every((x: unknown) => text(x, 500)))
+      !v.boundary.evidence.every((x: unknown) => text(x, 500)) ||
+      (v.boundary.role !== undefined &&
+        (v.boundary.role !== 'tool' || v.boundary.state !== 'root')))
   )
     throw new Error('遊戲邊界設定不合法')
   if (

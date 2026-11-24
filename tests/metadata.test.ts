@@ -119,7 +119,8 @@ test('Steam rejects unavailable/mismatched/oversized replies and treats blocked 
     )
   await assert.rejects(
     steamMetadata('620', (async () => new Response('{}', { status: 429 })) as typeof fetch),
-    /無法連線/
+    // R-461: too many requests is its own message (asked once more first).
+    /暫時拒絕過多的請求/
   )
   await assert.rejects(
     steamMetadata(

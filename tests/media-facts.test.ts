@@ -42,7 +42,8 @@ async function sandbox(t: { after: (fn: () => Promise<void>) => void }) {
   return root
 }
 const until = async (check: () => Promise<boolean>) => {
-  for (let n = 0; n < 50; n++) {
+  // Up to 15 s: with every test file running at once, reading lengths can take a while.
+  for (let n = 0; n < 150; n++) {
     if (await check()) return true
     await new Promise((resolve) => setTimeout(resolve, 100))
   }
@@ -99,12 +100,12 @@ test('R-455: a hidden file is not counted, and a damaged index is set aside and 
   await fs.mkdir(album)
   await fs.writeFile(path.join(album, '01.wav'), wav(1))
   await fs.writeFile(path.join(album, '02.wav'), wav(1))
-  if (process.platform === 'win32') {
-    const { execFileSync } = await import('node:child_process')
-    execFileSync('attrib', ['+h', path.join(album, '02.wav')])
-    const facts = opened(file)
+  // The folder's hidden-file list is given here instead of hiding a real file (a program that hides files is what
+  // antivirus behaviour checks look for).
+  {
+    const facts = new MediaFacts(file, async () => new Set(['02.wav']))
     assert.equal((await facts.read(album)).audio, 1)
-    open.pop()!.close()
+    facts.close()
   }
   await fs.mkdir(path.dirname(file), { recursive: true })
   await fs.writeFile(file, 'NOT A DATABASE'.repeat(400))

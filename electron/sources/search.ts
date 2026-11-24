@@ -2,6 +2,7 @@ import type { MetadataCandidate } from '../../shared/explorer'
 import type { MetadataSourceId } from '../../shared/sources'
 import { sourceJson, sourceRequest } from '../metadata-common'
 import { userAgent } from './config'
+import { musicBrainzTurn } from './musicbrainz'
 import { pickByLanguage, steamLanguage, tmdbLanguage } from './language'
 
 // R-418: search by a folder's name. The five sources below are asked in parallel at fixed hosts (the same hosts as
@@ -307,18 +308,22 @@ export async function searchSources(
         const target = new URL(url)
         if (target.protocol !== 'https:' || target.port || !hosts.includes(target.hostname))
           throw new Error('Request host not allowed for this search: ' + target.hostname)
-        const bytes = await sourceRequest(fetcher, target, {
-          method: body === undefined ? 'GET' : 'POST',
-          headers: {
-            Accept: 'application/json',
-            'User-Agent': userAgent,
-            ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
-            ...extra,
-          },
-          ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-          signal: AbortSignal.timeout(TIMEOUT),
-          redirect: 'error',
-        })
+        const send = () =>
+          sourceRequest(fetcher, target, {
+            method: body === undefined ? 'GET' : 'POST',
+            headers: {
+              Accept: 'application/json',
+              'User-Agent': userAgent,
+              ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+              ...extra,
+            },
+            ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+            // The time limit starts when the request is sent, not while it waits for its turn.
+            signal: AbortSignal.timeout(TIMEOUT),
+            redirect: 'error',
+          })
+        // R-461: a MusicBrainz search waits its turn with the previews (one request a second).
+        const bytes = await (target.hostname === 'musicbrainz.org' ? musicBrainzTurn(send) : send())
         return sourceJson(bytes.toString('utf8'))
       }
       return (await search(ask, query, languages, keysOf(id))).filter((item) => item.title)

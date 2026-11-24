@@ -165,7 +165,7 @@ test('the key test passes when the site accepts the key and fails when it refuse
   const original = globalThis.fetch
   t.after(async () => {
     globalThis.fetch = original
-    explorer.index.close()
+    explorer.close()
     await fs.rm(root, { recursive: true, force: true })
   })
   await explorer.request({ action: 'setKey', site: 'tmdb', values: { token: 'good' } })

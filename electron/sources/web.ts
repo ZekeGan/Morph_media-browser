@@ -50,8 +50,11 @@ export async function fetchPage(
           ...(options.cookie && url.origin === origin ? { Cookie: options.cookie } : {}),
         },
       })
-    } catch {
-      throw new SourceError('offline')
+    } catch (error) {
+      // R-461: running out of time is its own message.
+      throw new SourceError(
+        error instanceof Error && error.name === 'TimeoutError' ? 'slow' : 'offline'
+      )
     }
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       await response.body?.cancel()

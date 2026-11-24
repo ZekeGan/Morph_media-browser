@@ -6,7 +6,7 @@ import { Library } from '../electron/library'
 import { Explorer, type DesktopOperations } from '../electron/explorer'
 import { detectFolderKind, sampleOf } from '../shared/kind'
 import { readFolder } from '../electron/files'
-import { isGameFolder } from '../shared/media'
+import { isGameFolder, isToolFolder } from '../shared/media'
 import type { FolderRow } from '../shared/model'
 
 const row = (details?: object, boundary?: object) =>
@@ -154,7 +154,7 @@ test('the folderKind request stores or clears the manual kind and rejects unknow
   }
   const explorer = new Explorer(lib, local, desktop)
   t.after(async () => {
-    explorer.index.close()
+    explorer.close()
     const target = await fs.realpath(root)
     if (!target.startsWith(base + path.sep)) throw new Error('Unsafe cleanup')
     await fs.rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
@@ -252,7 +252,7 @@ test('folderKinds sets the kind of several folders and reports the ones that fai
   }
   const explorer = new Explorer(lib, local, desktop)
   t.after(async () => {
-    explorer.index.close()
+    explorer.close()
     const target = await fs.realpath(root)
     if (!target.startsWith(base + path.sep)) throw new Error('Unsafe cleanup')
     await fs.rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
@@ -331,4 +331,79 @@ test('R-404: pictures alone are not manga inside a music or video folder, or in 
   // A manual kind and comic archives still win.
   assert.equal(detectFolderKind(row({ kind: 'book' }), seven, 'music').kind, 'book')
   assert.equal(detectFolderKind(named('scans'), files(0, 0, 0, ['a.cbz'])).kind, 'book')
+})
+
+test('R-457: a folder set as a tool is a protected ROOT that is not a game; choosing the game type undoes it', async (t) => {
+  const base = path.resolve('.test-output')
+  await fs.mkdir(base, { recursive: true })
+  const root = await fs.mkdtemp(path.join(base, 'folder-tool-')),
+    media = path.join(root, 'media'),
+    local = path.join(root, 'local')
+  await fs.mkdir(path.join(media, 'Tool', 'plugins'), { recursive: true })
+  await fs.writeFile(path.join(media, 'Tool', 'Tool.exe'), 'x')
+  const lib = new Library(local, undefined, false)
+  await lib.init()
+  const desktop: DesktopOperations = {
+    choose: async () => undefined,
+    open: async () => {},
+    launch: async () => {},
+    thumbnail: async () => Buffer.from('x'),
+  }
+  const explorer = new Explorer(lib, local, desktop)
+  t.after(async () => {
+    explorer.close()
+    const target = await fs.realpath(root)
+    if (!target.startsWith(base + path.sep)) throw new Error('Unsafe cleanup')
+    await fs.rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+  })
+  await lib.create(media, { name: 'Tools', scanAll: true, depth: { mode: 'through', level: 2 } })
+  const rowOf = (name: string) => lib.snapshot().rows.find((r) => r.name === name)
+  assert.ok(rowOf('plugins'), 'nothing detected: the inside is listed at first')
+  await explorer.request({
+    action: 'boundary',
+    rowId: rowOf('Tool')!.rowId,
+    revision: rowOf('Tool')!.record!.revision,
+    state: 'root',
+    tool: true,
+  })
+  assert.deepEqual((await readFolder(path.join(media, 'Tool'))).details?.boundary, {
+    state: 'root',
+    engines: [],
+    evidence: ['使用者指定'],
+    role: 'tool',
+  })
+  await lib.scan()
+  assert.equal(rowOf('plugins'), undefined, 'the inside is protected after a rescan')
+  assert.equal(isToolFolder(rowOf('Tool')!), true)
+  assert.equal(isGameFolder(rowOf('Tool')!), false)
+  assert.notEqual(detectFolderKind(rowOf('Tool')!).kind, 'game')
+  // The role only goes with a ROOT; validation refuses it on anything else.
+  await assert.rejects(
+    explorer.request({
+      action: 'boundary',
+      rowId: rowOf('Tool')!.rowId,
+      revision: rowOf('Tool')!.record!.revision,
+      state: 'root',
+      tool: 'yes' as never,
+    }),
+    /不合法/
+  )
+  // Choosing the game type makes it a game, still the same ROOT.
+  await explorer.request({
+    action: 'folderKind',
+    rowId: rowOf('Tool')!.rowId,
+    revision: rowOf('Tool')!.record!.revision,
+    kind: 'game',
+  })
+  const boundary = (await readFolder(path.join(media, 'Tool'))).details?.boundary
+  assert.equal(boundary?.state, 'root')
+  assert.equal(boundary?.role, undefined)
+  // "Not a tool" makes it a plain folder again.
+  await explorer.request({
+    action: 'boundary',
+    rowId: rowOf('Tool')!.rowId,
+    revision: rowOf('Tool')!.record!.revision,
+    state: 'not-game',
+  })
+  assert.equal((await readFolder(path.join(media, 'Tool'))).details?.boundary?.role, undefined)
 })

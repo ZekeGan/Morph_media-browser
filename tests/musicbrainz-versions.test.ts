@@ -226,7 +226,7 @@ test('importing keeps the version cover, the album cover or both, as ticked', as
   const original = globalThis.fetch
   t.after(async () => {
     globalThis.fetch = original
-    explorer.index.close()
+    explorer.close()
     await fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
   await lib.create(media, { name: 'M', depth: { mode: 'through', level: 1 } })

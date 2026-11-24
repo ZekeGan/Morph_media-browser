@@ -136,6 +136,7 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
     ...revisionRow,
     state: oneOf('root', 'not-game', 'candidate'),
     traverse: opt(bool),
+    tool: opt(bool),
   },
   banner: { ...revisionRow, assetId: ref },
   cellImage: { ...revisionRow, cellId: ref, assetId: nullable(ref) },

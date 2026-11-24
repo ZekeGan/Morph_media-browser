@@ -31,7 +31,7 @@ test('saved images can be deleted: references cleared in one write, file removed
     lookup: async () => ['93.184.216.34'],
   }
   t.after(async () => {
-    explorer.index.close()
+    explorer.close()
     const target = await fs.realpath(root)
     if (!target.startsWith(base + path.sep)) throw new Error('Unsafe cleanup')
     await fs.rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })

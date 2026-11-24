@@ -180,6 +180,14 @@ export class Explorer {
     this.index.sync(library.snapshot())
     this.facts = new MediaFacts(path.join(root, 'media-facts.sqlite'))
   }
+  // Both local indexes, on quit and when a test is done (Windows will not delete an open file).
+  private closed = false
+  close() {
+    if (this.closed) return
+    this.closed = true
+    this.index.close()
+    this.facts.close()
+  }
   async record(rowId: string, revision: number) {
     const row = await this.library.checkedRow(rowId, true),
       record = await readFolder(row.path)
@@ -568,6 +576,8 @@ export class Explorer {
             }
             marked = true
           }
+          // R-457: a tool chosen as a game becomes a game (still the same protected ROOT).
+          if (req.kind === 'game' && d.boundary?.role === 'tool') delete d.boundary.role
         })
         return {
           // A new main folder changes what the scan shows of it and inside it, as after the boundary request.
@@ -643,7 +653,8 @@ export class Explorer {
       case 'boundary': {
         if (
           !['root', 'candidate', 'not-game'].includes(req.state) ||
-          (req.traverse !== undefined && typeof req.traverse !== 'boolean')
+          (req.traverse !== undefined && typeof req.traverse !== 'boolean') ||
+          (req.tool !== undefined && typeof req.tool !== 'boolean')
         )
           throw new Error('邊界設定不合法')
         const detected = (await this.library.checkedRow(req.rowId)).boundary
@@ -652,6 +663,8 @@ export class Explorer {
             state: req.state,
             engines: d.boundary?.engines ?? detected?.engines ?? [],
             evidence: d.boundary?.evidence ?? detected?.evidence ?? ['使用者指定'],
+            // R-457: only a ROOT can be a tool; confirming it as a game or not-game drops the role.
+            ...(req.state === 'root' && req.tool ? { role: 'tool' as const } : {}),
           }
         })
         const row = await this.library.checkedRow(req.rowId),
@@ -1019,7 +1032,9 @@ export class Explorer {
             (error instanceof Error && error.message === KEY_REJECTED)
           )
             result = 'failed'
-          else if (error instanceof SourceError && error.kind === 'offline') throw error
+          // Not reaching the site says nothing about the key (R-461: nor does a busy or slow site).
+          else if (error instanceof SourceError && ['offline', 'busy', 'slow'].includes(error.kind))
+            throw error
         }
         await store.mark(req.site, result)
         return { keys: await store.status() }

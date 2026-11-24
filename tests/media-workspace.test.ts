@@ -119,7 +119,7 @@ test('new media projects reopen without migration, enumerate audio and hidden fl
     launch: async () => {},
     thumbnail: async () => Buffer.alloc(0),
   })
-  t.after(() => explorer.index.close())
+  t.after(() => explorer.close())
   const row = library.snapshot().rows[0],
     before = await fs.readFile(folderFile(media))
   let cursor: string | undefined

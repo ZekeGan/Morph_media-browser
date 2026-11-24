@@ -7,8 +7,12 @@ export interface FileVisibility {
   dotfiles: boolean
 }
 export const defaultVisibility: FileVisibility = { hidden: false, dotfiles: true }
+// R-457: a folder confirmed as a tool keeps its protection but is not a game.
+export const isToolFolder = (row: FolderRow) =>
+  row.record?.details?.boundary?.state === 'root' && row.record.details.boundary.role === 'tool'
 export const isGameFolder = (row: FolderRow) =>
   row.record?.details?.boundary?.state !== 'not-game' &&
+  !isToolFolder(row) &&
   !!(row.boundary || ['root', 'candidate'].includes(row.record?.details?.boundary?.state ?? ''))
 export const visibleFile = (entry: MediaEntry, visibility = defaultVisibility) =>
   (visibility.hidden || !entry.hidden) && (visibility.dotfiles || !entry.name.startsWith('.'))

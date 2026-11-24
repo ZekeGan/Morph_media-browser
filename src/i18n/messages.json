@@ -5381,12 +5381,6 @@
     "ja": "手動で指定することもできます。",
     "es": "También puedes fijarlo a mano."
   },
-  "遊戲資料夾裡的檔案很多，也不該被改動。所以只把「遊戲主資料夾」這一層當成一筆資料夾資訊，裡面的子資料夾受保護，不會被掃描或寫入。": {
-    "zh-CN": "游戏文件夹里的文件很多，也不该被改动。所以只把「游戏主文件夹」这一层当成一笔文件夹信息，里面的子文件夹受保护，不会被扫描或写入。",
-    "en": "A game folder holds many files that must not be touched, so only the game's main folder gets folder info; the subfolders inside are protected and never scanned or written.",
-    "ja": "ゲームのフォルダーには多くのファイルがあり、変更してはいけません。そのため「ゲームのメインフォルダー」だけにフォルダー情報を作り、中のサブフォルダーは保護され、スキャンも書き込みもされません。",
-    "es": "Una carpeta de juego tiene muchos archivos que no deben tocarse, así que solo la carpeta principal del juego recibe información; las subcarpetas están protegidas y nunca se escanean ni se escriben."
-  },
   "這個資料夾看起來是 {0} 遊戲。": {
     "zh-CN": "这个文件夹看起来是 {0} 游戏。",
     "en": "This folder looks like a {0} game.",
@@ -9383,12 +9377,6 @@
     "ja": "同名の外側ランチャー／製品フォルダー +",
     "es": "Lanzador exterior / carpeta del producto con el mismo nombre +"
   },
-  "跨層 Unreal 部署與啟動器名稱不相符，可能為改名遊戲或集合：": {
-    "zh-CN": "跨层 Unreal 部署与启动器名称不相符，可能为改名游戏或合集：",
-    "en": "An Unreal build one level down does not match the launcher's name; possibly a renamed game or a collection:",
-    "ja": "下の階層の Unreal 配置とランチャー名が一致しません。名前を変えたゲームかコレクションの可能性：",
-    "es": "Una compilación de Unreal un nivel abajo no coincide con el nombre del lanzador; quizá un juego renombrado o una colección:"
-  },
   "；需人工確認 ROOT": {
     "zh-CN": "；需人工确认 ROOT",
     "en": "; confirm the ROOT by hand",
@@ -13348,5 +13336,173 @@
     "en": "Double-click or press Enter to add it to the layout, or drag it onto the canvas",
     "ja": "ダブルクリックまたは Enter でレイアウトに追加、編集エリアへドラッグすることもできます",
     "es": "Haz doble clic o pulsa Intro para añadirlo al diseño, o arrástralo al lienzo"
+  },
+  "unins000.exe + unins000.dat（安裝程式的解除安裝檔）": {
+    "zh-CN": "unins000.exe + unins000.dat（安装程序的卸载文件）",
+    "en": "unins000.exe + unins000.dat (an installer's uninstaller)",
+    "ja": "unins000.exe + unins000.dat（インストーラーのアンインストーラー）",
+    "es": "unins000.exe + unins000.dat (desinstalador de un instalador)"
+  },
+  "Qt5Core／Qt6Core.dll + platforms/qwindows.dll（Qt 程式）": {
+    "zh-CN": "Qt5Core／Qt6Core.dll + platforms/qwindows.dll（Qt 程序）",
+    "en": "Qt5Core/Qt6Core.dll + platforms/qwindows.dll (a Qt program)",
+    "ja": "Qt5Core／Qt6Core.dll + platforms/qwindows.dll（Qt プログラム）",
+    "es": "Qt5Core/Qt6Core.dll + platforms/qwindows.dll (programa Qt)"
+  },
+  "libcef.dll + locales/*.pak（CEF 程式）": {
+    "zh-CN": "libcef.dll + locales/*.pak（CEF 程序）",
+    "en": "libcef.dll + locales/*.pak (a CEF program)",
+    "ja": "libcef.dll + locales/*.pak（CEF プログラム）",
+    "es": "libcef.dll + locales/*.pak (programa CEF)"
+  },
+  "同名 EXE + .runtimeconfig.json／.deps.json（.NET 程式）": {
+    "zh-CN": "同名 EXE + .runtimeconfig.json／.deps.json（.NET 程序）",
+    "en": "EXE + .runtimeconfig.json/.deps.json of the same name (a .NET program)",
+    "ja": "同名 EXE + .runtimeconfig.json／.deps.json（.NET プログラム）",
+    "es": "EXE + .runtimeconfig.json/.deps.json del mismo nombre (programa .NET)"
+  },
+  "_internal + python3*.dll（PyInstaller 打包的程式）": {
+    "zh-CN": "_internal + python3*.dll（PyInstaller 打包的程序）",
+    "en": "_internal + python3*.dll (a program packed with PyInstaller)",
+    "ja": "_internal + python3*.dll（PyInstaller で作られたプログラム）",
+    "es": "_internal + python3*.dll (programa empaquetado con PyInstaller)"
+  },
+  "程式在 bin/ 內；ROOT 停在外層": {
+    "zh-CN": "程序在 bin/ 内；ROOT 停在外层",
+    "en": "The program is in bin/; the ROOT stays at the outer folder",
+    "ja": "プログラムは bin/ 内；ROOT は外側のフォルダー",
+    "es": "El programa está en bin/; la ROOT queda en la carpeta exterior"
+  },
+  "只有程式（工具）線索、沒有遊戲引擎線索：請確認是工具、遊戲，或都不是": {
+    "zh-CN": "只有程序（工具）线索、没有游戏引擎线索：请确认是工具、游戏，或都不是",
+    "en": "Only program (tool) signs, no game engine signs: confirm whether it is a tool, a game, or neither",
+    "ja": "プログラム（ツール）の手がかりのみで、ゲームエンジンの手がかりはありません：ツールかゲームか、どちらでもないかを確認してください",
+    "es": "Solo hay indicios de programa (herramienta), ninguno de motor de juego: confirma si es una herramienta, un juego o ninguno"
+  },
+  "把這個資料夾當成工具（程式）：資訊放在這一層，裡面的檔案受保護，不當成遊戲。": {
+    "zh-CN": "把这个文件夹当成工具（程序）：信息放在这一层，里面的文件受保护，不当成游戏。",
+    "en": "Treat this folder as a tool (a program): its information stays at this level, the files inside are protected, and it is not treated as a game.",
+    "ja": "このフォルダーをツール（プログラム）として扱います：情報はこの階層に置き、中のファイルは保護され、ゲームとしては扱いません。",
+    "es": "Tratar esta carpeta como una herramienta (un programa): su información queda en este nivel, los archivos de dentro quedan protegidos y no se trata como un juego."
+  },
+  "設為工具資料夾": {
+    "zh-CN": "设为工具文件夹",
+    "en": "Set as tool folder",
+    "ja": "ツールフォルダーにする",
+    "es": "Marcar como carpeta de herramienta"
+  },
+  "遊戲與工具資料夾裡的檔案很多，也不該被改動。所以只把它的主資料夾這一層當成一筆資料夾資訊，裡面的子資料夾受保護，不會被掃描或寫入。": {
+    "zh-CN": "游戏与工具文件夹里的文件很多，也不该被改动。所以只把它的主文件夹这一层当成一笔文件夹信息，里面的子文件夹受保护，不会被扫描或写入。",
+    "en": "Game and tool folders hold many files that should not be changed. So only their main folder counts as one folder entry; the subfolders inside are protected and never scanned or written to.",
+    "ja": "ゲームやツールのフォルダーにはファイルが多く、変更すべきではありません。そのためメインフォルダーの階層だけを 1 件のフォルダー情報とし、中のサブフォルダーは保護され、スキャンも書き込みもされません。",
+    "es": "Las carpetas de juegos y herramientas tienen muchos archivos que no deben cambiarse. Por eso solo su carpeta principal cuenta como una entrada; las subcarpetas de dentro quedan protegidas y nunca se escanean ni se escriben."
+  },
+  "這個資料夾已設為工具資料夾，裡面的檔案受保護。": {
+    "zh-CN": "这个文件夹已设为工具文件夹，里面的文件受保护。",
+    "en": "This folder is set as a tool folder; the files inside are protected.",
+    "ja": "このフォルダーはツールフォルダーに設定されており、中のファイルは保護されています。",
+    "es": "Esta carpeta está marcada como carpeta de herramienta; los archivos de dentro están protegidos."
+  },
+  "改為遊戲主資料夾": {
+    "zh-CN": "改为游戏主文件夹",
+    "en": "Make it a game folder",
+    "ja": "ゲームのメインフォルダーに変更",
+    "es": "Convertir en carpeta de juego"
+  },
+  "取消工具設定，當成一般資料夾；之後不再提示。": {
+    "zh-CN": "取消工具设置，当成一般文件夹；之后不再提示。",
+    "en": "Remove the tool setting and treat it as a regular folder; you will not be asked again.",
+    "ja": "ツール設定を解除し、通常のフォルダーとして扱います。以後は確認しません。",
+    "es": "Quitar el ajuste de herramienta y tratarla como una carpeta normal; no se volverá a preguntar."
+  },
+  "這不是工具": {
+    "zh-CN": "这不是工具",
+    "en": "This is not a tool",
+    "ja": "これはツールではない",
+    "es": "No es una herramienta"
+  },
+  "這個資料夾看起來是工具（程式），沒有遊戲引擎的線索。": {
+    "zh-CN": "这个文件夹看起来是工具（程序），没有游戏引擎的线索。",
+    "en": "This folder looks like a tool (a program), with no sign of a game engine.",
+    "ja": "このフォルダーはツール（プログラム）のようで、ゲームエンジンの手がかりはありません。",
+    "es": "Esta carpeta parece una herramienta (un programa), sin indicios de motor de juego."
+  },
+  "請確認它是工具還是遊戲：": {
+    "zh-CN": "请确认它是工具还是游戏：",
+    "en": "Confirm whether it is a tool or a game:",
+    "ja": "ツールかゲームかを確認してください：",
+    "es": "Confirma si es una herramienta o un juego:"
+  },
+  "工具資料夾": {
+    "zh-CN": "工具文件夹",
+    "en": "Tool folder",
+    "ja": "ツールフォルダー",
+    "es": "Carpeta de herramienta"
+  },
+  "工具（程式）資料夾裡的檔案很多，也不該被改動。設為工具資料夾後，只把這一層當成一筆資料夾資訊，裡面的子資料夾受保護，不會被掃描或寫入。": {
+    "zh-CN": "工具（程序）文件夹里的文件很多，也不该被改动。设为工具文件夹后，只把这一层当成一笔文件夹信息，里面的子文件夹受保护，不会被扫描或写入。",
+    "en": "A tool (program) folder holds many files that should not be changed. Once set as a tool folder, only this level counts as one folder entry; the subfolders inside are protected and never scanned or written to.",
+    "ja": "ツール（プログラム）のフォルダーにはファイルが多く、変更すべきではありません。ツールフォルダーにすると、この階層だけを 1 件のフォルダー情報とし、中のサブフォルダーは保護され、スキャンも書き込みもされません。",
+    "es": "Una carpeta de herramienta (programa) tiene muchos archivos que no deben cambiarse. Al marcarla como carpeta de herramienta, solo este nivel cuenta como una entrada; las subcarpetas de dentro quedan protegidas y nunca se escanean ni se escriben."
+  },
+  "可能是工具（程式），尚未確認": {
+    "zh-CN": "可能是工具（程序），尚未确认",
+    "en": "Possibly a tool (a program), not confirmed yet",
+    "ja": "ツール（プログラム）の可能性あり、未確認",
+    "es": "Posiblemente una herramienta (un programa), aún sin confirmar"
+  },
+  "這是工具": {
+    "zh-CN": "这是工具",
+    "en": "This is a tool",
+    "ja": "これはツール",
+    "es": "Es una herramienta"
+  },
+  "同名外層啟動器／產品資料夾 + 產品資料夾內的 Binaries/Win64 + Content/Paks": {
+    "zh-CN": "同名外层启动器／产品文件夹 + 产品文件夹内的 Binaries/Win64 + Content/Paks",
+    "en": "Outer launcher and product folder of the same name + Binaries/Win64 + Content/Paks inside the product folder",
+    "ja": "同名の外側ランチャー／製品フォルダー + 製品フォルダー内の Binaries/Win64 + Content/Paks",
+    "es": "Lanzador exterior y carpeta de producto del mismo nombre + Binaries/Win64 + Content/Paks dentro de la carpeta de producto"
+  },
+  "外層 EXE + resources/app 解包應用候選；遊戲結構未完整確認，暫停深入": {
+    "zh-CN": "外层 EXE + resources/app 解包应用候选；游戏结构未完整确认，暂停深入",
+    "en": "Outer EXE + resources/app: unpacked app candidate; the game layout is not fully confirmed, so scanning stops here",
+    "ja": "外側 EXE + resources/app：展開済みアプリの候補。ゲーム構造が確認しきれないため、ここで探索を止めます",
+    "es": "EXE exterior + resources/app: candidata de aplicación desempaquetada; la estructura del juego no está confirmada del todo, así que el escaneo se detiene aquí"
+  },
+  "外層 EXE + resources/app.asar 解包應用候選；遊戲結構未完整確認，暫停深入": {
+    "zh-CN": "外层 EXE + resources/app.asar 解包应用候选；游戏结构未完整确认，暂停深入",
+    "en": "Outer EXE + resources/app.asar: unpacked app candidate; the game layout is not fully confirmed, so scanning stops here",
+    "ja": "外側 EXE + resources/app.asar：展開済みアプリの候補。ゲーム構造が確認しきれないため、ここで探索を止めます",
+    "es": "EXE exterior + resources/app.asar: candidata de aplicación desempaquetada; la estructura del juego no está confirmada del todo, así que el escaneo se detiene aquí"
+  },
+  "外層 EXE + resources/app.asar：package.json／index.html + Tyrano／KAG 核心 + Config.tjs + 劇本；ROOT 停在外層": {
+    "zh-CN": "外层 EXE + resources/app.asar：package.json／index.html + Tyrano／KAG 核心 + Config.tjs + 剧本；ROOT 停在外层",
+    "en": "Outer EXE + resources/app.asar: package.json/index.html + Tyrano/KAG core + Config.tjs + scenario; the ROOT stays at the outer folder",
+    "ja": "外側 EXE + resources/app.asar：package.json／index.html + Tyrano／KAG コア + Config.tjs + シナリオ。ROOT は外側のフォルダー",
+    "es": "EXE exterior + resources/app.asar: package.json/index.html + núcleo Tyrano/KAG + Config.tjs + guion; la ROOT queda en la carpeta exterior"
+  },
+  "外層 EXE + resources/app：package.json／index.html + Tyrano／KAG 核心 + Config.tjs + 劇本；ROOT 停在外層": {
+    "zh-CN": "外层 EXE + resources/app：package.json／index.html + Tyrano／KAG 核心 + Config.tjs + 剧本；ROOT 停在外层",
+    "en": "Outer EXE + resources/app: package.json/index.html + Tyrano/KAG core + Config.tjs + scenario; the ROOT stays at the outer folder",
+    "ja": "外側 EXE + resources/app：package.json／index.html + Tyrano／KAG コア + Config.tjs + シナリオ。ROOT は外側のフォルダー",
+    "es": "EXE exterior + resources/app: package.json/index.html + núcleo Tyrano/KAG + Config.tjs + guion; la ROOT queda en la carpeta exterior"
+  },
+  "跨層 Unreal 部署與啟動器名稱不相符，可能為改名遊戲或集合；需人工確認 ROOT": {
+    "zh-CN": "跨层 Unreal 部署与启动器名称不相符，可能为改名游戏或合集；需人工确认 ROOT",
+    "en": "A cross-level Unreal deployment does not match the launcher's name; it may be a renamed game or a collection. Confirm the ROOT by hand",
+    "ja": "階層をまたぐ Unreal の配置がランチャー名と一致しません。名前を変えたゲームかコレクションの可能性があります。ROOT を手動で確認してください",
+    "es": "Un despliegue de Unreal en otro nivel no coincide con el nombre del lanzador; puede ser un juego renombrado o una colección. Confirma la ROOT a mano"
+  },
+  "來源網站暫時拒絕過多的請求；請稍等一下再試": {
+    "zh-CN": "来源网站暂时拒绝过多的请求；请稍等一下再试",
+    "en": "The source site is refusing too many requests for now; wait a moment and try again",
+    "ja": "ソースのサイトがリクエストの多さを理由に一時的に拒否しています。少し待ってからもう一度お試しください",
+    "es": "El sitio de origen rechaza por ahora demasiadas solicitudes; espera un momento y vuelve a intentarlo"
+  },
+  "來源網站回應太慢，已逾時；請稍後再試": {
+    "zh-CN": "来源网站响应太慢，已超时；请稍后再试",
+    "en": "The source site took too long to answer and timed out; try again later",
+    "ja": "ソースのサイトの応答が遅く、タイムアウトしました。しばらくしてからもう一度お試しください",
+    "es": "El sitio de origen tardó demasiado en responder y se agotó el tiempo; inténtalo más tarde"
   }
 }
