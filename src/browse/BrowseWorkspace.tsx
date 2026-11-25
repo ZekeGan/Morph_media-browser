@@ -27,6 +27,8 @@ import { isLayoutWork, KindRowsContext, LayoutWorksContext } from './folderKind'
 import { FolderCards } from './FolderCards'
 import { Card } from '../cells/Card'
 import { useCardSettings } from './useCardSettings'
+import { useWidthDrag } from './useWidthDrag'
+import { useFolderMarks } from './useFolderMarks'
 import { useTableColumns } from './useTableColumns'
 import { FolderTable } from './FolderTable'
 import { KindBatchBar } from './KindBatchBar'
@@ -137,12 +139,19 @@ function BrowseWorkspaceBody({
     [ready, setReady] = useState(false),
     [page, setPage] = useState(1)
   const [highlight, setHighlight] = useState<string>(),
-    [marked, setMarked] = useState<string[]>([]),
     [configId, setConfigId] = useState<string>(),
     [configDirty, setConfigDirty] = useState(false),
     [expanded, setExpanded] = useState(false)
   const [filePreview, setFilePreview] = useState<OverviewEntry>()
-  const markAnchor = useRef<string>(undefined)
+  // Read at the time of a gesture; everything here is defined further down.
+  const { marked, setMarked, gestures, cancelClear } = useFolderMarks(() => ({
+    current,
+    highlight,
+    setHighlight,
+    open: (id) => void open(id),
+    openConfig,
+    clearSelection,
+  }))
   const panelSlot = useRef<HTMLDivElement>(null),
     panelToggle = useRef<HTMLButtonElement>(null)
   const panelBody = useRef<HTMLDivElement>(null),
@@ -167,19 +176,15 @@ function BrowseWorkspaceBody({
     [, renderHistory] = useState(0)
   const scroll = useRef<HTMLDivElement>(null),
     state = useRef(browse),
-    resize = useRef<
-      | {
-          id: string
-          start: number
-          width: number
-          // R-500: the width being dragged to, the element it is written to, and the frame waiting to write it.
-          live?: number
-          target?: HTMLElement | null
-          frame?: number
-        }
-      | undefined
-    >(undefined),
     timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  // The dragged width is kept in the browse state and saved once the drag ends.
+  const { resize, moveWidth, stopWidth } = useWidthDrag((id, width) =>
+    persist(
+      id === 'panel'
+        ? { ...state.current, panelWidth: width }
+        : { ...state.current, widths: { ...state.current.widths, [id]: width } }
+    )
+  )
   const all = structure.length ? structure : rows,
     rootRow = all.find((r) => pathKey(r.path) === pathKey(root)),
     detail = all.find((r) => r.rowId === selected),
@@ -696,98 +701,6 @@ function BrowseWorkspaceBody({
     const timer = setTimeout(() => delete panelSlot.current?.dataset.instant, 600)
     return () => clearTimeout(timer)
   }, [ready])
-  // R-500: while dragging, the width is written straight to the page once per frame (the panel's --panel-width, the
-  // table's --col-<id>); nothing re-renders until the drag ends, when the width is kept and saved once.
-  const moveWidth = (e: React.PointerEvent) => {
-    const r = resize.current
-    if (!r) return
-    r.live =
-      r.id === 'panel'
-        ? Math.round(Math.max(280, Math.min(1000, r.width + r.start - e.clientX)))
-        : Math.round(Math.max(80, Math.min(1000, r.width + e.clientX - r.start)))
-    r.target ??= (e.currentTarget as HTMLElement).closest<HTMLElement>(
-      r.id === 'panel' ? '.content-panel-slot' : 'table'
-    )
-    if (r.target && r.id === 'panel') r.target.dataset.resizing = 'true'
-    r.frame ??= requestAnimationFrame(() => {
-      r.frame = undefined
-      if (r.live !== undefined)
-        r.target?.style.setProperty(
-          r.id === 'panel' ? '--panel-width' : '--col-' + r.id,
-          r.live + 'px'
-        )
-    })
-  }
-  const stopWidth = () => {
-    const r = resize.current
-    resize.current = undefined
-    if (!r) return
-    if (r.frame !== undefined) cancelAnimationFrame(r.frame)
-    if (r.target) {
-      if (r.id === 'panel') r.target.dataset.resizing = 'false'
-      else r.target.style.removeProperty('--col-' + r.id)
-    }
-    if (r.live === undefined) return
-    persist(
-      r.id === 'panel'
-        ? { ...state.current, panelWidth: r.live }
-        : { ...state.current, widths: { ...state.current.widths, [r.id]: r.live } }
-    )
-  }
-  // Ctrl/Cmd+click marks folders one by one, Shift+click marks a range; a plain click clears the marks.
-  const clearTimer = useRef<number | undefined>(undefined)
-  const cancelClear = () => {
-    window.clearTimeout(clearTimer.current)
-    clearTimer.current = undefined
-  }
-  useEffect(() => cancelClear, [])
-  const gestures = (id: string) => ({
-    onClick: (e: React.MouseEvent) => {
-      cancelClear()
-      if (e.ctrlKey || e.metaKey) {
-        markAnchor.current = id
-        setMarked((now) => (now.includes(id) ? now.filter((m) => m !== id) : [...now, id]))
-        return
-      }
-      const from = current.findIndex((r) => r.rowId === markAnchor.current),
-        to = current.findIndex((r) => r.rowId === id)
-      if (e.shiftKey && from >= 0 && to >= 0) {
-        setMarked(current.slice(Math.min(from, to), Math.max(from, to) + 1).map((r) => r.rowId))
-        return
-      }
-      markAnchor.current = id
-      // Clicking the selected folder again clears the selection, but only after the double-click time passes
-      // without a second click; a second click or the double click cancels the timer and enters the folder.
-      if (e.detail === 1 && highlight === id && !marked.length) {
-        clearTimer.current = window.setTimeout(() => {
-          clearTimer.current = undefined
-          clearSelection()
-        }, 300)
-        return
-      }
-      if (marked.length) setMarked([])
-      setHighlight(id)
-    },
-    onDoubleClick: () => {
-      cancelClear()
-      void open(id)
-    },
-    onContextMenu: (e: React.MouseEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      openConfig(id)
-    },
-    onKeyDown: (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        void open(id)
-      }
-      if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
-        e.preventDefault()
-        openConfig(id)
-      }
-    },
-  })
   // R-413: the button shows the layout the folder being browsed uses; it opens the layout configuration window.
   const layoutLabel = (() => {
     const presets = cardPresets(project),

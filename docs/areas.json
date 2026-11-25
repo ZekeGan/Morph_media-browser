@@ -20,6 +20,7 @@
       "code": [
         "src/shell/DesktopShell*",
         "src/shell/CreateProjectDialog*",
+        "src/useCreateProject*",
         "electron/workspace.ts",
         "shared/workspace.ts"
       ],
@@ -37,6 +38,8 @@
         "src/browse/BrowseNav*",
         "src/browse/FolderCards*",
         "src/browse/useCardSettings*",
+        "src/browse/useWidthDrag*",
+        "src/browse/useFolderMarks*",
         "src/browse/useTableColumns*",
         "src/browse/TreeView*",
         "src/browse/TreeCardNode*",
