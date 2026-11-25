@@ -24,6 +24,7 @@ import { isMediaInfo, MediaButton, MediaInfo } from './MediaInfoCell'
 import { cellColors } from './cellStyle'
 import { folderCoverAsset, folderCoverPicture, sourceImageAsset } from './folderCover'
 import { GameExtraCell } from './GameExtraCell'
+import { usePanelContent } from './panelContext'
 import './cells.css'
 import { yesNo } from '../editor/fieldTypes'
 import { useIsWork } from '../browse/folderKind'
@@ -191,7 +192,9 @@ function PlayInfo({ cell, row }: Pick<CellProps, 'cell' | 'row'>) {
 function CellValue({ cell, row, open, preview = false, project }: CellProps) {
   useLocale()
   const stats = useFolderStats(row?.rowId),
-    [linkError, setLinkError] = useState('')
+    [linkError, setLinkError] = useState(''),
+    // R-499: in the right panel a picture is drawn large, so it is the original file; cards keep the thumbnail.
+    inPanel = !!usePanelContent()
   if (cell.kind === 'static-text')
     return <span style={{ whiteSpace: 'pre-wrap' }}>{ruleText(cell, row, project)}</span>
   if (cell.kind === 'spacer')
@@ -343,10 +346,10 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
         asset || !row
           ? undefined
           : cell.imageCover || cell.imageRole === 'hero'
-            ? folderCoverPicture(row)
+            ? folderCoverPicture(row, inPanel)
             : cell.imageIndex
               ? {
-                  src: `media://nth/${row.rowId}/${cell.imageIndex}`,
+                  src: `media://nth/${row.rowId}/${cell.imageIndex}${inPanel ? '?full=1' : ''}`,
                   alt: tr('資料夾內第 {0} 張圖片', cell.imageIndex),
                 }
               : undefined

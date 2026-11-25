@@ -76,12 +76,12 @@ export const sampleOf = (entries: { kind: string; name?: string }[]): KindSample
 // R-479: do the pictures' file names read as the pages of one book? Returns how many do, or 0 when they are not
 // a book. Page names are plain numbers (any zero padding), p／page before the number, or one shared prefix with a
 // number counting up (Pixiv's id_p0, id_p1). Cover, credit and info files are left out of the count; gallery-site
-// and camera names (danbooru_…, IMG_0001, a date) are not pages. At least 80% of the pictures must follow the same
+// and camera names (danbooru_…, IMG_0001, DSCN0001, a date) are not pages. At least 80% of the pictures must follow the same
 // pattern, the smallest page is 0 or 1, and the numbers run mostly without gaps.
 const attachmentName =
     /^(cover|covers|credits?|info|colophon|end|ending|back|front|toc|thumbs?|thumbnail|folder|omake|bonus|extra)$/i,
   notPagePrefix =
-    /^(danbooru|yande[._ ]?re|konachan|gelbooru|img_|dsc_|pxl_|(19|20)\d{2}[-_.]?\d{2}[-_.]?\d{2})/i,
+    /^(danbooru|yande[._ ]?re|konachan|gelbooru|img_|dsc[_nf]?|pxl_|(19|20)\d{2}[-_.]?\d{2}[-_.]?\d{2})/i,
   pageName = /^(.*?)(\d+)([a-z])?(?:-(\d+))?$/i
 export function pageNumbered(names: string[]): number {
   const stems = names
@@ -92,7 +92,8 @@ export function pageNumbered(names: string[]): number {
   for (const stem of stems) {
     const m = pageName.exec(stem)
     // A page number is at most 9999; padding may make the digits longer (00200) but not past six.
-    if (!m || m[2].length > 6 || Number(m[2]) > 9999 || notPagePrefix.test(m[1])) continue
+    // R-493: the whole name is tested, so a date whose day is the last number (2024-01-02) is not page 2.
+    if (!m || m[2].length > 6 || Number(m[2]) > 9999 || notPagePrefix.test(stem)) continue
     const prefix = m[1].toLowerCase().replace(/[\s_-]+$/, ''),
       key = /^(p|pg|page)$/.test(prefix) ? 'p' : prefix,
       from = Number(m[2]),

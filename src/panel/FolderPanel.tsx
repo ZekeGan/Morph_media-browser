@@ -118,7 +118,9 @@ export function FolderPanel({
     void window.explorer
       .request({ action: 'content', rowId: row.rowId, limit: 60 })
       .then((result) => {
-        if (alive && result.content) setSample(sampleOf(result.content.entries))
+        // R-494: the whole folder's count when the main process gives it, not only these first files.
+        if (alive && result.content)
+          setSample(result.content.sample ?? sampleOf(result.content.entries))
       })
       .catch(() => {})
     return () => {

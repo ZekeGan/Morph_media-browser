@@ -5,21 +5,40 @@ import { createHash, randomUUID } from 'node:crypto'
 import { safePath } from './files'
 import { DATA_DIR } from '../shared/model'
 import { type ContentResult, type MediaEntry } from '../shared/explorer'
+import { mediaSortFields, sortMedia, type MediaSort } from '../shared/media'
+import { sampleOf, type KindSample } from '../shared/kind'
 import { hiddenFileNames } from './hidden'
 import { imageTypes } from '../shared/images'
-import { mediaNames, mediaTypes as types } from './media-files'
+import { mediaNames, mediaTypes as types, THUMB_EDGE, thumbVersion } from './media-files'
 import type { Explorer } from './explorer'
+
+// What a name is listed as, from the entry type and the extension only (nothing is opened); the same rule the
+// batch below and the scan use.
+const kindOf = (name: string, directory: boolean): MediaEntry['kind'] =>
+  directory
+    ? 'folder'
+    : imageTypes[path.extname(name).slice(1).toLowerCase()]
+      ? 'image'
+      : ((types[path.extname(name).toLowerCase()]?.[0] as MediaEntry['kind']) ?? 'other')
 
 export async function content(
   ex: Explorer,
   rowId: string,
   limit?: number,
-  cursor?: string
+  cursor?: string,
+  // R-492: the order the list will show, so every batch comes in that order. Only read on the first request; the
+  // later batches follow the order chosen then.
+  sort?: MediaSort
 ): Promise<ContentResult> {
   if (
     (limit !== undefined && (!Number.isInteger(limit) || limit < 1 || limit > 500)) ||
     (cursor !== undefined &&
-      (typeof cursor !== 'string' || cursor.length > 150 || limit === undefined))
+      (typeof cursor !== 'string' || cursor.length > 150 || limit === undefined)) ||
+    (sort !== undefined &&
+      (!sort ||
+        typeof sort !== 'object' ||
+        !mediaSortFields.includes(sort.field) ||
+        typeof sort.asc !== 'boolean'))
   )
     throw new Error('內容分批設定不合法')
   const row = await ex.library.readableRow(rowId),
@@ -28,6 +47,7 @@ export async function content(
   let offset = 0,
     token = '',
     names: string[],
+    sample: KindSample,
     hidden = new Set<string>()
   for (const [id, session] of ex.contentPages)
     if (session.expires < Date.now()) ex.contentPages.delete(id)
@@ -47,6 +67,7 @@ export async function content(
       throw new Error('資料夾內容批次已失效，請重新開啟資料夾')
     hidden = session.hidden
     names = session.names
+    sample = session.sample
     token = match![1]
     session.expires = Date.now() + 120000
   } else {
@@ -55,15 +76,47 @@ export async function content(
     } catch (error) {
       notices.push(fmt('無法確認隱藏屬性：{0}', String(error)))
     }
-    names = (await fs.readdir(row.path, { withFileTypes: true }))
+    const listed = (await fs.readdir(row.path, { withFileTypes: true }))
       .filter(
         (entry) =>
           entry.name.toLowerCase() !== DATA_DIR &&
           !entry.isSymbolicLink() &&
           (entry.isFile() || entry.isDirectory())
       )
-      .map((entry) => entry.name)
-      .sort((a, b) => mediaNames.compare(a, b) || (a < b ? -1 : a > b ? 1 : 0))
+      .map((entry) => ({ name: entry.name, kind: kindOf(entry.name, entry.isDirectory()) }))
+      .sort(
+        (a, b) =>
+          mediaNames.compare(a.name, b.name) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
+      )
+    // R-494: the folder's kind is judged from the whole listing, the same way the scan does, so it does not change
+    // while the batches come in.
+    sample = sampleOf(listed)
+    names = listed.map((entry) => entry.name)
+    if (sort) {
+      // Size and date need each file's stat before the first batch; name and kind need nothing more.
+      const facts = new Map<string, { size: number; modified: number }>()
+      if (sort.field === 'size' || sort.field === 'modified')
+        for (let start = 0; start < listed.length; start += 32)
+          await Promise.all(
+            listed.slice(start, start + 32).map(async ({ name }) => {
+              // lstat: a name swapped for a link since the listing is not followed (it is dropped from the batch anyway).
+              const stat = await fs.lstat(path.join(row.path, name)).catch(() => undefined)
+              if (stat) facts.set(name, { size: stat.size, modified: stat.mtimeMs })
+            })
+          )
+      names = sortMedia(
+        listed.map(({ name, kind }) => ({
+          name,
+          kind,
+          id: createHash('sha256').update(name).digest('hex'),
+          size: facts.get(name)?.size ?? 0,
+          modified: facts.get(name)?.modified ?? 0,
+          mime: '',
+          url: '',
+        })),
+        sort
+      ).map((entry) => entry.name)
+    }
     if (limit && names.length > limit) {
       while (ex.contentPages.size >= 8) ex.contentPages.delete(ex.contentPages.keys().next().value!)
       token = randomUUID()
@@ -73,6 +126,7 @@ export async function content(
         folderId: row.record?.folderId,
         names,
         hidden,
+        sample,
         expires: Date.now() + 120000,
       })
     }
@@ -105,7 +159,7 @@ export async function content(
             modified: stat.mtimeMs,
             url,
             ...(['image', 'video'].includes(kind)
-              ? { thumb: `media://thumb/${rowId}/${id}?v=${stat.size}-${stat.mtimeMs}` }
+              ? { thumb: `media://thumb/${rowId}/${id}?v=${thumbVersion(stat)}` }
               : {}),
           })
         } catch (e) {
@@ -113,9 +167,9 @@ export async function content(
         }
       })
     )
-  entries.sort(
-    (a, b) => mediaNames.compare(a.name, b.name) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
-  )
+  // The batch keeps the listing's order (by name, or the requested sort).
+  const order = new Map(batch.map((name, index) => [name, index]))
+  entries.sort((a, b) => order.get(a.name)! - order.get(b.name)!)
   const next = offset + batch.length,
     complete = next >= names.length
   if (complete && token) ex.contentPages.delete(token)
@@ -141,6 +195,7 @@ export async function content(
   return {
     entries,
     notices,
+    sample,
     ...(limit
       ? {
           total: names.length + (row.record?.details?.subtitles?.length ?? 0),
@@ -198,6 +253,9 @@ async function serveFile(
   return id
 }
 const imageMime = (name: string) => imageTypes[path.extname(name).slice(1).toLowerCase()]
+// R-499: `?full=1` asks for the original picture (the right panel draws it large); without it, the thumbnail.
+const wantsFull = (request: globalThis.Request) =>
+  new URL(request.url).searchParams.get('full') === '1'
 
 export async function nthImage(
   ex: Explorer,
@@ -210,7 +268,12 @@ export async function nthImage(
   const row = await ex.library.readableRow(rowId)
   const name = (await folderFiles(row)).filter(imageMime)[index - 1]
   if (!name) return new globalThis.Response(null, { status: 404 })
-  return ex.stream(rowId, await serveFile(ex, row, rowId, name, imageMime(name)), request, true)
+  return ex.stream(
+    rowId,
+    await serveFile(ex, row, rowId, name, imageMime(name)),
+    request,
+    !wantsFull(request)
+  )
 }
 
 // R-437: the one rule for a folder's cover, whatever its kind, shared by the card and the right panel: the picture
@@ -247,7 +310,9 @@ export async function folderCover(
       small = path.join(
         cache,
         createHash('sha256')
-          .update(`${path.join(row.path, track)}/${stat.size}/${stat.mtimeMs}/audio-cover`)
+          .update(
+            `${path.join(row.path, track)}/${stat.size}/${stat.mtimeMs}/audio-cover/${THUMB_EDGE}`
+          )
           .digest('hex') + '.jpg'
       )
     await safePath(ex.root, small)
@@ -255,9 +320,11 @@ export async function folderCover(
       new globalThis.Response(new Uint8Array(bytes), {
         headers: { 'Content-Type': 'image/jpeg', 'X-Content-Type-Options': 'nosniff' },
       })
-    const cached = await fs.readFile(small).catch(() => undefined)
+    const full = wantsFull(request),
+      cached = full ? undefined : await fs.readFile(small).catch(() => undefined)
     if (cached?.length) return jpeg(cached)
     const response = await ex.audioCover(rowId, id, request.signal)
+    if (response.status === 200 && full) return response
     if (response.status === 200) {
       try {
         await fs.mkdir(cache, { recursive: true })
@@ -281,8 +348,9 @@ export async function folderCover(
     named = images.filter((name) => /^(cover|folder|front|artist)\.[^.]+$/i.test(name)),
     name = named.length === 1 ? named[0] : images[0]
   if (!name) return new globalThis.Response(null, { status: 404 })
-  const id = await serveFile(ex, row, rowId, name, imageMime(name)),
-    small = await ex.stream(rowId, id, request, true)
+  const id = await serveFile(ex, row, rowId, name, imageMime(name))
+  if (wantsFull(request)) return ex.stream(rowId, id, request)
+  const small = await ex.stream(rowId, id, request, true)
   // A picture the thumbnail maker cannot read is served as it is.
   return small.ok ? small : ex.stream(rowId, id, request)
 }

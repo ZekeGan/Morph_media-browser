@@ -450,6 +450,12 @@ test('R-479: pictures make a manga only when their file names are page numbers',
   // Gallery-site and camera names are not pages.
   assert.equal(pageNumbered(list('IMG_0001', 'IMG_0002', 'IMG_0003')), 0)
   assert.equal(pageNumbered(list('DSC_0001', 'DSC_0002', 'DSC_0003')), 0)
+  assert.equal(pageNumbered(list('DSCN0001', 'DSCN0002', 'DSCN0003')), 0)
+  assert.equal(pageNumbered(list('DSCF0001', 'DSCF0002', 'DSCF0003')), 0)
+  assert.equal(pageNumbered(list('DSC00001', 'DSC00002', 'DSC00003')), 0)
+  // R-493: one picture a day, named by the date.
+  assert.equal(pageNumbered(list('2024-01-01', '2024-01-02', '2024-01-03')), 0)
+  assert.equal(pageNumbered(list('2024_01_01', '2024_01_02', '2024_01_03')), 0)
   assert.equal(
     pageNumbered(list('PXL_20240101_120000', 'PXL_20240101_120100', 'PXL_20240101_120200')),
     0

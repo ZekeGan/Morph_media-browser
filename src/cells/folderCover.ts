@@ -15,10 +15,14 @@ export function folderCoverAsset(row?: FolderRow): Asset | undefined {
 export function sourceImageAsset(row: FolderRow | undefined, role: 'hero' | 'logo' | 'icon') {
   return row?.record?.assets.find((asset) => asset.role === role)
 }
-export function folderCoverPicture(row?: FolderRow): { src: string; alt: string } | undefined {
+// `full` (R-499): the original picture instead of the thumbnail, for the right panel where it is drawn large.
+export function folderCoverPicture(
+  row?: FolderRow,
+  full = false
+): { src: string; alt: string } | undefined {
   if (!row) return undefined
   const asset = folderCoverAsset(row)
   return asset
     ? { src: `media://asset/${row.rowId}/${asset.assetId}`, alt: asset.originalName }
-    : { src: `media://cover/${row.rowId}`, alt: row.name }
+    : { src: `media://cover/${row.rowId}${full ? '?full=1' : ''}`, alt: row.name }
 }

@@ -258,6 +258,12 @@ export function BrowsePanel(props: Props) {
                         ? 'instant'
                         : 'smooth',
                     })
+                    // Chromium sometimes drops a smooth scroll without starting it (no scroll, so no scrollend);
+                    // a scroll that has not moved at all shortly after goes to the top at once.
+                    const from = body.scrollTop
+                    window.setTimeout(() => {
+                      if (body.scrollTop && body.scrollTop === from) body.scrollTo({ top: 0 })
+                    }, 400)
                   }}
                 >
                   <Icon name="arrow-up" size={15} />

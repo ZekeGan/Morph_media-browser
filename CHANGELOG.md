@@ -18,6 +18,10 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Sharper pictures: card thumbnails are made at 640 px on the longer side (was 320) with high-quality scaling done once, and existing thumbnails are made again; picture components in the right panel show the original file (R-498, R-499). The layout dialog lists the folders under one parent by name, and in a narrow window its Cancel and Save stay on screen (R-496, R-497). "Back to top" in the right panel always gets there: a smooth scroll the browser drops without starting is followed by a jump to the top.
+
+- A large folder opened for the first time no longer re-sorts its file list while it loads: the files come in the order the list shows (name, type, size or date), and the right side knows whether the folder is a manga or a general folder from its first moment, judged from all its files the way the scan does (R-492, R-494). Pictures named by date (2024-01-02) or by Nikon／Fujifilm／Sony cameras (DSCN0001, DSCF0001, DSC00001) no longer count as manga pages (R-493). In the tree view, cards are replaced by their compact label only when zoomed out much further (below 0.1 instead of 0.45).
+
 - Coming back to a folder listed before no longer makes its file list jump: the complete list stays while the folder is read again and is replaced once when the new list is complete (it used to drop to the first 96 files and grow back, re-sorting each time).
 - Review fixes: a folder of pictures read in the manga reader stays a manga whatever its file names (the reader's saved direction counts, not only the old reading mode) (R-479); the page-number check no longer slows large folders and the right panel counts a folder's files once per listing (R-479); the source language grip keeps keyboard focus while a move is saved (R-476); with subfolders left out nothing stays grouped by source behind the unavailable toggle (R-488).
 - The picture viewer and the play queue opened from the file list follow the list's sort order: sorted from large to small, the next picture is the one shown below, not the one above (R-486).

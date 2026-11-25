@@ -27,6 +27,7 @@ import {
   type LayoutSource,
 } from '../../shared/layoutRules'
 import { pathKey, treeStructure } from '../../shared/browse'
+import { sortRows } from '../../shared/search'
 import { effectiveKind, type FolderKind } from '../../shared/kind'
 import type { FolderRow, Project } from '../../shared/model'
 
@@ -203,7 +204,8 @@ export function LayoutConfig({
   useEffect(() => {
     if (!opened) setAnchorId(undefined)
   }, [opened])
-  const structure = useMemo(() => treeStructure(scope), [scope])
+  // R-496: folders under one parent are listed by name; the snapshot's order follows the scan and is not stable.
+  const structure = useMemo(() => treeStructure(sortRows(scope)), [scope])
   const savedRules = (): Record<Target, LayoutRule> => ({
       card: structuredClone(cardRule(project) ?? {}),
       panel: structuredClone(project.layoutRules?.panel ?? {}),

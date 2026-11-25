@@ -7,6 +7,7 @@ import { localeProfileId, type Request } from '../shared/model'
 import type { ExplorerRequest } from '../shared/explorer'
 import type { WorkspaceCommand } from '../shared/workspace'
 import { folderKinds } from '../shared/kind'
+import { mediaSortFields } from '../shared/media'
 import { isSearchSource, searchableSources } from '../shared/sources'
 
 type Check = (v: unknown) => boolean
@@ -52,6 +53,8 @@ const shape =
   (v) =>
     plain(v) && Object.entries(fields).every(([key, check]) => check(v[key]))
 
+// R-492: the file list's sort, one known field and a direction.
+const mediaSort = shape({ field: oneOf(...mediaSortFields), asc: bool })
 const revisionRow = { rowId: ref, revision: int }
 const rows = list(shape(revisionRow), 1000)
 
@@ -106,6 +109,7 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
     scope: oneOf('current', 'descendants'),
     limit: opt(int),
     cursor: opt(ref),
+    sort: opt(mediaSort),
   },
   openExternal: { url: text },
   fileProbe: { rowId: ref, fileId: ref },
@@ -118,7 +122,7 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
     offset: opt(int),
     limit: opt(int),
   },
-  content: { rowId: ref, limit: opt(int), cursor: opt(ref) },
+  content: { rowId: ref, limit: opt(int), cursor: opt(ref), sort: opt(mediaSort) },
   visit: { rowId: ref },
   attributes: { ...revisionRow, values: list(object, 10_000), private: bool },
   batch: { rows, attributeId: ref, value: any, mode: oneOf('replace', 'add', 'remove') },

@@ -173,17 +173,18 @@ try {
       const image = document.querySelector<HTMLImageElement>('.media-info-template img.cell-image')
       return !!image && image.complete && image.naturalWidth > 0
     })
-    // R-455: the embedded cover comes as a small JPEG (the track holds a PNG).
-    assert.equal(
+    // R-499: the right panel shows the embedded cover as it is (the track holds a PNG); R-455: cards get it as a
+    // small JPEG (the same cover without ?full=1).
+    assert.deepEqual(
       await page.evaluate(async () => {
         const image = document.querySelector<HTMLImageElement>(
           '.media-info-template img.cell-image'
         )!
-        return image.src.startsWith('media://cover/')
-          ? (await fetch(image.src)).headers.get('content-type')
-          : 'image/jpeg'
+        if (!image.src.startsWith('media://cover/')) return ['image/png', 'image/jpeg']
+        const type = async (url: string) => (await fetch(url)).headers.get('content-type')
+        return [await type(image.src), await type(image.src.replace('?full=1', ''))]
       }),
-      'image/jpeg'
+      ['image/png', 'image/jpeg']
     )
     if (name === 'Audio media') {
       await page.screenshot({ path: path.join(base, 'shot', 'r294-album-cover.png') })

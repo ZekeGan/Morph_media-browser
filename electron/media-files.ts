@@ -4,6 +4,11 @@ import type { MediaEntry } from '../shared/explorer'
 // Record and attribute ids are short ASCII words; names sort the way people read numbered files.
 export const key = (v: unknown): v is string => typeof v === 'string' && /^[\w-]{1,100}$/.test(v)
 export const mediaNames = new Intl.Collator('zh-Hant', { numeric: true })
+// R-498: a picture thumbnail's longer side. Part of the thumbnail cache key and of the thumbnail URL's version, so
+// changing it makes every thumbnail again instead of reusing the smaller ones (disk and browser cache).
+export const THUMB_EDGE = 640
+export const thumbVersion = (stat: { size: number; mtimeMs: number }) =>
+  `${stat.size}-${stat.mtimeMs}-${THUMB_EDGE}`
 // File types the folder listing knows by extension: kind shown in the UI and the MIME type served.
 export const mediaTypes: Record<string, [MediaEntry['kind'], string]> = {
   '.mp3': ['audio', 'audio/mpeg'],

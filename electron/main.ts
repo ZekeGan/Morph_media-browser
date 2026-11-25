@@ -22,6 +22,7 @@ import type { WindowAction } from '../shared/workspace'
 import { Explorer } from './explorer'
 import { KeyStore } from './keys'
 import { warmHiddenHelper } from './hidden'
+import { THUMB_EDGE } from './media-files'
 import type { LocaleId } from '../shared/locales'
 import { nativeText } from '../shared/native-messages'
 import { libraryDispatcher } from './library-dispatch'
@@ -211,9 +212,11 @@ else {
             throw new Error('圖片解碼器尚未就緒')
           // Decode asynchronously from the already-scoped stream. No original image
           // buffer/base64 crosses IPC, and full bitmap decoding stays off main.
+          // R-498: the picture's size is read first (loading an <img> reads the header, it does not draw), so it is
+          // scaled once, with high quality, to THUMB_EDGE on its longer side; never enlarged.
           const bytes = await win.webContents.executeJavaScript(
             // i18n-ignore: script source run in the hidden window; its two messages have their own keys
-            `(async()=>{const response=await fetch(${JSON.stringify(url)});if(!response.ok)throw new Error('圖片來源已失效');const bitmap=await createImageBitmap(await response.blob(),{resizeWidth:320,resizeQuality:'low'});try{if(!bitmap.width||!bitmap.height||bitmap.width*bitmap.height>100000000)throw new Error('圖片尺寸過大');const scale=Math.min(1,320/Math.max(bitmap.width,bitmap.height));const canvas=new OffscreenCanvas(Math.max(1,Math.round(bitmap.width*scale)),Math.max(1,Math.round(bitmap.height*scale)));canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);return Array.from(new Uint8Array(await(await canvas.convertToBlob({type:'image/jpeg',quality:.78})).arrayBuffer()))}finally{bitmap.close()}})()`
+            `(async()=>{const response=await fetch(${JSON.stringify(url)});if(!response.ok)throw new Error('圖片來源已失效');const blob=await response.blob(),link=URL.createObjectURL(blob);let width=0,height=0;try{const image=new Image();image.src=link;await new Promise((done)=>{image.onload=image.onerror=done});width=image.naturalWidth;height=image.naturalHeight}finally{URL.revokeObjectURL(link)}if(!width||!height)throw new DOMException('undecodable','EncodingError');if(width*height>100000000)throw new Error('圖片尺寸過大');const scale=Math.min(1,${THUMB_EDGE}/Math.max(width,height));const bitmap=await createImageBitmap(blob,{resizeWidth:Math.max(1,Math.round(width*scale)),resizeHeight:Math.max(1,Math.round(height*scale)),resizeQuality:'high'});try{const canvas=new OffscreenCanvas(bitmap.width,bitmap.height);canvas.getContext('2d').drawImage(bitmap,0,0);return Array.from(new Uint8Array(await(await canvas.convertToBlob({type:'image/jpeg',quality:.85})).arrayBuffer()))}finally{bitmap.close()}})()`
           )
           return Buffer.from(bytes)
         },

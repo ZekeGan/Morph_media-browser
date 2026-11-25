@@ -42,7 +42,12 @@ const folders: Record<typeof kind, string[]> = {
 for (const folder of folders[kind]) await fs.mkdir(path.join(media, folder), { recursive: true })
 for (const folder of folders[kind]) {
   const top = path.join(media, folder.split('/')[0])
-  for (let index = 1; index <= 3; index++) await fs.writeFile(path.join(top, `${index}.png`), png)
+  // A general folder's pictures are not named as pages, or it would open as a manga (R-479).
+  for (let index = 1; index <= 3; index++)
+    await fs.writeFile(
+      path.join(top, kind === 'other' ? `photo ${'abc'[index - 1]}.png` : `${index}.png`),
+      png
+    )
 }
 // --big N adds N files to the first folder, to see how heavy folders behave.
 const big = Number(option('big') ?? 0)

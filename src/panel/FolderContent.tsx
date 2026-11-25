@@ -97,10 +97,15 @@ export function FolderContent({
     [fileReader, setFileReader] = useState(false),
     [documentFile, setDocumentFile] = useState<ContentResult['entries'][number]>()
   // What the folder holds decides its kind; counted once per listing, not on every render (R-479 reads names).
+  // R-494: the main process counts the whole folder with the first batch, so the kind does not change as the rest
+  // comes in.
   const sample = useMemo(
-    () => (content ? sampleOf(content.entries) : undefined),
-    [content?.entries]
+    () => (content ? (content.sample ?? sampleOf(content.entries)) : undefined),
+    [content?.entries, content?.sample]
   )
+  // R-492: the file list asks for its batches in the order it shows; the other pages read files by name.
+  const listOrder = useRef({ parentKind, sort: mediaPrefs?.sort })
+  listOrder.current = { parentKind, sort: mediaPrefs?.sort }
   // R-282: after the last page of a text book, the next text book in this folder. R-415: a comic archive (CBZ) goes on
   // to the next archive the same way.
   const nextText = (file: ContentResult['entries'][number]) => {
@@ -122,19 +127,34 @@ export function FolderContent({
       // when it is complete. Swapping in each part would shrink the list to its first part and re-sort it as the rest
       // comes in, so the page visibly jumps (a first visit still shows the parts as they come).
       quiet = !!contentCache.get(row.rowId)
+    // Whether the folder opens as the file list, guessed from what the scan counted (or the last listing) and checked
+    // against the whole folder once the first batch is in.
+    const { sort, parentKind: parent } = listOrder.current,
+      isList = (counts?: ContentResult['sample']) =>
+        folderPageKind(templateKind(effectiveKind(row, counts, parent)), row) === 'media'
+    let sorted = !!sort && isList(contentCache.get(row.rowId)?.sample ?? row.contents)
     void (async () => {
       let cursor: string | undefined
       const counted: ContentResult['entries'] = []
-      let accumulated: ContentResult | undefined
+      let accumulated: ContentResult | undefined,
+        again = false
       do {
+        again = false
         const response = await window.explorer.request({
           action: 'content',
           rowId: row.rowId,
           ...(paged ? { limit: cursor ? 256 : 96, cursor } : {}),
+          ...(paged && sorted && !cursor ? { sort } : {}),
         })
         if (!alive) return
         const chunk = response.content
         if (!chunk) throw new Error(tr('無法取得資料夾內容'))
+        // The guess was wrong: read again from the start in the order that page uses (once, the kind is now known).
+        if (!cursor && paged && sort && chunk.sample && isList(chunk.sample) !== sorted) {
+          sorted = !sorted
+          again = true
+          continue
+        }
         const append = !!cursor
         accumulated =
           append && accumulated
@@ -153,7 +173,7 @@ export function FolderContent({
         }
         // Yield between chunks so navigation and the first screen can render.
         if (cursor) await new Promise((resolve) => setTimeout(resolve, 50))
-      } while (alive && cursor)
+      } while (alive && (cursor || again))
     })().catch((e) => {
       if (alive) setError(String(e))
     })

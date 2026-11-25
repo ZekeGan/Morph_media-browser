@@ -6,6 +6,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { Readable } from 'node:stream'
 import { exists, safePath } from './files'
+import { THUMB_EDGE, thumbVersion } from './media-files'
 import { identifyImage } from '../shared/images'
 import { openAsBlob } from 'node:fs'
 import { parseBlob, selectCover } from 'music-metadata'
@@ -120,7 +121,7 @@ export async function stream(
           // Video previews are cached per size generation, so the old low-resolution ones are not reused.
           .update(
             `${entry.file}/${entry.stat.size}/${entry.stat.mtimeMs}` +
-              (entry.mime.startsWith('video/') ? '/480' : '')
+              (entry.mime.startsWith('video/') ? '/480' : '/' + THUMB_EDGE)
           )
           .digest('hex') + '.jpg'
       )
@@ -146,8 +147,7 @@ export async function stream(
             ex.thumbnailTrim = undefined
           })
       }
-      const version =
-        new URL(request.url).searchParams.get('v') === `${entry.stat.size}-${entry.stat.mtimeMs}`
+      const version = new URL(request.url).searchParams.get('v') === thumbVersion(entry.stat)
       return new globalThis.Response(new Uint8Array(bytes), {
         headers: {
           'Content-Type': 'image/jpeg',

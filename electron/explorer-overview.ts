@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { type ExplorerRequest, type OverviewResult } from '../shared/explorer'
 import { mediaNames } from './media-files'
+import { mediaSortFields } from '../shared/media'
 import type { Explorer } from './explorer'
 
 export async function overview(
@@ -12,7 +13,9 @@ export async function overview(
     !Number.isInteger(limit) ||
     limit < 1 ||
     limit > 200 ||
-    !['current', 'descendants'].includes(request.scope)
+    !['current', 'descendants'].includes(request.scope) ||
+    (request.sort !== undefined &&
+      (!mediaSortFields.includes(request.sort?.field) || typeof request.sort.asc !== 'boolean'))
   )
     throw new Error('檔案總覽範圍不合法')
   const root = await ex.library.readableRow(request.rowId),
@@ -55,6 +58,7 @@ export async function overview(
       scope: request.scope,
       folders: allowed.map((row) => row.rowId),
       folder: 0,
+      ...(request.sort ? { sort: request.sort } : {}),
       expires: Date.now() + 120000,
     }
   }
@@ -64,7 +68,12 @@ export async function overview(
       row = (snapshot.structure ?? snapshot.rows).find((row) => row.rowId === rowId)
     try {
       if (!row) throw new Error('資料夾已離開允許範圍')
-      const result = await ex.content(rowId, limit - entries.length, plan!.contentCursor)
+      const result = await ex.content(
+        rowId,
+        limit - entries.length,
+        plan!.contentCursor,
+        plan!.sort
+      )
       notices.push(...result.notices)
       entries.push(
         ...result.entries

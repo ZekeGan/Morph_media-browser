@@ -229,6 +229,8 @@ export interface ContentResult {
   notices: string[]
   nextCursor?: string
   total?: number
+  // R-494: what the whole folder holds (from every name, before all batches have come), for its kind.
+  sample?: import('./kind').KindSample
 }
 export interface OverviewEntry extends MediaEntry {
   rowId: string
@@ -301,6 +303,8 @@ export type ExplorerRequest =
       scope: 'current' | 'descendants'
       limit?: number
       cursor?: string
+      // R-492: each folder's files come in this order (folders still follow one another by path).
+      sort?: import('./media').MediaSort
     }
   | { action: 'openExternal'; url: string }
   // Playback failure help: classify a file by its first bytes, open it with the system default app, or show it in Explorer.
@@ -313,7 +317,14 @@ export type ExplorerRequest =
       offset?: number
       limit?: number
     }
-  | { action: 'content'; rowId: string; limit?: number; cursor?: string }
+  // R-492: `sort` is the order the list shows; the batches come in that order.
+  | {
+      action: 'content'
+      rowId: string
+      limit?: number
+      cursor?: string
+      sort?: import('./media').MediaSort
+    }
   | { action: 'visit'; rowId: string }
   | { action: 'attributes'; rowId: string; revision: number; values: Attribute[]; private: boolean }
   | { action: 'removeSource'; rowId: string; revision: number; provider: string }

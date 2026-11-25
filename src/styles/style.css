@@ -448,7 +448,7 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .layout-config-footer { align-items: center; }
 .layout-config-button { max-width: 180px; flex-shrink: 0; }
 .layout-config-button .mantine-Button-label { overflow: hidden; text-overflow: ellipsis; }
-@media (max-width: 960px) { .layout-config { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); height: calc(100vh - 230px); } .layout-config-rules { max-height: 30vh; border-right: 0; border-bottom: 1px solid var(--line); } .layout-config-item { grid-template-columns: minmax(0, 1fr) minmax(120px, 170px) 40px; } }
+@media (max-width: 960px) { .layout-config { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); height: calc(100vh - 290px); } .layout-config-rules { max-height: 30vh; border-right: 0; border-bottom: 1px solid var(--line); } .layout-config-item { grid-template-columns: minmax(0, 1fr) minmax(120px, 170px) 40px; } }
 /* One scrollable sidebar; groups no longer create their own scrollbars. */
 .section-projects { max-height:none; overflow:visible; }
 .sidebar-groups { scrollbar-width:none; }

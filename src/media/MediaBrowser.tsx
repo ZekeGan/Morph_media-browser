@@ -134,6 +134,8 @@ export function MediaBrowser({
           scope,
           limit: cursor ? 200 : 96,
           cursor,
+          // R-492: each folder's files come in the order the list shows.
+          ...(sort && !cursor ? { sort } : {}),
         })
         if (!active) return
         const page = response.overview

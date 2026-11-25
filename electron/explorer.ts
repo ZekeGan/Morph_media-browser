@@ -127,6 +127,7 @@ export class Explorer {
       folders: string[]
       folder: number
       contentCursor?: string
+      sort?: import('../shared/media').MediaSort
       expires: number
     }
   >()
@@ -168,6 +169,7 @@ export class Explorer {
       folderId?: string
       names: string[]
       hidden: Set<string>
+      sample: import('../shared/kind').KindSample
       expires: number
     }
   >()
@@ -234,8 +236,13 @@ export class Explorer {
     await this.targetPath(root, file, kind)
     return file
   }
-  async content(rowId: string, limit?: number, cursor?: string): Promise<ContentResult> {
-    return contentFns.content(this, rowId, limit, cursor)
+  async content(
+    rowId: string,
+    limit?: number,
+    cursor?: string,
+    sort?: import('../shared/media').MediaSort
+  ): Promise<ContentResult> {
+    return contentFns.content(this, rowId, limit, cursor, sort)
   }
   async file(rowId: string, id: string) {
     return contentFns.file(this, rowId, id)
@@ -468,7 +475,7 @@ export class Explorer {
         this.index.sync(this.library.snapshot(), true)
         return { notice: { level: 'success', message: '索引已由可攜資料重建' } }
       case 'content':
-        return { content: await this.content(req.rowId, req.limit, req.cursor) }
+        return { content: await this.content(req.rowId, req.limit, req.cursor, req.sort) }
       case 'attributes':
         await this.attributes(req.rowId, req.revision, req.values, req.private)
         return this.after(await this.library.refreshRecord(req.rowId))

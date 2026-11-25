@@ -982,6 +982,46 @@ test('paged contents show an ordered first batch, remain row-bound and recheck c
   assert.equal(await fs.readFile(path.join(outside, 'secret.txt'), 'utf8'), 'KEEP')
   assert.equal(all.at(-1)!.name, 'Image 450.jpg')
 })
+test('R-492/R-494: batches come in the requested order and carry the whole folder count', async (t) => {
+  const { media, lib, explorer } = await fixture(t)
+  // Sizes run against the names, so the largest file is the last by name.
+  for (let n = 1; n <= 150; n++)
+    await fs.writeFile(path.join(media, `${String(n).padStart(3, '0')}.jpg`), 'x'.repeat(n))
+  await fs.writeFile(path.join(media, 'notes.txt'), 'NOTE')
+  const state = await lib.create(media, { name: 'Sorted', depth: { mode: 'through', level: 1 } }),
+    row = state.rows[0],
+    read = async (sort?: { field: 'name' | 'kind' | 'size' | 'modified'; asc: boolean }) => {
+      let cursor: string | undefined,
+        first: Awaited<ReturnType<typeof explorer.content>> | undefined
+      const names: string[] = []
+      do {
+        const chunk = await explorer.content(row.rowId, cursor ? 64 : 40, cursor, sort)
+        first ??= chunk
+        names.push(...chunk.entries.map((entry) => entry.name))
+        cursor = chunk.nextCursor
+      } while (cursor)
+      return { first: first!, names }
+    }
+  const bySize = await read({ field: 'size', asc: false })
+  assert.equal(bySize.first.entries[0].name, '150.jpg')
+  assert.deepEqual(
+    bySize.names.filter((name) => name.endsWith('.jpg')),
+    Array.from({ length: 150 }, (_, i) => `${String(150 - i).padStart(3, '0')}.jpg`)
+  )
+  const byName = await read({ field: 'name', asc: false })
+  assert.equal(byName.names[0], 'notes.txt')
+  assert.equal(byName.names[1], '150.jpg')
+  const plain = await read()
+  assert.equal(plain.names[0], '001.jpg')
+  // The first batch already counts all 151 files and sees the 150 numbered pages.
+  assert.equal(bySize.first.sample?.images, 150)
+  assert.equal(bySize.first.sample?.total, 151)
+  assert.equal(bySize.first.sample?.pages, 150)
+  await assert.rejects(
+    explorer.content(row.rowId, 40, undefined, { field: 'path', asc: true } as never),
+    /分批/
+  )
+})
 test('the n-th image of a folder is chosen by natural file order, direct files only', async (t) => {
   const { media, lib, explorer } = await fixture(t)
   for (const name of ['10.jpg', '2.jpg', '1.png', 'notes.txt'])
@@ -1011,6 +1051,12 @@ test('the n-th image of a folder is chosen by natural file order, direct files o
   assert.equal(await nth(3), '10.jpg')
   assert.equal(await nth(4), 404, 'text files and sub-folder images do not count')
   for (const bad of [0, -1, 1.5, 1000, NaN]) assert.equal(await nth(bad), 404, String(bad))
+  // R-499: the right panel asks for the original file, not the thumbnail.
+  const full = await explorer.nthImage(row.rowId, 2, new Request('media://nth/x/2?full=1'))
+  assert.equal(full.status, 200)
+  assert.equal(await full.text(), 'IMAGE')
+  const cover = await explorer.folderCover(row.rowId, new Request('media://cover/x?full=1'))
+  assert.equal(await cover.text(), 'IMAGE')
 })
 test('warm thumbnails bypass cold work; cancelled queued work is skipped and shared requests decode once', async (t) => {
   const { media, lib, explorer } = await fixture(t),

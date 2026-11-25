@@ -10,7 +10,7 @@ import './tree-card.css'
 // below COMPACT_ZOOM the card would be unreadable, so the compact label is drawn in its place (same size, so the
 // layout does not move).
 export const TREE_CARD_WIDTH = 280
-export const COMPACT_ZOOM = 0.45
+export const COMPACT_ZOOM = 0.1
 // The card's padding and border (style.css `.folder-card`), above and below the grid.
 const CARD_CHROME = 30
 export function treeCardHeight(project: Project, row: FolderRow, work: boolean) {
