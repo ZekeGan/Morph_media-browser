@@ -88,6 +88,8 @@ export function FolderContent({
   const parentKind = useParentKind(row)
   const contentRow = useRef(row.rowId)
   const [galleryFile, setGalleryFile] = useState<ContentResult['entries'][number]>(),
+    // R-517: true when the reader was opened by "繼續閱讀" (continue at the saved page), false for a picked picture.
+    [galleryResume, setGalleryResume] = useState(false),
     [galleryImmersive, setGalleryImmersive] = useState(false)
 
   const [content, setContent] = useState<ContentResult | undefined>(() =>
@@ -199,6 +201,7 @@ export function FolderContent({
     readFirst.current = undefined
     if (first) {
       setGalleryImmersive(immersive)
+      setGalleryResume(false)
       setGalleryFile(first)
     } else if (immersive && document.fullscreenElement)
       void document.exitFullscreen().catch(() => {})
@@ -364,6 +367,7 @@ export function FolderContent({
               nextBook={nextBook}
               startImmersive={galleryImmersive}
               inheritedPrefs={inherited.current}
+              resume={galleryResume}
             />
           )}
           {documentFile && (
@@ -422,7 +426,10 @@ export function FolderContent({
                           ? tr('繼續閱讀')
                           : tr('開始閱讀'),
                       detail: place ? tr('讀到 {0} / {1} 頁', place.page, place.total) : undefined,
-                      open: () => setGalleryFile(firstPage),
+                      open: () => {
+                        setGalleryResume(true)
+                        setGalleryFile(firstPage)
+                      },
                     }
                   : undefined,
           }}
@@ -433,8 +440,8 @@ export function FolderContent({
         />
       }
       actions={
-        // R-390: where the manga was left and the button to read on. The reader decides the page itself (R-253), so
-        // this opens it at the first picture like a click on the first thumbnail.
+        // R-390: where the manga was left and the button to read on. It opens the first picture with resume on, so the
+        // reader goes to the saved page (R-253); a click on a thumbnail opens that page instead (R-517).
         !firstPage && lastRead ? (
           <div className="book-actions">
             <Button size="compact-sm" onClick={() => setDocumentFile(lastRead)}>
@@ -445,7 +452,13 @@ export function FolderContent({
         ) : (
           firstPage && (
             <div className="book-actions">
-              <Button size="compact-sm" onClick={() => setGalleryFile(firstPage)}>
+              <Button
+                size="compact-sm"
+                onClick={() => {
+                  setGalleryResume(true)
+                  setGalleryFile(firstPage)
+                }}
+              >
                 {(place?.resumes ??
                 (!!content.nextCursor && (row.record?.details?.reading?.page ?? 0) > 0))
                   ? tr('繼續閱讀')
@@ -479,7 +492,10 @@ export function FolderContent({
                 prefs={row.record?.details?.reading}
                 onReader={setReader}
                 suspended={!!galleryFile}
-                onOpen={(entry) => setGalleryFile(entry)}
+                onOpen={(entry) => {
+                  setGalleryResume(false)
+                  setGalleryFile(entry)
+                }}
                 save={(prefs) => {
                   if (row.record && !row.readonly && !row.stopped && !row.error)
                     void run({

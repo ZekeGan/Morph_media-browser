@@ -233,7 +233,7 @@ export async function archiveStream(
       cached?.file !== file.file ||
       !/^\d{1,5}$/.test(number)
     )
-      throw new Error('壓縮頁面已失效')
+      throw new Error('找不到壓縮檔裡的這一頁')
     const entry = index.images[Number(number)]
     if (!entry) throw new Error('壓縮頁面不存在')
     const bytes = await readArchiveImage(file.file, index, entry)

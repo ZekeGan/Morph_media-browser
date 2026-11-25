@@ -517,7 +517,7 @@ export function FolderPanel({
       !editedFields.includes(f.attributeId)
   )
   const boundary = (state: 'root' | 'not-game' | 'candidate', tool = false) => {
-    if (!row.record || (fieldDirty && !window.confirm(tr('套用邊界前放棄欄位草稿？')))) return
+    if (!row.record || (fieldDirty && !window.confirm(tr('還有沒保存的修改，要放棄嗎？')))) return
     void run({
       action: 'boundary',
       rowId: row.rowId,
@@ -681,7 +681,10 @@ export function FolderPanel({
                     { value: 'private', label: tr('僅目前專案') },
                   ]}
                   onChange={(value) => {
-                    if (!fieldDirty || window.confirm(tr('切換會放棄目前欄位草稿？'))) {
+                    if (
+                      !fieldDirty ||
+                      window.confirm(tr('切換後，還沒保存的修改會不見，確定嗎？'))
+                    ) {
                       setValues({})
                       setPrivate(value === 'private')
                     }
@@ -752,7 +755,7 @@ export function FolderPanel({
             {!mainFields.length && !project.fieldGroups?.length && !siteFields.length && (
               <Group justify="space-between" wrap="nowrap" gap="xs">
                 <Text c="dimmed" size="sm">
-                  {tr('專案尚未配置欄位。')}
+                  {tr('這個專案還沒有欄位。')}
                 </Text>
                 <Group gap={6} wrap="nowrap">
                   <Button

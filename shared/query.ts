@@ -92,7 +92,7 @@ export function restoreQuery(query: StableQuery, fields: QueryField[]): Term[][]
         }
       const found = fields.filter((field) => field.attributeId === term.field)
       if (!found.length || found.some((field) => field.type !== term.type))
-        throw new Error('常用搜尋的欄位已移除或型別變更，請重新確認條件')
+        throw new Error('常用搜尋的欄位已移除或格式改了，請重新確認條件')
       const alias = found[0].key,
         ambiguous = fields.some(
           (field) =>

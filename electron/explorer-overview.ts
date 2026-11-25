@@ -32,7 +32,7 @@ export async function overview(
       plan.folderId !== root.record!.folderId ||
       plan.scope !== request.scope
     )
-      throw new Error('檔案總覽批次已失效，請重新整理')
+      throw new Error('檔案總覽已過期，請重新整理')
     ex.overviewPages.delete(request.cursor)
   } else {
     const base = root.path.replaceAll('\\', '/').replace(/\/$/, '').toLocaleLowerCase()

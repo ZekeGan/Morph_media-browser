@@ -40,6 +40,7 @@ export function MediaViewer({
   nextBook,
   startImmersive,
   inheritedPrefs,
+  resume = false,
 }: {
   row: FolderRow
   project: Project
@@ -58,6 +59,8 @@ export function MediaViewer({
   startImmersive?: boolean
   // R-430: the previous book's reading settings, for a folder that has none of its own yet.
   inheritedPrefs?: ReadingPrefs
+  // R-517: opened by "繼續閱讀": a manga opens at its saved page. Anything else opens the picture picked.
+  resume?: boolean
 }) {
   const [queueView, setQueueView] = useState<'list' | 'images'>('list')
   const [selected, setSelected] = useState(file.id),
@@ -177,6 +180,7 @@ export function MediaViewer({
                   manga={manga}
                   nextBook={nextBook}
                   startImmersive={startImmersive}
+                  resume={resume}
                   prefs={row.record?.details?.reading ?? inheritedPrefs}
                   close={close}
                   save={(prefs) => {

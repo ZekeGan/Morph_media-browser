@@ -5,9 +5,9 @@ import { errorMessage } from '../shared/notifications'
 import { setLocale, t } from '../src/i18n'
 
 test('marked messages fill their values back in for plain text', () => {
-  const text = fmt('建立可攜記錄失敗：{0}', 'D:\\收藏\\a "b"')
+  const text = fmt('建立資料夾資訊失敗：{0}', 'D:\\收藏\\a "b"')
   assert.ok(hasMessage(text))
-  assert.equal(plainMessage(text), '建立可攜記錄失敗：D:\\收藏\\a "b"')
+  assert.equal(plainMessage(text), '建立資料夾資訊失敗：D:\\收藏\\a "b"')
   assert.equal(plainMessage('沒有標記'), '沒有標記')
   assert.equal(hasMessage('沒有標記'), false)
 })

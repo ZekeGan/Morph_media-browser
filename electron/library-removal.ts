@@ -45,7 +45,8 @@ export async function previewFullRemoval(
 ): Promise<FullRemovalPreview> {
   const linked = ex.linked(projectId)
   await ex.currentProject(linked)
-  if (await ex.protectedAncestor(linked.root)) throw new Error('此專案位於保護邊界內，只能取消連結')
+  if (await ex.protectedAncestor(linked.root))
+    throw new Error('這個專案在受保護的遊戲裡面，只能從清單移除')
   const token = randomUUID(),
     tree = await managedTree(linked.root),
     overlaps = ex.state.projects.filter(
@@ -110,9 +111,9 @@ export async function fullRemoveProject(ex: Library, token: string): Promise<Cle
   const plan = ex.fullPlans.get(token)
   ex.fullPlans.delete(token)
   if (!plan || plan.refs !== JSON.stringify(ex.refs))
-    throw new Error('完全移除預覽已失效，請重新預覽')
+    throw new Error('完全移除預覽已過期，請重新預覽')
   if (await ex.protectedAncestor(plan.preview.root))
-    throw new Error('遊戲保護邊界已變更，移除未執行')
+    throw new Error('受保護的遊戲範圍變了，沒有移除')
   const tree = await managedTree(plan.preview.root)
   if (JSON.stringify(tree) !== JSON.stringify(plan.tree))
     throw new Error('預覽後資料已變更，移除未執行')
@@ -273,7 +274,7 @@ export async function previewRemoveProject(
   const linked = ex.linked(projectId),
     project = await ex.currentProject(linked)
   if (await ex.protectedAncestor(linked.root))
-    throw new Error('此專案位於遊戲／App 保護邊界內，只能取消連結')
+    throw new Error('這個專案在受保護的遊戲或 App 裡面，只能從清單移除')
   const records: { dir: string; record: FolderRecord }[] = [],
     files: { path: string; hash: string }[] = [],
     definitions: string[] = [],
@@ -343,7 +344,9 @@ export async function previewRemoveProject(
     ...(rootFiles ? { recoveryPath: path.join(ex.userData, 'project-removals', token) } : {}),
   }
   if (!rootFiles)
-    skipped.push(fmt('{0}: 根記錄仍有共用資料、其他專案或未驗證檔案，保留根身分', linked.root))
+    skipped.push(
+      fmt('{0}：專案資訊裡還有共用的資訊、其他專案或認不得的檔案，所以保留', linked.root)
+    )
   for (const file of rootFiles ?? [])
     if (!files.some((item) => item.path === file.path)) files.push(file)
   ex.removalPlans.clear()
@@ -360,10 +363,10 @@ export async function previewRemoveProject(
 
 export async function removeProject(ex: Library, token: string): Promise<CleanupResult> {
   const plan = ex.removalPlans.get(token)
-  if (!plan) throw new Error('專案移除預覽已失效，請重新預覽')
+  if (!plan) throw new Error('專案移除預覽已過期，請重新預覽')
   ex.removalPlans.delete(token)
   ex.linked(plan.preview.projectId)
-  if (await ex.protectedAncestor(plan.root)) throw new Error('遊戲邊界已變更，移除未執行')
+  if (await ex.protectedAncestor(plan.root)) throw new Error('受保護的遊戲範圍變了，沒有移除')
   for (const file of plan.files) {
     await safePath(plan.root, file.path)
     if ((await fingerprint(file.path)) !== file.hash)
@@ -384,7 +387,7 @@ export async function removeProject(ex: Library, token: string): Promise<Cleanup
   for (const item of plan.records)
     try {
       if (await ex.protectedAncestor(item.dir))
-        throw new Error('此位置新增遊戲保護邊界，私有資料保留')
+        throw new Error('這裡變成受保護的遊戲，只在這個專案的資訊保留')
       const current = await readFolder(item.dir)
       delete current.projectOverrides[plan.preview.projectId]
       await saveFolder(item.dir, current, item.record.revision)
@@ -435,7 +438,7 @@ export async function removeProject(ex: Library, token: string): Promise<Cleanup
           (file) => !plan.rootFiles!.some((old) => old.path === file.path && old.hash === file.hash)
         )
       )
-        throw new Error('根資料夾內容已變更，根記錄保留')
+        throw new Error('專案資料夾有變動，專案資訊保留')
       const recovery = plan.preview.recoveryPath!
       await safePath(ex.userData, recovery)
       await fs.mkdir(recovery, { recursive: true })
@@ -452,7 +455,7 @@ export async function removeProject(ex: Library, token: string): Promise<Cleanup
           await handle.close()
         }
         if ((await fingerprint(target)) !== file.hash)
-          throw new Error('復原副本驗證失敗，根記錄保留')
+          throw new Error('復原的副本檢查沒通過，專案資訊保留')
       }
       await atomicJson(path.join(recovery, 'manifest.json'), {
         root: plan.root,
@@ -467,11 +470,11 @@ export async function removeProject(ex: Library, token: string): Promise<Cleanup
           (file) => !now.some((old) => old.path === file.path && old.hash === file.hash)
         )
       )
-        throw new Error('備份期間根內容或歸屬已變更，根記錄保留')
+        throw new Error('備份時專案資料夾有變動，專案資訊保留')
       for (const file of now) {
         await safePath(plan.root, file.path)
         if ((await fingerprint(file.path)) !== file.hash)
-          throw new Error('備份期間資料已變更，根記錄保留')
+          throw new Error('備份時資料有變動，專案資訊保留')
       }
       // Keep the primary identity until every other owned file has been retired.
       for (const file of [
@@ -516,7 +519,7 @@ export async function removeProject(ex: Library, token: string): Promise<Cleanup
           }
         }
       } catch (restoreError) {
-        result.failed.push(fmt('根記錄復原未完成：{0}', message(restoreError)))
+        result.failed.push(fmt('專案資訊沒有完全復原：{0}', message(restoreError)))
       }
       result.failed.push(
         fmt('{0}: {1}；復原位置：{2}', plan.root, message(error), plan.preview.recoveryPath)

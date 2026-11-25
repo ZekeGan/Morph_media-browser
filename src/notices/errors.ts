@@ -7,8 +7,7 @@ export function describeError(raw: unknown): { message: string; hint?: string; d
   const sent = errorMessage(raw instanceof Error ? raw.message : String(raw)),
     // The technical wording shown beside a rewritten message, with any sent values filled in (R-281).
     detail = plainMessage(sent)
-  if (detail === '備用欄位必須存在且型別可相容顯示')
-    return { message: tr('備用欄位必須存在且型別可相容顯示') }
+  if (detail === '備用欄位不存在，或格式不合') return { message: tr('備用欄位不存在，或格式不合') }
   switch (classifyError(detail)) {
     case 'permission':
       return {

@@ -20,7 +20,7 @@ export function useDrafts({
     [appearanceDirty, setAppearanceDirty] = useState(false)
   const unsaved = detailDirty || editorDirty || settingsDirty || shellDirty || appearanceDirty,
     dirty = unsaved || creating
-  const confirmLeave = () => !dirty || window.confirm(tr('離開會放棄尚未保存的草稿，確定繼續？'))
+  const confirmLeave = () => !dirty || window.confirm(tr('離開後，還沒保存的修改會不見，確定嗎？'))
   useLayoutEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => {
       if (dirty || busy.current) {

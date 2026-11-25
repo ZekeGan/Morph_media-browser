@@ -388,7 +388,6 @@ try {
   await fit()
   await page.keyboard.press('t')
   await fullscreen(false)
-  const leftAt = await page.locator('.reader-frame-layer.is-active').getAttribute('data-pages')
   await reader().getByRole('button', { name: '退出閱讀器', exact: true }).click()
   await reader().waitFor({ state: 'hidden' })
   await fullscreen(false)
@@ -422,30 +421,45 @@ try {
   await page.waitForTimeout(200)
   if (await reader().isVisible()) await page.keyboard.press('Escape')
   await reader().waitFor({ state: 'hidden' })
-  // R-322: a page picked by hand opens there and offers the saved page. C-145: leaving with ESC keeps the page that
-  // was open as the new reading place (page 13, not the last spread, which would count as finished).
+  // R-517 / C-146: a picked page opens there and offers the saved page; C-145: leaving with ESC keeps the page that
+  // was open as the new reading place. The steps above opened and left the reader too, so the place is set first.
+  const leave = async () => {
+    await page.keyboard.press('Escape')
+    await page.waitForTimeout(200)
+    if (await reader().isVisible()) await page.keyboard.press('Escape')
+    await reader().waitFor({ state: 'hidden' })
+  }
+  await thumbnail(4)
+  const marked = await page.locator('.reader-frame-layer.is-active').getAttribute('data-pages')
+  await leave()
   await thumbnail(12)
   const offer = reader().locator('.reader-notice')
   await offer.waitFor()
   assert.equal(
     ((await offer.textContent()) ?? '').match(/^上次讀到第 (\d+) 頁/)?.[1],
-    String(leftAt).split('–')[0]
+    String(marked).split('–')[0]
   )
   await offer.getByRole('button', { name: /^跳到第 \d+ 頁$/ }).waitFor()
   const picked = await page.locator('.reader-frame-layer.is-active').getAttribute('data-pages')
   assert.ok(picked?.startsWith('13'), 'the picked page opens: ' + picked)
-  await page.keyboard.press('Escape')
-  await page.waitForTimeout(200)
-  if (await reader().isVisible()) await page.keyboard.press('Escape')
-  await reader().waitFor({ state: 'hidden' })
-  await thumbnail(0)
-  // R-253: opening from the first page continues where the reader was left, with a way back to the start.
-  const resume = reader().locator('.reader-notice')
+  await leave()
+  // Only "繼續閱讀" goes to the saved page, without a notice.
+  await page.getByRole('button', { name: '繼續閱讀', exact: true }).first().click()
+  await reader().waitFor()
   await waitPages(String(picked))
   await page.waitForTimeout(300)
-  assert.match((await resume.textContent()) ?? '', /^從第 13 頁繼續/)
-  await resume.getByRole('button', { name: '從頭開始', exact: true }).click()
+  assert.equal(
+    await reader().locator('.reader-notice').count(),
+    0,
+    'continue reading shows no notice'
+  )
+  await leave()
+  // The first page opens the first page, and offers the saved one.
+  await thumbnail(0)
   await waitPages('1–2')
+  const first = reader().locator('.reader-notice')
+  await first.waitFor()
+  assert.match((await first.textContent()) ?? '', /^上次讀到第 13 頁/)
   const dragBox = (await reader().locator('.reader-stage').boundingBox())!
   await page.mouse.move(dragBox.x + dragBox.width / 2, dragBox.y + dragBox.height / 2)
   await page.mouse.down()

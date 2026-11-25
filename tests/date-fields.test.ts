@@ -278,7 +278,7 @@ test('saving folder text refuses fields that are not text (R-247)', async (t) =>
     ],
   })
   const row = lib.snapshot().rows[0]
-  await assert.rejects(lib.saveValues(row.rowId, row.record!.revision, { score: '5' }), /型別不符/)
+  await assert.rejects(lib.saveValues(row.rowId, row.record!.revision, { score: '5' }), /格式不符/)
   await lib.saveValues(row.rowId, row.record!.revision, { note: 'hello' })
   const note = (await readFolder(media)).attributes.find((a) => a.attributeId === 'note')
   assert.equal(note?.type, 'string')
@@ -320,7 +320,7 @@ test('after switching a field between text and date, folders save with the new t
   // And back to text.
   assert.deepEqual(await save('string', 'string', 'soon'), { type: 'string', value: 'soon' })
   // Types outside text and date still never change.
-  await assert.rejects(save('number', 'number', 5), /型別/)
+  await assert.rejects(save('number', 'number', 5), /格式/)
   // Saving text over a date kept from before the field became text (R-247 path).
   await save('date', 'date', '2020-11-12')
   await lib.saveProject({

@@ -122,7 +122,7 @@ export async function applyMetadata(
   if (!item || item.expires < Date.now()) {
     // An expired preview's pictures are let go now, not at the next preview.
     ex.previews.delete(req.token)
-    throw new Error('候選已過期，請重新取得')
+    throw new Error('搜尋結果已過期，請重新搜尋')
   }
   if (
     !Array.isArray(req.keys) ||

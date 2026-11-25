@@ -75,7 +75,10 @@ test('a backup holds settings and every project; restoring in place keeps existi
   assert.deepEqual(await fs.readFile(folderFile(path.join(media, 'A'))), before)
   assert.equal(await fs.readFile(path.join(media, 'A', 'page.txt'), 'utf8'), 'ORIGINAL')
   // A used preview cannot be applied twice.
-  await assert.rejects(applyBackup(library, workspace, ids, preview.token, false, []), /失效/)
+  await assert.rejects(
+    applyBackup(library, workspace, ids, preview.token, false, []),
+    /已過期|找不到/
+  )
 })
 
 test('a moved root is reported missing and can be pointed at its new place', async (t) => {

@@ -210,10 +210,10 @@ test('new runtime boundaries block stale shared writes and deep nested creation;
     root = state.rows.find((row) => row.path === game)!
   const original = await fs.readFile(folderFile(child))
   await files(game, ['Renamed.exe', ...nwMarkers])
-  await assert.rejects(lib.checkedRow(row.rowId, true), /邊界保護/)
-  await assert.rejects(lib.saveValues(row.rowId, row.record!.revision, {}), /邊界保護/)
-  await assert.rejects(lib.restore(row.rowId), /邊界保護/)
-  await assert.rejects(lib.create(child, { ...input, name: 'Nested' }), /邊界保護/)
+  await assert.rejects(lib.checkedRow(row.rowId, true), /受保護/)
+  await assert.rejects(lib.saveValues(row.rowId, row.record!.revision, {}), /受保護/)
+  await assert.rejects(lib.restore(row.rowId), /受保護/)
+  await assert.rejects(lib.create(child, { ...input, name: 'Nested' }), /受保護/)
   assert.deepEqual(await fs.readFile(folderFile(child)), original)
   let record = await readFolder(game)
   record.details = {
@@ -236,7 +236,7 @@ test('new runtime boundaries block stale shared writes and deep nested creation;
   const fresh = path.join(media, 'Fresh'),
     deep = path.join(fresh, 'assets/a/b/c/d/e')
   await files(fresh, ['Fresh.exe', ...nwMarkers, 'assets/a/b/c/d/e/file.bin'])
-  await assert.rejects(lib.create(deep, { ...input, name: 'Deep nested' }), /邊界保護/)
+  await assert.rejects(lib.create(deep, { ...input, name: 'Deep nested' }), /受保護/)
   assert.equal(await exists(folderFile(deep)), false)
 })
 test('NW.js and WOLF marker links and probe failures stop branches; cancellation preserves all internals', async (t) => {
@@ -674,7 +674,7 @@ test('an Electron-packed TyranoScript game is recognised from the top of its app
   await write('Tyrano', asar({ tyrano: folder, data: folder, 'index.html': file }))
   const found = await detectGame(path.join(media, 'Tyrano'))
   assert.deepEqual(found?.engines, ['TyranoScript'])
-  assert.ok(!found!.evidence.some((line) => line.includes('封裝應用候選')))
+  assert.ok(!found!.evidence.some((line) => line.includes('像是包裝過的程式')))
   // Other packed apps stay the unknown candidate, and damaged or oversized headers never throw.
   await write('OtherApp', asar({ src: folder, 'package.json': file }))
   await write('NoData', asar({ tyrano: folder }))
@@ -693,7 +693,7 @@ test('an Electron-packed TyranoScript game is recognised from the top of its app
   for (const name of ['OtherApp', 'NoData', 'NotJson', 'Huge', 'Tiny', 'AsarDir']) {
     const result = await detectGame(path.join(media, name))
     assert.deepEqual(result?.engines, [], name)
-    assert.match(result!.evidence.join(' '), /封裝應用候選|解包應用候選/, name)
+    assert.match(result!.evidence.join(' '), /像是包裝過的程式|像是拆開的包裝程式/, name)
   }
 })
 test('ASAR remains an unknown candidate; manual ROOT/not-game and an old traversal never rewrite history', async (t) => {
@@ -727,7 +727,7 @@ test('ASAR remains an unknown candidate; manual ROOT/not-game and an old travers
   state = await lib.saveProject({ ...p, traversal: { [record.folderId]: true } })
   assert.ok(!state.rows.some((row) => row.path === old), 'R-510: the inside stays hidden')
   assert.deepEqual(await fs.readFile(folderFile(old)), bytes)
-  await assert.rejects(lib.create(old, { ...input, name: 'Nested' }), /邊界保護/)
+  await assert.rejects(lib.create(old, { ...input, name: 'Nested' }), /受保護/)
   record = await readFolder(game.path)
   record.details!.boundary!.state = 'not-game'
   await saveFolder(game.path, record, record.revision)
@@ -770,11 +770,11 @@ test('an existing nested project cannot bypass a newly detected parent game boun
     record = await fs.readFile(folderFile(nested))
   await files(game, ['Game.exe', 'UnityPlayer.dll', 'Game_Data/child/file.bin'])
   state = await lib.create(media, input)
-  assert.ok(state.projects.find((project) => project.projectId === id)!.error?.includes('保護邊界'))
+  assert.ok(state.projects.find((project) => project.projectId === id)!.error?.includes('受保護'))
   assert.deepEqual(await fs.readFile(definition), old)
   assert.deepEqual(await fs.readFile(folderFile(nested)), record)
   assert.equal(await exists(path.join(nested, 'child', DATA_DIR)), false)
-  await assert.rejects(lib.restoreProject(id), /邊界/)
+  await assert.rejects(lib.restoreProject(id), /受保護/)
 })
 test('multi-platform bundles and every App variant remain untouched, even with old records or not-game', async (t) => {
   const { media, lib, files } = await fixture(t),
@@ -814,8 +814,8 @@ test('multi-platform bundles and every App variant remain untouched, even with o
   assert.deepEqual(await fs.readFile(folderFile(historical)), old)
   for (const name of ['Binary', 'Broken', 'Ordinary'])
     assert.equal(await exists(path.join(media, name + '.app', DATA_DIR)), false)
-  await assert.rejects(lib.create(app, input), /邊界保護/)
-  await assert.rejects(lib.create(path.join(app, 'Contents/MacOS'), input), /邊界保護/)
+  await assert.rejects(lib.create(app, input), /受保護/)
+  await assert.rejects(lib.create(path.join(app, 'Contents/MacOS'), input), /受保護/)
   assert.equal(await exists(path.join(app, 'Contents/MacOS', DATA_DIR)), false)
 })
 test('probe limits, permission failure and junction markers fail closed without initializing descendants', async (t) => {
@@ -824,12 +824,12 @@ test('probe limits, permission failure and junction markers fail closed without 
   await files(game, ['Game.exe', 'renpy/runtime.bin'])
   for (let i = 0; i < GAME_PROBE_LIMITS.directories + 2; i++)
     await fs.mkdir(path.join(game, 'game', String(i)), { recursive: true })
-  await assert.rejects(detectGame(game), /探測超限/)
+  await assert.rejects(detectGame(game), /判斷不完/)
   let state = await lib.create(media, input)
   assert.ok(
     state.rows
       .find((row) => row.path === game)!
-      .boundary?.evidence.some((text) => text.includes('超限'))
+      .boundary?.evidence.some((text) => text.includes('判斷不完'))
   )
   assert.equal(await exists(path.join(game, 'game', DATA_DIR)), false)
   const denied = path.join(media, 'Denied')
@@ -1106,10 +1106,10 @@ test('cleanup inside a game ROOT only removes whole records, never rewrites them
   const early = await lib.previewCleanup(row.rowId, 'private')
   await files(game, ['Leftover.exe', ...nwMarkers])
   const unchanged = await fs.readFile(folderFile(child))
-  await assert.rejects(lib.cleanup(early.token, false), /邊界保護/)
+  await assert.rejects(lib.cleanup(early.token, false), /受保護/)
   assert.deepEqual(await fs.readFile(folderFile(child)), unchanged)
   const before = await fs.readFile(folderFile(child))
-  await assert.rejects(lib.previewCleanup(row.rowId, 'private'), /邊界保護/)
+  await assert.rejects(lib.previewCleanup(row.rowId, 'private'), /受保護/)
   assert.deepEqual(await fs.readFile(folderFile(child)), before)
   const preview = await lib.previewCleanup(row.rowId, 'folder')
   await lib.cleanup(preview.token, false)

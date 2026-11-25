@@ -295,10 +295,10 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
           disabled={!row || preview || !ready}
           title={
             !template
-              ? tr('尚無可用的啟動動作，請先在遊戲操作新增')
+              ? tr('還沒有可用的動作，請先在版面編輯器的「啟動遊戲」新增')
               : ready
                 ? target.path
-                : tr('尚未綁定')
+                : tr('尚未設定')
           }
           onClick={async (e) => {
             e.stopPropagation()
@@ -377,7 +377,7 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
   )
     return <span className="cell-empty">{tr('沒有值')}</span>
   const label =
-    typeof value === 'string' ? value : value == null ? '' : tr('⚠ 型別不符：{0}', String(value))
+    typeof value === 'string' ? value : value == null ? '' : tr('⚠ 格式不符：{0}', String(value))
   if (cell.kind === 'field-tags')
     return Array.isArray(value) ? (
       <TagList
@@ -387,14 +387,14 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
         prefix={cell.tagPrefix !== false}
       />
     ) : (
-      <span>{value == null ? '' : tr('⚠ 型別不符')}</span>
+      <span>{value == null ? '' : tr('⚠ 格式不符')}</span>
     )
   if (cell.kind === 'field-number') {
     const display = numericDisplay(
       value,
       cell.maximum ?? (cell.presentation === 'rating' ? 5 : 100)
     )
-    if (!display) return <span>{value == null ? tr('未填') : tr('⚠ 型別不符')}</span>
+    if (!display) return <span>{value == null ? tr('未填') : tr('⚠ 格式不符')}</span>
     const format = (number: number) =>
       number.toLocaleString(
         currentLocale(),
@@ -438,7 +438,7 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
           ? value.replace('T', ' ')
           : value == null
             ? ''
-            : tr('⚠ 型別不符')}
+            : tr('⚠ 格式不符')}
       </span>
     )
   if (cell.kind === 'field-boolean') {
@@ -450,7 +450,7 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
         ? yesNo(value, binding)
         : value == null
           ? tr('未填')
-          : tr('⚠ 型別不符')
+          : tr('⚠ 格式不符')
     return cell.presentation === 'badge' && typeof value === 'boolean' ? (
       <Badge color={value ? 'teal' : 'gray'} variant="light">
         {label}
@@ -467,7 +467,7 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
           : value
         : value == null
           ? tr('未填')
-          : tr('⚠ 型別不符')
+          : tr('⚠ 格式不符')
     return cell.presentation === 'badge' && typeof value === 'string' && value.length ? (
       <Badge
         color={
@@ -507,7 +507,7 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
         {linkError && <small role="alert">{linkError}</small>}
       </span>
     ) : (
-      <span>{value == null ? tr('未填') : tr('⚠ 型別不符')}</span>
+      <span>{value == null ? tr('未填') : tr('⚠ 格式不符')}</span>
     )
   return (
     <span

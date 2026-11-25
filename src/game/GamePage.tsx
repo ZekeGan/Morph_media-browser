@@ -60,7 +60,7 @@ export function GamePage({
                 <small className="game-candidate" role="status">
                   {row.boundary?.tool
                     ? tr('可能是工具（程式），尚未確認')
-                    : tr('候選遊戲，尚未確認')}
+                    : tr('可能是遊戲，尚未確認')}
                 </small>
                 <Button
                   size="xs"

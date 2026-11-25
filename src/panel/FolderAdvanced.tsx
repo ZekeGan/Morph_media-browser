@@ -10,6 +10,7 @@ import type {
   Response,
 } from '../../shared/model'
 import { isNewerFormat } from '../../shared/upgrade'
+import { evidenceText } from '../game/BoundaryFlag'
 
 // The scan boundary section: shown in the game tab for games, and in Advanced when a game was detected but the folder is not one by type.
 export function FolderBoundary({
@@ -30,7 +31,7 @@ export function FolderBoundary({
       multiline
       maw={240}
       withArrow
-      label={tr('把這個資料夾當成工具（程式）：資訊放在這一層，裡面的檔案受保護，不當成遊戲。')}
+      label={tr('當成工具程式：不顯示遊戲頁，裡面的檔案一樣不會被改動。')}
     >
       <Button
         size="xs"
@@ -47,11 +48,7 @@ export function FolderBoundary({
       multiline
       maw={240}
       withArrow
-      label={
-        tool
-          ? tr('取消工具設定，當成一般資料夾；之後不再提示。')
-          : tr('取消遊戲判定，當成一般資料夾；之後不再提示。')
-      }
+      label={tool ? tr('改回一般資料夾，以後不再詢問。') : tr('改回一般資料夾，以後不再詢問。')}
     >
       <Button size="xs" variant="subtle" disabled={disabled} onClick={() => boundary('not-game')}>
         {tool ? tr('這不是工具') : tr('這不是遊戲目錄')}
@@ -84,7 +81,7 @@ export function FolderBoundary({
               ? tr('這個資料夾看起來是 {0} 遊戲。', row.boundary.engines.join('／'))
               : row.boundary.tool
                 ? tr('這個資料夾看起來是工具（程式），沒有遊戲引擎的線索。')
-                : tr('這個資料夾看起來像遊戲或封裝程式，但無法確定是哪種引擎。')}
+                : tr('這個資料夾看起來像遊戲，但認不出是哪一種。')}
           </Text>
           <Text size="xs" c="dimmed">
             {row.boundary.tool ? tr('請確認它是工具還是遊戲：') : tr('請確認它是不是遊戲：')}
@@ -95,7 +92,7 @@ export function FolderBoundary({
               multiline
               maw={240}
               withArrow
-              label={tr('把這個資料夾當成遊戲主資料夾：資訊放在這一層，裡面的檔案受保護。')}
+              label={tr('確定是遊戲：顯示遊戲頁，裡面的檔案不會被改動。')}
             >
               <Button
                 size="xs"
@@ -115,7 +112,7 @@ export function FolderBoundary({
               <ul>
                 {/* The evidence is stored as the detector's zh-TW sentence; shown in the window's language. */}
                 {row.boundary.evidence.map((item, index) => (
-                  <li key={index}>{tr(item)}</li>
+                  <li key={index}>{evidenceText(item)}</li>
                 ))}
               </ul>
             </details>
@@ -216,8 +213,9 @@ export function FolderAdvanced({
                 <Button
                   color="orange"
                   onClick={() =>
-                    window.confirm(tr('確認是副本？原值保留並分配新 ID。')) &&
-                    void act({ action: 'copyIdentity', rowId: row.rowId })
+                    window.confirm(
+                      tr('確定這是複製出來的資料夾？兩邊的資料都保留，之後各自獨立。')
+                    ) && void act({ action: 'copyIdentity', rowId: row.rowId })
                   }
                 >
                   {tr('這筆是副本，另配新 ID')}
@@ -292,7 +290,7 @@ export function FolderAdvanced({
                     ? tr('移除此資料夾與底下所有資料夾的資訊與圖片（底下另一個專案的根目錄保留）')
                     : tr('移除此資料夾的資訊與圖片')}
                 {tr('；共')}
-                {cleanup.count} {tr('筆。未知檔案、離線與未連結副本不在範圍。')}
+                {cleanup.count} {tr('筆。認不得的檔案、沒接上的磁碟不會處理。')}
               </Alert>
               <div className="file-list">
                 {cleanup.paths.map((p) => (
@@ -306,8 +304,8 @@ export function FolderAdvanced({
               ))}
               {(cleanup.scope === 'folder' || cleanup.scope === 'tree') && (
                 <Checkbox
-                  label={tr('清除後立即重新開始記錄')}
-                  description={tr('預設停止記錄，避免下次掃描立即建立資料。')}
+                  label={tr('清除後繼續記錄這個資料夾')}
+                  description={tr('不勾的話，之後掃描也不會再幫這個資料夾建立資訊。')}
                   checked={restart}
                   onChange={(e) => setRestart(e.currentTarget.checked)}
                 />
@@ -346,7 +344,7 @@ export function FolderAdvanced({
               color={cleanupResult.failed.length ? 'orange' : 'teal'}
               title={tr('已清理 ') + cleanupResult.removed + tr(' 筆')}
             >
-              <Text size="sm">{tr('原始媒體保留。')}</Text>
+              <Text size="sm">{tr('你的檔案都還在。')}</Text>
               {[...cleanupResult.failed, ...cleanupResult.skipped].map((s, i) => (
                 <Text size="xs" key={i}>
                   {s}

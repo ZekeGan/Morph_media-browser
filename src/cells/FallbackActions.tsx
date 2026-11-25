@@ -118,7 +118,7 @@ export function FallbackActions({
           <Text size="xs" c="dimmed" role="status">
             {bound(shown.id)
               ? tr('預覽中的「{0}」使用：{1}', preview.name, label(shown.id))
-              : tr('預覽中的「{0}」沒有綁定任何一個動作', preview.name)}
+              : tr('預覽中的「{0}」一個動作都沒設定', preview.name)}
           </Text>
           <HelpTip
             text={[main, ...fallbacks]

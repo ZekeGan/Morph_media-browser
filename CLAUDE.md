@@ -25,7 +25,7 @@ M:orph：Windows 優先的資料夾檢視器（Electron＋React＋Vite，pnpm）
 
 - 最小必要修改、沿用現有風格；不加未要求的功能或抽象，不順手重構（另登記需求）。修錯先重現並找根因。
 - 規格寫目標，程式是現況，差距進需求清單；規格只寫現行規則，日期與理由寫進決策紀錄，未決選項寫 [OPEN_DECISIONS](docs/OPEN_DECISIONS.md)。新 UI 測試用 `tests/support/app.ts`。
-- 新增或修改的介面：同批補齊五種語系（`pnpm i18n add <檔案>`）；沿用三主題、圖示、控制尺寸與焦點樣式；純圖示控制要有 tooltip 與 `aria-label`。用 `pnpm shot` 看暗色寬窗與寬 900 窄窗；動到版型或樣式再加 `--theme glass`、`--theme paper`。
+- 新增或修改的介面：文字照 [UI_RULES 介面文字](docs/UI_RULES.md#介面文字) 的五條寫；同批補齊五種語系（`pnpm i18n add <檔案>`）；沿用三主題、圖示、控制尺寸與焦點樣式；純圖示控制要有 tooltip 與 `aria-label`。用 `pnpm shot` 看暗色寬窗與寬 900 窄窗；動到版型或樣式再加 `--theme glass`、`--theme paper`。
 - **長時間工作不能無聲卡住**：UI 測試一律經執行器（`pnpm test:ui:*`，或 `node scripts/run-ui-tests.mjs <名稱> [--repeat N]` 量偶發失敗，`--verbose` 顯示測試自己的輸出），不直接用 `tsx` 跑 UI 測試；其他可能很久的指令加 `timeout`。拆成小步驟、每步完成就回報，先說大概要多久；背景工作超過預估約兩倍（或 10 分鐘）還沒結束，就主動看輸出、回報卡在哪並停掉。驗證新測試在舊程式會失敗用 `pnpm verify:old <測試>`（在另一個 worktree 跑），不在工作目錄換回舊檔。
 - 含反斜線或跳脫字元的內容用檔案編輯工具或腳本檔寫入，不用 heredoc 或命令列拼接；格式化工具改到無關檔案時加進 `.prettierignore`。
 
@@ -34,9 +34,9 @@ M:orph：Windows 優先的資料夾檢視器（Electron＋React＋Vite，pnpm）
 1. 新增原始檔或改規格章節時，同批更新 [docs/areas.json](docs/areas.json) 並跑 `node scripts/areas.mjs readme`。
 2. 功能被取代或移除時，同批刪掉對應的程式、測試（含無障礙名稱）、語系文字與規格段落。
 3. 跑 `pnpm stale`，處理它點名的項目；改到的規格卡用 `pnpm item confirm <檔案> --refs R-…` 更新「最後確認」，已知限制用 `pnpm item confirm --limits <領域>`。
-4. 動到介面時跑 `pnpm test:ui:changed`（提交前）；失敗先分類（產品／測試／環境）再修。
+4. 動到介面時跑 `pnpm test:ui:changed`（提交前）；失敗先查 WORK_ITEMS 的已知限制與進行中需求，再分類（產品／測試／環境）再修。
 5. CHANGELOG 的 Unreleased 寫一行；`pnpm item review R-… --check "驗收步驟"` 移到「待查收」。
-6. 提交、推送；回報附 30 秒驗收清單、關鍵截圖與狀態區塊。
+6. 提交、推送；回報附 30 秒驗收清單、關鍵截圖、`pnpm i18n diff` 列出的新句子與狀態區塊。
 
 - **查收暫停**：待查收超過約 5 項或一個大主題結束時，先停下新功能，跑 `pnpm test:ui:smoke` 與 `pnpm test:ui:all`、檢查三主題與窄窗，再交查收清單。使用者確認後 `pnpm item accept R-…` 刪除那些需求；Unreleased 含新功能時主動建議發布。
 - **高風險審查**：資料寫入、身分、清理、遷移，以及安全邊界（IPC、路徑、外部程式、網路）的改動，提交前用獨立代理審查一次（只給該次差異與要查的風險）。

@@ -59,7 +59,7 @@ export async function detectGame(
       rel.split('/').filter(Boolean).length > GAME_PROBE_LIMITS.depth ||
       ++directoryCount > GAME_PROBE_LIMITS.directories
     )
-      throw new GameProbeLimit('遊戲邊界探測超限，請人工確認 ROOT')
+      throw new GameProbeLimit('檔案太多，判斷不完；請確認主資料夾')
     const target = path.join(dir, rel)
     await safePath(dir, target)
     const result = new Map<string, Entry>()
@@ -67,7 +67,7 @@ export async function detectGame(
       const handle = await fs.opendir(target)
       for await (const entry of handle) {
         if (++entryCount > GAME_PROBE_LIMITS.entries)
-          throw new GameProbeLimit('遊戲邊界探測超限，請人工確認 ROOT')
+          throw new GameProbeLimit('檔案太多，判斷不完；請確認主資料夾')
         result.set(entry.name.toLowerCase(), {
           name: entry.name,
           kind: entry.isSymbolicLink() ? 'link' : entry.isDirectory() ? 'dir' : 'file',
@@ -130,15 +130,12 @@ export async function detectGame(
         (await file('icudt.dll')) ||
         ((await file('libEGL.dll')) && (await file('libGLESv2.dll'))))
     if (nwRuntime)
-      add(
-        undefined,
-        'EXE + NW.js 資源／執行環境組合：可能為內嵌或封裝應用；引擎未知，暫停深入，請確認 ROOT／非遊戲'
-      )
+      add(undefined, 'EXE + NW.js 資源：可能是包裝過的程式，認不出引擎；請確認是不是遊戲')
     const unityRuntime = await file('UnityPlayer.dll'),
       unityData = (await Promise.all(stems.map((stem) => folder(stem + '_Data')))).some(Boolean)
     if (unityRuntime && unityData) add('Unity', '同名 EXE／*_Data + UnityPlayer.dll')
     else if (unityRuntime || unityData)
-      add(undefined, 'Unity 部署線索不完整或名稱不相符；先停止，請確認 ROOT／非遊戲')
+      add(undefined, 'Unity 的檔案不完整或名稱對不上；先停下，請確認是不是遊戲')
     if (
       (await Promise.all(stems.map((stem) => file(stem + '.pck')))).some(Boolean) &&
       !exes.every((e) => /godot.*(editor|tools)/i.test(e.name))
@@ -204,15 +201,15 @@ export async function detectGame(
           add(
             'TyranoScript',
             asar
-              ? '外層 EXE + resources/app.asar：package.json／index.html + Tyrano／KAG 核心 + Config.tjs + 劇本；ROOT 停在外層'
-              : '外層 EXE + resources/app：package.json／index.html + Tyrano／KAG 核心 + Config.tjs + 劇本；ROOT 停在外層'
+              ? '外層 EXE + resources/app.asar：package.json／index.html + Tyrano／KAG 核心 + Config.tjs + 劇本；主資料夾是外層'
+              : '外層 EXE + resources/app：package.json／index.html + Tyrano／KAG 核心 + Config.tjs + 劇本；主資料夾是外層'
           )
         else if (entry || asar)
           add(
             undefined,
             asar
-              ? '外層 EXE + resources/app.asar 解包應用候選；遊戲結構未完整確認，暫停深入'
-              : '外層 EXE + resources/app 解包應用候選；遊戲結構未完整確認，暫停深入'
+              ? '外層 EXE + resources/app.asar：像是拆開的包裝程式，結構還不確定，先停下'
+              : '外層 EXE + resources/app：像是拆開的包裝程式，結構還不確定，先停下'
           )
       }
     if ((await folder('renpy')) && (await folder('game'))) {
@@ -222,10 +219,13 @@ export async function detectGame(
           scripts = (await files('game/' + child.name, /\.(rpy|rpyc|rpa)$/i)).length > 0
       if (scripts) add('Ren’Py', 'renpy + game 腳本／封包 + EXE')
     }
-    if (await file('Data.wolf')) add('WOLF RPG', 'Data.wolf + EXE（候選）')
+    if (await file('Data.wolf')) add('WOLF RPG', 'Data.wolf + EXE（尚未確認）')
     else if ((await file('Data/BasicData/Game.dat')) && (await file('Data/BasicData/DataBase.dat')))
-      add('WOLF RPG', 'EXE + 同一 Data/BasicData 的 Game.dat／DataBase.dat（未封包或混合封包候選）')
-    if (await file('data.win')) add('GameMaker', 'data.win + EXE（候選；YYC 需人工確認）')
+      add(
+        'WOLF RPG',
+        'EXE + 同一 Data/BasicData 的 Game.dat／DataBase.dat（未封包或混合封包，尚未確認）'
+      )
+    if (await file('data.win')) add('GameMaker', 'data.win + EXE（尚未確認；YYC 版要自己確認）')
     if ((await file('game.arcd')) && (await file('game.arci')))
       add('Defold', '成對 game.arcd／game.arci + EXE')
     if ((await file('love.dll')) && (await files('', /\.love$/i)).length)
@@ -268,7 +268,7 @@ export async function detectGame(
       (await files('', /\.(hdi|fdi|d88|nhd|hdm|nfd)$/i)).length > 0
     )
       add('PC-98 模擬器', 'Neko Project II 類執行檔 + 磁碟映像（PC-98 遊戲收藏）')
-    if (await file('www/c2runtime.js')) add('Construct', 'c2runtime.js + EXE（候選）')
+    if (await file('www/c2runtime.js')) add('Construct', 'c2runtime.js + EXE（尚未確認）')
     if ((await files('', /\.xp3$/i)).length)
       add('KiriKiri', 'XP3 + EXE（可能為補丁／工具，需確認）')
     // Japanese visual-novel engines: each needs its own runtime/launcher name or archive set next to an EXE.
@@ -355,33 +355,30 @@ export async function detectGame(
       hasFile(/^(hspext|hspda|hspogg|hspinet|hspsock|hspdx|hgimg3|hgimg4|hspcmp)\.dll$/i)
     )
       add('HSP', 'DPMX 封包或 HSP 外掛 DLL + EXE（Hot Soup Processor）')
-    if (hasFile(/\.swf$/i)) add('Flash', '.swf + EXE（Flash Projector 候選）')
+    if (hasFile(/\.swf$/i)) add('Flash', '.swf + EXE（可能是 Flash Projector，尚未確認）')
     if ((await files('GameData', /\.pack$/i)).length) add('QLIE', 'GameData 內的 .pack 封包 + EXE')
     if (hasExe(/^malie/i) || (await signed(/\.lib$/i, 'LIB')))
       add('Malie', 'malie*.exe 或 LIB 封包 + EXE')
     if (await signed(/\.noa$/i, 'Entis\x1a')) add('Entis GLS／Cotopha', 'Entis NOA 封包 + EXE')
     if ((await signed(/\.bin$/i, 'ESC-ARC')) || (await signed(/\.bin$/i, 'ACPXPK01')))
       add('Escu:de', 'ESC-ARC／ACPXPK01 封包 + EXE')
-    if (await file('resident.dll')) add('ExHIBIT', 'resident.dll + EXE（候選）')
+    if (await file('resident.dll')) add('ExHIBIT', 'resident.dll + EXE（尚未確認）')
     if (hasFile(/\.vndat$/i)) add('Light.vn', '.vndat 封包 + EXE')
     if (await signed(/\.arc$/i, 'MajiroArcV')) add('Majiro', 'MajiroArc 封包 + EXE')
     if (hasFile(/\.hcb$/i)) add('FVP', '.hcb 腳本 + EXE（Favorite View Point）')
     if (hasExe(/^player\.exe$/i) && (await folder('Resources')))
       add(
         undefined,
-        'Player.exe + Resources：Pixel Game Maker MV 候選；公開資料不足，引擎未推定，請確認 ROOT'
+        'Player.exe + Resources：可能是 Pixel Game Maker MV，資料不足無法確定；請確認是不是遊戲'
       )
     if (packedApp && !tyranoPacked)
-      add(
-        undefined,
-        'EXE + resources/app.asar：封裝應用候選，不解包或推定引擎；請確認遊戲 ROOT 或標記非遊戲'
-      )
+      add(undefined, 'EXE + resources/app.asar：像是包裝過的程式，不拆開判斷；請確認是不是遊戲')
     // Last resort for store releases of unknown engines: never overrides a specific engine rule.
     if (
       !result.evidence.length &&
       ((await file('steam_api.dll')) || (await file('steam_api64.dll')))
     )
-      add(undefined, 'EXE + steam_api*.dll：Steam 發行版候選；引擎未確認，請確認 ROOT／非遊戲')
+      add(undefined, 'EXE + steam_api*.dll：可能是 Steam 上的遊戲，認不出引擎；請確認是不是遊戲')
   }
   // A Java game is a .jar with a launcher: an EXE wrapper, a .bat/.cmd script or a bundled JRE.
   if (
@@ -391,7 +388,7 @@ export async function detectGame(
       [...root.values()].some((e) => e.kind === 'file' && /\.(bat|cmd)$/i.test(e.name)) ||
       (await folder('jre')))
   )
-    add('Java', '.jar + EXE／.bat／jre 啟動方式（候選）')
+    add('Java', '.jar + EXE／.bat／jre 啟動方式（尚未確認）')
   async function unreal(base: string) {
     if (!(await folder(base + 'Binaries/Win64')) || !(await folder(base + 'Content/Paks')))
       return false
@@ -454,7 +451,7 @@ export async function detectGame(
       )
         deployments.push(child.name)
     if (deployments.length) {
-      add(undefined, '跨層 Unreal 部署與啟動器名稱不相符，可能為改名遊戲或集合；需人工確認 ROOT')
+      add(undefined, 'Unreal 的檔案和啟動程式名稱對不上，可能是改過名的遊戲或合集；請確認主資料夾')
       for (const name of deployments) add(undefined, name + '/')
     }
   }
@@ -502,7 +499,7 @@ export async function detectGame(
       signs = await toolSigns('')
       if (!signs.length && !exes.length && (await folder('bin'))) {
         signs = await toolSigns('bin/')
-        if (signs.length) signs.unshift('程式在 bin/ 內；ROOT 停在外層')
+        if (signs.length) signs.unshift('程式在 bin/ 內；主資料夾是外層')
       }
     } catch {
       signs = []

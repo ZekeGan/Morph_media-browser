@@ -186,7 +186,7 @@ export class Library {
     root = await fs.realpath(root)
     const protectedBy = await this.protectedAncestor(root)
     if (protectedBy)
-      throw new Error(fmt('此位置受遊戲／App 邊界保護，請選擇外層資料夾：{0}', protectedBy))
+      throw new Error(fmt('這裡在受保護的遊戲或 App 裡面，請選擇外層資料夾：{0}', protectedBy))
     const p: Project = {
       kind: 'media-viewer.project',
       schemaVersion: 4,
@@ -257,9 +257,9 @@ export class Library {
       if (!(await exists(`${folderFile(root)}.bak`))) {
         if (missing(error))
           throw new Error(
-            '此位置沒有可重新連結的根記錄或備份；若專案已移除或清理，請重新新增專案，封存設定不會自動還原'
+            '這裡沒有可以重新連結的專案資訊或備份；如果專案已移除或清理，請重新新增專案，之前的設定不會自動還原'
           )
-        throw new Error(fmt('根記錄無法讀取且沒有復原備份；原檔保留：{0}', message(error)))
+        throw new Error(fmt('專案資訊讀不出來，也沒有可復原的備份；原檔保留：{0}', message(error)))
       }
       const backup = await readJson(`${folderFile(root)}.bak`)
       validateFolder(backup)
@@ -292,7 +292,7 @@ export class Library {
         throw new Error('同一專案的原根仍存在；若是搬移，先取消舊連結後再連結新位置')
       found.push(p)
     }
-    if (!found.length) throw new Error('此根沒有可攜專案設定；可新增專案讀取子資料夾原值')
+    if (!found.length) throw new Error('這個資料夾沒有專案設定；可以新增專案來讀取底下資料夾的資訊')
     for (const p of found)
       this.refs = [
         ...this.refs.filter((r) => r.projectId !== p.projectId),
@@ -425,7 +425,7 @@ export class Library {
       }
     }
     if (await this.protectedAncestor(linked.root))
-      throw new Error('專案位於遊戲／App 邊界內，無法修改設定')
+      throw new Error('專案在受保護的遊戲或 App 裡面，不能修改設定')
     if (
       next.rootFolderId !== current.rootFolderId ||
       JSON.stringify(next.excludedRelativePaths) !== JSON.stringify(current.excludedRelativePaths)
@@ -461,7 +461,7 @@ export class Library {
       root = this.linked(row.projectId).root
     await safePath(root, row.path)
     if (writable && (insideAppBundle(row.path) || (await this.protectedAncestor(row.path))))
-      throw new Error('此位置受遊戲／App 邊界保護，無法寫入')
+      throw new Error('這裡在受保護的遊戲或 App 裡面，不能寫入')
     if (row.record) {
       const current = await readFolder(row.path)
       if (current.folderId !== row.record.folderId)
@@ -479,7 +479,7 @@ export class Library {
       row.duplicate ||
       (await this.protectedAncestor(row.path))
     )
-      throw new Error('此資料夾尚未建立有效記錄或受遊戲邊界保護')
+      throw new Error('這個資料夾還沒有資訊，或在受保護的遊戲裡面')
     return row
   }
   async refreshRecord(rowId: string) {
@@ -507,12 +507,12 @@ export class Library {
     ])
     for (const [attributeId, value] of Object.entries(values)) {
       if (p.fieldBindings.some((f) => f.attributeId === attributeId && f.type !== 'string'))
-        throw new Error('欄位型別不符，不自動轉換')
+        throw new Error('欄位格式不符，不自動轉換')
       if (!allowed.has(attributeId) || typeof value !== 'string' || value.length > 10000)
         throw new Error('文字欄位不合法或超過 10,000 字')
       const old = record.attributes.find((a) => a.attributeId === attributeId)
       // A date saved before the field became text is replaced by the text (R-240); other types are never converted.
-      if (old && !dateOrText(old.type, 'string')) throw new Error('欄位型別不符，不自動轉換')
+      if (old && !dateOrText(old.type, 'string')) throw new Error('欄位格式不符，不自動轉換')
       if (!old && !value) continue
       record.attributes = [
         ...record.attributes.filter((a) => a.attributeId !== attributeId),
@@ -574,7 +574,7 @@ export class Library {
   async resume(rowId: string) {
     const row = this.row(rowId)
     if (row.readonly || (await this.protectedAncestor(row.path)))
-      throw new Error('此資料夾受遊戲／App 邊界保護')
+      throw new Error('這個資料夾在受保護的遊戲或 App 裡面')
     for (const linked of this.state.projects)
       if (linked.project && !linked.error && within(linked.root, row.path)) {
         const p = await this.currentProject(linked),
@@ -595,7 +595,7 @@ export class Library {
     const row = await this.checkedRow(rowId),
       record = await readFolder(row.path)
     if (row.readonly || (await this.protectedAncestor(row.path)))
-      throw new Error('此資料夾受遊戲／App 邊界保護')
+      throw new Error('這個資料夾在受保護的遊戲或 App 裡面')
     if (!row.duplicate) throw new Error('此項不是重複 ID')
     if (this.refs.some((r) => keyPath(r.root) === keyPath(row.path)))
       throw new Error('副本本身是專案根；先取消此根專案連結，再於父專案處理副本')

@@ -46,7 +46,7 @@ export function libraryDispatcher({ library, workspace, window, text: nt }: Disp
   async function chosenRoot(rootToken: string | undefined) {
     const choice = rootToken ? rootChoices.get(rootToken) : undefined
     if (rootToken && (!choice || choice.expires < Date.now()))
-      throw new Error('資料夾選擇已失效，請重新選擇')
+      throw new Error('資料夾選擇已過期，請重新選擇')
     return choice?.path ?? (await selectFolder())
   }
 

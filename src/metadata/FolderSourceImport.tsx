@@ -387,7 +387,7 @@ export function FolderSourceImport({
               )}
               {!found.list.length && (
                 <Text size="xs" c="dimmed">
-                  {tr('沒有找到候選，可以改個名稱再搜尋，或直接貼上網址。')}
+                  {tr('沒有找到結果，可以改個名稱再搜尋，或直接貼上網址。')}
                 </Text>
               )}
               <ul>
@@ -501,7 +501,7 @@ export function FolderSourceImport({
         <Checkbox
           label={
             <HelpLabel
-              label={tr('覆寫已填來源欄位')}
+              label={tr('更新已從網站匯入的欄位')}
               help={tr('勾選後，網站的新資料會取代舊的；你自己填的不會被改。')}
             />
           }
@@ -513,7 +513,7 @@ export function FolderSourceImport({
         <section className="settings-section source-preview">
           <Group align="start">
             {preview.image && (
-              <img className="metadata-cover" src={preview.image} alt={tr('候選封面')} />
+              <img className="metadata-cover" src={preview.image} alt={tr('可選的封面')} />
             )}
             <div>
               <Text fw={600}>{preview.title}</Text>
@@ -581,13 +581,13 @@ export function FolderSourceImport({
           )}
           <Text size="sm" c="dimmed" my="sm">
             {preview.provider === 'steam'
-              ? tr('發售日保留 Steam 商店顯示的日期，不推定為作品首次發行日。')
-              : tr('日期依來源保留，不推定為作品首次發行日。')}
+              ? tr('日期照 Steam 上寫的，不一定是作品第一次發行的日子。')
+              : tr('日期照網站上寫的，不一定是作品第一次發行的日子。')}
             {/* Attribution the sources' terms ask for. */}
             {preview.provider === 'tmdb' &&
               ' ' + tr('本產品使用 TMDB API，但未經 TMDB 認可或認證。')}
             {preview.provider === 'fanza' && ' Powered by FANZA Webサービス'}
-            {tr('預設只填空值；人工欄位保持原樣。')}
+            {tr('只補空白的欄位；你自己填的不會被改。')}
           </Text>
           <table className="source-diff">
             <thead>

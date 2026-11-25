@@ -16,7 +16,7 @@ export async function writeSettingsFile(file: string, value: SettingsPackage) {
     if (!missing(error)) throw error
   })
   if (stat && (!stat.isFile() || stat.size > 4 * 1024 * 1024))
-    throw new Error('既有檔案不是設定包，未覆寫')
+    throw new Error('既有檔案不是設定包，沒有取代')
   const old = stat ? await fs.readFile(file) : undefined
   if (old) importSettings(JSON.parse(old.toString('utf8')))
   const temporary = file + '.' + randomUUID() + '.tmp'
@@ -33,7 +33,7 @@ export async function writeSettingsFile(file: string, value: SettingsPackage) {
     const now = await fs.readFile(file).catch((error) => {
       if (!missing(error)) throw error
     })
-    if (old ? !now || !old.equals(now) : !!now) throw new Error('設定包在匯出期間已改變，未覆寫')
+    if (old ? !now || !old.equals(now) : !!now) throw new Error('設定包在匯出時有變動，沒有取代')
     if (old) await fs.writeFile(file + '.' + randomUUID() + '.bak', old, { flag: 'wx' })
     await fs.rename(temporary, file)
   } finally {

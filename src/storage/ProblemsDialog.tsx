@@ -131,7 +131,7 @@ export function ProblemsDialog({
           </Alert>
         )}
         {group(
-          tr('專案位置失效'),
+          tr('找不到專案位置'),
           tr('資料夾被移動或刪除，專案找不到它。指回新的位置即可，原有設定與資料都在。'),
           roots.map((p: LinkedProject) =>
             entry(
@@ -157,9 +157,7 @@ export function ProblemsDialog({
         )}
         {group(
           tr('重複的資料夾 ID'),
-          tr(
-            '這些資料夾像是被複製出來的，和另一個資料夾共用同一個身分。另配新 ID 後兩者各自獨立。'
-          ),
+          tr('這些資料夾看起來是複製出來的，被當成和另一個是同一個。分開後兩者各自獨立。'),
           duplicates.map((row) =>
             rowEntry(
               row,
@@ -168,7 +166,9 @@ export function ProblemsDialog({
                 color="orange"
                 disabled={busy}
                 onClick={() => {
-                  if (window.confirm(tr('確認是副本？原值保留並分配新 ID。')))
+                  if (
+                    window.confirm(tr('確定這是複製出來的資料夾？兩邊的資料都保留，之後各自獨立。'))
+                  )
                     void act({ action: 'copyIdentity', rowId: row.rowId })
                 }}
               >
@@ -284,7 +284,7 @@ export function ProblemsDialog({
               </Accordion.Control>
               <Accordion.Panel>
                 <Text size="xs" c="dimmed" mb="xs">
-                  {tr('這些是遊戲資料夾，資料夾內部不寫入')}
+                  {tr('這些是遊戲資料夾，資料夾內部不寫入。')}
                 </Text>
                 <Stack gap={6}>
                   {notes.map((text, index) => {

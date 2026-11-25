@@ -21,7 +21,8 @@
 | `node scripts/run-ui-tests.mjs <名稱> --verbose` | 照常跑，另外顯示測試自己印出的內容（除錯用）。平常的輸出只有建置是否完成、每個測試的結果，失敗時是錯誤訊息、停在測試哪一行、頁面訊息與截圖位置 |
 | `node scripts/run-ui-tests.mjs <名稱> --repeat N` | 指定的 UI 測試各跑 N 次、不重試，量偶發失敗；每次都有逾時與 Electron 清理。要連跑測試一律用這個，不手寫迴圈直接 `tsx` |
 | `pnpm item add／approve／start／review／accept／confirm` | 需求清單的例行修改：登記（自動取下一個編號、檢查領域）、移到各節、移到待查收並寫驗收步驟、刪除已查收的；`confirm` 把規格卡或已知限制的「最後確認」改成今天。不帶參數印用法 |
-| `pnpm i18n add <檔案.json>` | 一次加入五種語系的介面文字；檢查每種語言都有、`{0}` 佔位符一致，已有的句子要加 `--force` 才取代 |
+| `pnpm i18n add <檔案.json>` | 一次加入五種語系的介面文字；檢查每種語言都有、`{0}` 佔位符一致，用到禁用詞的句子不收（R-515），已有的句子要加 `--force` 才取代 |
+| `pnpm i18n diff [ref]` | 列出相對 ref（預設 origin/main，即這批還沒推送的部分）新增、改翻譯與移除的介面文字，新句子附使用位置；每批收尾貼進回報 |
 | `pnpm verify:old <測試> [--ref <提交>]` | 在 `.test-output` 另開 git worktree，用目前的測試跑舊版程式（預設上一次提交），證明新測試抓得到舊錯誤；工作目錄不動，結束後移除 worktree（`node_modules` 以連結共用，先拆連結再刪） |
 | `pnpm status`（`--short`） | 依 [需求清單](WORK_ITEMS.md) 印出每次回覆結尾的狀態區塊 |
 | `pnpm stale` | 收尾時點名可能過時的內容：領域登錄表缺漏、程式在「最後確認」之後改過的規格卡、文件提到不存在的檔案、沒有程式使用的語系文字、清單殘留的完成項目、規格裡的「待實作」與過大的規格；只提示不阻擋（`--strict` 才失敗） |
@@ -68,7 +69,7 @@
 
 每次發行必做，文案契約由 [UI_RULES](UI_RULES.md#文案與語系一致性) 持有。一般開發先局部同步；發行前以版本相對上次發行的完整改動為範圍核對，另補既有未受檢查覆蓋的介面，不只看最後一次 commit。
 
-1. 自動檢查（每次提交都跑）：`appearance.test.ts` 確認每個經過 tr() 的字串有五語系且佔位符一致（遞迴掃 src）；`scripts/check-i18n.mjs` 擋下畫面上不經 tr() 的中文，以及主程序新增、沒有翻譯鍵的訊息（主程序訊息以整句比對翻譯；帶數值的句子用 `shared/message.ts` 的 `fmt('…{0}…', 值)` 送出，畫面翻譯整句後再填值，紀錄與測試用 `plainMessage()` 取回繁中原句）；`pnpm stale` 點名沒有程式使用的翻譯。主程序既有缺口列在 `scripts/i18n-baseline.json`，翻譯或移除後用 `--update-baseline` 更新，只能變少。
+1. 自動檢查（每次提交都跑）：`appearance.test.ts` 確認每個經過 tr() 的字串有五語系且佔位符一致（遞迴掃 src）；`scripts/check-i18n.mjs` 擋下畫面上不經 tr() 的中文，以及主程序新增、沒有翻譯鍵的訊息（主程序訊息以整句比對翻譯；帶數值的句子用 `shared/message.ts` 的 `fmt('…{0}…', 值)` 送出，畫面翻譯整句後再填值，紀錄與測試用 `plainMessage()` 取回繁中原句）；`pnpm stale` 點名沒有程式使用的翻譯。主程序既有缺口列在 `scripts/i18n-baseline.json`，翻譯或移除後用 `--update-baseline` 更新，只能變少。同一支檢查也擋下用到禁用詞（`scripts/text-rules.mjs`，見 [UI_RULES](UI_RULES.md#介面文字)）的新句子；既有的在 `scripts/wording-baseline.json`，改好後用 `--update-wording` 更新，只能變少。
 2. 發行時人工抽查：用英文與日文截本版新增／改動的畫面，看截斷、換行、殘留中文與 Tooltip；資料名稱與使用者內容不得被翻譯。用受控資料，不操作實際收藏。
 3. 收尾只在 WORK_ITEMS 保留未解差距與必要證據入口，不另產翻譯報告；缺漏或顯示問題未解時，發行驗收不得標為通過，未測情境明列限制。
 

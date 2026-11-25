@@ -145,7 +145,7 @@ export function validateWorkspace(v: unknown): asserts v is WorkspacePrefs {
         p.addedOrder < v.nextOrder
     )
   )
-    throw new Error('側欄群組或專案引用不合法')
+    throw new Error('側欄群組或專案的資料不正確')
   if (v.collapsed.unclassified !== undefined && typeof v.collapsed.unclassified !== 'boolean')
     throw new Error('未分類設定不合法')
   if (
@@ -556,7 +556,7 @@ export class WorkspaceStore {
             plan.revision !== this.prefs.revision ||
             !['merge', 'replace'].includes(command.mode)
           )
-            throw new Error('設定匯入預覽已失效，請重新預覽')
+            throw new Error('設定匯入預覽已過期，請重新預覽')
           const imported = mergeSettings(next, plan.prefs, command.mode)
           this.sync(imported, ids)
           validateWorkspace(imported)

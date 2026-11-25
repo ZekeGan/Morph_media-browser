@@ -118,10 +118,30 @@ try {
       (c) => c.textContent?.includes('Empty') && c.textContent.split('沒有圖片').length === 4
     )
   )
+  // R-509: the Images tab shows the cover the folder really gets and where it comes from, then the layout's other
+  // image components with the picture they get when none is chosen; the cover component is not listed again.
+  await card('Pictures').locator('.cell-name').click()
+  await page.getByRole('tab', { name: /^設定/ }).click()
+  await page.getByRole('tab', { name: '圖片', exact: true }).click()
+  const cover = page.locator('.image-cover')
+  await cover.getByText('自動：資料夾裡的圖片或音樂封面', { exact: true }).waitFor()
+  await cover.locator('.image-thumb-auto').waitFor()
+  const others = page.locator('.image-others')
+  await others.getByText('版面上的其他圖片', { exact: true }).waitFor()
+  assert.equal(
+    await others.locator('.image-slot').count(),
+    2,
+    'n-th components listed, cover component not'
+  )
+  await others.getByText('卡片的圖片 1', { exact: true }).waitFor()
+  await others.getByText('沒選圖時：資料夾裡第 2 張圖', { exact: true }).waitFor()
+  // The second image exists and is shown as automatic; there is no third, so that slot offers a choice instead.
+  await others.locator('.image-slot').first().locator('.image-thumb-auto').waitFor()
+  await others.locator('.image-slot').nth(1).getByText('選擇圖片', { exact: true }).waitFor()
   assert.deepEqual(errors, [])
   passed = true
   console.log(
-    'PASS image cell by position and folder cover: n-th image, first image as cover, missing image placeholder. ' +
+    'PASS image cell by position and folder cover: n-th image, first image as cover, missing image placeholder, images tab (R-509). ' +
       root
   )
 } catch (error) {

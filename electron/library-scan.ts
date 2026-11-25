@@ -50,7 +50,7 @@ export async function scan(ex: Library) {
     try {
       linked.project = await ex.currentProject(linked)
       if (await ex.protectedAncestor(ref.root))
-        throw new Error('專案位於遊戲／App 保護邊界內；資料保留，請改用外層專案')
+        throw new Error('專案在受保護的遊戲或 App 裡面；資料保留，請改用外層的專案')
       const rootRecord = await readFolder(ref.root)
       if (rootRecord.folderId !== linked.project.rootFolderId)
         throw new Error('根資料夾身分已改變，請重新連結')
@@ -126,7 +126,7 @@ export async function scan(ex: Library) {
           problems.push(
             isNewerFormat(e)
               ? fmt('{0}: 含較新版本的資料，唯讀且不深入', dir)
-              : fmt('{0}: 無法確認邊界，停止此分支：{1}', dir, probeError)
+              : fmt('{0}：無法確認是不是遊戲，這裡先不往下掃：{1}', dir, probeError)
           )
           progress.errors++
           progress.visited++
@@ -177,7 +177,7 @@ export async function scan(ex: Library) {
       if (!row.structural) rows.push(row)
       if (probeError) return []
       if (insideAppBundle(dir)) {
-        problems.push(fmt('{0}: 受 App 邊界保護，唯讀且不深入', dir))
+        problems.push(fmt('{0}：在 App 裡面，受保護，不往下讀', dir))
         return []
       }
       if (boundary) {
@@ -285,7 +285,7 @@ export async function visit(ex: Library, rowId: string) {
         within(r.path, row.path)
     )
   )
-    throw new Error('此資料夾受遊戲邊界保護，無法建立資料')
+    throw new Error('這是遊戲裡面的資料夾，受保護，不能加資訊')
   if (row.stopped) throw new Error('此資料夾尚未建立資料或已停止記錄')
   let record: FolderRecord
   try {

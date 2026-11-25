@@ -209,7 +209,8 @@ export class Explorer {
   async record(rowId: string, revision: number) {
     const row = await this.library.checkedRow(rowId, true),
       record = await readFolder(row.path)
-    if (record.revision !== revision) throw new Error('版本衝突；草稿保留，重新載入後比較')
+    if (record.revision !== revision)
+      throw new Error('版本衝突；還沒保存的修改保留，重新載入後比較')
     return { row, record }
   }
   async details(
@@ -323,10 +324,10 @@ export class Explorer {
     if (!key(a.attributeId) || typeof a.key !== 'string' || a.key.length > 100)
       throw new Error('欄位身分不合法')
     const valid = validFieldValue(a.type, a.value)
-    if (!valid) throw new Error(fmt('欄位 {0} 的值與型別 {1} 不符', a.key, a.type))
+    if (!valid) throw new Error(fmt('欄位 {0} 的值與格式 {1} 不符', a.key, a.type))
     const old = record.attributes.find((v) => v.attributeId === a.attributeId)
     if (old && old.type !== a.type && !dateOrText(old.type, a.type))
-      throw new Error('不能改變既有欄位型別')
+      throw new Error('不能改變既有欄位的格式')
   }
   async attributes(rowId: string, revision: number, values: Attribute[], privateValues: boolean) {
     if (
@@ -354,7 +355,7 @@ export class Explorer {
       // A value is saved with the type it already has, or with the project's type for the field: a field switched
       // between text and date saves new values with its current type (R-240).
       if (!binding || (binding.type !== value.type && defined?.type !== value.type))
-        throw new Error('欄位未配置或型別不符')
+        throw new Error('欄位不存在或格式不符')
       if (
         value.type === 'enum' &&
         !validFieldValue(
@@ -366,7 +367,7 @@ export class Explorer {
         throw new Error('單選值不在選項內')
       const old = target.find((a) => a.attributeId === value.attributeId)
       if (old && old.type !== value.type && !dateOrText(old.type, value.type))
-        throw new Error('覆寫型別不符')
+        throw new Error('只在這個專案的值格式不符')
       const a = {
         ...value,
         key: binding.key ?? ('alias' in binding ? binding.alias : ''),
@@ -503,7 +504,7 @@ export class Explorer {
         }
       case 'rebuildIndex':
         this.index.sync(this.library.snapshot(), true)
-        return { notice: { level: 'success', message: '索引已由可攜資料重建' } }
+        return { notice: { level: 'success', message: '索引已依資料夾資訊重建' } }
       case 'content':
         return { content: await this.content(req.rowId, req.limit, req.cursor, req.sort) }
       case 'attributes':
@@ -547,7 +548,7 @@ export class Explorer {
               if (!Array.isArray(req.value)) throw new Error('標籤應為清單')
               const old =
                 record.attributes.find((a) => a.attributeId === field.attributeId)?.value ?? []
-              if (!Array.isArray(old)) throw new Error('型別衝突')
+              if (!Array.isArray(old)) throw new Error('格式衝突')
               value =
                 req.mode === 'add'
                   ? [...new Set([...old, ...req.value])]
@@ -682,7 +683,7 @@ export class Explorer {
           !['root', 'candidate', 'not-game'].includes(req.state) ||
           (req.tool !== undefined && typeof req.tool !== 'boolean')
         )
-          throw new Error('邊界設定不合法')
+          throw new Error('遊戲保護設定不正確')
         const detected = (await this.library.checkedRow(req.rowId)).boundary
         await this.details(req.rowId, req.revision, (d) => {
           d.boundary = {
@@ -816,7 +817,7 @@ export class Explorer {
           template = gameActionTemplates(p).find((t) => t.id === req.templateId),
           target = record.details?.targets?.[req.templateId]
         if (!template || !target || template.kind !== target.kind)
-          throw new Error('任務尚未綁定；請重新指定')
+          throw new Error('任務還沒設定；請重新指定')
         if (target.kind === 'url') {
           if (!httpUrl(target.path) || !this.desktop.external) throw new Error('網址無法開啟')
           await this.desktop.external(target.path)
@@ -856,7 +857,7 @@ export class Explorer {
               this.desktop.played?.(folderId, started, ended)
             )
           } else {
-            if (!target.application) throw new Error('應用程式尚未綁定')
+            if (!target.application) throw new Error('還沒選應用程式')
             const application = await this.resolvedTarget(row.path, target.application, 'exe')
             await this.desktop.launch(application, [...target.args, file])
           }

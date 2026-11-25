@@ -87,7 +87,7 @@ export function ProjectSettings({
                 onClick={() => {
                   if (
                     window.confirm(
-                      tr('擴大掃描全部層級？只在允許的資料夾建立資訊，遊戲保護與清除排除仍然有效。')
+                      tr('改成掃描所有層的資料夾？遊戲裡面和你清除過的資料夾仍然不會碰。')
                     )
                   )
                     change({ ...project, scanAll: true })
@@ -169,7 +169,7 @@ export function ProjectSettings({
                       onChange={(event) => setAlsoShared(event.currentTarget.checked)}
                       label={tr('也刪除這些資料夾裡 M:orph 建立的其他資訊')}
                       description={tr(
-                        '包含各專案共用的資訊、遊戲判斷，以及之前從清單移除的專案；也使用這些資料夾的專案會失去這些資訊。只檢查目前已連結的專案。'
+                        '連各專案共用的資訊、遊戲判斷、以前從清單移除的專案也一起刪。其他用到這些資料夾的專案會少掉這些資訊。'
                       )}
                     />
                     {alsoShared && (

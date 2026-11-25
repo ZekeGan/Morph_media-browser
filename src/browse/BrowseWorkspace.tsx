@@ -618,7 +618,7 @@ function BrowseWorkspaceBody({
     else
       notify(
         detail.boundary
-          ? tr('此資料夾受遊戲邊界保護，無法建立資料')
+          ? tr('這是遊戲裡面的資料夾，受保護，不能加資訊')
           : tr('此資料夾尚未建立資料，請先明確重新掃描')
       )
   }

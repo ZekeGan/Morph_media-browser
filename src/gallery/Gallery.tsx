@@ -807,6 +807,8 @@ export function Gallery({
           <Reader
             images={images}
             start={reader}
+            // R-517: a picked picture opens there and only offers the saved page.
+            resume={false}
             manga={manga}
             prefs={prefs}
             save={save}

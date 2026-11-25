@@ -371,7 +371,7 @@ function FieldDetail({
             </Button>
           </Tooltip>
           {source?.shared === false && source.private && ' · ' + tr('專案私有')}
-          {source?.shared && source.private && ' · ' + tr('有專案覆寫')}
+          {source?.shared && source.private && ' · ' + tr('有只在這個專案的資訊')}
         </dd>
         <dt>{tr('資料')}</dt>
         <dd>
@@ -501,11 +501,11 @@ function FieldDetail({
             disabled={source?.conflict}
             onClick={() => reference(binding)}
           >
-            {tr('只引用欄位')}
+            {tr('只用到欄位')}
           </Button>
           {source?.conflict && (
             <Text size="xs" c="orange">
-              {tr('同一欄位的型別不一致，請先處理資料衝突')}
+              {tr('這個欄位有的資料夾存成文字、有的存成日期，請先到「管理欄位」統一')}
             </Text>
           )}
           {source?.conflict && (
@@ -659,7 +659,7 @@ function GroupDetail({
         />
       </div>
       <Text size="xs" c="dimmed">
-        {tr('依順序顯示第一個有值的欄位；個別資料夾可在資料夾設定指定來源。')}
+        {tr('顯示第一個有填的；個別資料夾可以在資料夾設定裡指定用哪一個。')}
       </Text>
       <div className="field-detail-part">
         <Text size="sm" fw={600}>

@@ -268,7 +268,7 @@ test('failed initialization beside archives preserves them and leaves a recovera
       return rename(source, target)
     }
   )
-  await assert.rejects(ensureFolder(p1, false), /建立可攜記錄失敗/)
+  await assert.rejects(ensureFolder(p1, false), /建立資料夾資訊失敗/)
   assert.equal(await exists(folderFile(p1)), false)
   assert.deepEqual(await fs.readFile(archive), bytes)
   t.mock.restoreAll()

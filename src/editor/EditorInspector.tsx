@@ -603,7 +603,7 @@ export function EditorInspector(props: EditorInspectorProps) {
                     {selectedCell.kind === 'field-enum' && selectedCell.attributeId && (
                       <div className="inspector-options-link">
                         <Text size="xs" c="dimmed">
-                          {tr('選項在管理欄位設定')}
+                          {tr('選項到「管理欄位」修改')}
                         </Text>
                         <Button
                           size="compact-xs"
@@ -693,7 +693,7 @@ export function EditorInspector(props: EditorInspectorProps) {
                         </>
                       ) : (
                         <Text size="sm" c="orange">
-                          {tr('尚無可用的啟動動作，請先在遊戲操作新增。')}
+                          {tr('還沒有可用的動作，請先在版面編輯器的「啟動遊戲」新增。')}
                         </Text>
                       ))}
                     {selectedCell.kind === 'image' && (
@@ -725,7 +725,7 @@ export function EditorInspector(props: EditorInspectorProps) {
                         />
                         {(selectedCell.imageCover || selectedCell.imageRole) && (
                           <Text size="xs" c="dimmed">
-                            {tr('資料夾指定的封面；沒有指定時用資料夾內第一張圖片。')}
+                            {tr('顯示資料夾封面；要換到資料夾設定 › 圖片。')}
                           </Text>
                         )}
                         {selectedCell.imageIndex && (

@@ -112,7 +112,7 @@ test('shortcut actions are chosen from the folder, opened through the system and
   )
   await assert.rejects(
     explorer.request({ action: 'runTarget', rowId: row().rowId, templateId: 'le' }),
-    /尚未綁定/
+    /還沒設定/
   )
   const bind = (shortcut: unknown, args: string[] = []) =>
     explorer.request({

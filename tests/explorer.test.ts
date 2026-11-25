@@ -162,7 +162,7 @@ test('typed attributes, explicit private override, stale revision and partial ba
       values: [{ ...attrs[1], value: 'bad' }],
       private: false,
     }),
-    /型別/
+    /格式/
   )
   const result = await explorer.request({
     action: 'batch',
@@ -957,7 +957,7 @@ test('paged contents show an ordered first batch, remain row-bound and recheck c
       depth: { mode: 'through', level: 1 },
     }),
     otherId = other.rows.find((r) => r.projectId !== row.projectId)!.rowId
-  await assert.rejects(explorer.content(otherId, 96, first.nextCursor), /已失效/)
+  await assert.rejects(explorer.content(otherId, 96, first.nextCursor), /已過期/)
   const outside = path.join(root, 'outside')
   await fs.mkdir(outside)
   await fs.writeFile(path.join(outside, 'secret.txt'), 'KEEP')

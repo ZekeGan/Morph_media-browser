@@ -83,7 +83,7 @@ test('R-364: a field kept as text in some folders and as a date in others is uni
   assert.equal(old.projectOverrides['someone-else'][0].type, 'string')
   assert.equal((await readFolder(path.join(media, 'Odd'))).attributes[0].value, 'unknown')
   // A used or stale preview does not write.
-  await assert.rejects(lib.unifyField(preview.token), /失效/)
+  await assert.rejects(lib.unifyField(preview.token), /已過期|找不到/)
 })
 
 test('R-364: a preview is refused when the field has no text next to a date', async (t) => {

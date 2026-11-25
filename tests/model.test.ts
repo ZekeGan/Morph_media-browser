@@ -130,8 +130,8 @@ test('optional project rules preserve CARD limits, presets and first error order
     { ...project, cardView: { mode: 'single', level: 'all' } },
     'CARD 顯示範圍不合法'
   )
-  reject(validateProject, { ...project, activeLayoutId: 'missing' }, '作用中方案不存在')
-  reject(validateProject, { ...project, layoutPresets: undefined }, '方案清單不存在')
+  reject(validateProject, { ...project, activeLayoutId: 'missing' }, '使用中的外觀不存在')
+  reject(validateProject, { ...project, layoutPresets: undefined }, '外觀清單不存在')
   reject(validateProject, { ...project, panelPresetId: 'missing' }, '詳情預設版面不存在')
   reject(
     validateProject,

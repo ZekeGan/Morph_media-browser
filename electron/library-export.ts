@@ -132,7 +132,8 @@ export async function previewProjectImport(
     warnings: string[] = []
   let blocker: string | undefined
   const protectedBy = await ex.protectedAncestor(targetRoot)
-  if (protectedBy) blocker = fmt('目標位置受遊戲／App 邊界保護，請選擇外層資料夾：{0}', protectedBy)
+  if (protectedBy)
+    blocker = fmt('目標位置在受保護的遊戲或 App 裡面，請選擇外層資料夾：{0}', protectedBy)
   const linked = ex.refs.find((ref) => ref.projectId === manifest.projectId)
   if (linked && keyPath(linked.root) !== keyPath(targetRoot) && (await exists(linked.root)))
     blocker = fmt('同一專案仍連結在另一個位置：{0}。若要搬移，請先取消那個連結', linked.root)
@@ -189,10 +190,10 @@ export async function previewProjectImport(
   const conflicts = entries.filter((entry) => entry.state === 'conflict').length
   if (conflicts)
     warnings.push(
-      '部分檔案在目標位置已有不同內容；預設保留現有內容。勾選覆寫會先備份，但已有記錄的資料夾一律保留現有記錄'
+      '部分檔案在目標位置已有不同內容；預設保留現有內容。勾選取代會先備份，但已有資訊的資料夾一律保留現有資訊'
     )
   if (missingDirs.size) warnings.push('匯出資料中的部分資料夾在目標位置不存在，已略過')
-  if (protectedDirs.size) warnings.push('部分資料夾位於遊戲邊界內，為保護內部檔案已略過')
+  if (protectedDirs.size) warnings.push('有些資料夾在遊戲裡面，為了保護已略過')
   const token = randomUUID()
   ex.importPlans.set(token, {
     token,
@@ -228,7 +229,7 @@ export async function applyProjectImport(
   overwrite: boolean
 ): Promise<ProjectImportResult> {
   const plan = ex.importPlans.get(token)
-  if (!plan || plan.expires < Date.now()) throw new Error('匯入預覽已失效，請重新選擇')
+  if (!plan || plan.expires < Date.now()) throw new Error('匯入預覽已過期，請重新選擇')
   ex.importPlans.delete(token)
   if (plan.blocker) throw new Error(plan.blocker)
   const projectEntry = plan.entries.find((entry) => entry.role === 'project')

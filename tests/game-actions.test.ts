@@ -81,7 +81,7 @@ test('game targets require explicit selection, preserve arguments and leave orig
       rowId: row().rowId,
       templateId: 'default-launch-game',
     }),
-    /尚未綁定/
+    /還沒設定/
   )
   assert.equal(
     (

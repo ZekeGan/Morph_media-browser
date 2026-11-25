@@ -95,13 +95,13 @@ export function Reader({
   nextBook?: { name: string; open: (keepImmersive: boolean, settings?: ReadingPrefs) => void }
   // The window is already in fullscreen from the previous book: start in immersive mode (R-275).
   startImmersive?: boolean
-  // R-322: false when the reader opens at an image the user picked even if it is the first one; it then only offers
-  // the saved page. A reader opened at any later page does the same.
+  // R-517: true only for "繼續閱讀" (continue reading), which opens at the saved page. A page the user picked, the
+  // first one included, opens at that page and only offers the saved page.
   resume?: boolean
 }) {
   useLocale()
 
-  // R-253: opening a manga from its first page continues where it was left (the page the folder record keeps).
+  // R-253, R-517: "繼續閱讀" continues where the manga was left (the page the folder record keeps).
   // Decided once when the reader opens: the viewer's selection (and so start) follows the resumed page afterwards.
   const [resumeAt] = useState(() =>
     resume &&
@@ -114,8 +114,8 @@ export function Reader({
       ? prefs.page
       : undefined
   )
-  // R-322: opened at a picked page (from the file page, or a thumbnail other than the first), the saved page of an
-  // unfinished book is offered instead of taken.
+  // R-322, R-517: opened at a picked page (any thumbnail, or the file page), the saved page of an unfinished book is
+  // offered for 8 seconds instead of taken; not when it is the page picked.
   const [offerAt, setOfferAt] = useState(() =>
     resumeAt === undefined &&
     (!resume || start > 0) &&
@@ -128,7 +128,6 @@ export function Reader({
       : undefined
   )
   const [page, setPage] = useState(resumeAt ?? Math.max(0, Math.min(start, images.length - 1))),
-    [resumed, setResumed] = useState(resumeAt !== undefined),
     [ending, setEnding] = useState(false),
     [fit, setFit] = useState<'height' | 'width'>(
       !manga && prefs?.fit === 'width' ? 'width' : 'height'
@@ -579,18 +578,22 @@ export function Reader({
   })
   // Leaving a manga any other way than exit (closing the viewer, another folder) keeps the reading place, but only
   // when it moved since opening: just looking, or a book still loading that could not resume, writes nothing.
+  // R-517: a book left with its last page on screen is recorded as read to the end, even when opened right there.
   const savedOnExit = useRef(false),
     opened = useRef<ReadingPrefs | undefined>(undefined),
-    leaving = useRef({ readingNow, save, manga })
+    leaving = useRef({ readingNow, save, manga, last: images.length - 1, savedPage: prefs?.page })
   opened.current ??= readingNow()
-  leaving.current = { readingNow, save, manga }
+  leaving.current = { readingNow, save, manga, last: images.length - 1, savedPage: prefs?.page }
   useEffect(
     () => () => {
       if (savedOnExit.current || !leaving.current.manga) return
-      const { readingNow, save } = leaving.current,
+      const { readingNow, save, last, savedPage } = leaving.current,
         now = readingNow(),
         start = opened.current
-      if ((Object.keys(now) as (keyof ReadingPrefs)[]).some((key) => now[key] !== start?.[key]))
+      if (
+        (Object.keys(now) as (keyof ReadingPrefs)[]).some((key) => now[key] !== start?.[key]) ||
+        (last > 0 && now.page === last && savedPage !== last)
+      )
         save(now)
     },
     []
@@ -685,11 +688,6 @@ export function Reader({
     if (manga && dy > 0 && groupIndex === groups.length - 1) setEnding(true)
     else step(dy > 0 ? 1 : -1)
   })
-  useEffect(() => {
-    if (!resumed) return
-    const timer = setTimeout(() => setResumed(false), 4000)
-    return () => clearTimeout(timer)
-  }, [resumed])
   useEffect(() => {
     if (offerAt === undefined) return
     const timer = setTimeout(() => setOfferAt(undefined), 8000)
@@ -1474,21 +1472,6 @@ export function Reader({
               }}
             >
               {tr('跳到第 {0} 頁', String(offerAt + 1))}
-            </Button>
-          </div>
-        )}
-        {resumed && resumeAt !== undefined && (
-          <div className="reader-notice" role="status">
-            <span>{tr('從第 {0} 頁繼續', String(resumeAt + 1))}</span>
-            <Button
-              size="compact-xs"
-              variant="subtle"
-              onClick={() => {
-                setResumed(false)
-                goToGroup(0)
-              }}
-            >
-              {tr('從頭開始')}
             </Button>
           </div>
         )}

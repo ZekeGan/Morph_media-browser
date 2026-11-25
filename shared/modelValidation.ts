@@ -428,7 +428,7 @@ export function validateDetails(v: unknown): asserts v is FolderDetails {
       (v.boundary.role !== undefined &&
         (v.boundary.role !== 'tool' || v.boundary.state !== 'root')))
   )
-    throw new Error('遊戲邊界設定不合法')
+    throw new Error('遊戲保護設定不正確')
   if (
     v.hiddenActions !== undefined &&
     (!Array.isArray(v.hiddenActions) ||
@@ -584,7 +584,7 @@ export function validateProject(v: unknown): asserts v is Project {
             )
         )
       )
-        throw new Error('備用欄位必須存在且型別可相容顯示')
+        throw new Error('備用欄位不存在，或格式不合')
     }
   validateFieldGroups(v as Project)
   for (const cell of v.cells)
@@ -639,11 +639,11 @@ export function validateProject(v: unknown): asserts v is Project {
       ).size !== v.layoutPresets.length ||
       !v.layoutPresets.every((p) => obj(p) && id(p.id) && text(p.name, 100) && p.name.trim())
     )
-      throw new Error('版面方案不合法或名稱重複')
+      throw new Error('卡片外觀不正確或名稱重複')
     if (!id(v.activeLayoutId) || !v.layoutPresets.some((p) => p.id === v.activeLayoutId))
-      throw new Error('作用中方案不存在')
+      throw new Error('使用中的外觀不存在')
     for (const preset of v.layoutPresets) validateProject(withOnlyCells(v, preset.cells))
-  } else if (v.activeLayoutId !== undefined) throw new Error('方案清單不存在')
+  } else if (v.activeLayoutId !== undefined) throw new Error('外觀清單不存在')
   // R-409: the right-panel layouts (up to 40: the 30 book templates of a v1 project and the other kinds' templates).
   if (v.panelPresets !== undefined) {
     if (
@@ -746,7 +746,7 @@ function validateFieldGroups(v: Project) {
     new Set(groups.flatMap((g) => g.memberIds)).size !==
       groups.reduce((sum, g) => sum + g.memberIds.length, 0)
   )
-    throw new Error('欄位群組不合法：成員須存在、型別相容、只屬一個群組，名稱不可重複')
+    throw new Error('欄位群組不正確：成員要存在、格式相容、只屬於一個群組，名稱不能重複')
   for (const cell of v.cells)
     if (cell.groupId) {
       const group = groups.find((g) => g.groupId === cell.groupId)
@@ -756,7 +756,7 @@ function validateFieldGroups(v: Project) {
         !group.memberIds.includes(cell.attributeId) ||
         !compatibleFieldTypes(kindTypes[cell.kind], typeOf(group.memberIds[0]))
       )
-        throw new Error('組件顯示的欄位群組不存在或型別不相容')
+        throw new Error('組件顯示的欄位群組不存在或格式不相容')
     }
   const sources = v.groupSources
   if (

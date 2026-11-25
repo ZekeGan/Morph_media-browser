@@ -517,7 +517,7 @@ test('saved queries keep field identities through alias changes and support numb
       restoreQuery(ast, [
         { key: 'rating', type: 'string', attributeId: 'score', projectId: project.projectId },
       ]),
-    /型別/
+    /格式/
   )
   row = lib.snapshot().rows[0]
   await explorer.request({

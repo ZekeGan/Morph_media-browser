@@ -149,7 +149,7 @@ export async function previewDeleteField(
             fmt('常用搜尋「{0}」的欄位身分不明，請先修正：{1}', search.name, message(error))
           )
         preview.skipped.push(
-          fmt('常用搜尋「{0}」無法解析，原樣保留；未宣稱其引用已清除', search.name)
+          fmt('常用搜尋「{0}」看不懂，原樣保留；裡面用到的欄位可能沒清掉', search.name)
         )
         return search
       }
@@ -225,7 +225,7 @@ export async function previewDeleteField(
     }
     if (changed) {
       if (await ex.protectedAncestor(ref.root))
-        throw new Error('受影響專案位於保護邊界內，無法安全刪除欄位')
+        throw new Error('受影響的專案在受保護的遊戲裡面，不能刪除欄位')
       affected.add(ref.projectId)
     }
   }
@@ -251,7 +251,9 @@ export async function previewDeleteField(
     ].filter((value) => value.attributeId === attributeId)
     for (const [id, values] of Object.entries(record.projectOverrides))
       if (!linkedIds.has(id) && values.some((value) => value.attributeId === attributeId))
-        preview.skipped.push(fmt('{0}: 未連結專案 {1} 的私有值保留，未納入刪除', row.path, id))
+        preview.skipped.push(
+          fmt('{0}：專案 {1} 沒有連結，只在它自己的資訊保留、沒有刪除', row.path, id)
+        )
     const strip = (source: FolderRecord) => {
       const next = structuredClone(source)
       next.attributes = next.attributes.filter((value) => value.attributeId !== attributeId)
@@ -261,7 +263,9 @@ export async function previewDeleteField(
             (value) => value.attributeId !== attributeId
           )
         else if (next.projectOverrides[id].some((value) => value.attributeId === attributeId))
-          preview.skipped.push(fmt('{0}: 未連結專案 {1} 的私有值保留，未納入刪除', row.path, id))
+          preview.skipped.push(
+            fmt('{0}：專案 {1} 沒有連結，只在它自己的資訊保留、沒有刪除', row.path, id)
+          )
       }
       if (next.details?.cellImages) delete next.details.cellImages[attributeId]
       return next
@@ -295,7 +299,7 @@ export async function previewDeleteField(
     }
     if (changed) {
       if (await ex.protectedAncestor(row.path))
-        throw new Error('受影響記錄位於保護邊界內，無法安全刪除欄位')
+        throw new Error('受影響的資料夾在受保護的遊戲裡面，不能刪除欄位')
       preview.folders++
       for (const ref of ex.state.projects)
         if (within(ref.root, row.path)) affected.add(ref.projectId)
@@ -329,7 +333,7 @@ export async function deleteField(ex: Library, token: string) {
   const plan = ex.fieldPlans.get(token)
   ex.fieldPlans.delete(token)
   if (!plan || plan.refs !== JSON.stringify(ex.refs) || plan.scope !== ex.fieldScope())
-    throw new Error('欄位刪除預覽已失效，請重新預覽')
+    throw new Error('欄位刪除預覽已過期，請重新預覽')
   const check = async () => {
     for (const file of plan.absent)
       if (await exists(file)) throw new Error('預覽後備份已變更，刪除未執行')
@@ -339,7 +343,7 @@ export async function deleteField(ex: Library, token: string) {
         throw new Error('預覽後資料已變更，刪除未執行')
     }
     for (const root of new Set(plan.changes.map((change) => change.root)))
-      if (await ex.protectedAncestor(root)) throw new Error('保護邊界已變更，刪除未執行')
+      if (await ex.protectedAncestor(root)) throw new Error('受保護的範圍變了，沒有刪除')
   }
   await check()
   const recovery = await ex.maintenanceRecovery(

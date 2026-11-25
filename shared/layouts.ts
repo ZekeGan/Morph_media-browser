@@ -122,7 +122,7 @@ export function saveCardPreset(
     name.length > 100 ||
     presets.some((p) => p.id !== id && p.name.toLocaleLowerCase() === name.toLocaleLowerCase())
   )
-    throw new Error('方案名稱需為 1～100 字，且不可重複')
+    throw new Error('外觀名稱需為 1～100 字，且不可重複')
   const preset = { id, name, cells: structuredClone(project.cells) }
   return {
     ...project,
@@ -170,7 +170,7 @@ export function syncPresetDraft(project: Project): Project {
 export function selectPreset(project: Project, id: string): Project {
   const next = syncPresetDraft(project),
     preset = next.layoutPresets?.find((item) => item.id === id)
-  if (!preset) throw new Error('版面方案不存在')
+  if (!preset) throw new Error('卡片外觀不存在')
   return { ...next, activeLayoutId: id, cells: structuredClone(preset.cells) }
 }
 export function addPreset(project: Project, name: string, id: string, copy: boolean): Project {
@@ -183,7 +183,7 @@ export function addPreset(project: Project, name: string, id: string, copy: bool
     presets.length >= 30 ||
     presets.some((preset) => preset.name.toLocaleLowerCase() === name.toLocaleLowerCase())
   )
-    throw new Error('方案名稱需為 1～100 字，且不可重複')
+    throw new Error('外觀名稱需為 1～100 字，且不可重複')
   const cells = copy ? structuredClone(project.cells) : []
   return { ...next, layoutPresets: [...presets, { id, name, cells }], activeLayoutId: id, cells }
 }
@@ -198,7 +198,7 @@ export function renamePreset(project: Project, name: string): Project {
         preset.name.toLocaleLowerCase() === name.toLocaleLowerCase()
     )
   )
-    throw new Error('方案名稱需為 1～100 字，且不可重複')
+    throw new Error('外觀名稱需為 1～100 字，且不可重複')
   return {
     ...project,
     layoutPresets: project.layoutPresets?.map((preset) =>
@@ -208,7 +208,7 @@ export function renamePreset(project: Project, name: string): Project {
 }
 export function removePreset(project: Project): Project {
   if (!project.layoutPresets || project.layoutPresets.length < 2)
-    throw new Error('至少保留一個方案')
+    throw new Error('至少保留一個外觀')
   const presets = project.layoutPresets.filter((preset) => preset.id !== project.activeLayoutId),
     first = presets[0]
   return {

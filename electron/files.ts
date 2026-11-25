@@ -84,7 +84,7 @@ export async function atomicJson(file: string, value: unknown, expected?: number
     throw e
   })
   if (expected !== undefined && (!old || JSON.parse(old.toString()).revision !== expected))
-    throw new Error('版本衝突：磁碟資料已改變，草稿保留，請重新載入後比較')
+    throw new Error('版本衝突：資料已在別處改變，你還沒保存的修改保留，請重新載入後比較')
   const tmp = `${file}.${randomUUID()}.tmp`
   const handle = await fs.open(tmp, 'wx')
   try {
@@ -170,7 +170,9 @@ export async function ensureFolder(
     if (await exists(`${folderFile(dir)}.bak`))
       throw new Error('資料夾記錄遺失，但復原備份仍存在；請重新連結並從備份復原，未建立新身分')
     if (!(await reusableMetadata(dir)))
-      throw new Error('資料夾記錄遺失，但仍有專案、資產或未知資料；原檔保留，請復原原記錄後再試')
+      throw new Error(
+        '資料夾資訊不見了，但還有專案、圖片或認不得的資料；原檔保留，請先復原資料夾資訊再試'
+      )
     // Recheck after inspecting archives; never intentionally replace a new record.
     if (await exists(folderFile(dir))) return { record: await readFolder(dir), created: false }
   }
@@ -197,7 +199,7 @@ export async function ensureFolder(
     if (hide && process.platform === 'win32')
       await promisify(execFile)('attrib.exe', ['+H', meta], { windowsHide: true })
   } catch (e) {
-    throw new Error(fmt('建立可攜記錄失敗：{0}', message(e)))
+    throw new Error(fmt('建立資料夾資訊失敗：{0}', message(e)))
   }
   return { record, created: true }
 }

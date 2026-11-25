@@ -136,13 +136,13 @@ export function Editor({
     'field-enum': tr('顯示一個單選欄位的值'),
     'field-url': tr('顯示一個網址欄位，可自訂連結文字'),
     'field-date-only': tr('顯示一個日期欄位的值'),
-    'static-text': tr('只存在版面的標題或說明，不是資料夾的資料'),
+    'static-text': tr('固定的文字，每張卡片都一樣'),
     spacer: tr('空白位置，用來撐開版面'),
     'system-info': tr('顯示分類、檔案數或容量'),
     image: tr('可為每個資料夾各自選圖，也可留空'),
     divider: tr('分隔線'),
     'open-folder': tr('一鍵開啟這個資料夾'),
-    'game-launch': tr('一鍵啟動這個遊戲（使用資料夾綁定的啟動檔）'),
+    'game-launch': tr('啟動遊戲（用這個遊戲設定的啟動檔）'),
     'video-play': tr('詳情：播放影片，影片中斷過時改為繼續觀看'),
     'book-continue': tr('詳情：繼續閱讀或開始閱讀'),
     'game-extra': tr('開啟存檔資料夾、用 Steam 啟動或在商店開啟；不能用時變灰並說明原因'),
@@ -604,16 +604,16 @@ export function Editor({
     // A group goes on the card as a component showing it, bound to its first member.
     const group = groupId ? draft.fieldGroups?.find((g) => g.groupId === groupId) : undefined
     if (groupId && !group) {
-      setError(tr('欄位已變更或型別衝突，請重新選擇'))
+      setError(tr('這個欄位已改過或格式不合，請重新選一個'))
       return
     }
     if (group) source = draft.fieldBindings.find((f) => f.attributeId === group.memberIds[0])
     if (source && source.type !== cellType(kind)) {
-      setError(tr('欄位與組件型別不符'))
+      setError(tr('欄位與組件的格式不符'))
       return
     }
     if (draft.cells.length >= 50) {
-      setError(tr('POC 每張卡片最多 50 個組件'))
+      setError(tr('每張卡片最多放 50 個組件'))
       return
     }
     const cells = level.map((c) => {
@@ -666,7 +666,7 @@ export function Editor({
     const cell = level.find((c) => c.cellId === selected)
     if (!cell || busy) return
     if (level.length >= 50) {
-      setError(tr('POC 每張卡片最多 50 個組件'))
+      setError(tr('每張卡片最多放 50 個組件'))
       return
     }
     const y = Math.max(0, ...level.map((c) => c.grid.y + c.grid.h)),
@@ -789,11 +789,11 @@ export function Editor({
                 setSchemeAction('new')
               }}
             >
-              {tr('新增方案')}
+              {tr('新增外觀')}
             </Button>
             <Menu>
               <Menu.Target>
-                <ActionIcon size="input-sm" aria-label={tr('方案操作')} variant="default">
+                <ActionIcon size="input-sm" aria-label={tr('外觀操作')} variant="default">
                   <Icon name="more" />
                 </ActionIcon>
               </Menu.Target>
@@ -804,7 +804,7 @@ export function Editor({
                     setSchemeAction('copy')
                   }}
                 >
-                  {tr('複製方案')}
+                  {tr('複製外觀')}
                 </Menu.Item>
                 <Menu.Item
                   onClick={() => {
@@ -821,7 +821,7 @@ export function Editor({
                   disabled={draft.layoutPresets!.length < 2}
                   onClick={() => change(removePreset(draft))}
                 >
-                  {tr('刪除方案')}
+                  {tr('刪除外觀')}
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
@@ -938,11 +938,11 @@ export function Editor({
             <>
               <Text>{tr('刪除欄位「{0}」及其資料', fieldDeletion.name)}</Text>
               <Text size="sm" c="dimmed">
-                {tr('引用此欄位的組件與常用搜尋會一併移除；其他欄位值保留。')}
+                {tr('用到這個欄位的組件和常用搜尋會一起刪掉；其他欄位不受影響。')}
               </Text>
               <Text size="sm">
                 {tr(
-                  '受影響欄位：{0}；資料夾：{1}；已有值：{2}',
+                  '會刪掉 {0} 個欄位，{1} 個資料夾裡共 {2} 個值',
                   fieldDeletion.fields,
                   fieldDeletion.folders,
                   fieldDeletion.values
@@ -950,7 +950,7 @@ export function Editor({
               </Text>
               <Text size="sm">
                 {tr(
-                  '版面引用：{0}；表格引用：{1}；常用搜尋：{2}',
+                  '用到它的：版面 {0} 個、表格 {1} 個、常用搜尋 {2} 個',
                   fieldDeletion.layouts,
                   fieldDeletion.tables,
                   fieldDeletion.searches
@@ -961,7 +961,7 @@ export function Editor({
               )}
               <Text size="sm">{tr('已驗證備份：{0}', fieldDeletion.backups)}</Text>
               <Alert color="orange">
-                {tr('刪除影響以下專案；原始媒體保留。')}
+                {tr('下列專案會受影響；你的檔案不會被刪。')}
                 {fieldDeletion.projects.map((ref) => (
                   <Text size="sm" key={ref.projectId}>
                     {ref.name}
@@ -1025,9 +1025,9 @@ export function Editor({
         onClose={() => setSchemeAction(undefined)}
         title={
           schemeAction === 'new'
-            ? tr('新增方案')
+            ? tr('新增外觀')
             : schemeAction === 'copy'
-              ? tr('複製方案')
+              ? tr('複製外觀')
               : tr('重新命名')
         }
       >
@@ -1038,7 +1038,7 @@ export function Editor({
             </p>
           )}
           <TextInput
-            label={tr('方案名稱')}
+            label={tr('外觀名稱')}
             value={schemeName}
             maxLength={100}
             onChange={(event) => setSchemeName(event.currentTarget.value)}
@@ -1051,7 +1051,7 @@ export function Editor({
       <Modal
         opened={!!pendingPreset}
         onClose={() => setPendingPreset(undefined)}
-        title={tr('目前方案有未保存的調整')}
+        title={tr('目前外觀有未保存的調整')}
       >
         <Stack>
           <Button
@@ -1114,7 +1114,7 @@ export function Editor({
                 onChange={(event) => setRenaming({ ...renaming, name: event.currentTarget.value })}
               />
               <Text size="xs" c="dimmed">
-                {tr('只改顯示名稱，不會改動任何資料夾的資料；搜尋語法中的欄位名稱也會一併改變。')}
+                {tr('只改名字，資料夾裡的資料不變；搜尋時也改用新名字。')}
               </Text>
               <Group justify="flex-end">
                 <Button variant="default" onClick={() => setRenaming(undefined)}>
@@ -1343,7 +1343,7 @@ export function Editor({
                           .find((f) => f.attributeId === id))
                       : undefined
                   if (id && !source) {
-                    setError(tr('欄位已變更或型別衝突，請重新選擇'))
+                    setError(tr('這個欄位已改過或格式不合，請重新選一個'))
                     return
                   }
                   // A palette row may carry a preset ("system-info:albumName"); add() splits it. Only the

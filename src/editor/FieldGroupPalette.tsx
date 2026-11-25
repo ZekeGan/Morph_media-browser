@@ -57,7 +57,7 @@ export function FieldValuePreview({
 
 export function refusalText(refusal: GroupRefusal | string) {
   return refusal === 'type'
-    ? tr('型別不同的欄位不能放在同一個群組（文字和多個值可以）')
+    ? tr('格式不同的欄位不能放進同一組（文字和標籤可以）')
     : refusal === 'full'
       ? tr('一個群組最多 {0} 個欄位', 20)
       : refusal === 'name'

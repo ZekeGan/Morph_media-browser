@@ -242,7 +242,11 @@ export function VideoViewer({
 
   // The browser only says "cannot decode"; the file's first bytes usually say why.
   const reportDecodeFailure = () => {
-    setError(tr('此影片無法解碼或已失效；首輪驗證 MP4／WebM，MKV／HEVC 不保證支援。'))
+    setError(
+      tr(
+        '這部影片無法播放，可能是格式不支援或檔案壞了。MP4、WebM 最穩；MKV、HEVC 可以改用外部播放器開。'
+      )
+    )
     const target = currentFile.current
     if (!target) return
     setFailure({ fileId: target })

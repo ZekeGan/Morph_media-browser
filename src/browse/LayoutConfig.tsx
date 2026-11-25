@@ -876,7 +876,7 @@ export function LayoutConfig({
                     </div>
                   ) : (
                     <Text size="sm" c="dimmed">
-                      {tr('這個類型沒有詳情版面，顯示內建的主視覺。')}
+                      {tr('這個類型還沒有自己的詳情版面，先用內建的樣子。')}
                     </Text>
                   )
                 })()}

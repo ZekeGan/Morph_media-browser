@@ -240,7 +240,7 @@ test('full removal invalidates changed bindings and added metadata, excludes anc
     name: 'Other',
     depth: { mode: 'through', level: 1 },
   })
-  await assert.rejects(lib.fullRemoveProject(stale.token), /失效/)
+  await assert.rejects(lib.fullRemoveProject(stale.token), /已過期|找不到/)
 })
 test('field deletion counts false and zero across shared/private values and projects, without deleting equal names with different identities', async (t) => {
   const { lib, media } = await fixture(t),
@@ -307,7 +307,7 @@ test('field preview expires when another indexed folder enters the affected scop
   ]
   await fs.writeFile(folderFile(path.join(media, 'Added')), JSON.stringify(record))
   await lib.scan()
-  await assert.rejects(lib.deleteField(preview.token), /失效/)
+  await assert.rejects(lib.deleteField(preview.token), /已過期|找不到/)
   assert.deepEqual(await fs.readFile(projectFile(media, project.projectId)), before)
 })
 test('field deletion also scrubs backup-only references and preserves unrelated legacy searches on imported fields', async (t) => {

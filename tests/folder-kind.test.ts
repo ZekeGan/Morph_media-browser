@@ -398,7 +398,7 @@ test('R-457: a folder set as a tool is a protected ROOT that is not a game; choo
       state: 'root',
       tool: 'yes' as never,
     }),
-    /不合法/
+    /不正確/
   )
   // Choosing the game type makes it a game, still the same ROOT.
   await explorer.request({

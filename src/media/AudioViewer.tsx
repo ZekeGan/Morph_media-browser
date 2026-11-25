@@ -242,7 +242,7 @@ export function AudioViewer({
           }}
           onError={() => {
             intent.current = false
-            setError(tr('無法播放此音樂格式或檔案已失效'))
+            setError(tr('這首歌無法播放：格式不支援，或檔案壞了。'))
           }}
         />
       </AudioPlayer>

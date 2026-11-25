@@ -191,7 +191,7 @@ try {
   await deleteField()
   const deletion = page.getByRole('dialog', { name: '刪除自訂欄位', exact: true })
   await deletion.waitFor()
-  assert.ok((await deletion.textContent())!.includes('受影響欄位：1'))
+  assert.ok((await deletion.textContent())!.includes('會刪掉 1 個欄位'))
   await deletion.getByRole('button', { name: '取消', exact: true }).click()
   await deleteField()
   await button('確認刪除欄位及資料').click()

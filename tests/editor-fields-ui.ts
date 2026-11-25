@@ -119,7 +119,7 @@ try {
   // "Reference only" adds the field to the project without putting it on the card.
   const before = await cells()
   await button('欄位操作 TITLE').click()
-  await page.getByRole('menuitem', { name: '只引用欄位', exact: true }).click()
+  await page.getByRole('menuitem', { name: '只用到欄位', exact: true }).click()
   // A website field is added under its plain name and site (R-236).
   await row('名稱（DLsite）').waitFor()
   assert.equal(await row('名稱（DLsite）').getByText('尚未加入', { exact: true }).count(), 0)
@@ -341,7 +341,7 @@ try {
   for (let i = 0; i < 50 && (await chosenSource()) !== 'genre'; i++) await page.waitForTimeout(100)
   assert.equal(await chosenSource(), 'genre')
   // Note is now a choice field but this folder saved it as text: it is edited as text, with a note why.
-  await drawer.getByText('這個資料夾的值仍以原本的格式保存，編輯時沿用').waitFor()
+  await drawer.getByText('這個值是舊格式，保存時照舊格式存').waitFor()
   const note = drawer.getByLabel('Note', { exact: true })
   await note.fill('')
   await page.waitForTimeout(200)

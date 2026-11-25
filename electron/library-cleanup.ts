@@ -42,7 +42,7 @@ export async function previewCleanup(
   const row = rowId ? ex.row(rowId) : undefined
   // Inside a game ROOT nothing is written: leftover records there can only be removed whole (R-245).
   if (scope === 'private' && row && (row.readonly || (await ex.protectedAncestor(row.path))))
-    throw new Error('此資料夾在遊戲邊界保護內，只能整筆刪除記錄，不能只清私有覆寫')
+    throw new Error('這個資料夾在受保護的遊戲裡面，只能整筆刪除資訊，不能只清只在這個專案的資訊')
   if (scope === 'tree' && !row) throw new Error('請選擇要清理的資料夾')
   // The window only offers it for a writable folder; main checks again, as a whole tree is at stake.
   if (scope === 'tree' && row!.readonly) throw new Error('此資料夾為唯讀，不能清理')
@@ -158,7 +158,7 @@ export async function previewCleanup(
     scope,
   }
   if (scope === 'private' && (!row || !entries[0]?.record.projectOverrides[row.projectId]?.length))
-    throw new Error('沒有此專案私有覆寫可清理')
+    throw new Error('沒有只在這個專案的資訊可以清')
   ex.plans.clear()
   ex.plans.set(preview.token, { preview, entries, rowId, projectId: row?.projectId })
   return preview
@@ -170,7 +170,7 @@ export async function cleanup(
   restart: boolean
 ): Promise<CleanupResult> {
   const plan = ex.plans.get(token)
-  if (!plan) throw new Error('清理預覽已失效，請重新預覽')
+  if (!plan) throw new Error('清理預覽已過期，請重新預覽')
   ex.plans.delete(token)
   for (const e of plan.entries)
     for (const f of e.files) {
@@ -183,7 +183,7 @@ export async function cleanup(
     const e = plan.entries[0]
     // The boundary may have appeared since the preview.
     if (await ex.protectedAncestor(e.dir))
-      throw new Error('此資料夾在遊戲邊界保護內，只能整筆刪除記錄，不能只清私有覆寫')
+      throw new Error('這個資料夾在受保護的遊戲裡面，只能整筆刪除資訊，不能只清只在這個專案的資訊')
     const record = await readFolder(e.dir)
     delete record.projectOverrides[plan.projectId!]
     await saveFolder(e.dir, record, record.revision)
@@ -250,7 +250,7 @@ export async function restore(ex: Library, rowId: string) {
   const row = ex.row(rowId),
     file = folderFile(row.path)
   if (row.readonly || (await ex.protectedAncestor(row.path)))
-    throw new Error('此資料夾受遊戲／App 邊界保護')
+    throw new Error('這個資料夾在受保護的遊戲或 App 裡面')
   await restoreJson(
     ex.linked(row.projectId).root,
     file,
@@ -264,7 +264,7 @@ export async function restoreProject(ex: Library, projectId: string) {
   const ref = ex.refs.find((r) => r.projectId === projectId)
   if (!ref) throw new Error('此專案未連結')
   if (await ex.protectedAncestor(ref.root))
-    throw new Error('專案位於遊戲／App 保護邊界內，無法復原寫入')
+    throw new Error('專案在受保護的遊戲或 App 裡面，不能復原')
   const file = projectFile(ref.root, projectId)
   let project: Project,
     repairProject = false,

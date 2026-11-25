@@ -452,9 +452,9 @@ try {
       if (await button('關閉資料夾內容').isVisible()) await button('關閉資料夾內容').click()
       await edit()
       await page.locator('.scheme-toolbar').waitFor()
-      await button('新增方案').click()
+      await button('新增外觀').click()
       await page
-        .getByRole('textbox', { name: tr('方案名稱'), exact: true })
+        .getByRole('textbox', { name: tr('外觀名稱'), exact: true })
         .fill('Long scheme name · 長方案名稱 '.repeat(3))
       await button('確認').click()
       const visible = await page.locator('.scheme-toolbar').evaluate((element) =>

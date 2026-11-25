@@ -213,7 +213,7 @@ test('settings packages omit machine paths and credentials, preview without writ
     store.update({ action: 'applyPackage', token: preview.importPreview!.token, mode: 'replace' }, [
       'p1',
     ]),
-    /失效/
+    /已過期|找不到/
   )
   assert.equal(await fs.readFile(store.file, 'utf8'), before)
   await assert.rejects(

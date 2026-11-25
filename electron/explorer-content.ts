@@ -99,7 +99,7 @@ export async function content(
       offset < 0 ||
       offset >= session.names.length
     )
-      throw new Error('資料夾內容批次已失效，請重新開啟資料夾')
+      throw new Error('資料夾內容已過期，請重新開啟資料夾')
     hidden = session.hidden
     names = session.names
     sample = session.sample

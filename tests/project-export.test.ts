@@ -95,7 +95,7 @@ test('a project exports to a folder with a verified manifest and imports into an
     png
   )
   // A preview is single use.
-  await assert.rejects(dst.lib.applyProjectImport(preview.token, false), /失效/)
+  await assert.rejects(dst.lib.applyProjectImport(preview.token, false), /已過期|找不到/)
 })
 
 test('import keeps existing records; overwrite replaces only a different project file, after a backup', async (t) => {

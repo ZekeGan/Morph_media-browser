@@ -174,10 +174,10 @@ export function GameActionTargets({
                 <Tooltip
                   label={
                     !bound
-                      ? tr('尚未綁定目標，按鈕列不會顯示這個按鈕')
+                      ? tr('還沒選要開的檔案，所以遊戲頁不會出現這顆按鈕')
                       : hiddenHere
-                        ? tr('此遊戲的按鈕列不顯示這個按鈕，點擊顯示')
-                        : tr('此遊戲的按鈕列顯示這個按鈕，點擊隱藏')
+                        ? tr('目前隱藏，點一下顯示')
+                        : tr('目前顯示，點一下隱藏')
                   }
                 >
                   <ActionIcon
@@ -207,7 +207,7 @@ export function GameActionTargets({
             </Group>
             {['exe', 'folder', 'file-app', 'file'].includes(template.kind) && (
               <Text size="sm" c="dimmed" className="path-line" title={target?.path}>
-                {target?.kind === template.kind ? target.path : tr('尚未綁定目標')}
+                {target?.kind === template.kind ? target.path : tr('還沒選要開的檔案')}
               </Text>
             )}
             {template.kind === 'url' ? (
@@ -221,7 +221,7 @@ export function GameActionTargets({
             ) : template.kind === 'shortcut' ? (
               <>
                 <Text size="sm" c="dimmed" className="path">
-                  {target?.kind === 'shortcut' ? target.path : tr('尚未綁定目標')}
+                  {target?.kind === 'shortcut' ? target.path : tr('還沒選要開的檔案')}
                 </Text>
                 <Select
                   comboboxProps={{ zIndex: 460 }}
@@ -303,7 +303,7 @@ export function GameActionTargets({
                 {template.kind === 'url'
                   ? tr('保存網址')
                   : template.kind === 'shortcut'
-                    ? tr('綁定此捷徑')
+                    ? tr('使用這個捷徑')
                     : template.kind === 'file'
                       ? tr('選擇遊戲資料夾內的檔案')
                       : template.kind === 'file-app'

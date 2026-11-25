@@ -111,7 +111,7 @@ try {
   await page.getByRole('tab', { name: '遊戲操作', exact: true }).click()
   await page.getByRole('textbox', { name: '選擇資料夾內的捷徑' }).click()
   await page.getByRole('option', { name: 'Game - LE.lnk', exact: true }).click()
-  await page.getByRole('button', { name: '綁定此捷徑', exact: true }).click()
+  await page.getByRole('button', { name: '使用這個捷徑', exact: true }).click()
   await page.locator('.game-target .path').filter({ hasText: 'Game - LE.lnk' }).waitFor()
   await page
     .locator('.folder-panel-dock-tabs')

@@ -18,7 +18,7 @@ export async function previewUnifyField(
 ): Promise<FieldUnifyPreview> {
   const ref = ex.refs.find((item) => item.projectId === projectId)
   if (!ref) throw new Error('專案未連結，請重新載入')
-  if (await ex.protectedAncestor(ref.root)) throw new Error('專案位於保護邊界內，無法改寫欄位')
+  if (await ex.protectedAncestor(ref.root)) throw new Error('專案在受保護的遊戲裡面，不能改寫欄位')
   const rows = [
     ...new Map(
       (ex.state.structure ?? ex.state.rows)
@@ -54,7 +54,7 @@ export async function previewUnifyField(
   for (const other of ex.state.projects) {
     const binding = other.project?.fieldBindings.find((field) => field.attributeId === attributeId)
     if (binding && binding.type !== to)
-      throw new Error(fmt('專案「{0}」把這個欄位當成其他型別使用，不能統一', other.project!.name))
+      throw new Error(fmt('專案「{0}」把這個欄位當成其他格式使用，不能統一', other.project!.name))
   }
   const token = randomUUID(),
     preview: FieldUnifyPreview = {
@@ -115,7 +115,7 @@ export async function unifyField(ex: Library, token: string) {
   const plan = ex.unifyPlans.get(token)
   ex.unifyPlans.delete(token)
   if (!plan || plan.refs !== JSON.stringify(ex.refs) || plan.scope !== ex.fieldScope())
-    throw new Error('欄位統一預覽已失效，請重新預覽')
+    throw new Error('欄位統一預覽已過期，請重新預覽')
   if (!plan.changes.length) throw new Error('沒有可統一的值')
   const check = async () => {
     for (const guard of plan.guards) {
@@ -124,7 +124,7 @@ export async function unifyField(ex: Library, token: string) {
         throw new Error('預覽後資料已變更，未執行統一')
     }
     for (const root of new Set(plan.changes.map((change) => change.root)))
-      if (await ex.protectedAncestor(root)) throw new Error('保護邊界已變更，未執行統一')
+      if (await ex.protectedAncestor(root)) throw new Error('受保護的範圍變了，沒有統一')
   }
   await check()
   const recovery = await ex.maintenanceRecovery(

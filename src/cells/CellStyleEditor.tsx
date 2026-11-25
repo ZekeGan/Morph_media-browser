@@ -325,7 +325,7 @@ export function CellStyleEditor({
               }}
             />
             <Text size="xs" c="dimmed">
-              {tr('只存在這個專案，套用時會取代組件的整個樣式。')}
+              {tr('只在這個專案裡；套用後會蓋掉這個組件原本的樣式。')}
             </Text>
             <Button size="xs" disabled={!trimmed || duplicate} onClick={saveCurrent}>
               {tr('儲存樣式')}

@@ -135,8 +135,8 @@ try {
   await page.locator('.center-mode').getByText('卡片', { exact: true }).click()
   await openLayoutEditor(page)
   await page.locator('.editor-page').waitFor()
-  await button('新增方案').click()
-  await page.getByLabel('方案名稱', { exact: true }).fill('空白 QA')
+  await button('新增外觀').click()
+  await page.getByLabel('外觀名稱', { exact: true }).fill('空白 QA')
   await button('確認').click()
   // The empty canvas's templates step aside while a component is dragged over the canvas and come back when it
   // leaves; a drop near the top lands there instead of below the templates.

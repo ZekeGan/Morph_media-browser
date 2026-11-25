@@ -9,9 +9,12 @@
 // the gap cannot grow while the existing ones are translated.
 //   node scripts/check-i18n.mjs                     fail on new untranslated text
 //   node scripts/check-i18n.mjs --update-baseline   rewrite the baseline (after translating or removing messages)
+//   node scripts/check-i18n.mjs --update-wording    rewrite the wording baseline (after rewording sentences, R-515)
 import fs from 'node:fs'
 import path from 'node:path'
+import { execFileSync } from 'node:child_process'
 import ts from 'typescript'
+import { LONG, wordingProblems } from './text-rules.mjs'
 
 const root = path.resolve(import.meta.dirname, '..')
 const baselineFile = path.join(root, 'scripts', 'i18n-baseline.json')
@@ -103,7 +106,49 @@ if (fresh.length) {
   )
   for (const entry of fresh) console.error('  ' + entry)
 }
+// R-515: words people do not understand (scripts/text-rules.mjs). Sentences that already had them are listed in
+// scripts/wording-baseline.json; a new or changed sentence with one fails, so the list can only shrink.
+const wordingFile = path.join(root, 'scripts', 'wording-baseline.json')
+const worded = Object.keys(messages)
+  .filter((key) => wordingProblems(key).length)
+  .sort()
+if (process.argv.includes('--update-wording')) {
+  fs.writeFileSync(wordingFile, JSON.stringify(worded, null, 2) + '\n')
+  console.log(`Wording baseline: ${worded.length} sentences still use words from the list.`)
+  process.exit(0)
+}
+const wordingBaseline = new Set(
+  fs.existsSync(wordingFile) ? JSON.parse(fs.readFileSync(wordingFile, 'utf8')) : []
+)
+const badWording = worded.filter((key) => !wordingBaseline.has(key)),
+  wordingGone = [...wordingBaseline].filter((key) => !worded.includes(key))
+if (badWording.length) {
+  failed = true
+  console.error('Interface text with words people do not understand (docs/UI_RULES.md#介面文字):')
+  for (const key of badWording)
+    console.error(`  ${key.slice(0, 60)}  ${wordingProblems(key).join('、')}`)
+}
+// Long sentences added since the last commit: only a warning, help is meant to stay within two lines.
+const committed = (() => {
+  try {
+    return JSON.parse(
+      execFileSync('git', ['show', 'HEAD:src/i18n/messages.json'], { cwd: root, encoding: 'utf8' })
+    )
+  } catch {
+    return {}
+  }
+})()
+const long = Object.keys(messages).filter((key) => !(key in committed) && key.length > LONG)
+if (long.length) {
+  console.warn(
+    `New sentences longer than ${LONG} characters (help and tooltips stay within two lines):`
+  )
+  for (const key of long) console.warn('  ' + key)
+}
 if (failed) process.exit(1)
+console.log(
+  `Wording: ${worded.length} sentences still use words from the list (baseline ${wordingBaseline.size}${wordingGone.length ? `, ${wordingGone.length} fixed: run with --update-wording` : ''}).`
+)
 console.log(
   `Interface text: window text all translated; ${current.length} main-process messages still without a key (baseline ${baseline.size}${gone.length ? `, ${gone.length} gone: run with --update-baseline` : ''}).`
 )

@@ -353,7 +353,7 @@ export function EditorPalette(props: EditorPaletteProps) {
           disabled={source?.conflict}
           title={
             source?.conflict
-              ? tr('同一欄位的型別不一致，請先處理資料衝突')
+              ? tr('這個欄位有的資料夾存成文字、有的存成日期，請先到「管理欄位」統一')
               : `${name} · ${purposeLabel(binding.type)} · ${origin} · ${scope}\n${tr('雙擊或按 Enter 加入版面，也可以拖進編輯框')}`
           }
           aria-pressed={picked.length ? isPicked : undefined}
@@ -390,7 +390,7 @@ export function EditorPalette(props: EditorPaletteProps) {
           )}
           {source?.shared && source.private && (
             <Badge size="xs" color="orange" className="palette-row-scope">
-              {tr('有專案覆寫')}
+              {tr('有只在這個專案的資訊')}
             </Badge>
           )}
           {!added && <span className="palette-row-state is-unbound">{tr('尚未加入')}</span>}
@@ -425,7 +425,7 @@ export function EditorPalette(props: EditorPaletteProps) {
             </Menu.Item>
             {!added && (
               <Menu.Item disabled={source?.conflict} onClick={() => reference(binding)}>
-                {tr('只引用欄位')}
+                {tr('只用到欄位')}
               </Menu.Item>
             )}
             <Menu.Sub>

@@ -129,11 +129,7 @@ export function GameExtraSettings({
                 <Group key={extra} justify="space-between" wrap="nowrap">
                   <Text size="sm">{label}</Text>
                   <Tooltip
-                    label={
-                      visible
-                        ? tr('此遊戲的按鈕列顯示這個按鈕，點擊隱藏')
-                        : tr('此遊戲的按鈕列不顯示這個按鈕，點擊顯示')
-                    }
+                    label={visible ? tr('目前顯示，點一下隱藏') : tr('目前隱藏，點一下顯示')}
                   >
                     <ActionIcon
                       variant="subtle"
@@ -168,7 +164,7 @@ export function GameExtraSettings({
               {extras.save === 'engine'
                 ? tr('依引擎推算（{0}）', extras.saveEngine ?? '')
                 : extras.save === 'pending'
-                  ? tr('還沒有存檔（依引擎推算：{0}）', extras.saveEngine ?? '')
+                  ? tr('還沒有存檔（預計位置：{0}）', extras.saveEngine ?? '')
                   : extras.save === 'user'
                     ? tr('你指定的資料夾')
                     : tr('推算不出來；可以自己指定')}

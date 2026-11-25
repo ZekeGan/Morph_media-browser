@@ -202,7 +202,7 @@ export async function previewBackup(
 
 const live = (token: string) => {
   const plan = plans.get(token)
-  if (!plan || plan.expires < Date.now()) throw new Error('還原預覽已失效，請重新選擇備份')
+  if (!plan || plan.expires < Date.now()) throw new Error('還原預覽已過期，請重新選擇備份')
   return plan
 }
 

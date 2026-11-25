@@ -349,7 +349,7 @@ export function App() {
           status={
             snapshot.progress.active
               ? tr(
-                  '掃描 {0} 筆 · 已建 {1} · 問題 {2}',
+                  '{0} 個資料夾 · 新增 {1} · 問題 {2}',
                   snapshot.progress.visited,
                   snapshot.progress.created,
                   snapshot.progress.errors
@@ -427,7 +427,10 @@ export function App() {
               onOverlay={setSettingsOverlay}
               notify={notifyError}
               edit={(category, preset, rowId) => {
-                if (!detailDirty || window.confirm(tr('放棄欄位草稿後編輯版面？'))) {
+                if (
+                  !detailDirty ||
+                  window.confirm(tr('還有沒保存的修改，要放棄並去編輯版面嗎？'))
+                ) {
                   setTemplateCategory(category)
                   setTemplatePreset(preset)
                   setTemplateRow(rowId)
@@ -457,7 +460,7 @@ export function App() {
                       disabled={busy}
                       onClick={() =>
                         window.confirm(
-                          tr('從有效備份恢復主資料夾的資訊與專案設定？目前損壞的檔案會另外保留。')
+                          tr('用最近一次正常的備份修復這個專案？壞掉的檔案會另外留著。')
                         ) && act({ action: 'restoreProject', projectId: linked.projectId })
                       }
                     >
@@ -468,7 +471,7 @@ export function App() {
                       disabled={busy}
                       onClick={() => act({ action: 'unlink', projectId: linked.projectId })}
                     >
-                      {tr('取消失效連結（保留資料夾資訊）')}
+                      {tr('從清單移除（資料夾裡的資訊保留）')}
                     </Button>
                   </>
                 )}
@@ -493,7 +496,7 @@ export function App() {
           if (next) openProject(next.projectId, undefined, true)
         }}
         close={() => {
-          if (!busy && (create.empty || window.confirm(tr('取消新增專案？尚未建立資料。'))))
+          if (!busy && (create.empty || window.confirm(tr('取消新增專案？目前還沒建立任何東西。'))))
             setCreateOpen(false)
         }}
         create={async () => {
@@ -572,7 +575,7 @@ export function App() {
       <Modal
         opened={!!cleanup}
         onClose={() => setCleanup(undefined)}
-        title={tr('清理預覽：原始媒體不刪除')}
+        title={tr('預覽：你的檔案不會被刪')}
         size="xl"
       >
         {cleanup && (
@@ -593,14 +596,14 @@ export function App() {
               ))}
             </div>
             <Alert color="orange">
-              {tr('未連結或離線的副本不在這次範圍內。不認得的檔案與無法確認的資訊都會保留。')}
+              {tr('沒接上的磁碟、不在清單裡的副本不會處理；認不得的檔案一律保留。')}
               {cleanup.skipped.map((s, i) => (
                 <div key={i}>{tr(s)}</div>
               ))}
             </Alert>
             {cleanup.scope === 'folder' && (
               <Checkbox
-                label={tr('清除後立即重新開始記錄（預設為停止記錄）')}
+                label={tr('清除後繼續記錄這個資料夾')}
                 checked={restart}
                 onChange={(e) => setRestart(e.currentTarget.checked)}
               />
