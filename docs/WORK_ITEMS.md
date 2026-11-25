@@ -13,6 +13,10 @@
 
 ## 待查收
 
+- **R-243** 拆分 App／BrowseWorkspace 的狀態 ｜中｜一般｜無｜領域：browse、notices｜依賴：無
+  驗收：只是內部整理，畫面與操作不變：新增專案、多選資料夾（Ctrl／Shift 點選）、拖動右側寬度、有未保存草稿時切換專案會詢問，都和之前一樣
+  2026-11-25 做了五塊（useWidthDrag、useFolderMarks、useCreateProject、useSnapshot、useDrafts），App 732→625 行。BrowseWorkspace 的瀏覽狀態與導覽不拆：state.current 38 處、persist 20 處，幾乎每個操作都要讀寫，拆開只會變成傳十幾個參數；之後改到相關功能時再逐步抽
+
 - **R-503** 啟動首包變小：修正 DocumentViewer 同時被動態與靜態引入（拆包無效的建置警告），閱讀器與文件檢視器延後載入並有載入中畫面 ｜小｜一般｜無｜領域：core｜依賴：無
   驗收：開程式到出現畫面比之前快；第一次打開版面編輯器、播放影片、開文件時正常顯示
 
@@ -38,9 +42,6 @@
   驗收：看有圖片的卡片：縮圖比之前清楚（第一次會重新產生縮圖）
 
 ## 進行中
-
-- **R-243** 拆分 App／BrowseWorkspace 的狀態 ｜中｜一般｜無｜領域：browse、notices｜依賴：無
-  App 有 27 個 useState，BrowseWorkspace 有 18 個 useEffect。使用者不再規劃大功能，原定「隨下一個大改需求一起做」的時機不會出現；程式運作正常，只在修改時有成本，擱置（2026-11-11）。
 
 ## 已核定（未做）
 

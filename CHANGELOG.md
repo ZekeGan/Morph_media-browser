@@ -18,6 +18,8 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Internal: parts of the window's state moved out of its two largest components into their own hooks (width drag, folder marks and gestures, the new project dialog, taking in snapshots, unsaved drafts); nothing changes on screen (R-243).
+
 - Faster everyday browsing: selecting a folder, scrolling, switching the panel tab or hovering no longer draws every card on the page again (selecting one used to draw each card four times); the app starts with about 14% less code to load (the layout editor and the document viewer load when first used, and only the interface language in use is prepared); the thumbnail cache keeps up to 20,000 thumbnails or 1 GiB, dropping the least recently used first (it held 3,000 and was always full) (R-501, R-502, R-503).
 
 - Dragging the width of the right panel, the project sidebar or a table column no longer stutters: the width follows the pointer directly and the page renders again only when you let go (R-500).
