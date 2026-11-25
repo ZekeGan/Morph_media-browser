@@ -22,7 +22,7 @@ import { formatLastPlayed, formatPlayTime, usePlaytime } from '../game/playtime'
 import { latestNovel } from '../../shared/novel'
 import { isMediaInfo, MediaButton, MediaInfo } from './MediaInfoCell'
 import { cellColors } from './cellStyle'
-import { folderCoverAsset, folderCoverPicture, sourceImageAsset } from './folderCover'
+import { folderCoverAsset, folderCoverPicture } from './folderCover'
 import { GameExtraCell } from './GameExtraCell'
 import { usePanelContent } from './panelContext'
 import './cells.css'
@@ -335,17 +335,15 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
     const selected = row?.record?.details?.cellImages?.[cell.attributeId ?? cell.cellId],
       asset = selected
         ? row?.record?.assets.find((a) => a.assetId === selected)
-        : cell.imageRole
-          ? sourceImageAsset(row, cell.imageRole)
-          : cell.attributeId
-            ? undefined
-            : folderCoverAsset(row),
-      // No picture chosen for this folder: the folder cover (R-409; also for a missing imported banner, R-435) or its
-      // n-th image file, when it has one.
+        : cell.attributeId
+          ? undefined
+          : folderCoverAsset(row),
+      // No picture chosen for this folder: the folder cover (R-409; R-511: also for an older component set to an
+      // imported banner, logo or icon) or its n-th image file, when it has one.
       fallback =
         asset || !row
           ? undefined
-          : cell.imageCover || cell.imageRole === 'hero'
+          : cell.imageCover || cell.imageRole
             ? folderCoverPicture(row, inPanel)
             : cell.imageIndex
               ? {

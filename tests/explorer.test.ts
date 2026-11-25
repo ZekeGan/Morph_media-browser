@@ -87,10 +87,10 @@ test('game candidate boundaries protect Unity/RPGMaker/Unreal/Godot and readonly
     rowId: row.rowId,
     revision: row.record!.revision,
     state: 'root',
-    traverse: true,
   })
   snapshot = lib.snapshot()
-  assert.ok(snapshot.rows.some((r) => r.name === 'inner' && r.readonly))
+  // R-510: a confirmed ROOT is never looked inside, not even read-only.
+  assert.ok(!snapshot.rows.some((r) => r.name === 'inner'))
   assert.equal(await exists(path.join(media, 'Unity', 'Game_Data', DATA_DIR)), false)
   const p = snapshot.projects[0].project!
   snapshot = await lib.saveProject({ ...p, depth: { mode: 'exact', level: 5 } })

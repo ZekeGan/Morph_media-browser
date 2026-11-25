@@ -106,7 +106,7 @@ test('R-422: only the source picture hosts, https, a picture type and the size c
   assert.ok(!fetched.some((u) => u.includes(':8443')))
 })
 
-test('R-422: at most 12 screenshots, and the hero, logo and icon of SteamGridDB', async () => {
+test('R-422: at most 12 screenshots; R-511: no hero, logo or icon from SteamGridDB', async () => {
   const fetched: string[] = []
   const fetcher = (async (input: RequestInfo | URL) => {
     fetched.push(String(input))
@@ -123,10 +123,8 @@ test('R-422: at most 12 screenshots, and the hero, logo and icon of SteamGridDB'
     fetcher,
     []
   )
-  assert.deepEqual(
-    grid.map((i) => i.role),
-    ['screenshot', 'hero', 'logo', 'icon']
-  )
+  assert.deepEqual(grid, [])
+  assert.deepEqual(fetched, [])
   fetched.length = 0
   const steamHost = 'shared.fastly.steamstatic.com',
     many = Array.from({ length: 20 }, (_, n) => `https://${steamHost}/steam/apps/9/s${n}.jpg`)

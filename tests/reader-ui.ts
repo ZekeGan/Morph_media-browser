@@ -127,7 +127,7 @@ try {
     window.confirm = () => true
   })
   await page.getByRole('tab', { name: '設定', exact: true }).click()
-  await page.getByRole('tab', { name: '外觀', exact: true }).click()
+  await page.getByRole('tab', { name: '類型與版面', exact: true }).click()
   // R-409: the folder's layouts are shown there and made in the layout window, from the folder's row menu.
   const layouts = page.getByRole('group', { name: '此資料夾的版面', exact: true })
   await layouts.getByText('內建右側', { exact: true }).waitFor()
@@ -149,7 +149,7 @@ try {
     .click()
   // Back in the panel, the folder settings show the folder's own template.
   await page.getByRole('tab', { name: '設定', exact: true }).click()
-  await page.getByRole('tab', { name: '外觀', exact: true }).click()
+  await page.getByRole('tab', { name: '類型與版面', exact: true }).click()
   await layouts.getByText(own, { exact: true }).waitFor()
   await page.getByRole('tab', { name: '內容', exact: true }).click()
   await page.locator('.manga-gallery .media-thumbnail').first().click()

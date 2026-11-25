@@ -37,7 +37,7 @@ export const keySites: KeySite[] = [
   {
     id: 'steamgriddb',
     name: 'SteamGridDB',
-    purpose: '遊戲封面與橫幅',
+    purpose: '遊戲封面',
     fields: [{ id: 'apiKey', label: 'API Key' }],
     need: 'required',
     help: 'steamgriddb',

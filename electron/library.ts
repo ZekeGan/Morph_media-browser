@@ -431,17 +431,19 @@ export class Library {
       JSON.stringify(next.excludedRelativePaths) !== JSON.stringify(current.excludedRelativePaths)
     )
       throw new Error('根身分與清理排除須由受控操作修改')
+    // R-510: the read-only look inside a game is gone; an older project drops it here.
+    const { traversal: _traversal, ...kept } = next
     await atomicJson(
       projectFile(linked.root, next.projectId),
-      { ...next, revision: next.revision + 1 },
+      { ...kept, revision: next.revision + 1 },
       next.revision
     )
     if (
-      JSON.stringify([next.scanAll, next.depth, next.traversal]) !==
-      JSON.stringify([current.scanAll, current.depth, current.traversal])
+      JSON.stringify([next.scanAll, next.depth]) !==
+      JSON.stringify([current.scanAll, current.depth])
     )
       return this.scan()
-    linked.project = { ...structuredClone(next), revision: next.revision + 1 }
+    linked.project = { ...structuredClone(kept), revision: next.revision + 1 }
     return this.snapshot()
   }
   async scan() {

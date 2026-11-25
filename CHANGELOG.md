@@ -18,6 +18,8 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Folder settings are less confusing for games and tools: a confirmed game or tool no longer shows the "game detected" note or asks to be confirmed again, and a detected tool says "tool" (R-508); "Look inside read-only" is gone, so the inside of a game or tool is never listed, and an older project drops that setting when saved (R-510); image components lose the imported banner / logo / icon choices (older ones show the folder cover) and SteamGridDB no longer fetches them (R-511); the "Appearance" tab is now "Type & layout" (R-512).
+
 - Sorting a large folder's files by size or date: opening another folder stops reading the old one's sizes and dates, and coming back within a minute sorts at once without reading them again (R-504). Internal: the slowest UI test runs in about half the time (it no longer flushes its 1,500 setup records to disk one by one), and a sidebar drag check no longer loses its key press on a slow disk (R-507).
 
 - Reading no longer rewrites a folder's record when nothing changed: closing the reader on the page it opened at (or setting a value it already had) leaves folder.json and its revision as they were (R-474). While the window sits idle, the pictures of the folders on screen get their thumbnails made in the background, so opening one shows its pictures at once; any click, wheel or key pauses it, and it stops when the thumbnail cache is well filled (R-505).

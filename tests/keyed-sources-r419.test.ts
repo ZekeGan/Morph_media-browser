@@ -4,7 +4,8 @@ import { metadata } from '../electron/metadata'
 import { searchSources } from '../electron/sources/search'
 import { TMDB_EPISODES_MAX, TMDB_SEASONS_MAX } from '../electron/sources/keyed'
 
-// R-419: TMDB in the name search (only with a key), TMDB series seasons and episodes, SteamGridDB hero/logo/icon.
+// R-419: TMDB in the name search (only with a key), TMDB series seasons and episodes; SteamGridDB
+// no longer asks for hero/logo/icon (R-511).
 // Every request is answered by a fixed reply; nothing touches the network.
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
@@ -129,11 +130,13 @@ test('R-419: a TMDB series lists its seasons and episodes; a failed season is sk
   assert.equal(asked.length, 1)
 })
 
-test('R-419: SteamGridDB hero, logo and icon are optional and kept only on the picture host', async () => {
-  const host = 'https://cdn2.steamgriddb.com/'
+test('R-511: SteamGridDB no longer asks for a hero, logo or icon', async () => {
+  const host = 'https://cdn2.steamgriddb.com/',
+    asked: string[] = []
   const fetcher = ((answers: Record<string, unknown>) =>
     (async (input: RequestInfo | URL) => {
       const url = String(input)
+      asked.push(url)
       assert.equal(new URL(url).hostname, 'www.steamgriddb.com')
       if (url.endsWith('/games/id/5')) return json({ success: true, data: { id: 5, name: 'Game' } })
       const kind = /api\/v2\/(\w+)\/game\/5/.exec(url)?.[1] ?? ''
@@ -147,12 +150,8 @@ test('R-419: SteamGridDB hero, logo and icon are optional and kept only on the p
   const result = await metadata('https://www.steamgriddb.com/game/5', fetcher, undefined, {
     keyFor: async () => ({ apiKey: 'k' }),
   })
-  assert.equal(value(result, 'HERO_URL'), host + 'hero.png')
-  assert.equal(
-    value(result, 'LOGO_URL'),
-    undefined,
-    'a picture host that is not SteamGridDB is dropped'
-  )
-  assert.equal(value(result, 'ICON_URL'), undefined, 'a failed lookup only leaves the field out')
+  for (const key of ['HERO_URL', 'LOGO_URL', 'ICON_URL'])
+    assert.equal(value(result, key), undefined, key)
+  assert.ok(!asked.some((url) => /\/(heroes|logos|icons)\//.test(url)))
   assert.equal(result.preview.title, 'Game')
 })

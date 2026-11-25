@@ -523,14 +523,13 @@ export function FolderPanel({
       !isFilled(effective(f.attributeId)) &&
       !editedFields.includes(f.attributeId)
   )
-  const boundary = (state: 'root' | 'not-game' | 'candidate', traverse = false, tool = false) => {
+  const boundary = (state: 'root' | 'not-game' | 'candidate', tool = false) => {
     if (!row.record || (fieldDirty && !window.confirm(tr('套用邊界前放棄欄位草稿？')))) return
     void run({
       action: 'boundary',
       rowId: row.rowId,
       revision: row.record.revision,
       state,
-      traverse,
       tool,
     })
   }
@@ -604,9 +603,14 @@ export function FolderPanel({
           {error}
         </Alert>
       )}
-      {!isGame && row.boundary && (
+      {/* R-508: only while it is still a question; a confirmed game or tool is settled. */}
+      {!isGame && row.boundary && row.record?.details?.boundary?.state !== 'root' && (
         <Alert color="blue" className="folder-boundary-note">
-          <Text size="sm">{tr('偵測到遊戲，為了保護內部檔案，不會在裡面建立資訊。')}</Text>
+          <Text size="sm">
+            {row.boundary.tool
+              ? tr('偵測到工具（程式），為了保護內部檔案，不會在裡面建立資訊。')
+              : tr('偵測到遊戲，為了保護內部檔案，不會在裡面建立資訊。')}
+          </Text>
           <Group gap="xs" mt="xs">
             <Button size="compact-sm" disabled={disabled} onClick={() => boundary('root')}>
               {tr('確認為遊戲主資料夾')}
@@ -653,7 +657,7 @@ export function FolderPanel({
               </Badge>
             )}
           </Tabs.Tab>
-          {row.record && <Tabs.Tab value="appearance">{tr('外觀')}</Tabs.Tab>}
+          {row.record && <Tabs.Tab value="appearance">{tr('類型與版面')}</Tabs.Tab>}
           {showImages && <Tabs.Tab value="images">{tr('圖片')}</Tabs.Tab>}
           {isGame && <Tabs.Tab value="game">{tr('遊戲操作')}</Tabs.Tab>}
           <Tabs.Tab value="advanced">{tr('進階')}</Tabs.Tab>

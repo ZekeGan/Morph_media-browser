@@ -68,7 +68,7 @@ itch.io 的官方 API 只能查自己的作品，改讀每個作品頁旁公開�
 | 網站 | 金鑰 | 帶法與特殊處理 |
 | --- | --- | --- |
 | TMDB | API Key 或 Read Access Token | Read Access Token（JWT 格式）放 `Authorization: Bearer`，Key 放查詢參數；海報 `image.tmdb.org/t/p/w500`；影集另取季數（`SEASON_COUNT`）與各集清單（`EPISODES`，「S01E02 集名」，每季一個 `tv/{id}/season/{n}` 請求，最多 30 季、500 集，特別篇第 0 季不取，某季失敗就略過）（R-419）；預覽標示「本產品使用 TMDB API，但未經 TMDB 認可或認證」 |
-| SteamGridDB | API Key | Bearer；取名稱與第一張 600×900 封面；另各取第一張橫幅（`heroes`）、標誌（`logos`）、圖示（`icons`）的網址存成 `HERO_URL`、`LOGO_URL`、`ICON_URL`（只收 `cdn2.steamgriddb.com`，任一項失敗只少那個欄位；圖片可選匯入，見「來源圖片清單」）（R-419） |
+| SteamGridDB | API Key | Bearer；取名稱與第一張 600×900 封面；不再取橫幅、標誌、圖示（R-511；舊記錄裡的 `HERO_URL`、`LOGO_URL`、`ICON_URL` 照常顯示） |
 | Bangumi | 個人權杖（選填） | Bearer；沒填時 404 改提示「找不到作品，或是需要權杖的成人作品」並可前往設定 |
 | Danbooru | 帳號＋API Key（選填） | 查詢參數 `login`、`api_key`，提高額度 |
 | Google Books | API Key（選填） | 不填時共用匿名額度，常回 429 |
@@ -78,7 +78,7 @@ itch.io 的官方 API 只能查自己的作品，改讀每個作品頁旁公開�
 
 ## 來源圖片清單（R-422）
 
-VNDB、Steam 的截圖（`SCREENSHOTS`，各最多 12 張）與 SteamGridDB 的橫幅、標誌、圖示（`HERO_URL`、`LOGO_URL`、`ICON_URL`，各 1 張）可選匯入為資料夾的圖片；封面匯入照舊。
+VNDB、Steam 的截圖（`SCREENSHOTS`，各最多 12 張）可選匯入為資料夾的圖片；封面匯入照舊。
 
 - **下載**：取得預覽時 main 依序下載（`electron/source-images.ts`），只取預覽本身已檢查過的網址：HTTPS、無埠號與帳密，主機須在該來源的圖片主機（`sources/config.ts` 的 `coverHosts`；Steam 用 `metadata.ts` 的 Steam 圖片主機）；不跟轉址（只有該來源設定 `coverRedirectHosts` 的封面路徑除外）、15 秒逾時、單張 ≤ 10 MiB、以 `imageType` 檢查是 JPEG／PNG／WebP；失敗或被拒的略過。整個預覽最多 30 MiB（再放不下一張 10 MiB 就停）。其他來源不下載。
 - **預覽**：視窗收到 `preview.images`（角色、截圖序號 `n`、data URI），縮圖清單預設都不勾，標示「截圖 n」「橫幅」「標誌」「圖示」。視窗不能指定任何網址，下載的圖片只存在 main 的預覽（以 token 對應，最近三個預覽保留圖片，15 分鐘到期即丟棄；匯入後釋放）。

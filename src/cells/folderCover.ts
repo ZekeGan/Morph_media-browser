@@ -11,10 +11,6 @@ export function folderCoverAsset(row?: FolderRow): Asset | undefined {
     assets.find((asset) => !asset.role)
   )
 }
-// R-435: the first picture a website import brought in for that use (banner, logo or icon).
-export function sourceImageAsset(row: FolderRow | undefined, role: 'hero' | 'logo' | 'icon') {
-  return row?.record?.assets.find((asset) => asset.role === role)
-}
 // `full` (R-499): the original picture instead of the thumbnail, for the right panel where it is drawn large.
 export function folderCoverPicture(
   row?: FolderRow,

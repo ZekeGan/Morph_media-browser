@@ -1601,12 +1601,6 @@
     "en": "Confirm as the game's main folder",
     "es": "Confirmar como carpeta principal del juego"
   },
-  "唯讀查看內部": {
-    "ja": "内部を読み取り専用で表示",
-    "zh-CN": "唯读查看内部",
-    "en": "Browse internals read-only",
-    "es": "Explorar el interior en modo de solo lectura"
-  },
   "這不是遊戲": {
     "ja": "ゲームではない",
     "zh-CN": "这不是游戏",
@@ -5285,12 +5279,6 @@
     "ja": "このフォルダーをゲームのメインフォルダーとして扱います。情報はこの階層に置かれ、中のファイルは保護されます。",
     "es": "Tratar esta carpeta como la carpeta principal del juego: su información queda aquí y los archivos de dentro están protegidos."
   },
-  "只查看裡面的檔案，不會在內部寫入任何東西。": {
-    "zh-CN": "只查看里面的文件，不会在内部写入任何东西。",
-    "en": "Only look at the files inside; nothing is written inside.",
-    "ja": "内部のファイルを見るだけで、内部には何も書き込みません。",
-    "es": "Solo se ven los archivos de dentro; no se escribe nada."
-  },
   "取消遊戲判定，當成一般資料夾；之後不再提示。": {
     "zh-CN": "取消游戏判定，当成一般文件夹；之后不再提示。",
     "en": "Drop the game detection and treat it as an ordinary folder; you will not be asked again.",
@@ -7025,12 +7013,6 @@
     "ja": "「はい」と「いいえ」は別の文字にしてください",
     "es": "Sí y no necesitan textos distintos"
   },
-  "外觀": {
-    "zh-CN": "外观",
-    "en": "Appearance",
-    "ja": "外観",
-    "es": "Apariencia"
-  },
   "{0}（{1}）": {
     "zh-CN": "{0}（{1}）",
     "en": "{0} ({1})",
@@ -8230,12 +8212,6 @@
     "en": "Sign up and sign in at themoviedb.org, request a personal-use key under Settings → API, and copy the API Key or the API Read Access Token.",
     "ja": "themoviedb.org に登録・ログインし、「設定 → API」で個人利用のキーを申請して、API Key または API Read Access Token をコピーします。",
     "es": "Regístrate e inicia sesión en themoviedb.org, solicita una clave de uso personal en Ajustes → API y copia la API Key o el API Read Access Token."
-  },
-  "遊戲封面與橫幅": {
-    "zh-CN": "游戏封面与横幅",
-    "en": "Game covers and banners",
-    "ja": "ゲームのカバーとバナー",
-    "es": "Portadas y banners de juegos"
   },
   "在 steamgriddb.com 用 Steam 登入，到「Preferences → API」產生 API Key。": {
     "zh-CN": "在 steamgriddb.com 用 Steam 登录，到“Preferences → API”生成 API Key。",
@@ -12323,18 +12299,6 @@
     "ja": "スクリーンショット {0}",
     "es": "Captura {0}"
   },
-  "橫幅": {
-    "zh-CN": "横幅",
-    "en": "Banner",
-    "ja": "バナー",
-    "es": "Banner"
-  },
-  "標誌": {
-    "zh-CN": "标志",
-    "en": "Logo",
-    "ja": "ロゴ",
-    "es": "Logotipo"
-  },
   "圖示": {
     "zh-CN": "图标",
     "en": "Icon",
@@ -12869,42 +12833,6 @@
     "ja": "アルバム",
     "es": "Álbum"
   },
-  "來源匯入的橫幅": {
-    "zh-CN": "来源导入的横幅",
-    "en": "Imported banner",
-    "ja": "取り込んだバナー",
-    "es": "Banner importado"
-  },
-  "來源匯入的標誌": {
-    "zh-CN": "来源导入的标志",
-    "en": "Imported logo",
-    "ja": "取り込んだロゴ",
-    "es": "Logotipo importado"
-  },
-  "來源匯入的圖示": {
-    "zh-CN": "来源导入的图标",
-    "en": "Imported icon",
-    "ja": "取り込んだアイコン",
-    "es": "Icono importado"
-  },
-  "從網站匯入的橫幅；沒有時用資料夾封面。": {
-    "zh-CN": "从网站导入的横幅；没有时用文件夹封面。",
-    "en": "The banner imported from a website; without one, the folder cover.",
-    "ja": "サイトから取り込んだバナー。ない場合はフォルダーの表紙。",
-    "es": "El banner importado de un sitio web; si no hay, la portada de la carpeta."
-  },
-  "從網站匯入的標誌；沒有時留空。": {
-    "zh-CN": "从网站导入的标志；没有时留空。",
-    "en": "The logo imported from a website; left empty without one.",
-    "ja": "サイトから取り込んだロゴ。ない場合は空欄。",
-    "es": "El logotipo importado de un sitio web; vacío si no hay."
-  },
-  "從網站匯入的圖示；沒有時留空。": {
-    "zh-CN": "从网站导入的图标；没有时留空。",
-    "en": "The icon imported from a website; left empty without one.",
-    "ja": "サイトから取り込んだアイコン。ない場合は空欄。",
-    "es": "El icono importado de un sitio web; vacío si no hay."
-  },
   "版本": {
     "zh-CN": "版本",
     "en": "Version",
@@ -13156,12 +13084,6 @@
     "en": "This folder is set as a tool folder; the files inside are protected.",
     "ja": "このフォルダーはツールフォルダーに設定されており、中のファイルは保護されています。",
     "es": "Esta carpeta está marcada como carpeta de herramienta; los archivos de dentro están protegidos."
-  },
-  "改為遊戲主資料夾": {
-    "zh-CN": "改为游戏主文件夹",
-    "en": "Make it a game folder",
-    "ja": "ゲームのメインフォルダーに変更",
-    "es": "Convertir en carpeta de juego"
   },
   "取消工具設定，當成一般資料夾；之後不再提示。": {
     "zh-CN": "取消工具设置，当成一般文件夹；之后不再提示。",
@@ -13492,5 +13414,23 @@
     "en": "Another folder was opened; reading stopped",
     "ja": "別のフォルダーを開いたため読み込みを中止しました",
     "es": "Se abrió otra carpeta; se detuvo la lectura"
+  },
+  "類型與版面": {
+    "zh-CN": "类型与版面",
+    "en": "Type & layout",
+    "ja": "種類とレイアウト",
+    "es": "Tipo y diseño"
+  },
+  "這個資料夾已確認為遊戲主資料夾，裡面的檔案受保護。": {
+    "zh-CN": "这个文件夹已确认为游戏主文件夹，里面的文件受保护。",
+    "en": "This folder is confirmed as a game's main folder; the files inside are protected.",
+    "ja": "このフォルダーはゲームのメインフォルダーとして確認済みです。中のファイルは保護されます。",
+    "es": "Esta carpeta está confirmada como carpeta principal de un juego; los archivos de dentro están protegidos."
+  },
+  "偵測到工具（程式），為了保護內部檔案，不會在裡面建立資訊。": {
+    "zh-CN": "检测到工具（程序），为了保护内部文件，不会在里面创建信息。",
+    "en": "A tool (program) was detected. To protect the files inside, no information is created in it.",
+    "ja": "ツール（プログラム）を検出しました。中のファイルを保護するため、内部には情報を作成しません。",
+    "es": "Se detectó una herramienta (programa). Para proteger sus archivos, no se crea información dentro."
   }
 }

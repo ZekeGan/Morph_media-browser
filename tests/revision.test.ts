@@ -239,8 +239,11 @@ test('game root opens but protected children never gain records through navigati
     ...s.projects[0].project!,
     traversal: { [root.record!.folderId]: true },
   })
-  const child = s.structure!.find((r) => r.path === internal)!
-  await assert.rejects(lib.visit(child.rowId), /遊戲邊界保護/)
+  // R-510: an old traversal is ignored, so the inside is not even listed.
+  assert.equal(
+    s.structure!.some((r) => r.path === internal),
+    false
+  )
   assert.equal(await exists(path.join(internal, DATA_DIR)), false)
   assert.equal(await fs.readFile(path.join(game, 'Game.exe'), 'utf8'), 'ORIGINAL')
 })

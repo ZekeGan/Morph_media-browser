@@ -19,10 +19,12 @@ export function FolderBoundary({
 }: {
   row: FolderRow
   disabled: boolean
-  boundary: (state: 'root' | 'not-game' | 'candidate', traverse?: boolean, tool?: boolean) => void
+  boundary: (state: 'root' | 'not-game' | 'candidate', tool?: boolean) => void
 }) {
-  // R-457: a folder confirmed as a tool, or one where only program (tool) signs were found.
-  const tool = row.record?.details?.boundary?.role === 'tool'
+  // R-508: a confirmed ROOT (game, or a tool, R-457) only shows what it is and the way back, no confirming again.
+  const saved = row.record?.details?.boundary,
+    confirmed = saved?.state === 'root',
+    tool = confirmed && saved?.role === 'tool'
   const toolButton = (
     <Tooltip
       multiline
@@ -32,11 +34,27 @@ export function FolderBoundary({
     >
       <Button
         size="xs"
-        variant={row.boundary?.tool ? 'filled' : 'default'}
+        variant={!confirmed && row.boundary?.tool ? 'filled' : 'default'}
         disabled={disabled}
-        onClick={() => boundary('root', false, true)}
+        onClick={() => boundary('root', true)}
       >
         {tr('設為工具資料夾')}
+      </Button>
+    </Tooltip>
+  )
+  const notThis = (
+    <Tooltip
+      multiline
+      maw={240}
+      withArrow
+      label={
+        tool
+          ? tr('取消工具設定，當成一般資料夾；之後不再提示。')
+          : tr('取消遊戲判定，當成一般資料夾；之後不再提示。')
+      }
+    >
+      <Button size="xs" variant="subtle" disabled={disabled} onClick={() => boundary('not-game')}>
+        {tool ? tr('這不是工具') : tr('這不是遊戲目錄')}
       </Button>
     </Tooltip>
   )
@@ -50,50 +68,17 @@ export function FolderBoundary({
           )}
         />
       </Group>
-      {tool ? (
+      {confirmed ? (
         <>
           <Text size="sm" mt={4}>
-            {tr('這個資料夾已設為工具資料夾，裡面的檔案受保護。')}
+            {tool
+              ? tr('這個資料夾已設為工具資料夾，裡面的檔案受保護。')
+              : tr('這個資料夾已確認為遊戲主資料夾，裡面的檔案受保護。')}
           </Text>
+          {/* A tool becomes a game again by choosing the game type, so only the game offers the other way. */}
           <Group mt="sm">
-            <Button
-              size="xs"
-              variant="default"
-              disabled={disabled}
-              onClick={() => boundary('root')}
-            >
-              {tr('改為遊戲主資料夾')}
-            </Button>
-            <Tooltip
-              multiline
-              maw={240}
-              withArrow
-              label={tr('只查看裡面的檔案，不會在內部寫入任何東西。')}
-            >
-              <Button
-                size="xs"
-                variant="default"
-                disabled={disabled}
-                onClick={() => boundary('root', true, true)}
-              >
-                {tr('唯讀查看內部')}
-              </Button>
-            </Tooltip>
-            <Tooltip
-              multiline
-              maw={240}
-              withArrow
-              label={tr('取消工具設定，當成一般資料夾；之後不再提示。')}
-            >
-              <Button
-                size="xs"
-                variant="subtle"
-                disabled={disabled}
-                onClick={() => boundary('not-game')}
-              >
-                {tr('這不是工具')}
-              </Button>
-            </Tooltip>
+            {!tool && toolButton}
+            {notThis}
           </Group>
         </>
       ) : row.boundary ? (
@@ -126,36 +111,7 @@ export function FolderBoundary({
               </Button>
             </Tooltip>
             {!row.boundary.tool && toolButton}
-            <Tooltip
-              multiline
-              maw={240}
-              withArrow
-              label={tr('只查看裡面的檔案，不會在內部寫入任何東西。')}
-            >
-              <Button
-                size="xs"
-                variant="default"
-                disabled={disabled}
-                onClick={() => boundary('root', true)}
-              >
-                {tr('唯讀查看內部')}
-              </Button>
-            </Tooltip>
-            <Tooltip
-              multiline
-              maw={240}
-              withArrow
-              label={tr('取消遊戲判定，當成一般資料夾；之後不再提示。')}
-            >
-              <Button
-                size="xs"
-                variant="subtle"
-                disabled={disabled}
-                onClick={() => boundary('not-game')}
-              >
-                {tr('這不是遊戲目錄')}
-              </Button>
-            </Tooltip>
+            {notThis}
           </Group>
           {!!row.boundary.evidence.length && (
             <details className="boundary-evidence">
@@ -186,7 +142,7 @@ function ToolMark({
   boundary,
 }: {
   disabled: boolean
-  boundary: (state: 'root' | 'not-game' | 'candidate', traverse?: boolean, tool?: boolean) => void
+  boundary: (state: 'root' | 'not-game' | 'candidate', tool?: boolean) => void
 }) {
   return (
     <section className="settings-section">
@@ -203,7 +159,7 @@ function ToolMark({
           size="xs"
           variant="default"
           disabled={disabled}
-          onClick={() => boundary('root', false, true)}
+          onClick={() => boundary('root', true)}
         >
           {tr('設為工具資料夾')}
         </Button>
@@ -232,7 +188,7 @@ export function FolderAdvanced({
   showBoundary: boolean
   // R-457: a folder with no boundary at all can be made a tool here.
   showToolMark?: boolean
-  boundary: (state: 'root' | 'not-game' | 'candidate', traverse?: boolean, tool?: boolean) => void
+  boundary: (state: 'root' | 'not-game' | 'candidate', tool?: boolean) => void
   act: (request: Request) => Promise<Response | undefined>
   error: string
   setError: (message: string) => void

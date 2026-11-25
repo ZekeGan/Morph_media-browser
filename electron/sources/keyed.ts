@@ -104,23 +104,6 @@ export const steamgriddb: Adapter = async (site) => {
   const auth = { headers: { Authorization: 'Bearer ' + (site.keys.apiKey ?? '') } }
   const game = await site.json('https://www.steamgriddb.com/api/v2/games/id/' + id, undefined, auth)
   if (!game.success || String(game.data?.id) !== id) throw new SourceError('notFound')
-  // R-419: a hero (banner), a logo and an icon, each optional; only addresses on the picture host are kept.
-  const extra = async (kind: 'heroes' | 'logos' | 'icons', key: string) => {
-    const url = (
-      await site
-        .json('https://www.steamgriddb.com/api/v2/' + kind + '/game/' + id, undefined, auth)
-        .catch(() => undefined)
-    )?.data?.[0]?.url
-    try {
-      if (new URL(url).protocol === 'https:' && new URL(url).hostname === 'cdn2.steamgriddb.com')
-        site.text(key, url)
-    } catch {}
-  }
-  await Promise.all([
-    extra('heroes', 'HERO_URL'),
-    extra('logos', 'LOGO_URL'),
-    extra('icons', 'ICON_URL'),
-  ])
   const grids = await site
     .json(
       'https://www.steamgriddb.com/api/v2/grids/game/' + id + '?dimensions=600x900',

@@ -680,7 +680,6 @@ export class Explorer {
       case 'boundary': {
         if (
           !['root', 'candidate', 'not-game'].includes(req.state) ||
-          (req.traverse !== undefined && typeof req.traverse !== 'boolean') ||
           (req.tool !== undefined && typeof req.tool !== 'boolean')
         )
           throw new Error('邊界設定不合法')
@@ -694,13 +693,6 @@ export class Explorer {
             ...(req.state === 'root' && req.tool ? { role: 'tool' as const } : {}),
           }
         })
-        const row = await this.library.checkedRow(req.rowId),
-          p = this.library.snapshot().projects.find((p) => p.projectId === row.projectId)!.project!
-        if (req.traverse !== undefined)
-          await this.library.saveProject({
-            ...p,
-            traversal: { ...p.traversal, [row.record!.folderId]: req.traverse },
-          })
         break
       }
       case 'banner':

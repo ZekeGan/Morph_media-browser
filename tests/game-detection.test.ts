@@ -146,7 +146,7 @@ test('embedded and packaged NW.js deployments stay unknown; WOLF unpacked and mi
       assert.deepEqual(await internalTree(dir), before.get(dir))
     }
   }
-  // Exact depth and explicitly enabled traversal still cannot initialize internals.
+  // Exact depth and a traversal left by an older version (R-510: ignored) still cannot reach internals.
   const game = state.rows.find((row) => row.path === path.join(media, 'WolfMixed'))!,
     unknown = state.rows.find((row) => row.path === path.join(media, 'ModernNW'))!
   state = await lib.saveProject({
@@ -156,15 +156,9 @@ test('embedded and packaged NW.js deployments stay unknown; WOLF unpacked and mi
     traversal: { [game.record!.folderId]: true, [unknown.record!.folderId]: true },
   })
   assert.ok(state.structure!.find((row) => row.path === game.path)?.boundary)
-  assert.ok(state.structure!.some((row) => row.path.startsWith(game.path + path.sep)))
-  for (const row of state.structure!.filter((row) => row.path.startsWith(game.path + path.sep)))
-    assert.equal(row.readonly, true)
-  for (const row of state.structure!.filter((row) =>
-    row.path.startsWith(unknown.path + path.sep)
-  )) {
-    assert.equal(row.readonly, true)
-    await assert.rejects(lib.checkedRow(row.rowId, true), /不可寫入/)
-  }
+  for (const root of [game.path, unknown.path])
+    assert.ok(!state.structure!.some((row) => row.path.startsWith(root + path.sep)))
+  assert.equal(state.projects[0].project!.traversal, undefined, 'dropped when the project is saved')
   for (const [dir, tree] of before) assert.deepEqual(await internalTree(dir), tree)
 })
 test('NW.js and WOLF markers require coherent file types and paths, retaining engine conflicts', async (t) => {
@@ -702,7 +696,7 @@ test('an Electron-packed TyranoScript game is recognised from the top of its app
     assert.match(result!.evidence.join(' '), /封裝應用候選|解包應用候選/, name)
   }
 })
-test('ASAR remains an unknown candidate; manual ROOT/not-game and readonly traversal never rewrite history', async (t) => {
+test('ASAR remains an unknown candidate; manual ROOT/not-game and an old traversal never rewrite history', async (t) => {
   const { media, lib, files } = await fixture(t)
   for (const name of ['TyranoManualSample', 'TyranoAsarSample', 'TyranoDataSample'])
     await files(path.join(media, name), [
@@ -731,7 +725,7 @@ test('ASAR remains an unknown candidate; manual ROOT/not-game and readonly trave
   assert.deepEqual(await fs.readFile(folderFile(old)), bytes)
   const p = state.projects[0].project!
   state = await lib.saveProject({ ...p, traversal: { [record.folderId]: true } })
-  assert.ok(state.rows.find((row) => row.path === old)!.readonly)
+  assert.ok(!state.rows.some((row) => row.path === old), 'R-510: the inside stays hidden')
   assert.deepEqual(await fs.readFile(folderFile(old)), bytes)
   await assert.rejects(lib.create(old, { ...input, name: 'Nested' }), /邊界保護/)
   record = await readFolder(game.path)
@@ -739,7 +733,7 @@ test('ASAR remains an unknown candidate; manual ROOT/not-game and readonly trave
   await saveFolder(game.path, record, record.revision)
   state = await lib.scan()
   assert.equal(state.rows.find((row) => row.rowId === game.rowId)!.boundary, undefined)
-  assert.equal(state.rows.find((row) => row.path === old)!.readonly, false)
+  assert.equal(state.rows.find((row) => row.path === old)?.readonly, false)
 })
 test('single wrapped MV game stops at the inner root; exact depth cannot bypass protection', async (t) => {
   const { media, lib, files } = await fixture(t),

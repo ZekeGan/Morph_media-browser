@@ -111,6 +111,7 @@ export interface Cell {
   imageCover?: boolean
   // Image cell only (R-435, provisional): without a picture chosen for the folder, show the banner, logo or icon a
   // website import brought in (a banner falls back to the folder cover). Takes the place of imageIndex and imageCover.
+  // R-511: no longer offered; an older component that still has it shows the folder cover.
   imageRole?: 'hero' | 'logo' | 'icon'
   copyValue?: boolean
   condition?: CellCondition
@@ -204,6 +205,8 @@ export interface Project {
   scanAll?: boolean
   // R-340: works shows every work below the current folder (category folders passed through); level then limits depth.
   cardView?: { mode: 'multi' | 'single'; level: number | 'all'; works?: boolean }
+  // R-510: no longer used (the inside of a game or tool is never scanned); older projects may still hold it, it is
+  // dropped the next time the project is saved.
   traversal?: Record<string, boolean>
   savedSearches?: { id: string; name: string; query: string; queryAst?: StableQuery }[]
   // Fields holding the same kind of data from different sources, shown as one: the first member with a value.

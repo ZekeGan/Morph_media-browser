@@ -121,14 +121,8 @@ export function FolderSourceImport({
       : (sourceLabels[key] ?? key)
   const { source, setSource, preview, setPreview, keys, setKeys, cover, setCover } = importer,
     { images, setImages, albumCover, setAlbumCover } = importer
-  const imageLabel = (image: { role: string; n?: number }) =>
-    image.role === 'screenshot'
-      ? tr('截圖 {0}', image.n ?? 0)
-      : image.role === 'hero'
-        ? tr('橫幅')
-        : image.role === 'logo'
-          ? tr('標誌')
-          : tr('圖示')
+  // R-511: sources only offer screenshots now.
+  const imageLabel = (image: { n?: number }) => tr('截圖 {0}', image.n ?? 0)
   // R-418: search the sources by the folder's name (editable); picking a candidate previews its address.
   const [query, setQuery] = useState(row.name),
     [searching, setSearching] = useState(false),

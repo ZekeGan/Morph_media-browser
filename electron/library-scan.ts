@@ -190,7 +190,8 @@ export async function scan(ex: Library) {
             row.structural ? fmt('；未達顯示深度') : ''
           )
         )
-        if (!result?.record || !p.traversal?.[result.record.folderId]) return []
+        // R-510: the inside of a game or tool is never scanned, not even read-only.
+        return []
       }
       if ((!p.scanAll && depth >= p.depth.level) || ex.cancelled) return []
       const children: ScanEntry[] = []
@@ -319,16 +320,11 @@ export async function visit(ex: Library, rowId: string) {
       item.projectId === row.projectId &&
       keyPath(item.path) !== keyPath(row.path) &&
       within(row.path, item.path)
-    const traverse = ex.linked(row.projectId).project!.traversal?.[record.folderId]
-    if (!traverse) {
-      // A root visit must honor the same stopping rule as scan(). Do not expose
-      // internal placeholders, including stale descendants from an earlier scan.
-      ex.state.structure = (ex.state.structure ?? ex.state.rows).filter((item) => !beneath(item))
-      ex.state.rows = ex.state.rows.filter((item) => !beneath(item))
-      return ex.snapshot()
-    }
-    for (const item of [...(ex.state.structure ?? []), ...ex.state.rows])
-      if (beneath(item)) item.readonly = true
+    // A root visit must honor the same stopping rule as scan() (R-510: always). Do not expose
+    // internal placeholders, including stale descendants from an earlier scan.
+    ex.state.structure = (ex.state.structure ?? ex.state.rows).filter((item) => !beneath(item))
+    ex.state.rows = ex.state.rows.filter((item) => !beneath(item))
+    return ex.snapshot()
   }
   const structure = ex.state.structure ?? ex.state.rows
   for (const entry of await fs.readdir(row.path, { withFileTypes: true })) {

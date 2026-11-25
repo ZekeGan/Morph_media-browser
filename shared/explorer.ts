@@ -363,7 +363,6 @@ export type ExplorerRequest =
       rowId: string
       revision: number
       state: 'root' | 'not-game' | 'candidate'
-      traverse?: boolean
       // R-457: with state root, true makes it a tool; any other change leaves the folder a game or not-game.
       tool?: boolean
     }

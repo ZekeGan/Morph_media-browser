@@ -216,7 +216,7 @@ try {
     )
   })
   // Folder type and the layouts it shows are in the Appearance tab (R-235); the layouts are set in the layout window (R-409).
-  await drawer.getByRole('tab', { name: '外觀', exact: true }).click()
+  await drawer.getByRole('tab', { name: '類型與版面', exact: true }).click()
   await drawer
     .getByRole('group', { name: '此資料夾的版面', exact: true })
     .getByText('內建右側', { exact: true })
