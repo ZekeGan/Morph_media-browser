@@ -23,6 +23,7 @@ import { Explorer } from './explorer'
 import { KeyStore } from './keys'
 import { warmHiddenHelper } from './hidden'
 import { THUMB_EDGE } from './media-files'
+import { decodeThumbnail, SHARP_TYPES } from './thumbnail-decode'
 import type { LocaleId } from '../shared/locales'
 import { nativeText } from '../shared/native-messages'
 import { libraryDispatcher } from './library-dispatch'
@@ -203,6 +204,14 @@ else {
             if (image.isEmpty()) throw new Error('無影片縮圖')
             return image.toJPEG(85)
           }
+          // R-518: pictures are decoded here with sharp from the checked file; an audio file's embedded cover, BMP,
+          // ICO and files sharp cannot read still go to the window below.
+          if (url?.startsWith('media://file/') && mime && SHARP_TYPES.has(mime))
+            try {
+              return await decodeThumbnail(file)
+            } catch {
+              // The window decoder below tries the same file.
+            }
           if (
             !win ||
             win.isDestroyed() ||

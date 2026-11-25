@@ -149,7 +149,8 @@
         "electron/explorer-content*",
         "electron/explorer-source*",
         "electron/explorer-stream*",
-        "electron/thumbnail-warm*"
+        "electron/thumbnail-warm*",
+        "electron/thumbnail-decode*"
       ],
       "ui": ["media-scope-ui", "media-workspace-ui", "audio-playback-ui", "media-feedback-ui", "podcast-resume-ui"],
       "tests": ["media-workspace.test.ts", "explorer.test.ts", "album.test.ts", "podcast.test.ts", "video-place.test.ts"]
