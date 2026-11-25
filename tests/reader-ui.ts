@@ -1,4 +1,4 @@
-import { _electron as electron } from 'playwright-core'
+import { _electron as electron, type Locator } from 'playwright-core'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import assert from 'node:assert/strict'
@@ -30,7 +30,7 @@ for (let i = 1; i <= 3; i++)
     ],
     { windowsHide: true }
   )
-for (let i = 4; i <= 16; i++)
+for (let i = 4; i <= 24; i++)
   await fs.copyFile(
     path.join(comic, '001.png'),
     path.join(comic, String(i).padStart(3, '0') + '.png')
@@ -56,16 +56,19 @@ page.on('pageerror', (error) => errors.push(error.message))
 await page.evaluate('window.__name=(target)=>target')
 // The panel's thumbnails are drawn only near the view, so first and last on screen depend on how far the panel is
 // scrolled and how tall the layout above them is (R-469). A page is picked by its number: the panel is scrolled
-// to it at once and the click waits for that page's thumbnail.
+// down from the top a screen at a time until that page's thumbnail is drawn, then it is clicked.
 const thumbnail = async (index: number) => {
-  await page
-    .locator('.folder-panel-body')
-    .evaluate(
-      (element, end) =>
-        element.scrollTo({ top: end ? element.scrollHeight : 0, behavior: 'instant' }),
-      index > 0
+  const body = page.locator('.folder-panel-body'),
+    target = page.locator(`.manga-gallery [data-index="${index}"] .media-thumbnail`)
+  await body.evaluate((element) => element.scrollTo({ top: 0, behavior: 'instant' }))
+  for (let step = 0; step < 20 && !(await target.count()); step++) {
+    await body.evaluate((element) =>
+      element.scrollBy({ top: element.clientHeight * 0.8, behavior: 'instant' })
     )
-  await page.locator(`.manga-gallery [data-index="${index}"] .media-thumbnail`).click()
+    await page.waitForTimeout(50)
+  }
+  await target.scrollIntoViewIfNeeded()
+  await target.click()
 }
 const waitPages = async (value: string) =>
   page.waitForFunction(
@@ -74,6 +77,12 @@ const waitPages = async (value: string) =>
     value
   )
 const reader = () => page.getByRole('dialog', { name: '漫畫閱讀器', exact: true })
+// Whether an item sits inside its scrolled list's visible area.
+const isInView = async (list: Locator, item: Locator) => {
+  const outer = (await list.boundingBox())!,
+    inner = (await item.boundingBox())!
+  return inner.y >= outer.y - 1 && inner.y + inner.height <= outer.y + outer.height + 1
+}
 const fit = async () =>
   page.waitForFunction(() => {
     const stage = document.querySelector('.reader-stage')!,
@@ -177,6 +186,21 @@ try {
   await waitPages('4')
   await reader().getByRole('button', { name: '上一頁', exact: true }).click()
   await waitPages('3')
+  await page.keyboard.press('g')
+  // R-520: the list holds every page (it stopped at 20) and opens scrolled to the current one.
+  const pageList = page.getByRole('listbox', { name: '頁碼', exact: true })
+  await pageList.waitFor({ state: 'visible' })
+  assert.equal(await pageList.getByRole('option').count(), 24)
+  await input.fill('22')
+  await page.getByRole('option', { name: '22', exact: true }).click()
+  await waitPages('22')
+  await page.keyboard.press('g')
+  await pageList.waitFor({ state: 'visible' })
+  const current = page.getByRole('option', { name: '22', exact: true })
+  await current.waitFor({ state: 'visible' })
+  assert.ok(await isInView(pageList, current))
+  await current.click()
+  await waitPages('22')
   await page.keyboard.press('g')
   await input.fill('8')
   await page.getByRole('option', { name: '8', exact: true }).click()
@@ -503,15 +527,19 @@ try {
   await waitPages('1–2')
   // R-255: past the last page the reader says so instead of doing nothing; Escape only closes the note.
   await page.keyboard.press('g')
-  await reader().getByRole('textbox', { name: '頁碼', exact: true }).fill('15')
-  await page.getByRole('option', { name: '15–16', exact: true }).click()
-  await waitPages('15–16')
+  assert.equal(
+    await page.getByRole('listbox', { name: '頁碼', exact: true }).getByRole('option').count(),
+    12
+  )
+  await reader().getByRole('textbox', { name: '頁碼', exact: true }).fill('23')
+  await page.getByRole('option', { name: '23–24', exact: true }).click()
+  await waitPages('23–24')
   await reader().getByRole('button', { name: '下一頁', exact: true }).click()
   await reader().locator('.reader-end').waitFor()
   assert.match((await reader().locator('.reader-end').textContent()) ?? '', /已是最後一頁/)
   await page.keyboard.press('Escape')
   await reader().locator('.reader-end').waitFor({ state: 'detached' })
-  await waitPages('15–16')
+  await waitPages('23–24')
   await page.keyboard.press('F11')
   await fullscreen(true)
   await page.keyboard.press('Escape')

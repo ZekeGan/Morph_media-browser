@@ -174,6 +174,17 @@ export function Reader({
   // progress bar open (they otherwise only appear at the edges), like the novel reader's bars.
   const [bars, setBars] = useState(false)
   useEffect(() => setBars(false), [immersive])
+  // R-520: the page list holds every page, so it opens scrolled to the current one (G opens it without Mantine's
+  // own open event, which would otherwise do this).
+  useEffect(() => {
+    if (!pageDropdown) return
+    const frame = requestAnimationFrame(() =>
+      document
+        .querySelector('.reader-page-options [data-checked]')
+        ?.scrollIntoView({ block: 'center' })
+    )
+    return () => cancelAnimationFrame(frame)
+  }, [pageDropdown])
   const toggleChrome = () =>
     immersive ? setBars((value) => !value) : setToolbar((value) => !value)
   const select = useRef<HTMLInputElement>(null),
@@ -1163,8 +1174,8 @@ export function Reader({
                     size="xs"
                     aria-label={tr('頁碼')}
                     comboboxProps={{ zIndex: 510 }}
+                    classNames={{ dropdown: 'reader-page-options' }}
                     searchable
-                    limit={20}
                     allowDeselect={false}
                     dropdownOpened={pageDropdown}
                     onDropdownOpen={() => setPageDropdown(true)}

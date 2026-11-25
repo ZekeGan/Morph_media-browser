@@ -18,6 +18,8 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Manga reader: the page list lists every page instead of the first 20, single or two-page, and opens at the current page (R-520).
+
 - Manga: any thumbnail, the first page included, opens that page and offers the saved page for 8 seconds; only "Continue reading" goes to the saved page, and "Continue from page N / Start over" is gone. Leaving with the last page on screen always records the book as read (R-517). Interface text in plain words: about 180 sentences lose code words such as boundary, bind, draft, type, candidate and ROOT, including the game detection notes (older records show the new wording) (R-516). A commit check now refuses new interface text with those words, `pnpm i18n diff` lists a batch's new sentences for review, and UI_RULES has five checks for writing them (R-515).
 
 - The right panel is now called "Details" everywhere (details layout, built-in details, Details layouts…) (R-513); the "?" help is rewritten in plain words, one short line each, and seven that only repeated their label are gone (R-514); folder settings › Images shows the cover first, as the folder really shows it and where it comes from, then the layouts' other pictures named "Card picture N" / "Details picture N" with the picture they get when none is chosen (R-509, provisional).
