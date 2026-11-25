@@ -106,11 +106,12 @@ try {
   // vol2 comes back where it was left.
   await page.getByRole('button', { name: '繼續閱讀 vol2.cbz', exact: true }).click()
   await reader().waitFor()
-  await page.getByText(/從第 \d+ 頁繼續/).waitFor()
+  // C-146: "Continue reading" goes straight to the saved page, with no prompt.
   await page.waitForFunction(
     (expected) => document.querySelector('.reader-info strong')?.textContent === expected,
     left
   )
+  assert.equal(await reader().locator('.reader-notice').count(), 0)
   await page.keyboard.press('Escape')
   await reader().waitFor({ state: 'detached' })
   // A RAR archive opens like a CBZ.

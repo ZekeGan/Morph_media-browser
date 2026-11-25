@@ -941,12 +941,6 @@
     "en": "Saving sidebar settings…",
     "es": "Guardando ajustes de la barra lateral…"
   },
-  "個已連結專案": {
-    "ja": "件の連携済みプロジェクト",
-    "zh-CN": "个已连结项目",
-    "en": "linked projects",
-    "es": "proyectos vinculados"
-  },
   "查看問題": {
     "ja": "問題を確認",
     "zh-CN": "查看问题",
@@ -2232,10 +2226,10 @@
     "es": "subcarpetas"
   },
   "子資料夾": {
-    "ja": "子フォルダー",
     "zh-CN": "子文件夹",
-    "en": "subfolders",
-    "es": "subcarpetas"
+    "en": "Subfolders",
+    "ja": "子フォルダー",
+    "es": "Subcarpetas"
   },
   "展開子資料夾": {
     "ja": "子フォルダーを展開",
@@ -13354,5 +13348,11 @@
     "en": "With none chosen: empty",
     "ja": "未選択のとき：空欄",
     "es": "Sin elegir: vacío"
+  },
+  "{0} 個已連結專案": {
+    "zh-CN": "{0} 个已连结项目",
+    "en": "Linked projects: {0}",
+    "ja": "{0} 件の連携済みプロジェクト",
+    "es": "Proyectos vinculados: {0}"
   }
 }

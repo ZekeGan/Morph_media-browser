@@ -2,7 +2,7 @@
 
 > 最後確認：2026-11-25（R-504）。從網站補充資料夾資訊的現行規則。程式：`shared/sources.ts`、`electron/metadata.ts`、`electron/metadata-public.ts`、`electron/sources/`、`src/metadata/FolderSourceImport.tsx`、`electron/explorer-source.ts`；測試：`tests/metadata.test.ts`、`tests/date-fields.test.ts`。
 
-已接入的來源以 `shared/sources.ts` 為準（目前：E-Hentai、ExHentai、Hitomi.la、nhentai、Bangumi、AniList、DLsite、Steam、VNDB、MusicBrainz、Open Library、Pixiv、Wikimedia Commons、Wikidata）。此頁持有來源流程與人工值保護；程式入口：[metadata](../electron/metadata.ts)、[Explorer](../electron/explorer.ts) 的 metadataPreview／applyMetadata。
+已接入的來源以 `shared/sources.ts` 為準（目前：E-Hentai、ExHentai、Hitomi.la、nhentai、Bangumi、AniList、DLsite、Steam、VNDB、itch.io、MusicBrainz、Open Library、Pixiv、Wikimedia Commons、Wikidata、MangaDex、Kitsu、MangaUpdates、小説家になろう、Apple Music、Deezer、Danbooru、Google Books、BOOTH、カクヨム；需要使用者金鑰的 TMDB、SteamGridDB、FANZA／DMM；以及任何 HTTPS 網頁（Web））。此頁持有來源流程與人工值保護；程式入口：[metadata](../electron/metadata.ts)、[Explorer](../electron/explorer.ts) 的 metadataPreview／applyMetadata。
 
 ## 目前能力
 

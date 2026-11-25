@@ -1,6 +1,6 @@
 // One-command screenshot of a sample project, for checking a UI change without writing a throwaway script.
 //   pnpm shot <game|manga|album|other> [--width 1000] [--height 800] [--mode CARD|TABLE|TREE]
-//                                      [--child <folder name>] [--settings] [--project-settings [delete]] [--backup [create|undo]] [--editor [--select N] [--section NAME]] [--fields] [--theme dark|glass|paper] [--home] [--click BUTTON] [--press KEY] [--out path.png]
+//                                      [--child <folder name>] [--settings] [--project-settings [delete]] [--backup [create|undo]] [--editor [--select N] [--section NAME]] [--fields] [--theme dark|glass|paper] [--home] [--click BUTTON] [--press KEY] [--locale en|ja] [--out path.png]
 // Needs a current build (`pnpm build`). Writes the PNG under .test-output/shot/ and prints its path.
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -355,6 +355,20 @@ try {
         .innerText()
         .catch(() => '(none)')
     )
+  }
+  // --locale en|ja|zh-CN|es: switch the interface language last (every step above finds controls by their Chinese
+  // names), through the real settings dialog so the screen re-renders in place. Not for shots of an open dialog.
+  const locale = option('locale')
+  if (locale) {
+    const label = { en: 'English', ja: '日本語', 'zh-CN': '简体中文', es: 'Español' }[
+      locale as 'en'
+    ]
+    await page.getByRole('button', { name: '應用程式設定', exact: true }).click()
+    await page.getByRole('textbox', { name: '介面語言', exact: true }).click()
+    await page.getByRole('option', { name: label, exact: true }).click()
+    await page.waitForTimeout(400)
+    await page.keyboard.press('Escape')
+    await page.getByRole('dialog').waitFor({ state: 'hidden' })
   }
   await page.waitForTimeout(900)
   const out = path.resolve(

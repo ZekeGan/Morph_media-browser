@@ -253,7 +253,8 @@ test('public metadata adapters use no credentials, retain source identities and 
     )
   }) as typeof fetch)
   assert.equal(crossCover.cover, undefined)
-  assert.match(agents[0], /^Morph\/\d+\.\d+\.\d+ \(M:orph;/)
+  // Beta versions carry a pre-release part (0.41.0-beta.1).
+  assert.match(agents[0], /^Morph\/\d+\.\d+\.\d+(-[\w.]+)? \(M:orph;/)
   // R-297: Hitomi gallery data comes from its current data host, not the retired ltn.hitomi.la.
   const hitomiRequests: string[] = []
   await metadata('https://hitomi.la/reader/12.html', (async (input: RequestInfo | URL) => {

@@ -897,9 +897,7 @@ export function DesktopShell(props: Props) {
         <span role="status" key={saving ? 'saving' : props.status}>
           {saving ? tr('保存側欄設定…') : props.status}
         </span>
-        <span>
-          {projects.length} {tr('個已連結專案')}
-        </span>
+        <span>{tr('{0} 個已連結專案', String(projects.length))}</span>
         <span className="status-version" title={tr('應用程式版本')}>
           v{__APP_VERSION__}
         </span>

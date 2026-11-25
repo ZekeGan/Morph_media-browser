@@ -966,7 +966,7 @@ function BrowseWorkspaceBody({
             <Pagination size="xs" total={pages} value={Math.min(page, pages)} onChange={setPage} />
             <small>
               {tr('每頁')}
-              {pageSize} {tr('筆')}
+              {' ' + pageSize} {tr('筆')}
             </small>
           </div>
         )}
