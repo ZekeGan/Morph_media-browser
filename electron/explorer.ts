@@ -175,6 +175,19 @@ export class Explorer {
       expires: number
     }
   >()
+  // R-504: the size/date read of the newest sorted first request per caller (right panel, overview); a newer one
+  // stops the older between groups of files.
+  statReads = new Map<'panel' | 'overview', { stopped: boolean }>()
+  // R-504: each folder's sizes and dates for a minute (while the folder's own time is unchanged), so switching back
+  // sorts at once. Only the names' sizes and times, a few folders at a time.
+  statCache = new Map<
+    string,
+    {
+      folderModified: number
+      expires: number
+      facts: Map<string, { size: number; modified: number }>
+    }
+  >()
   constructor(
     readonly library: Library,
     readonly root: string,
@@ -246,9 +259,10 @@ export class Explorer {
     rowId: string,
     limit?: number,
     cursor?: string,
-    sort?: import('../shared/media').MediaSort
+    sort?: import('../shared/media').MediaSort,
+    caller: 'panel' | 'overview' = 'panel'
   ): Promise<ContentResult> {
-    return contentFns.content(this, rowId, limit, cursor, sort)
+    return contentFns.content(this, rowId, limit, cursor, sort, caller)
   }
   async file(rowId: string, id: string) {
     return contentFns.file(this, rowId, id)

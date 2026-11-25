@@ -21,6 +21,40 @@ const kindOf = (name: string, directory: boolean): MediaEntry['kind'] =>
       ? 'image'
       : ((types[path.extname(name).toLowerCase()]?.[0] as MediaEntry['kind']) ?? 'other')
 
+const STAT_CACHE_MS = 60000,
+  STAT_CACHE_FOLDERS = 4
+
+// Every listed name's size and time (R-492), from the short cache when the folder's own time is unchanged (R-504).
+// Stopped between groups of files when a newer sorted request from the same caller arrives.
+async function folderFacts(
+  ex: Explorer,
+  folder: string,
+  listed: { name: string }[],
+  read: { stopped: boolean }
+) {
+  const now = Date.now()
+  for (const [key, cached] of ex.statCache) if (cached.expires < now) ex.statCache.delete(key)
+  const folderModified = (await fs.stat(folder)).mtimeMs,
+    cached = ex.statCache.get(folder)
+  if (cached && cached.folderModified === folderModified) return cached.facts
+  const facts = new Map<string, { size: number; modified: number }>()
+  for (let start = 0; start < listed.length; start += 32) {
+    if (read.stopped) throw new Error('已改看其他資料夾，停止讀取')
+    await Promise.all(
+      listed.slice(start, start + 32).map(async ({ name }) => {
+        // lstat: a name swapped for a link since the listing is not followed (it is dropped from the batch anyway).
+        const stat = await fs.lstat(path.join(folder, name)).catch(() => undefined)
+        if (stat) facts.set(name, { size: stat.size, modified: stat.mtimeMs })
+      })
+    )
+  }
+  ex.statCache.delete(folder)
+  while (ex.statCache.size >= STAT_CACHE_FOLDERS)
+    ex.statCache.delete(ex.statCache.keys().next().value!)
+  ex.statCache.set(folder, { folderModified, expires: Date.now() + STAT_CACHE_MS, facts })
+  return facts
+}
+
 export async function content(
   ex: Explorer,
   rowId: string,
@@ -28,7 +62,8 @@ export async function content(
   cursor?: string,
   // R-492: the order the list will show, so every batch comes in that order. Only read on the first request; the
   // later batches follow the order chosen then.
-  sort?: MediaSort
+  sort?: MediaSort,
+  caller: 'panel' | 'overview' = 'panel'
 ): Promise<ContentResult> {
   if (
     (limit !== undefined && (!Number.isInteger(limit) || limit < 1 || limit > 500)) ||
@@ -93,17 +128,19 @@ export async function content(
     sample = sampleOf(listed)
     names = listed.map((entry) => entry.name)
     if (sort) {
+      // R-504: a newer sorted request from the same caller (another folder chosen) stops this one's read.
+      const read = { stopped: false },
+        previous = ex.statReads.get(caller)
+      if (previous) previous.stopped = true
+      ex.statReads.set(caller, read)
       // Size and date need each file's stat before the first batch; name and kind need nothing more.
-      const facts = new Map<string, { size: number; modified: number }>()
-      if (sort.field === 'size' || sort.field === 'modified')
-        for (let start = 0; start < listed.length; start += 32)
-          await Promise.all(
-            listed.slice(start, start + 32).map(async ({ name }) => {
-              // lstat: a name swapped for a link since the listing is not followed (it is dropped from the batch anyway).
-              const stat = await fs.lstat(path.join(row.path, name)).catch(() => undefined)
-              if (stat) facts.set(name, { size: stat.size, modified: stat.mtimeMs })
-            })
-          )
+      let facts = new Map<string, { size: number; modified: number }>()
+      try {
+        if (sort.field === 'size' || sort.field === 'modified')
+          facts = await folderFacts(ex, row.path, listed, read)
+      } finally {
+        if (ex.statReads.get(caller) === read) ex.statReads.delete(caller)
+      }
       names = sortMedia(
         listed.map(({ name, kind }) => ({
           name,

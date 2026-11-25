@@ -9,7 +9,7 @@ import { WorkspaceStore } from '../electron/workspace'
 import { folderFile, projectFile, readFolder, saveFolder } from '../electron/files'
 import { catalog } from '../src/i18n/catalog'
 import type { LocaleId } from '../shared/locales'
-import { closeApp } from './support/app'
+import { closeApp, withoutFlush } from './support/app'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
@@ -51,11 +51,13 @@ for (let i = 0; i < 140; i++)
   )
 const library = new Library(local, undefined, false)
 await library.init()
-await library.create(album, {
-  name: 'Polish Album',
-  scanAll: true,
-  depth: { mode: 'through', level: 3 },
-})
+await withoutFlush(() =>
+  library.create(album, {
+    name: 'Polish Album',
+    scanAll: true,
+    depth: { mode: 'through', level: 3 },
+  })
+)
 // An album of photos is not a comic: set its type so the plain image viewer is used.
 {
   const record = await readFolder(album)
@@ -331,10 +333,12 @@ try {
       )
       assert.equal(await leftResize.getAttribute('aria-valuenow'), '200')
       await page.mouse.up()
+      // The keys are ignored while the dragged width is still being saved, so wait for the save too (a slow disk
+      // made the next Home press get lost).
       await page.waitForFunction(
         () =>
           document.querySelector('[aria-label="調整專案欄寬"]')?.getAttribute('aria-valuenow') ===
-          '280'
+            '280' && !document.body.textContent?.includes('保存側欄設定…')
       )
       // Back to the narrow sidebar the later layout checks expect.
       await leftResize.press('Home')

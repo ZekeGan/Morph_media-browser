@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { Library } from '../electron/library'
 import { readFolder } from '../electron/files'
 import { zipFixture } from './support/archive-fixture'
-import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
+import { closeApp, launchApp, removeTestRoot, reportFailure, withoutFlush } from './support/app'
 
 // R-448: reading on through long chapters in scroll mode, in a project the size of a real collection, never freezes
 // at a chapter crossing: no frame takes much longer than a few frames (it froze about 0.25 s and then jumped).
@@ -54,7 +54,9 @@ await fs.writeFile(
 )
 const library = new Library(local, undefined, false)
 await library.init()
-await library.create(media, { name: 'Shelf', scanAll: true, depth: { mode: 'through', level: 1 } })
+await withoutFlush(() =>
+  library.create(media, { name: 'Shelf', scanAll: true, depth: { mode: 'through', level: 1 } })
+)
 
 const errors: string[] = []
 const { app, page: win } = await launchApp(local, errors, { width: 1200, height: 820 })

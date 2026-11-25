@@ -13486,5 +13486,11 @@
     "en": "Invalid range for preparing thumbnails",
     "ja": "サムネイルの事前作成範囲が不正です",
     "es": "Rango no válido para preparar miniaturas"
+  },
+  "已改看其他資料夾，停止讀取": {
+    "zh-CN": "已改看其他文件夹，停止读取",
+    "en": "Another folder was opened; reading stopped",
+    "ja": "別のフォルダーを開いたため読み込みを中止しました",
+    "es": "Se abrió otra carpeta; se detuvo la lectura"
   }
 }

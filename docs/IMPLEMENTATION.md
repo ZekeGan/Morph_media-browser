@@ -77,7 +77,7 @@
 不維護逐檔清單（容易過時）；用下列方式找：
 
 - **改了某個原始檔，要跑哪些 UI 測試**：`pnpm test:ui:changed` 依 [領域登錄表](areas.json) 挑選，並列出沒有歸入領域的檔案；新增原始檔時同批加進登錄表（pre-commit 會擋）。`node scripts/areas.mjs which <檔案>` 可單查。
-- **某個功能有沒有測試**：`rg -l "<按鈕文字或函式名>" tests/`；資料測試是 `tests/*.test.ts`，UI 測試是 `tests/*-ui.ts`，共用 Electron 啟動與關閉在 `tests/support/app.ts`，資料 fixture 在 `tests/support/model-fixtures.ts`。
+- **某個功能有沒有測試**：`rg -l "<按鈕文字或函式名>" tests/`；資料測試是 `tests/*.test.ts`，UI 測試是 `tests/*-ui.ts`，共用 Electron 啟動與關閉在 `tests/support/app.ts`（測試程序裡要先建上百個資料夾記錄時包在 `withoutFlush` 裡，跳過逐檔寫入磁碟，只影響準備資料，R-507），資料 fixture 在 `tests/support/model-fixtures.ts`。
 - **UI 測試找的按鈕還在不在**：`node scripts/check-ui-names.mjs`（pre-commit 已自動執行）。
 
 需要額外參數或環境的測試：

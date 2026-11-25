@@ -1022,6 +1022,76 @@ test('R-492/R-494: batches come in the requested order and carry the whole folde
     /分批/
   )
 })
+test('R-504: size/date reads are kept a minute per folder and stopped by a newer sorted request', async (t) => {
+  const { media, lib, explorer } = await fixture(t)
+  const big = path.join(media, 'big'),
+    small = path.join(media, 'small')
+  await fs.mkdir(big)
+  await fs.mkdir(small)
+  await Promise.all(
+    Array.from({ length: 100 }, (_, i) =>
+      fs.writeFile(path.join(big, `${String(i).padStart(4, '0')}.jpg`), 'x'.repeat(100 - i))
+    )
+  )
+  await fs.writeFile(path.join(small, 'a.jpg'), 'a')
+  await fs.writeFile(path.join(small, 'b.jpg'), 'bbb')
+  const state = await lib.create(media, { name: 'Facts', depth: { mode: 'through', level: 2 } }),
+    rowOf = (name: string) => state.rows.find((row) => row.name === name)!,
+    bySize = { field: 'size', asc: false } as const,
+    first = async (rowId: string) =>
+      (await explorer.content(rowId, 40, undefined, bySize)).entries.map((entry) => entry.name)
+  // Cache: a file growing does not change the folder's time, so the order read a moment ago is reused...
+  assert.deepEqual(await first(rowOf('small').rowId), ['b.jpg', 'a.jpg'])
+  await fs.writeFile(path.join(small, 'a.jpg'), 'aaaaa')
+  assert.deepEqual(await first(rowOf('small').rowId), ['b.jpg', 'a.jpg'])
+  // ...until a name is added or removed (the folder's time changes).
+  await fs.writeFile(path.join(small, 'c.jpg'), 'cc')
+  assert.deepEqual(await first(rowOf('small').rowId), ['a.jpg', 'b.jpg', 'c.jpg'])
+  // The big folder's file reads wait at a gate, so the next request surely comes while it is still reading.
+  const lstat = fs.lstat
+  let open = () => {},
+    reached = () => {}
+  const gate = new Promise<void>((done) => (open = done))
+  fs.lstat = (async (file: Parameters<typeof lstat>[0]) => {
+    if (/[\\/]big[\\/]\d+\.jpg$/.test(String(file))) {
+      reached()
+      await gate
+    }
+    return lstat(file)
+  }) as typeof lstat
+  t.after(() => {
+    fs.lstat = lstat
+  })
+  const reading = () =>
+    Promise.race([
+      new Promise<void>((done) => (reached = done)),
+      new Promise((_, fail) =>
+        setTimeout(() => fail(new Error('big folder never read')), 10000).unref()
+      ),
+    ])
+  // A newer sorted request from the right panel stops the older read; the older one gives up.
+  let wait = reading()
+  const slow = explorer.content(rowOf('big').rowId, 40, undefined, bySize)
+  await wait
+  const older = explorer.statReads.get('panel')!
+  await first(rowOf('small').rowId)
+  assert.equal(older.stopped, true)
+  fs.lstat = lstat
+  open()
+  await assert.rejects(slow, /停止讀取/)
+  // The overview reads on its own: the panel does not stop it.
+  fs.lstat = (async (file: Parameters<typeof lstat>[0]) => {
+    if (/[\\/]big[\\/]\d+\.jpg$/.test(String(file))) reached()
+    return lstat(file)
+  }) as typeof lstat
+  wait = reading()
+  const overview = explorer.content(rowOf('big').rowId, 40, undefined, bySize, 'overview')
+  await wait
+  const separate = explorer.statReads.get('overview')!
+  await first(rowOf('small').rowId)
+  assert.equal(separate.stopped, false)
+  assert.equal((await overview).entries[0].name, '0000.jpg')
+})
 test('the n-th image of a folder is chosen by natural file order, direct files only', async (t) => {
   const { media, lib, explorer } = await fixture(t)
   for (const name of ['10.jpg', '2.jpg', '1.png', 'notes.txt'])

@@ -80,6 +80,22 @@ export async function removeTestRoot(root: string) {
   await fs.rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 }
 
+// R-507: test setup that writes many records in this process (library.create of hundreds of folders) skips flushing
+// each file to disk, which took most of those tests' time. Only `fn` runs this way; the app under test is a separate
+// process and still writes the normal way.
+export async function withoutFlush<T>(fn: () => Promise<T>): Promise<T> {
+  const handle = await fs.open(process.execPath, 'r'),
+    fileHandle = Object.getPrototypeOf(handle) as { sync: () => Promise<void> },
+    sync = fileHandle.sync
+  await handle.close()
+  fileHandle.sync = async () => {}
+  try {
+    return await fn()
+  } finally {
+    fileHandle.sync = sync
+  }
+}
+
 // R-445: the card editor opens from the layout window, at the layout the current folder uses.
 export async function openLayoutEditor(page: Page) {
   await page
