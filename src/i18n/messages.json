@@ -1637,12 +1637,6 @@
     "en": "Clear M:orph's info from this folder",
     "es": "Borrar la información de M:orph de esta carpeta"
   },
-  "原始資料夾與媒體保留。先預覽範圍，確認後才清理。": {
-    "ja": "元のフォルダーとメディアは保持されます。範囲を確認してから消去します。",
-    "zh-CN": "原始文件夹与媒体保留。先预览范围，确认後才清理。",
-    "en": "Original folders and media are preserved. Preview the scope before confirming.",
-    "es": "Se conservan las carpetas y archivos originales. Revisa el ámbito antes de confirmar."
-  },
   "預覽清除此資料夾資料": {
     "ja": "このフォルダーの消去をプレビュー",
     "zh-CN": "预览清除此文件夹数据",
@@ -5489,12 +5483,6 @@
     "ja": "ゲームフォルダーの保護に関する通知",
     "es": "Avisos de protección de carpetas de juegos"
   },
-  "這些是遊戲資料夾，M:orph 只在遊戲主資料夾這一層建立資訊，內部不會寫入。這不是錯誤。": {
-    "zh-CN": "这些是游戏文件夹，M:orph 只在游戏主文件夹这一层建立信息，内部不会写入。这不是错误。",
-    "en": "These are game folders: M:orph only makes info at the game's main folder and writes nothing inside. This is not an error.",
-    "ja": "これらはゲームのフォルダーです。M:orph はゲームのメインフォルダーにだけ情報を作り、内部には書き込みません。エラーではありません。",
-    "es": "Son carpetas de juego: M:orph solo crea información en la carpeta principal del juego y no escribe nada dentro. No es un error."
-  },
   "應用程式版本": {
     "zh-CN": "应用程序版本",
     "en": "Application version",
@@ -5512,12 +5500,6 @@
     "en": "Games to confirm",
     "ja": "確認待ちのゲーム",
     "es": "Juegos por confirmar"
-  },
-  "這些資料夾看起來像遊戲，所以內部先受保護、不會寫入。請告訴工具它是不是遊戲。": {
-    "zh-CN": "这些文件夹看起来像游戏，所以内部先受保护、不会写入。请告诉工具它是不是游戏。",
-    "en": "These folders look like games, so their insides are protected and nothing is written there. Tell the app whether each one is a game.",
-    "ja": "これらのフォルダーはゲームのようなので、内部は保護され何も書き込まれません。ゲームかどうかを指定してください。",
-    "es": "Estas carpetas parecen juegos, así que su interior está protegido y no se escribe nada. Indica si cada una es un juego."
   },
   "複製組件": {
     "zh-CN": "复制组件",
@@ -5699,11 +5681,11 @@
     "en": "Bring back the project",
     "es": "Recuperar el proyecto"
   },
-  "從檔案還原…": {
-    "ja": "フォルダーから復元…",
-    "zh-CN": "从文件还原…",
-    "en": "Restore from a folder…",
-    "es": "Restaurar desde una carpeta…"
+  "從檔案還原": {
+    "ja": "フォルダーから復元",
+    "zh-CN": "从文件还原",
+    "en": "Restore from a folder",
+    "es": "Restaurar desde una carpeta"
   },
   "備份清單": {
     "ja": "バックアップ一覧",
@@ -5759,11 +5741,11 @@
     "en": "Restore",
     "es": "Restaurar"
   },
-  "匯出…": {
-    "ja": "エクスポート…",
-    "zh-CN": "导出…",
-    "en": "Export…",
-    "es": "Exportar…"
+  "匯出": {
+    "ja": "エクスポート",
+    "zh-CN": "导出",
+    "en": "Export",
+    "es": "Exportar"
   },
   "刪除": {
     "ja": "削除",
@@ -5806,12 +5788,6 @@
     "zh-CN": "会取代目前的设定；还原后可以按「回到还原之前」退回。",
     "en": "Replaces your current settings; after restoring you can press “Back to before the restore”.",
     "es": "Sustituye tus ajustes actuales; después puedes pulsar «Volver a antes de restaurar»."
-  },
-  "備份存在這台電腦裡。要防硬碟故障，請把備份匯出到其他磁碟。": {
-    "ja": "バックアップはこのパソコンに保存されます。ディスクの故障に備えるには、別のディスクにエクスポートしてください。",
-    "zh-CN": "备份存在这台电脑里。要防硬盘故障，请把备份导出到其他磁盘。",
-    "en": "Backups are kept on this computer. To be safe from a disk failure, export a backup to another disk.",
-    "es": "Las copias se guardan en este equipo. Para protegerte de un fallo del disco, exporta una copia a otro disco."
   },
   "需要更新程式": {
     "zh-CN": "需要更新程序",
@@ -12071,12 +12047,6 @@
     "ja": "{0}のレイアウト",
     "es": "Diseño de {0}"
   },
-  "一般資料夾依層級": {
-    "zh-CN": "一般文件夹按层级",
-    "en": "Other folders by level",
-    "ja": "一般フォルダーは階層ごと",
-    "es": "Otras carpetas por nivel"
-  },
   "第 {0} 層的版面": {
     "zh-CN": "第 {0} 层的版面",
     "en": "Layout for level {0}",
@@ -13432,5 +13402,17 @@
     "en": "A tool (program) was detected. To protect the files inside, no information is created in it.",
     "ja": "ツール（プログラム）を検出しました。中のファイルを保護するため、内部には情報を作成しません。",
     "es": "Se detectó una herramienta (programa). Para proteger sus archivos, no se crea información dentro."
+  },
+  "不確定該資料夾是不是遊戲。": {
+    "zh-CN": "不确定该文件夹是不是游戏。",
+    "en": "Not sure whether these folders are games.",
+    "ja": "ゲームかどうか分からないフォルダーです。",
+    "es": "No se sabe si estas carpetas son juegos."
+  },
+  "這些是遊戲資料夾，資料夾內部不寫入": {
+    "zh-CN": "这些是游戏文件夹，文件夹内部不写入",
+    "en": "These are game folders; nothing is written inside them",
+    "ja": "これらはゲームのフォルダーです。内部には書き込みません",
+    "es": "Son carpetas de juego; no se escribe nada dentro"
   }
 }

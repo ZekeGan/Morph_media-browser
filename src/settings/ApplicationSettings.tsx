@@ -266,7 +266,6 @@ export function ApplicationSettings({
         <Tabs.Panel value="data" pt="lg">
           <Stack gap="lg">
             <section className="settings-section">
-              <Text fw={600}>{tr('備份')}</Text>
               {undo && !restorePreview && (
                 <Alert color="blue" my="sm" className="restore-undo">
                   <Group justify="space-between" gap="xs">
@@ -304,7 +303,7 @@ export function ApplicationSettings({
                   disabled={busy || !!restorePreview}
                   onClick={() => void chooseBackup()}
                 >
-                  {tr('從檔案還原…')}
+                  {tr('從檔案還原')}
                 </Button>
               </Group>
               {restorePreview ? (
@@ -413,7 +412,7 @@ export function ApplicationSettings({
                           disabled={busy}
                           onClick={() => void act({ action: 'exportBackup', id: entry.id })}
                         >
-                          {tr('匯出…')}
+                          {tr('匯出')}
                         </Button>
                         <Button
                           size="compact-sm"
@@ -439,9 +438,6 @@ export function ApplicationSettings({
                   {error}
                 </Alert>
               )}
-              <Text size="xs" c="dimmed" mt="md">
-                {tr('備份存在這台電腦裡。要防硬碟故障，請把備份匯出到其他磁碟。')}
-              </Text>
             </section>
           </Stack>
         </Tabs.Panel>

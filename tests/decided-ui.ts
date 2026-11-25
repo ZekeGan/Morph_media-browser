@@ -346,14 +346,14 @@ try {
     }, folder)
   // Cancelling the folder choice shows nothing.
   await answer(undefined)
-  await settings().getByRole('button', { name: '從檔案還原…', exact: true }).click()
+  await settings().getByRole('button', { name: '從檔案還原', exact: true }).click()
   assert.equal(await settings().locator('.restore-preview').count(), 0)
   // A backup from elsewhere carries other settings (paper theme), to see the restore take effect.
   const elsewhere = path.join(root, 'from-elsewhere')
   await fs.cp(made, elsewhere, { recursive: true })
   await fs.copyFile(incoming, path.join(elsewhere, 'settings.json'))
   await answer(elsewhere)
-  await settings().getByRole('button', { name: '從檔案還原…', exact: true }).click()
+  await settings().getByRole('button', { name: '從檔案還原', exact: true }).click()
   const restore = settings().locator('.restore-preview')
   await restore.waitFor()
   assert.equal(

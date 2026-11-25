@@ -216,7 +216,7 @@ export function ProblemsDialog({
         )}
         {group(
           tr('待確認的遊戲'),
-          tr('這些資料夾看起來像遊戲，所以內部先受保護、不會寫入。請告訴工具它是不是遊戲。'),
+          tr('不確定該資料夾是不是遊戲。'),
           candidates.map((row) =>
             entry(
               row.rowId,
@@ -284,9 +284,7 @@ export function ProblemsDialog({
               </Accordion.Control>
               <Accordion.Panel>
                 <Text size="xs" c="dimmed" mb="xs">
-                  {tr(
-                    '這些是遊戲資料夾，M:orph 只在遊戲主資料夾這一層建立資訊，內部不會寫入。這不是錯誤。'
-                  )}
+                  {tr('這些是遊戲資料夾，資料夾內部不寫入')}
                 </Text>
                 <Stack gap={6}>
                   {notes.map((text, index) => {

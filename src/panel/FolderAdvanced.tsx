@@ -260,9 +260,6 @@ export function FolderAdvanced({
         </details>
         <section className="settings-section cleanup-section">
           <Text fw={600}>{tr('清除此資料夾的 M:orph 資訊')}</Text>
-          <Text size="sm" c="dimmed">
-            {tr('原始資料夾與媒體保留。先預覽範圍，確認後才清理。')}
-          </Text>
           <Group>
             <Button
               size="xs"

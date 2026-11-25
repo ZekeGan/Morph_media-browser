@@ -556,7 +556,7 @@ export function LayoutConfig({
           {/* R-444: only the levels that hold folders the level rules apply to (none: no section). */}
           {levelsShown.length > 0 && (
             <section>
-              {ruleHead('levels', panel ? tr('依層級') : tr('一般資料夾依層級'))}
+              {ruleHead('levels', tr('依層級'))}
               {!folded.includes('levels') &&
                 levelsShown.map((i) => (
                   <div className={'layout-config-rule'} key={i}>
