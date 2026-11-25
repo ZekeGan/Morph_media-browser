@@ -59,7 +59,10 @@ export function DesktopShell(props: Props) {
     [saving, setSaving] = useState(false),
     [error, setError] = useState('')
   const [maximized, setMaximized] = useState(false),
-    [liveWidth, setLiveWidth] = useState<number>()
+    [liveWidth, setLiveWidth] = useState<number>(),
+    // R-500: the width being dragged to and the frame waiting to write it.
+    dragWidth = useRef(0),
+    dragFrame = useRef<number | undefined>(undefined)
   const [form, setForm] = useState<{ id?: string; original: string }>(),
     [name, setName] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
@@ -732,22 +735,46 @@ export function DesktopShell(props: Props) {
               resizing.current = true
               e.currentTarget.setPointerCapture(e.pointerId)
             }}
+            // R-500: while dragging, the width is written straight to the sidebar once per frame; the shell renders
+            // again only when the drag ends.
             onPointerMove={(e) => {
-              if (resizing.current)
-                setLiveWidth(Math.round(Math.min(360, Math.max(200, e.clientX))))
+              if (!resizing.current) return
+              const slot = e.currentTarget.closest<HTMLElement>('.sidebar-slot')
+              dragWidth.current = Math.round(Math.min(360, Math.max(200, e.clientX)))
+              if (slot) slot.dataset.resizing = 'true'
+              dragFrame.current ??= requestAnimationFrame(() => {
+                dragFrame.current = undefined
+                slot?.style.setProperty('--sidebar-width', dragWidth.current + 'px')
+                slot
+                  ?.querySelector<HTMLElement>(':scope > .project-sidebar')
+                  ?.style.setProperty('width', dragWidth.current + 'px')
+              })
             }}
             onPointerUp={(e) => {
               if (!resizing.current) return
               resizing.current = false
+              if (dragFrame.current !== undefined) cancelAnimationFrame(dragFrame.current)
+              dragFrame.current = undefined
               e.currentTarget.releasePointerCapture(e.pointerId)
               const width = Math.round(Math.min(360, Math.max(200, e.clientX)))
+              // Held until the saved width comes back, so the sidebar does not jump to the old one meanwhile.
+              setLiveWidth(width)
               void mutate({ action: 'layout', sidebarWidth: width }).finally(() =>
                 setLiveWidth(undefined)
               )
             }}
-            onPointerCancel={() => {
+            onPointerCancel={(e) => {
               resizing.current = false
-              setLiveWidth(undefined)
+              if (dragFrame.current !== undefined) cancelAnimationFrame(dragFrame.current)
+              dragFrame.current = undefined
+              // Back to the saved width, which the page was not told about while dragging.
+              const slot = e.currentTarget.closest<HTMLElement>('.sidebar-slot')
+              if (!slot) return
+              slot.dataset.resizing = 'false'
+              slot.style.setProperty('--sidebar-width', prefs.sidebarWidth + 'px')
+              slot
+                .querySelector<HTMLElement>(':scope > .project-sidebar')
+                ?.style.setProperty('width', prefs.sidebarWidth + 'px')
             }}
             onKeyDown={(e) => {
               if (!locked && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {

@@ -167,7 +167,18 @@ function BrowseWorkspaceBody({
     [, renderHistory] = useState(0)
   const scroll = useRef<HTMLDivElement>(null),
     state = useRef(browse),
-    resize = useRef<{ id: string; start: number; width: number } | undefined>(undefined),
+    resize = useRef<
+      | {
+          id: string
+          start: number
+          width: number
+          // R-500: the width being dragged to, the element it is written to, and the frame waiting to write it.
+          live?: number
+          target?: HTMLElement | null
+          frame?: number
+        }
+      | undefined
+    >(undefined),
     timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const all = structure.length ? structure : rows,
     rootRow = all.find((r) => pathKey(r.path) === pathKey(root)),
@@ -685,26 +696,43 @@ function BrowseWorkspaceBody({
     const timer = setTimeout(() => delete panelSlot.current?.dataset.instant, 600)
     return () => clearTimeout(timer)
   }, [ready])
+  // R-500: while dragging, the width is written straight to the page once per frame (the panel's --panel-width, the
+  // table's --col-<id>); nothing re-renders until the drag ends, when the width is kept and saved once.
   const moveWidth = (e: React.PointerEvent) => {
-    if (!resize.current) return
     const r = resize.current
-    if (r.id === 'panel')
-      setBrowse((v) => ({
-        ...v,
-        panelWidth: Math.round(Math.max(280, Math.min(1000, r.width + r.start - e.clientX))),
-      }))
-    else
-      setBrowse((v) => ({
-        ...v,
-        widths: {
-          ...v.widths,
-          [r.id]: Math.round(Math.max(80, Math.min(1000, r.width + e.clientX - r.start))),
-        },
-      }))
+    if (!r) return
+    r.live =
+      r.id === 'panel'
+        ? Math.round(Math.max(280, Math.min(1000, r.width + r.start - e.clientX)))
+        : Math.round(Math.max(80, Math.min(1000, r.width + e.clientX - r.start)))
+    r.target ??= (e.currentTarget as HTMLElement).closest<HTMLElement>(
+      r.id === 'panel' ? '.content-panel-slot' : 'table'
+    )
+    if (r.target && r.id === 'panel') r.target.dataset.resizing = 'true'
+    r.frame ??= requestAnimationFrame(() => {
+      r.frame = undefined
+      if (r.live !== undefined)
+        r.target?.style.setProperty(
+          r.id === 'panel' ? '--panel-width' : '--col-' + r.id,
+          r.live + 'px'
+        )
+    })
   }
   const stopWidth = () => {
+    const r = resize.current
     resize.current = undefined
-    persist(state.current)
+    if (!r) return
+    if (r.frame !== undefined) cancelAnimationFrame(r.frame)
+    if (r.target) {
+      if (r.id === 'panel') r.target.dataset.resizing = 'false'
+      else r.target.style.removeProperty('--col-' + r.id)
+    }
+    if (r.live === undefined) return
+    persist(
+      r.id === 'panel'
+        ? { ...state.current, panelWidth: r.live }
+        : { ...state.current, widths: { ...state.current.widths, [r.id]: r.live } }
+    )
   }
   // Ctrl/Cmd+click marks folders one by one, Shift+click marks a range; a plain click clears the marks.
   const clearTimer = useRef<number | undefined>(undefined)

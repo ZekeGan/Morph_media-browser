@@ -136,9 +136,10 @@ export function FolderTable({
                 aria-sort={
                   sort[0]?.field === c.id ? (sort[0].asc ? 'ascending' : 'descending') : 'none'
                 }
+                // R-500: --col-<id> on the table holds the width while its resizer is dragged.
                 style={{
-                  width: browse.widths[c.id] ?? 180,
-                  minWidth: browse.widths[c.id] ?? 180,
+                  width: `var(--col-${c.id}, ${browse.widths[c.id] ?? 180}px)`,
+                  minWidth: `var(--col-${c.id}, ${browse.widths[c.id] ?? 180}px)`,
                 }}
                 onDragOver={(e) => {
                   if (!busy && draggingColumn() && draggingColumn() !== c.id) {
@@ -222,9 +223,7 @@ export function FolderTable({
                   }}
                   onPointerMove={moveWidth}
                   onPointerUp={stopWidth}
-                  onPointerCancel={() => {
-                    resize.current = undefined
-                  }}
+                  onPointerCancel={stopWidth}
                 />
               </th>
             ))}
@@ -245,7 +244,7 @@ export function FolderTable({
               {columns.map((c) => (
                 <td
                   key={c.id}
-                  style={{ maxWidth: browse.widths[c.id] ?? 180 }}
+                  style={{ maxWidth: `var(--col-${c.id}, ${browse.widths[c.id] ?? 180}px)` }}
                   title={c.id === 'path' ? r.path : undefined}
                 >
                   {c.id === 'name' ? (

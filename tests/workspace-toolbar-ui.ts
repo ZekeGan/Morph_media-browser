@@ -63,6 +63,25 @@ try {
       targetPosition: { x: 2, y: 8 },
     })
   assert.equal(await page.locator('.folder-table th').count(), 2)
+  // R-500: a column follows its resizer while dragged and keeps the width when let go.
+  const levelHead = page.locator('.folder-table th').filter({ hasText: '層級' }),
+    headWidth = async () => (await levelHead.boundingBox())!.width,
+    before = await headWidth(),
+    grip = (await levelHead.locator('.column-resizer').boundingBox())!
+  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(grip.x + grip.width / 2 + 60, grip.y + grip.height / 2, { steps: 4 })
+  await page.waitForFunction(
+    (width) =>
+      [...document.querySelectorAll<HTMLElement>('.folder-table th')]
+        .find((th) => th.textContent?.includes('層級'))!
+        .getBoundingClientRect().width >
+      width + 40,
+    before
+  )
+  await page.mouse.up()
+  await page.waitForTimeout(200)
+  assert.ok((await headWidth()) > before + 40)
   await page.keyboard.press('Alt+Enter')
   await page.locator('.folder-panel-dock-settings').waitFor()
   await page

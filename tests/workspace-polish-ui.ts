@@ -317,6 +317,32 @@ try {
           document.querySelector('[aria-label="調整專案欄寬"]')?.getAttribute('aria-valuenow') ===
           '200'
       )
+      // R-500: dragging follows the pointer without rendering again (the reported width stays until the drag
+      // ends), then the width is kept.
+      const leftBox = (await leftResize.boundingBox())!
+      await page.mouse.move(leftBox.x + 2, leftBox.y + 100)
+      await page.mouse.down()
+      await page.mouse.move(280, leftBox.y + 100, { steps: 4 })
+      await page.waitForFunction(
+        () =>
+          Math.abs(
+            document.querySelector('.project-sidebar')!.getBoundingClientRect().width - 280
+          ) < 2
+      )
+      assert.equal(await leftResize.getAttribute('aria-valuenow'), '200')
+      await page.mouse.up()
+      await page.waitForFunction(
+        () =>
+          document.querySelector('[aria-label="調整專案欄寬"]')?.getAttribute('aria-valuenow') ===
+          '280'
+      )
+      // Back to the narrow sidebar the later layout checks expect.
+      await leftResize.press('Home')
+      await page.waitForFunction(
+        () =>
+          document.querySelector('[aria-label="調整專案欄寬"]')?.getAttribute('aria-valuenow') ===
+          '200'
+      )
       const rightResize = (await page
         .getByRole('separator', { name: '調整資料夾內容寬度', exact: true })
         .boundingBox())!

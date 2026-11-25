@@ -18,6 +18,8 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Dragging the width of the right panel, the project sidebar or a table column no longer stutters: the width follows the pointer directly and the page renders again only when you let go (R-500).
+
 - Sharper pictures: card thumbnails are made at 640 px on the longer side (was 320) with high-quality scaling done once, and existing thumbnails are made again; picture components in the right panel show the original file (R-498, R-499). The layout dialog lists the folders under one parent by name, and in a narrow window its Cancel and Save stay on screen (R-496, R-497). "Back to top" in the right panel always gets there: a smooth scroll the browser drops without starting is followed by a jump to the top.
 
 - A large folder opened for the first time no longer re-sorts its file list while it loads: the files come in the order the list shows (name, type, size or date), and the right side knows whether the folder is a manga or a general folder from its first moment, judged from all its files the way the scan does (R-492, R-494). Pictures named by date (2024-01-02) or by Nikon／Fujifilm／Sony cameras (DSCN0001, DSCF0001, DSC00001) no longer count as manga pages (R-493). In the tree view, cards are replaced by their compact label only when zoomed out much further (below 0.1 instead of 0.45).
