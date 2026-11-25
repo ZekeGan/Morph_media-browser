@@ -18,7 +18,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
-- Picture thumbnails are made with sharp (libvips) in the background instead of in the app window: a big folder opened for the first time shows its pictures about twice as fast; BMP and ICO still use the old way. The installer is about 10 MB larger (R-518).
+- Picture thumbnails are made with sharp (libvips) in the background instead of in the app window: a big folder opened for the first time shows its pictures about twice as fast; BMP and ICO still use the old way. The installed app is about 20 MB larger (R-518).
 
 - Pictures of a folder opened cold appear from the top down, small files first, instead of from the bottom up; scrolling still makes what is on screen first (R-519).
 
