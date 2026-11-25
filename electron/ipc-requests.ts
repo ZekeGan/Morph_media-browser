@@ -124,6 +124,7 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
   },
   content: { rowId: ref, limit: opt(int), cursor: opt(ref), sort: opt(mediaSort) },
   visit: { rowId: ref },
+  warmThumbnails: { rowIds: list(ref, 100) },
   attributes: { ...revisionRow, values: list(object, 10_000), private: bool },
   batch: { rows, attributeId: ref, value: any, mode: oneOf('replace', 'add', 'remove') },
   reading: { ...revisionRow, prefs: object },

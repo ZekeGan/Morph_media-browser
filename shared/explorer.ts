@@ -326,6 +326,8 @@ export type ExplorerRequest =
       sort?: import('./media').MediaSort
     }
   | { action: 'visit'; rowId: string }
+  // R-505: make thumbnails for these folders' first pictures while the window is idle; an empty list stops it.
+  | { action: 'warmThumbnails'; rowIds: string[] }
   | { action: 'attributes'; rowId: string; revision: number; values: Attribute[]; private: boolean }
   | { action: 'removeSource'; rowId: string; revision: number; provider: string }
   | {

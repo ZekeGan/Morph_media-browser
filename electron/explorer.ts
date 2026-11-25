@@ -1,5 +1,6 @@
 import { fmt } from '../shared/message'
 import { isFolderKind } from '../shared/kind'
+import { sameData } from '../shared/sameData'
 import { archiveIndex, type ArchiveIndex } from './archive'
 import { foreignDispose, openArchive } from './archive-foreign'
 import { dateOrText, httpUrl, validFieldValue } from '../shared/fields'
@@ -41,6 +42,7 @@ import { externalPlayerArgs } from '../shared/videoPlayer'
 import { key, probeFile } from './media-files'
 import * as contentFns from './explorer-content'
 import * as streamFns from './explorer-stream'
+import { warmThumbnails } from './thumbnail-warm'
 import * as embeddedFns from './embedded-subtitles'
 import type { EmbeddedTrack } from './mkv-subtitles'
 import * as sourceFns from './explorer-source'
@@ -187,6 +189,7 @@ export class Explorer {
   close() {
     if (this.closed) return
     this.closed = true
+    this.warming?.abort()
     this.index.close()
     this.facts.close()
   }
@@ -202,10 +205,13 @@ export class Explorer {
     mutate: (details: NonNullable<FolderRecord['details']>, record: FolderRecord) => void
   ) {
     const { row, record } = await this.record(rowId, revision)
+    const before = structuredClone(record)
     record.details ??= newDetails()
     mutate(record.details, record)
     validateDetails(record.details)
-    await saveFolder(row.path, record, revision)
+    // R-474: a change that changes nothing (the reader saving the place it opened at) does not rewrite the
+    // folder's record or raise its revision.
+    if (!sameData(before, record)) await saveFolder(row.path, record, revision)
     return this.library.refreshRecord(rowId)
   }
   async targetPath(root: string, file: string, kind: 'exe' | 'game' | 'folder' | 'file') {
@@ -291,6 +297,13 @@ export class Explorer {
   }
   async trimThumbnails() {
     return streamFns.trimThumbnails(this)
+  }
+  // R-505: the background thumbnail work running now, stopped by the next request.
+  warming?: AbortController
+  // Folders whose first pictures were all warmed in this session (not listed again on a restart).
+  warmed = new Set<string>()
+  warmThumbnails(rowIds: string[]) {
+    warmThumbnails(this, rowIds)
   }
   checkValue(a: Attribute, record: FolderRecord) {
     if (!key(a.attributeId) || typeof a.key !== 'string' || a.key.length > 100)
@@ -382,6 +395,9 @@ export class Explorer {
     if (req.action === 'visit') return this.after(await this.library.visit(req.rowId))
     if (!req || typeof req.action !== 'string') throw new Error('無效的操作')
     switch (req.action) {
+      case 'warmThumbnails':
+        this.warmThumbnails(req.rowIds)
+        return {}
       case 'archive': {
         const file = await this.file(req.rowId, req.fileId)
         if (

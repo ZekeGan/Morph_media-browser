@@ -1,19 +1,8 @@
 // R-501: every snapshot from main arrives as new objects, even for folders and projects that did not change (opening
 // a folder re-reads its record). Keeping the objects that are the same lets memoized cards skip drawing again.
 
-// Plain data equality (what crosses IPC): same keys and equal values all the way down; stops at the first difference.
-export function sameData(a: unknown, b: unknown): boolean {
-  if (a === b) return true
-  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false
-  if (Array.isArray(a) !== Array.isArray(b)) return false
-  const left = a as Record<string, unknown>,
-    right = b as Record<string, unknown>,
-    keys = Object.keys(left)
-  if (keys.length !== Object.keys(right).length) return false
-  for (const key of keys)
-    if (!Object.hasOwn(right, key) || !sameData(left[key], right[key])) return false
-  return true
-}
+import { sameData } from '../../shared/sameData'
+export { sameData }
 
 // The next list with each item that equals the previous one (same id) replaced by that previous object; the
 // previous list itself when nothing changed at all.

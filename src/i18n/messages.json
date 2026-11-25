@@ -13480,5 +13480,11 @@
     "en": "Group by source (include subfolders first)",
     "ja": "ソース別にグループ化（先にサブフォルダーを含める）",
     "es": "Agrupar por origen (incluye subcarpetas primero)"
+  },
+  "縮圖預備範圍不合法": {
+    "zh-CN": "缩略图预备范围不合法",
+    "en": "Invalid range for preparing thumbnails",
+    "ja": "サムネイルの事前作成範囲が不正です",
+    "es": "Rango no válido para preparar miniaturas"
   }
 }

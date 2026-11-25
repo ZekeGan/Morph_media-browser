@@ -40,6 +40,7 @@
         "src/browse/useCardSettings*",
         "src/browse/useWidthDrag*",
         "src/browse/useFolderMarks*",
+        "src/browse/useWarmThumbnails*",
         "src/browse/useTableColumns*",
         "src/browse/TreeView*",
         "src/browse/TreeCardNode*",
@@ -52,6 +53,7 @@
         "src/browse/folderKind*",
         "src/browse/refresh*",
         "src/common/keepUnchanged*",
+        "shared/sameData*",
         "shared/browse*",
         "shared/kind*"
       ],
@@ -146,7 +148,8 @@
         "electron/explorer.ts",
         "electron/explorer-content*",
         "electron/explorer-source*",
-        "electron/explorer-stream*"
+        "electron/explorer-stream*",
+        "electron/thumbnail-warm*"
       ],
       "ui": ["media-scope-ui", "media-workspace-ui", "audio-playback-ui", "media-feedback-ui", "podcast-resume-ui"],
       "tests": ["media-workspace.test.ts", "explorer.test.ts", "album.test.ts", "podcast.test.ts", "video-place.test.ts"]

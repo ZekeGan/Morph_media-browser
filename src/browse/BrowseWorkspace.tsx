@@ -29,6 +29,7 @@ import { Card } from '../cells/Card'
 import { useCardSettings } from './useCardSettings'
 import { useWidthDrag } from './useWidthDrag'
 import { useFolderMarks } from './useFolderMarks'
+import { useWarmThumbnails } from './useWarmThumbnails'
 import { useTableColumns } from './useTableColumns'
 import { FolderTable } from './FolderTable'
 import { KindBatchBar } from './KindBatchBar'
@@ -341,6 +342,12 @@ function BrowseWorkspaceBody({
       (Math.min(page, pages) - 1) * pageSize,
       Math.min(page, pages) * pageSize
     )
+  // R-505: the listed folders' pictures get their thumbnails while the window is idle.
+  useWarmThumbnails(
+    ready && !busy
+      ? current.filter((r) => r.record && !r.readonly && !r.error).map((r) => r.rowId)
+      : []
+  )
   useEffect(() => {
     if (browse.mode !== 'CARD' || !ready || card.mode !== 'multi' || !selected) return
     const index = filtered.findIndex((r) => r.rowId === selected)

@@ -18,6 +18,8 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Reading no longer rewrites a folder's record when nothing changed: closing the reader on the page it opened at (or setting a value it already had) leaves folder.json and its revision as they were (R-474). While the window sits idle, the pictures of the folders on screen get their thumbnails made in the background, so opening one shows its pictures at once; any click, wheel or key pauses it, and it stops when the thumbnail cache is well filled (R-505).
+
 - Internal: parts of the window's state moved out of its two largest components into their own hooks (width drag, folder marks and gestures, the new project dialog, taking in snapshots, unsaved drafts); nothing changes on screen (R-243).
 
 - Faster everyday browsing: selecting a folder, scrolling, switching the panel tab or hovering no longer draws every card on the page again (selecting one used to draw each card four times); the app starts with about 14% less code to load (the layout editor and the document viewer load when first used, and only the interface language in use is prepared); the thumbnail cache keeps up to 20,000 thumbnails or 1 GiB, dropping the least recently used first (it held 3,000 and was always full) (R-501, R-502, R-503).

@@ -226,7 +226,7 @@ export async function file(ex: Explorer, rowId: string, id: string) {
 
 // The n-th image file (by name) directly inside the folder, as a thumbnail; used by image cells that pick by position.
 // The files directly inside a folder, in reading order: not hidden, not links.
-async function folderFiles(row: { path: string }) {
+export async function folderFiles(row: { path: string }) {
   let hidden = new Set<string>()
   try {
     hidden = await hiddenFileNames(row.path)
@@ -239,7 +239,7 @@ async function folderFiles(row: { path: string }) {
     .sort((a, b) => mediaNames.compare(a, b) || (a < b ? -1 : a > b ? 1 : 0))
 }
 // Makes a file inside the folder servable and returns its id (the same id the folder listing gives it).
-async function serveFile(
+export async function serveFile(
   ex: Explorer,
   row: { path: string },
   rowId: string,
@@ -252,7 +252,7 @@ async function serveFile(
   ex.files.set(`${rowId}/${id}`, { rowId, name, file, mime })
   return id
 }
-const imageMime = (name: string) => imageTypes[path.extname(name).slice(1).toLowerCase()]
+export const imageMime = (name: string) => imageTypes[path.extname(name).slice(1).toLowerCase()]
 // R-499: `?full=1` asks for the original picture (the right panel draws it large); without it, the thumbnail.
 const wantsFull = (request: globalThis.Request) =>
   new URL(request.url).searchParams.get('full') === '1'

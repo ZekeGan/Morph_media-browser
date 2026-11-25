@@ -101,6 +101,27 @@ export async function readAudioCover(
   }
 }
 
+// Where a file's thumbnail is kept: named by the file, its size and time, and the thumbnail size generation (so
+// thumbnails made at an older size are not reused). The folder is made if missing.
+export async function thumbCachePath(
+  ex: Explorer,
+  entry: { file: string; mime: string; stat: { size: number; mtimeMs: number } }
+) {
+  const cache = path.join(ex.root, 'thumbnails')
+  await fs.mkdir(cache, { recursive: true })
+  const file = path.join(
+    cache,
+    createHash('sha256')
+      .update(
+        `${entry.file}/${entry.stat.size}/${entry.stat.mtimeMs}` +
+          (entry.mime.startsWith('video/') ? '/480' : '/' + THUMB_EDGE)
+      )
+      .digest('hex') + '.jpg'
+  )
+  await safePath(ex.root, file)
+  return file
+}
+
 export async function stream(
   ex: Explorer,
   rowId: string,
@@ -113,19 +134,7 @@ export async function stream(
     if (thumbnail) {
       if (!/^(image|video)\//.test(entry.mime))
         return new globalThis.Response(null, { status: 415 })
-      const cache = path.join(ex.root, 'thumbnails')
-      await fs.mkdir(cache, { recursive: true })
-      const file = path.join(
-        cache,
-        createHash('sha256')
-          // Video previews are cached per size generation, so the old low-resolution ones are not reused.
-          .update(
-            `${entry.file}/${entry.stat.size}/${entry.stat.mtimeMs}` +
-              (entry.mime.startsWith('video/') ? '/480' : '/' + THUMB_EDGE)
-          )
-          .digest('hex') + '.jpg'
-      )
-      await safePath(ex.root, file)
+      const file = await thumbCachePath(ex, entry)
       const bytes = await ex.thumbnail(
         file,
         entry.file,

@@ -11,6 +11,21 @@ import type { LocaleId } from '../shared/locales'
 import { nativeText } from '../shared/native-messages'
 import { closeApp } from './support/app'
 
+// R-474: the fields that differ between two records, as "path: before → after".
+const recordDiff = (before: unknown, after: unknown, at = ''): string[] => {
+  if (JSON.stringify(before) === JSON.stringify(after)) return []
+  if (before && after && typeof before === 'object' && typeof after === 'object') {
+    const keys = new Set([...Object.keys(before), ...Object.keys(after)])
+    return [...keys].flatMap((key) =>
+      recordDiff(
+        (before as Record<string, unknown>)[key],
+        (after as Record<string, unknown>)[key],
+        at ? at + '.' + key : key
+      )
+    )
+  }
+  return [`${at}: ${JSON.stringify(before)} → ${JSON.stringify(after)}`]
+}
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
 const root = await fs.mkdtemp(path.join(base, 'appearance-')),
@@ -150,6 +165,7 @@ try {
     .click()
   await page.locator('.media-thumbnail img').first().waitFor()
   const records = new Map<string, Buffer>()
+  let readerOpened = false
   for (const row of (await page.evaluate(() => window.media.request({ action: 'snapshot' })))
     .snapshot.structure ?? [])
     if (row.record) records.set(folderFile(row.path), await fs.readFile(folderFile(row.path)))
@@ -188,13 +204,17 @@ try {
         false
       )
     }
-    for (const [file, bytes] of records)
-      assert.deepEqual(
-        await fs.readFile(file),
-        bytes,
-        'Appearance changed a folder record: ' + file
-      )
+    // R-474: when a record changed, say where in the run it happened and which fields, so a rare rewrite can be traced.
+    for (const [file, bytes] of records) {
+      const now = await fs.readFile(file)
+      if (!now.equals(bytes))
+        assert.fail(
+          `Appearance changed a folder record (theme ${theme}, ${readerOpened ? 'after' : 'before'} the reader was opened): ${file}\n` +
+            recordDiff(JSON.parse(bytes.toString()), JSON.parse(now.toString())).join('\n')
+        )
+    }
     await page.locator('.media-thumbnail').first().click()
+    readerOpened = true
     await page.getByRole('dialog', { name: '漫畫閱讀器', exact: true }).waitFor()
     await page.locator('.reader-spread img').first().waitFor()
     await page.screenshot({
@@ -206,8 +226,14 @@ try {
     await page.waitForFunction(() =>
       document.querySelector('.statusbar')?.textContent?.includes('就緒')
     )
-    // R-448: reading preferences are saved in the background (the app is not marked busy); wait until the records
-    // have stayed the same for half a second.
+    // R-448: reading preferences are saved in the background (the app is not marked busy). R-474: the first save can
+    // start later than half a second after the reader closes, so first wait until the book's record holds its reading
+    // place (saving the same place again later writes nothing), then until the records stay the same for half a second.
+    const book = [...records.keys()].find((file) => file.includes('雨後書店'))!
+    for (let i = 0; i < 100; i++) {
+      if (JSON.parse(await fs.readFile(book, 'utf8')).details?.reading) break
+      await page.waitForTimeout(100)
+    }
     for (let still = 0, last = '', i = 0; still < 5 && i < 60; i++) {
       const now = (
         await Promise.all([...records.keys()].map((file) => fs.readFile(file, 'utf8')))
@@ -271,8 +297,14 @@ try {
     await page.keyboard.press('Escape')
     await page.setViewportSize({ width: 1440, height: 900 })
   }
-  for (const [file, bytes] of [...originals, ...records])
-    assert.deepEqual(await fs.readFile(file), bytes, file)
+  for (const [file, bytes] of [...originals, ...records]) {
+    const now = await fs.readFile(file)
+    if (!now.equals(bytes))
+      assert.fail(
+        `A folder record changed after the last theme's checks: ${file}\n` +
+          recordDiff(JSON.parse(bytes.toString()), JSON.parse(now.toString())).join('\n')
+      )
+  }
   assert.deepEqual(errors, [])
   console.log(
     'PASS three themes across CARD/TABLE/TREE, five languages, preview/cancel, reload, sidebar hidden, 800px, unchanged user data and no renderer exceptions'

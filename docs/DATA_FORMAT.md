@@ -1,6 +1,6 @@
 # 資料格式參考
 
-> 最後確認：2026-11-25（R-481,R-482,R-483,R-484）。可攜記錄與應用程式資料的格式；型別以 `shared/model.ts`、`shared/workspace.ts` 為準，升級在 `shared/upgrade.ts`。
+> 最後確認：2026-11-25（R-474）。可攜記錄與應用程式資料的格式；型別以 `shared/model.ts`、`shared/workspace.ts` 為準，升級在 `shared/upgrade.ts`。
 
 M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是可重建的副本。此頁列出各檔案的位置與欄位，讓其他工具或貢獻者能讀懂；設計理由見 [資料模型](FOLDER_PROJECT_MODEL.md) 與 [儲存安全](STORAGE_OPTIONS.md)，型別定義的原始碼是 [shared/model.ts](../shared/model.ts)、[shared/explorer.ts](../shared/explorer.ts)、[shared/workspace.ts](../shared/workspace.ts)，驗證在同檔的 `validate*` 函式。
 
@@ -26,7 +26,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 | 欄位 | 型別 | 說明 |
 | --- | --- | --- |
 | `folderId` | 字串 | 資料夾的穩定身分，搬移資料夾後不變 |
-| `revision` | 整數 | 每次寫入加一；寫入時要帶上讀到的版本，不符就拒絕（版本衝突，草稿保留） |
+| `revision` | 整數 | 每次寫入加一；寫入時要帶上讀到的版本，不符就拒絕（版本衝突，草稿保留）。修改後內容與原本相同（例如閱讀器保存同一個閱讀位置）時不寫入，版本不變（R-474） |
 | `attributes` | 陣列 | 共用屬性，見下表 |
 | `projectOverrides` | 物件 | `projectId → 屬性陣列`：只對某個專案有效的私有覆寫，必須刻意建立 |
 | `assets` | 陣列 | `{ assetId, relativePath, originalName, mediaType, role? }`，圖片與資產；`role`（R-422，**暫定**，選用，不升 `schemaVersion`）是從網站匯入的圖片用途：`screenshot`、`hero`、`logo`、`icon`，其他值視為資料不合法；圖片組件可選用橫幅、標誌、圖示（R-435，見 Cell 的 `imageRole`） |

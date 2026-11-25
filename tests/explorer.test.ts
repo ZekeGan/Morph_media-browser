@@ -10,7 +10,7 @@ import { ehMetadata } from '../electron/metadata'
 import { parseQuery } from '../shared/query'
 import { parseSubtitles } from '../shared/subtitles'
 import { DATA_DIR, validateProject, type Attribute } from '../shared/model'
-import { exists, readFolder } from '../electron/files'
+import { exists, folderFile, readFolder } from '../electron/files'
 async function fixture(t: { after: (fn: () => Promise<void>) => void }) {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
@@ -1057,6 +1057,57 @@ test('the n-th image of a folder is chosen by natural file order, direct files o
   assert.equal(await full.text(), 'IMAGE')
   const cover = await explorer.folderCover(row.rowId, new Request('media://cover/x?full=1'))
   assert.equal(await cover.text(), 'IMAGE')
+})
+test('R-474: saving the same reading place again does not rewrite the record', async (t) => {
+  const { media, lib, explorer } = await fixture(t)
+  await fs.writeFile(path.join(media, '001.png'), 'IMAGE')
+  const row = (await lib.create(media, { name: 'Read', depth: { mode: 'through', level: 1 } }))
+      .rows[0],
+    file = folderFile(media),
+    save = async (prefs: Record<string, unknown>) => {
+      const revision = (await readFolder(media)).revision
+      await explorer.request({ action: 'reading', rowId: row.rowId, revision, prefs })
+    }
+  await save({ page: 3, rtl: true })
+  const saved = await fs.readFile(file, 'utf8')
+  // The same place, its keys in another order: nothing is written, the revision stays.
+  await save({ rtl: true, page: 3 })
+  assert.equal(await fs.readFile(file, 'utf8'), saved)
+  // A new place is written.
+  await save({ page: 4, rtl: true })
+  assert.equal((await readFolder(media)).details?.reading?.page, 4)
+  assert.equal((await readFolder(media)).revision, JSON.parse(saved).revision + 1)
+})
+test('R-505: idle warm-up makes the listed folders’ thumbnails once, stops on an empty list', async (t) => {
+  const { root, media, lib, explorer } = await fixture(t)
+  for (const name of ['a.jpg', 'b.png', 'c.jpg', 'notes.txt'])
+    await fs.writeFile(path.join(media, name), 'IMAGE')
+  const row = (await lib.create(media, { name: 'Warm', depth: { mode: 'through', level: 1 } }))
+    .rows[0]
+  const made: string[] = []
+  ;((explorer as any).desktop as DesktopOperations).thumbnail = async (file) => {
+    made.push(path.basename(file))
+    return Buffer.from([255, 216, 255, 0, 255, 217])
+  }
+  const settle = async () => {
+    for (let i = 0; i < 100 && explorer.warming; i++)
+      await new Promise((resolve) => setTimeout(resolve, 20))
+  }
+  explorer.warmThumbnails([row.rowId])
+  await settle()
+  assert.deepEqual(made.sort(), ['a.jpg', 'b.png', 'c.jpg'])
+  const cache = path.join(root, 'local', 'thumbnails')
+  assert.equal((await fs.readdir(cache)).filter((name) => name.endsWith('.jpg')).length, 3)
+  // Already made: nothing is made again.
+  explorer.warmThumbnails([row.rowId])
+  await settle()
+  assert.equal(made.length, 3)
+  // An empty list stops what is running; bad input is refused.
+  explorer.warmThumbnails([row.rowId])
+  explorer.warmThumbnails([])
+  assert.equal(explorer.warming, undefined)
+  assert.throws(() => explorer.warmThumbnails('x' as never), /不合法/)
+  assert.throws(() => explorer.warmThumbnails(Array.from({ length: 101 }, () => 'x')), /不合法/)
 })
 test('R-502: a thumbnail served from the cache counts as recently used', async (t) => {
   const { root, media, lib, explorer } = await fixture(t)
