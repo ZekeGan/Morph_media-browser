@@ -390,7 +390,7 @@
       "id": "notices",
       "name": "通知與錯誤提示",
       "docs": ["UI_RULES.md#保存焦點與狀態"],
-      "code": ["src/App.tsx", "src/notices/Toasts*", "src/notices/errors*", "src/notices/ErrorBoundary*", "shared/notifications*"],
+      "code": ["src/App.tsx", "src/useSnapshot*", "src/useDrafts*", "src/notices/Toasts*", "src/notices/errors*", "src/notices/ErrorBoundary*", "shared/notifications*"],
       "ui": ["notifications-ui", "error-recovery-ui"],
       "tests": ["error-message.test.ts"]
     },

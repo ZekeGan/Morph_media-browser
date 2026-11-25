@@ -1,29 +1,12 @@
 import { selectPreset, syncPresetDraft } from '../shared/layouts'
 import { t as tr, useLocale } from './i18n'
-import {
-  startTransition,
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
-import { flushSync } from 'react-dom'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Button, Checkbox, Group, Modal, Stack } from '@mantine/core'
-import type {
-  RootSelection,
-  CleanupPreview,
-  Project,
-  ProjectInput,
-  Request,
-  Response,
-  Snapshot,
-} from '../shared/model'
+import type { CleanupPreview, Project, Request, Response } from '../shared/model'
 import { usePlayback } from './media/Playback'
-import { keepUnchanged } from './common/keepUnchanged'
+import { useCreateProject } from './useCreateProject'
+import { useSnapshot } from './useSnapshot'
+import { useDrafts } from './useDrafts'
 // R-503: the layout editor (with its grid library) is loaded the first time it opens, not at start.
 const Editor = lazy(() => import('./editor/Editor').then((module) => ({ default: module.Editor })))
 import { ProjectSettings } from './settings/ProjectSettings'
@@ -42,71 +25,15 @@ import {
 import { isFolderKind, type FolderKind } from '../shared/kind'
 import { BrowseWorkspace } from './browse/BrowseWorkspace'
 import { panelEditorStart, type ExplorerRequest, type ExplorerResponse } from '../shared/explorer'
-import type { WorkspacePrefs } from '../shared/workspace'
 import { describeError } from './notices/errors'
 import type { Notice } from '../shared/notifications'
 
-const empty: Snapshot = {
-  projects: [],
-  rows: [],
-  problems: [],
-  progress: { visited: 0, created: 0, errors: 0, active: false, cancelled: false },
-}
 type Act = (request: Request) => Promise<Response | undefined>
 export function App() {
   useLocale()
 
-  const [snapshot, setSnapshot] = useState(empty),
-    [selected, setSelected] = useState('')
-  // R-448: the newest snapshot generation taken in (from main), and a reading save's snapshot waiting for an idle
-  // moment. A snapshot older than what is shown is never taken in.
-  const shownGeneration = useRef(0),
-    waiting = useRef<Snapshot | undefined>(undefined)
-  const takeSnapshot = (next: Snapshot) => {
-    // One without a number (not from main's library) is taken in as it is, leaving the mark where it was.
-    if (next.generation !== undefined) {
-      if (next.generation <= shownGeneration.current) return
-      shownGeneration.current = next.generation
-    }
-    // R-501: folders and projects that did not change keep their objects, so cards that show them are not drawn again.
-    setSnapshot((previous) => ({
-      ...next,
-      projects: keepUnchanged(previous.projects, next.projects, (p) => p.projectId)!,
-      rows: keepUnchanged(previous.rows, next.rows, (r) => r.rowId)!,
-      structure: keepUnchanged(previous.structure, next.structure, (r) => r.rowId),
-    }))
-  }
-  // A reading place saved in the background: its snapshot is taken in when the window is idle, newest only.
-  const takeLater = (next: Snapshot) => {
-    if ((next.generation ?? 0) <= (waiting.current?.generation ?? 0)) return
-    const first = !waiting.current
-    waiting.current = next
-    if (!first) return
-    const take = () => {
-      const latest = waiting.current
-      waiting.current = undefined
-      if (latest) startTransition(() => takeSnapshot(latest))
-    }
-    if ('requestIdleCallback' in window) window.requestIdleCallback(take, { timeout: 3000 })
-    else setTimeout(take, 0)
-  }
-  // Pressing anything outside the novel reader first takes in a waiting snapshot, so an edit made right after
-  // reading sends the record's current revision (capture phase: before React's handlers read their props).
-  useEffect(() => {
-    const flush = (event: Event) => {
-      const latest = waiting.current
-      if (!latest) return
-      if ((event.target as Element | null)?.closest?.('.novel-reader')) return
-      waiting.current = undefined
-      flushSync(() => takeSnapshot(latest))
-    }
-    document.addEventListener('pointerdown', flush, true)
-    document.addEventListener('keydown', flush, true)
-    return () => {
-      document.removeEventListener('pointerdown', flush, true)
-      document.removeEventListener('keydown', flush, true)
-    }
-  }, [])
+  const { snapshot, takeSnapshot, takeLater, takeProgress } = useSnapshot()
+  const [selected, setSelected] = useState('')
   const [busy, setBusy] = useState(false),
     busyRef = useRef(false)
   const [notice, setNoticeState] = useState<Notice>(),
@@ -134,25 +61,11 @@ export function App() {
   const [settingsOverlay, setSettingsOverlay] = useState(false)
   const [toolbarTarget, setToolbarTarget] = useState<HTMLDivElement | null>(null)
   const [refreshNonce, setRefreshNonce] = useState(0)
-  const [createOpen, setCreateOpen] = useState(false),
-    [input, setInput] = useState<ProjectInput>({
-      // Filled with the localized default when the dialog opens (the locale is not loaded yet at first render).
-      name: '',
-      depth: { mode: 'through', level: 50 },
-      scanAll: true,
-    })
-  const [rootChoice, setRootChoice] = useState<RootSelection>(),
-    [createGroup, setCreateGroup] = useState(''),
-    [groups, setGroups] = useState<WorkspacePrefs['groups']>([]),
-    [settingsOpen, setSettingsOpen] = useState(false),
+  const create = useCreateProject(notifyError),
+    createOpen = create.opened,
+    setCreateOpen = create.setOpened
+  const [settingsOpen, setSettingsOpen] = useState(false),
     [settingsStart, setSettingsStart] = useState<{ tab: string; site?: string }>()
-  useEffect(() => {
-    if (createOpen)
-      void window.desktop
-        .workspace()
-        .then((r) => setGroups(r.prefs.groups))
-        .catch((e) => notifyError(String(e)))
-  }, [createOpen, notifyError])
   const [templateCategory, setTemplateCategory] = useState<string>()
   // R-363: the book template to open first (one folder's own); saving it then leaves the project default alone.
   const [templatePreset, setTemplatePreset] = useState<string>()
@@ -164,11 +77,7 @@ export function App() {
     [editor, setEditor] = useState(false),
     [detailsId, setDetailsId] = useState<string>(),
     [problems, setProblems] = useState(false)
-  const [detailDirty, setDetailDirty] = useState(false),
-    [editorDirty, setEditorDirty] = useState(false)
-  const [shellDirty, setShellDirty] = useState(false),
-    [shellOverlay, setShellOverlay] = useState(false)
-  const [appearanceDirty, setAppearanceDirty] = useState(false)
+  const [shellOverlay, setShellOverlay] = useState(false)
   const [cleanup, setCleanup] = useState<CleanupPreview>(),
     [restart, setRestart] = useState(false)
   const act: Act = useCallback(
@@ -202,11 +111,40 @@ export function App() {
   )
   useEffect(() => {
     act({ action: 'snapshot' })
-    return window.media.onProgress((progress) => setSnapshot((s) => ({ ...s, progress })))
+    return window.media.onProgress(takeProgress)
   }, [act])
   useEffect(() => {
     if (selected && !snapshot.projects.some((p) => p.projectId === selected)) setSelected('')
   }, [snapshot.projects, selected])
+  // Other parts of the window can open the settings on a tab, e.g. the website keys from a source preview (R-285).
+  useEffect(() => {
+    const open = (event: Event) => {
+      const detail = (event as CustomEvent<{ tab: string; site?: string }>).detail
+      setSettingsStart(detail)
+      setSettingsOpen(true)
+    }
+    window.addEventListener('morph:open-settings', open)
+    return () => window.removeEventListener('morph:open-settings', open)
+  }, [])
+  const playback = usePlayback()
+  useEffect(() => {
+    playback?.reconcile(snapshot.projects.map((link) => link.projectId))
+  }, [snapshot.projects])
+  const linked = snapshot.projects.find((p) => p.projectId === selected),
+    project = linked?.project
+  const settingsDirty =
+    !!settings &&
+    JSON.stringify(settings) !==
+      JSON.stringify(snapshot.projects.find((p) => p.projectId === settings.projectId)?.project)
+  const {
+    detailDirty,
+    setDetailDirty,
+    setEditorDirty,
+    setShellDirty,
+    setAppearanceDirty,
+    unsaved,
+    confirmLeave,
+  } = useDrafts({ settingsDirty, creating: createOpen, busy: busyRef })
   const modalOpen =
     createOpen ||
     settingsOpen ||
@@ -232,28 +170,6 @@ export function App() {
     window.addEventListener('focus', focus)
     return () => window.removeEventListener('focus', focus)
   }, [modalOpen, selected, act])
-  // Other parts of the window can open the settings on a tab, e.g. the website keys from a source preview (R-285).
-  useEffect(() => {
-    const open = (event: Event) => {
-      const detail = (event as CustomEvent<{ tab: string; site?: string }>).detail
-      setSettingsStart(detail)
-      setSettingsOpen(true)
-    }
-    window.addEventListener('morph:open-settings', open)
-    return () => window.removeEventListener('morph:open-settings', open)
-  }, [])
-  const playback = usePlayback()
-  useEffect(() => {
-    playback?.reconcile(snapshot.projects.map((link) => link.projectId))
-  }, [snapshot.projects])
-  const linked = snapshot.projects.find((p) => p.projectId === selected),
-    project = linked?.project
-  const settingsDirty =
-    !!settings &&
-    JSON.stringify(settings) !==
-      JSON.stringify(snapshot.projects.find((p) => p.projectId === settings.projectId)?.project)
-  const unsaved = detailDirty || editorDirty || settingsDirty || shellDirty || appearanceDirty
-  const dirty = unsaved || createOpen
   const clearEditors = () => {
     setEditor(false)
     setTemplateCategory(undefined)
@@ -261,7 +177,6 @@ export function App() {
     setSettings(undefined)
     setSettingsOpen(false)
   }
-  const confirmLeave = () => !dirty || window.confirm(tr('離開會放棄尚未保存的草稿，確定繼續？'))
   const openProject = (id: string, rowId?: string, confirmed = false) => {
     if (!confirmed && !confirmLeave()) return false
     clearEditors()
@@ -273,23 +188,10 @@ export function App() {
   const beginCreate = () => {
     if (confirmLeave()) {
       clearEditors()
-      setInput((current) => ({ ...current, name: '' }))
-      setRootChoice(undefined)
-      setCreateGroup('')
-      setCreateOpen(true)
+      create.begin()
     }
   }
   const beginLink = () => beginCreate()
-  useLayoutEffect(() => {
-    const beforeUnload = (event: BeforeUnloadEvent) => {
-      if (dirty || busyRef.current) {
-        event.preventDefault()
-        event.returnValue = ''
-      }
-    }
-    window.addEventListener('beforeunload', beforeUnload)
-    return () => window.removeEventListener('beforeunload', beforeUnload)
-  }, [dirty])
   const rows = useMemo(
       () => snapshot.rows.filter((r) => r.projectId === selected),
       [snapshot.rows, selected]
@@ -578,13 +480,7 @@ export function App() {
       <CreateProjectDialog
         opened={createOpen}
         busy={busy}
-        input={input}
-        setInput={setInput}
-        groups={groups}
-        group={createGroup}
-        setGroup={setCreateGroup}
-        rootChoice={rootChoice}
-        setRootChoice={setRootChoice}
+        {...create.fields}
         act={act}
         link={async (rootToken) => {
           const before = new Set(snapshot.projects.map((p) => p.projectId)),
@@ -597,24 +493,21 @@ export function App() {
           if (next) openProject(next.projectId, undefined, true)
         }}
         close={() => {
-          if (
-            !busy &&
-            ((!rootChoice && !input.name.trim()) ||
-              window.confirm(tr('取消新增專案？尚未建立資料。')))
-          )
+          if (!busy && (create.empty || window.confirm(tr('取消新增專案？尚未建立資料。'))))
             setCreateOpen(false)
         }}
         create={async () => {
+          const { input, rootChoice, group } = create.fields
           const result = await act({ action: 'create', input, rootToken: rootChoice!.token })
           if (result && !result.cancelled) {
             const id = result.snapshot.projects.at(-1)?.projectId
             if (id) {
-              if (createGroup)
+              if (group)
                 try {
                   await window.desktop.updateWorkspace({
                     action: 'moveProject',
                     projectId: id,
-                    groupId: createGroup,
+                    groupId: group,
                   })
                 } catch (e) {
                   notifyError(tr('專案已建立，但群組保存失敗：') + String(e))
