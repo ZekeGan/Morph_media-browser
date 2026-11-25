@@ -48,6 +48,7 @@
         "src/browse/folderStats*",
         "src/browse/folderKind*",
         "src/browse/refresh*",
+        "src/common/keepUnchanged*",
         "shared/browse*",
         "shared/kind*"
       ],
@@ -59,7 +60,13 @@
         "game-folder-page-ui",
         "image-delete-ui"
       ],
-      "tests": ["browse.test.ts", "revision.test.ts", "folder-kind.test.ts", "browse-works.test.ts"]
+      "tests": [
+        "browse.test.ts",
+        "revision.test.ts",
+        "folder-kind.test.ts",
+        "browse-works.test.ts",
+        "keep-unchanged.test.ts"
+      ]
     },
     {
       "id": "panel",

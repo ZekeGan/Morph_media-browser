@@ -277,7 +277,12 @@ export async function thumbnail(
   // Warm thumbnails never wait behind unrelated cold image decoding.
   try {
     const bytes = await fs.readFile(cache)
-    if (jpeg(bytes)) return bytes
+    if (jpeg(bytes)) {
+      // R-502: a thumbnail in use counts as new, so trimming drops the ones not seen for longest.
+      const now = new Date()
+      void fs.utimes(cache, now, now).catch(() => {})
+      return bytes
+    }
   } catch {}
   if (signal.aborted) throw new Error('縮圖已取消')
   const pending = ex.thumbnailJobs.get(cache)
@@ -313,6 +318,10 @@ export async function thumbnail(
   }
 }
 
+// R-502: how much the thumbnail cache keeps, least recently used dropped first. A 640 px thumbnail is about 63 KB,
+// so the size limit holds about 16,000 of them (3,000 before was always full and kept remaking thumbnails).
+export const THUMB_CACHE_FILES = 20000,
+  THUMB_CACHE_BYTES = 1024 * 1024 * 1024
 export async function trimThumbnails(ex: Explorer) {
   const cache = path.join(ex.root, 'thumbnails')
   await safePath(ex.root, cache)
@@ -327,7 +336,7 @@ export async function trimThumbnails(ex: Explorer) {
   let size = files.reduce((sum, f) => sum + f.size, 0),
     count = files.length
   for (const f of files.sort((a, b) => a.time - b.time)) {
-    if (count <= 3000 && size <= 512 * 1024 * 1024) break
+    if (count <= THUMB_CACHE_FILES && size <= THUMB_CACHE_BYTES) break
     await safePath(cache, f.file)
     await fs.unlink(f.file)
     size -= f.size

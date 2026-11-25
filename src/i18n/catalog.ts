@@ -53,17 +53,24 @@ const terminology: Record<LocaleId, Record<string, string>> = {
   },
 }
 // Only translate catalogued interface messages. User data is substituted afterwards.
-export const catalog = Object.fromEntries(
-  (['zh-TW', 'ja', 'zh-CN', 'en', 'es'] as const).map((locale) => [
-    locale,
-    Object.fromEntries(
-      Object.entries(messages).map(([source, value]) => [
-        source,
-        (locale === 'zh-TW' ? source : value[locale]).replace(
-          /\b(CARD|TABLE|TREE|CELL|ROOT|ICON|SELECT|Hover)\b/g,
-          (token) => terminology[locale][token]
-        ),
-      ])
-    ),
-  ])
+// R-503: a language's table is built the first time it is read, so starting the app builds one, not five.
+const built: Partial<Record<LocaleId, Record<string, string>>> = {}
+const build = (locale: LocaleId) =>
+  Object.fromEntries(
+    Object.entries(messages).map(([source, value]) => [
+      source,
+      (locale === 'zh-TW' ? source : value[locale]).replace(
+        /\b(CARD|TABLE|TREE|CELL|ROOT|ICON|SELECT|Hover)\b/g,
+        (token) => terminology[locale][token]
+      ),
+    ])
+  )
+export const catalog = Object.defineProperties(
+  {},
+  Object.fromEntries(
+    (['zh-TW', 'ja', 'zh-CN', 'en', 'es'] as const).map((locale) => [
+      locale,
+      { enumerable: true, get: () => (built[locale] ??= build(locale)) },
+    ])
+  )
 ) as Record<LocaleId, Record<string, string>>

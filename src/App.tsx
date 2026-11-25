@@ -2,6 +2,8 @@ import { selectPreset, syncPresetDraft } from '../shared/layouts'
 import { t as tr, useLocale } from './i18n'
 import {
   startTransition,
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -20,8 +22,10 @@ import type {
   Response,
   Snapshot,
 } from '../shared/model'
-import { Editor } from './editor/Editor'
 import { usePlayback } from './media/Playback'
+import { keepUnchanged } from './common/keepUnchanged'
+// R-503: the layout editor (with its grid library) is loaded the first time it opens, not at start.
+const Editor = lazy(() => import('./editor/Editor').then((module) => ({ default: module.Editor })))
 import { ProjectSettings } from './settings/ProjectSettings'
 import { ProblemsDialog, problemCount } from './storage/ProblemsDialog'
 import { CreateProjectDialog } from './shell/CreateProjectDialog'
@@ -64,7 +68,13 @@ export function App() {
       if (next.generation <= shownGeneration.current) return
       shownGeneration.current = next.generation
     }
-    setSnapshot(next)
+    // R-501: folders and projects that did not change keep their objects, so cards that show them are not drawn again.
+    setSnapshot((previous) => ({
+      ...next,
+      projects: keepUnchanged(previous.projects, next.projects, (p) => p.projectId)!,
+      rows: keepUnchanged(previous.rows, next.rows, (r) => r.rowId)!,
+      structure: keepUnchanged(previous.structure, next.structure, (r) => r.rowId),
+    }))
   }
   // A reading place saved in the background: its snapshot is taken in when the window is idle, newest only.
   const takeLater = (next: Snapshot) => {
@@ -281,9 +291,14 @@ export function App() {
     return () => window.removeEventListener('beforeunload', beforeUnload)
   }, [dirty])
   const rows = useMemo(
-    () => snapshot.rows.filter((r) => r.projectId === selected),
-    [snapshot.rows, selected]
-  )
+      () => snapshot.rows.filter((r) => r.projectId === selected),
+      [snapshot.rows, selected]
+    ),
+    // R-501: kept between renders, so the browse view's folder kinds (which every card reads) are not rebuilt.
+    projectStructure = useMemo(
+      () => (snapshot.structure ?? snapshot.rows).filter((r) => r.projectId === selected),
+      [snapshot.structure, snapshot.rows, selected]
+    )
   // Folders that more than one linked project shows; only these need the shared / this-project switch.
   const sharedFolders = useMemo(() => {
     const owners = new Map<string, Set<string>>()
@@ -446,49 +461,51 @@ export function App() {
           banner={null}
         >
           {editor && project ? (
-            <Editor
-              key={`${project.projectId}:${templateCategory ?? 'card'}:${templatePreset ?? ''}`}
-              act={act}
-              presets={!panelKind}
-              presetTools={!!panelKind}
-              panelKind={panelKind}
-              fromSaved={panelKind ? panelProject : undefined}
-              targetLabel={
-                panelKind
-                  ? tr(
-                      '{0}資訊版面',
-                      {
-                        book: tr('書籍／漫畫'),
-                        game: tr('遊戲'),
-                        music: tr('音樂'),
-                        video: tr('影片'),
-                        general: tr('一般'),
-                      }[panelKind]
-                    )
-                  : tr('卡片')
-              }
-              onDirty={setEditorDirty}
-              project={
-                panelKind
-                  ? panelProject(project)
-                  : cardOther
-                    ? selectPreset(project, templatePreset!)
-                    : { ...project, cells: visibleCells(project) }
-              }
-              rows={(snapshot.structure ?? snapshot.rows).filter(
-                (r) => r.projectId === selected && !r.readonly
-              )}
-              busy={busy}
-              save={saveEdited}
-              previewRow={templateRow}
-              close={() => {
-                setEditor(false)
-                setTemplateCategory(undefined)
-                setTemplatePreset(undefined)
-                setTemplateRow(undefined)
-                setResumeProject(project.projectId)
-              }}
-            />
+            <Suspense fallback={null}>
+              <Editor
+                key={`${project.projectId}:${templateCategory ?? 'card'}:${templatePreset ?? ''}`}
+                act={act}
+                presets={!panelKind}
+                presetTools={!!panelKind}
+                panelKind={panelKind}
+                fromSaved={panelKind ? panelProject : undefined}
+                targetLabel={
+                  panelKind
+                    ? tr(
+                        '{0}資訊版面',
+                        {
+                          book: tr('書籍／漫畫'),
+                          game: tr('遊戲'),
+                          music: tr('音樂'),
+                          video: tr('影片'),
+                          general: tr('一般'),
+                        }[panelKind]
+                      )
+                    : tr('卡片')
+                }
+                onDirty={setEditorDirty}
+                project={
+                  panelKind
+                    ? panelProject(project)
+                    : cardOther
+                      ? selectPreset(project, templatePreset!)
+                      : { ...project, cells: visibleCells(project) }
+                }
+                rows={(snapshot.structure ?? snapshot.rows).filter(
+                  (r) => r.projectId === selected && !r.readonly
+                )}
+                busy={busy}
+                save={saveEdited}
+                previewRow={templateRow}
+                close={() => {
+                  setEditor(false)
+                  setTemplateCategory(undefined)
+                  setTemplatePreset(undefined)
+                  setTemplateRow(undefined)
+                  setResumeProject(project.projectId)
+                }}
+              />
+            </Suspense>
           ) : project && !linked?.error ? (
             <BrowseWorkspace
               toolbarTarget={toolbarTarget}
@@ -497,9 +514,7 @@ export function App() {
               root={linked!.root}
               rows={rows}
               sharedFolders={sharedFolders}
-              structure={(snapshot.structure ?? snapshot.rows).filter(
-                (r) => r.projectId === selected
-              )}
+              structure={projectStructure}
               selected={detailsId}
               onSelect={chooseDetail}
               onClose={closeDetail}

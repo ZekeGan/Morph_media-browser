@@ -5,7 +5,6 @@ import { isGameFolder, visibleFile } from '../../shared/media'
 import { effectiveKind, sampleOf, templateKind } from '../../shared/kind'
 import { savedPlace, sortVolumes } from '../../shared/reader'
 import { PanelSkeleton } from './PanelSkeleton'
-import { DocumentViewer } from '../documents/DocumentViewer'
 import { cacheFolderStats } from '../browse/folderStats'
 import { useParentKind } from '../browse/folderKind'
 import { GamePage } from '../game/GamePage'
@@ -27,6 +26,10 @@ import {
 } from '../../shared/explorer'
 import { type FolderRow, type Project, type Request, type Response } from '../../shared/model'
 const Reader = lazy(() => import('../reader/Reader').then((module) => ({ default: module.Reader })))
+// R-503: the document viewer comes with the first document opened (it was bundled here although lazy elsewhere).
+const DocumentViewer = lazy(() =>
+  import('../documents/DocumentViewer').then((m) => ({ default: m.DocumentViewer }))
+)
 const VideoViewer = lazy(() =>
   import('../video/VideoViewer').then((m) => ({ default: m.VideoViewer }))
 )
@@ -257,14 +260,16 @@ export function FolderContent({
         }
       >
         {documentFile && (
-          <DocumentViewer
-            rowId={row.rowId}
-            file={documentFile}
-            close={() => setDocumentFile(undefined)}
-            row={row}
-            run={run}
-            next={nextText(documentFile)}
-          />
+          <Suspense fallback={null}>
+            <DocumentViewer
+              rowId={row.rowId}
+              file={documentFile}
+              close={() => setDocumentFile(undefined)}
+              row={row}
+              run={run}
+              next={nextText(documentFile)}
+            />
+          </Suspense>
         )}
         {selectedFile.kind === 'image' && fileReader && (
           <Suspense fallback={<PanelSkeleton />}>
@@ -362,14 +367,16 @@ export function FolderContent({
             />
           )}
           {documentFile && (
-            <DocumentViewer
-              rowId={row.rowId}
-              file={documentFile}
-              close={() => setDocumentFile(undefined)}
-              row={row}
-              run={run}
-              next={nextText(documentFile)}
-            />
+            <Suspense fallback={null}>
+              <DocumentViewer
+                rowId={row.rowId}
+                file={documentFile}
+                close={() => setDocumentFile(undefined)}
+                row={row}
+                run={run}
+                next={nextText(documentFile)}
+              />
+            </Suspense>
           )}
         </>
       }

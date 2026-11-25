@@ -1058,6 +1058,24 @@ test('the n-th image of a folder is chosen by natural file order, direct files o
   const cover = await explorer.folderCover(row.rowId, new Request('media://cover/x?full=1'))
   assert.equal(await cover.text(), 'IMAGE')
 })
+test('R-502: a thumbnail served from the cache counts as recently used', async (t) => {
+  const { root, media, lib, explorer } = await fixture(t)
+  await fs.writeFile(path.join(media, 'used.jpg'), 'IMAGE')
+  const row = (await lib.create(media, { name: 'Used', depth: { mode: 'through', level: 1 } }))
+      .rows[0],
+    entry = (await explorer.content(row.rowId)).entries.find((e) => e.name === 'used.jpg')!
+  ;((explorer as any).desktop as DesktopOperations).thumbnail = async () =>
+    Buffer.from([255, 216, 255, 0, 255, 217])
+  const thumb = () => explorer.stream(row.rowId, entry.id, new Request(entry.thumb!), true)
+  assert.equal((await thumb()).status, 200)
+  const cache = path.join(root, 'local', 'thumbnails'),
+    [file] = (await fs.readdir(cache)).filter((name) => name.endsWith('.jpg')),
+    old = new Date('2020-01-01')
+  await fs.utimes(path.join(cache, file), old, old)
+  assert.equal((await thumb()).status, 200)
+  await new Promise((resolve) => setTimeout(resolve, 100))
+  assert.ok((await fs.stat(path.join(cache, file))).mtimeMs > old.getTime() + 1000)
+})
 test('warm thumbnails bypass cold work; cancelled queued work is skipped and shared requests decode once', async (t) => {
   const { media, lib, explorer } = await fixture(t),
     jpeg = Buffer.from([255, 216, 255, 0, 255, 217])

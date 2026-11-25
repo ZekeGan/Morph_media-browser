@@ -1,4 +1,4 @@
-import type { CSSProperties, KeyboardEvent, MouseEvent } from 'react'
+import { memo, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react'
 import { KindBadge } from './folderKind'
 import type { FolderRow, Project, Request, Response } from '../../shared/model'
 import { Card } from '../cells/Card'
@@ -11,6 +11,23 @@ export type Gestures = (id: string) => {
   onContextMenu: (e: MouseEvent) => void
   onKeyDown: (e: KeyboardEvent) => void
 }
+
+// R-501: a card draws again only when its folder, the project or `act` change; selecting, hovering or scrolling
+// used to draw every card on the page several times. What a card reads on its own (play time, folder stats) still
+// updates it through its own hooks.
+const CardBody = memo(function CardBody({
+  project,
+  row,
+  act,
+}: {
+  project: Project
+  row: FolderRow
+  act: Act
+}) {
+  return (
+    <Card project={project} row={row} open={() => void act({ action: 'open', rowId: row.rowId })} />
+  )
+})
 
 // The CARD grid: one card per folder, with its selection and multi-select marks, and a small state note.
 export function FolderCards({
@@ -47,11 +64,7 @@ export function FolderCards({
           {...gestures(row.rowId)}
         >
           <KindBadge row={row} show={() => showPanelFor(row.rowId)} />
-          <Card
-            project={project}
-            row={row}
-            open={() => void act({ action: 'open', rowId: row.rowId })}
-          />
+          <CardBody project={project} row={row} act={act} />
           {(row.error || !row.record || row.readonly) && (
             <small className="folder-state">
               {row.error ? tr('需要處理') : row.readonly ? tr('受保護') : tr('尚未建立資料')}
