@@ -42,6 +42,7 @@ import { externalPlayerArgs } from '../shared/videoPlayer'
 import { key, probeFile } from './media-files'
 import * as contentFns from './explorer-content'
 import * as streamFns from './explorer-stream'
+import type { ThumbnailJob } from './explorer-stream'
 import { warmThumbnails } from './thumbnail-warm'
 import * as embeddedFns from './embedded-subtitles'
 import type { EmbeddedTrack } from './mkv-subtitles'
@@ -158,9 +159,11 @@ export class Explorer {
   thumbnailReads = 0
   audioCoverTail: Promise<unknown> = Promise.resolve()
   thumbnailJobs = new Map<string, { promise: Promise<Buffer>; signals: AbortSignal[] }>()
-  // R-441: thumbnails waiting to be made (the newest is taken first) and how many are being made now.
-  thumbnailQueue: (() => void)[] = []
+  // R-441 / R-519: thumbnails waiting to be made (the newest burst first, top to bottom inside it) and how many are
+  // being made now.
+  thumbnailQueue: ThumbnailJob[] = []
   thumbnailActive = 0
+  thumbnailBurst = { id: 0, at: -Infinity }
   thumbnailTrim?: Promise<void>
   thumbnailTrimAt = 0
   contentPages = new Map<

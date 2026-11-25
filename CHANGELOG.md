@@ -18,6 +18,8 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Pictures of a folder opened cold appear from the top down, small files first, instead of from the bottom up; scrolling still makes what is on screen first (R-519).
+
 - Manga reader: the page list lists every page instead of the first 20, single or two-page, and opens at the current page (R-520).
 
 - Manga: any thumbnail, the first page included, opens that page and offers the saved page for 8 seconds; only "Continue reading" goes to the saved page, and "Continue from page N / Start over" is gone. Leaving with the last page on screen always records the book as read (R-517). Interface text in plain words: about 180 sentences lose code words such as boundary, bind, draft, type, candidate and ROOT, including the game detection notes (older records show the new wording) (R-516). A commit check now refuses new interface text with those words, `pnpm i18n diff` lists a batch's new sentences for review, and UI_RULES has five checks for writing them (R-515).

@@ -250,26 +250,52 @@ export async function archiveStream(
 }
 
 // R-441: thumbnails were made one at a time, so a gallery opened cold showed them one by one. A few are made at once
-// (half the processors, 2 to 4), and the newest request goes first: while scrolling, that is what is on the screen.
-// A request the window has given up on (scrolled away, the gallery closed) is skipped when its turn comes.
+// (half the processors, 2 to 4). A request the window has given up on (scrolled away, the gallery closed) is skipped
+// when its turn comes.
+// R-519: the window asks for a screen of pictures at once, top to bottom. Requests that arrive close together are
+// one burst; the newest burst goes first (while scrolling, that is what is on the screen), and inside a burst small
+// files go first, then the order the window asked, so pictures appear from the top instead of from the bottom.
 export const THUMBNAIL_WORKERS = Math.max(2, Math.min(4, Math.floor(os.cpus().length / 2)))
-export function queueThumbnail(ex: Explorer, make: () => Promise<Buffer>): Promise<Buffer> {
+export const THUMBNAIL_BURST_MS = 50,
+  THUMBNAIL_SMALL_BYTES = 512 * 1024
+export type ThumbnailJob = { run: () => void; burst: number; small: boolean }
+export function queueThumbnail(
+  ex: Explorer,
+  make: () => Promise<Buffer>,
+  size = Infinity
+): Promise<Buffer> {
+  const now = performance.now()
+  if (now - ex.thumbnailBurst.at > THUMBNAIL_BURST_MS) ex.thumbnailBurst.id++
+  ex.thumbnailBurst.at = now
+  const burst = ex.thumbnailBurst.id
   return new Promise<Buffer>((resolve, reject) => {
-    ex.thumbnailQueue.push(() => {
-      ex.thumbnailActive++
-      make()
-        .then(resolve, reject)
-        .finally(() => {
-          ex.thumbnailActive--
-          pumpThumbnails(ex)
-        })
+    ex.thumbnailQueue.push({
+      burst,
+      small: size <= THUMBNAIL_SMALL_BYTES,
+      run: () => {
+        ex.thumbnailActive++
+        make()
+          .then(resolve, reject)
+          .finally(() => {
+            ex.thumbnailActive--
+            pumpThumbnails(ex)
+          })
+      },
     })
     pumpThumbnails(ex)
   })
 }
 function pumpThumbnails(ex: Explorer) {
-  while (ex.thumbnailActive < THUMBNAIL_WORKERS && ex.thumbnailQueue.length)
-    ex.thumbnailQueue.pop()!()
+  while (ex.thumbnailActive < THUMBNAIL_WORKERS && ex.thumbnailQueue.length) {
+    const queue = ex.thumbnailQueue
+    let pick = 0
+    for (let i = 1; i < queue.length; i++) {
+      const a = queue[i],
+        b = queue[pick]
+      if (a.burst > b.burst || (a.burst === b.burst && a.small && !b.small)) pick = i
+    }
+    queue.splice(pick, 1)[0].run()
+  }
 }
 
 export async function thumbnail(
@@ -300,25 +326,29 @@ export async function thumbnail(
     return pending.promise
   }
   const signals = [signal]
-  const job = queueThumbnail(ex, async () => {
-    if (signals.every((signal) => signal.aborted)) throw new Error('縮圖已取消')
-    try {
-      const cached = await fs.readFile(cache)
-      if (jpeg(cached)) return cached
-    } catch {}
-    if (mime.startsWith('image/') && size > 100 * 1024 * 1024)
-      throw new Error('圖片過大，請直接檢視原圖')
-    const bytes = await ex.desktop.thumbnail(source, mime, url)
-    if (!jpeg(bytes)) throw new Error('縮圖解碼失敗')
-    const temp = cache + '.' + randomUUID() + '.tmp'
-    try {
-      await fs.writeFile(temp, bytes, { flag: 'wx' })
-      await fs.rename(temp, cache)
-    } finally {
-      await fs.unlink(temp).catch(() => {})
-    }
-    return bytes
-  })
+  const job = queueThumbnail(
+    ex,
+    async () => {
+      if (signals.every((signal) => signal.aborted)) throw new Error('縮圖已取消')
+      try {
+        const cached = await fs.readFile(cache)
+        if (jpeg(cached)) return cached
+      } catch {}
+      if (mime.startsWith('image/') && size > 100 * 1024 * 1024)
+        throw new Error('圖片過大，請直接檢視原圖')
+      const bytes = await ex.desktop.thumbnail(source, mime, url)
+      if (!jpeg(bytes)) throw new Error('縮圖解碼失敗')
+      const temp = cache + '.' + randomUUID() + '.tmp'
+      try {
+        await fs.writeFile(temp, bytes, { flag: 'wx' })
+        await fs.rename(temp, cache)
+      } finally {
+        await fs.unlink(temp).catch(() => {})
+      }
+      return bytes
+    },
+    size
+  )
   ex.thumbnailJobs.set(cache, { promise: job, signals })
   try {
     return await job

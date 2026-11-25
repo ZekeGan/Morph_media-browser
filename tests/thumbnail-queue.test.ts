@@ -21,6 +21,7 @@ test('thumbnails are made a few at a time, newest first, skipping cancelled ones
     thumbnailJobs: new Map(),
     thumbnailQueue: [],
     thumbnailActive: 0,
+    thumbnailBurst: { id: 0, at: -Infinity },
     desktop: {
       thumbnail: async (source: string) => {
         started.push(source)
@@ -60,18 +61,51 @@ test('thumbnails are made a few at a time, newest first, skipping cancelled ones
   assert.equal(started.length, names.length - 1)
 })
 
-test('the newest waiting thumbnail is made first', async () => {
-  const ex = { thumbnailQueue: [], thumbnailActive: 0 } as unknown as Explorer
-  const order: number[] = []
-  const jobs = Array.from({ length: THUMBNAIL_WORKERS + 3 }, (_, i) =>
-    queueThumbnail(ex, async () => {
-      order.push(i)
-      await new Promise((resolve) => setTimeout(resolve, 10))
-      return jpeg
-    })
+// R-519: a screen of pictures asked at once is made top to bottom (small files first), and a later burst (the
+// window scrolled) goes before what is still waiting from the earlier one.
+test('a burst is made in order with small files first, the newest burst first', async () => {
+  const ex = {
+    thumbnailQueue: [],
+    thumbnailActive: 0,
+    thumbnailBurst: { id: 0, at: -Infinity },
+  } as unknown as Explorer
+  const order: string[] = []
+  const ask = (name: string, size: number) =>
+    queueThumbnail(
+      ex,
+      async () => {
+        order.push(name)
+        await new Promise((resolve) => setTimeout(resolve, 40))
+        return jpeg
+      },
+      size
+    )
+  const big = 5 * 1024 * 1024,
+    small = 200 * 1024
+  // Three rounds of work: the second burst arrives while the second round runs.
+  const count = THUMBNAIL_WORKERS * 3
+  const first = Array.from({ length: count }, (_, i) =>
+    ask('a' + i, i === THUMBNAIL_WORKERS + 2 ? small : big)
   )
-  await Promise.all(jobs)
-  const first = Array.from({ length: THUMBNAIL_WORKERS }, (_, i) => i),
-    rest = [THUMBNAIL_WORKERS + 2, THUMBNAIL_WORKERS + 1, THUMBNAIL_WORKERS]
-  assert.deepEqual(order, [...first, ...rest])
+  await new Promise((resolve) => setTimeout(resolve, 70))
+  const second = [ask('b0', big), ask('b1', big)]
+  await Promise.all([...first, ...second])
+  const started = Array.from({ length: THUMBNAIL_WORKERS }, (_, i) => 'a' + i)
+  assert.deepEqual(order.slice(0, THUMBNAIL_WORKERS), started, 'the top ones start at once')
+  // While those run: the small file, then the rest top to bottom, until the second burst arrives.
+  assert.equal(order[THUMBNAIL_WORKERS], 'a' + (THUMBNAIL_WORKERS + 2))
+  const b0 = order.indexOf('b0')
+  assert.equal(order[b0 + 1], 'b1')
+  const waiting = Array.from({ length: count }, (_, i) => 'a' + i).filter(
+    (name, i) => i >= THUMBNAIL_WORKERS && i !== THUMBNAIL_WORKERS + 2
+  )
+  assert.deepEqual(
+    order.filter((name) => waiting.includes(name)),
+    waiting,
+    'the first burst keeps its order'
+  )
+  assert.ok(
+    order.indexOf('a' + (count - 1)) > b0,
+    'the newer burst goes before what is still waiting'
+  )
 })
