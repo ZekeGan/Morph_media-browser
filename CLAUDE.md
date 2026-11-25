@@ -40,7 +40,7 @@ M:orph：Windows 優先的資料夾檢視器（Electron＋React＋Vite，pnpm）
 
 - **查收暫停**：待查收超過約 5 項或一個大主題結束時，先停下新功能，跑 `pnpm test:ui:smoke` 與 `pnpm test:ui:all`、檢查三主題與窄窗，再交查收清單。使用者確認後 `pnpm item accept R-…` 刪除那些需求；Unreleased 含新功能時主動建議發布。
 - **高風險審查**：資料寫入、身分、清理、遷移，以及安全邊界（IPC、路徑、外部程式、網路）的改動，提交前用獨立代理審查一次（只給該次差異與要查的風險）。
-- **版本**：不逐批升版；使用者說要發布才定版（新功能升次版號、純修正升修訂號）。目前是 Alpha：不打 tag、不上 Releases；只有使用者明確說「這版是 Beta」才進入 Beta。改 `schemaVersion` 須符合 [DATA_FORMAT](docs/DATA_FORMAT.md#格式升級與相容規則)。
+- **版本**：不逐批升版；使用者說要發布才定版（新功能升次版號、純修正升修訂號）。目前是 Beta（0.41.0-beta.1 起）：資料格式變動必須附自動升級；只有使用者確認「這版可以給人用」才打 tag、以 Pre-release 發布。改 `schemaVersion` 須符合 [DATA_FORMAT](docs/DATA_FORMAT.md#格式升級與相容規則)。
 - 模組責任或資料流改變時，同批更新 `docs/ARCHITECTURE.md` 的 mermaid 圖。修改本檔流程規則時，檢查 `docs/WORKFLOW_PROMPT.md` 是否要同步。
 - 重大主題結束或對話變長時，先把決策寫進文件，再提示使用者開新對話。
 

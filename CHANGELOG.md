@@ -6,6 +6,7 @@ The application version is independent of portable record `schemaVersion`.
 
 | Versions | Theme |
 | --- | --- |
+| 0.41 (beta.1) | First Beta: name search across online sources with per-kind choices and keys, music / video / manga folder types (manga by page-number names), one layout window with Details layouts, novel reader, webtoon, CBR / CB7, embedded and picture subtitles, sort menu and file list toolbar, thumbnails twice as fast (sharp) |
 | 0.40 | Media queue previews and covers, one play-order button; reader icon toolbar, immersive edge panels (tools, progress with previews, queue), sliding page turns, swipe to turn, resume reading, next book; src grouped by feature |
 | 0.39 | Folder settings redesign (import inside Data, sticky save bar, image thumbnails and delete, "still to add" card, test launch), one top-bar refresh button, smaller package, translation fixes |
 | 0.38 | First packaged Windows build (installer and portable) |
@@ -17,6 +18,14 @@ The application version is independent of portable record `schemaVersion`.
 | 0.20 – 0.21 | Japanese visual-novel engine detection, video failure help, UI audit fixes |
 
 ## Unreleased
+
+## 0.41.0-beta.1 — 2026-11-25
+
+First Beta. From this version on, a change to the data format comes with an automatic upgrade, and data saved by this version is kept as a sample every later version must open unchanged (see docs/RELEASING.md). Not published yet: no tag or GitHub Release until it is confirmed ready for others.
+
+Source check at release (pnpm check:sources): Open Library could not be reached from here and Google Books refused with "too many requests"; both adapters are unchanged and may work again later. TMDB, SteamGridDB and FANZA need your own key and were not checked.
+
+sharp is 0.35.5 (libvips 8.18.7), which fixes advisories in its bundled libvips, libheif and librsvg found by pnpm audit at release.
 
 - Picture thumbnails are made with sharp (libvips) in the background instead of in the app window: a big folder opened for the first time shows its pictures about twice as fast; BMP and ICO still use the old way. The installed app is about 20 MB larger (R-518).
 
