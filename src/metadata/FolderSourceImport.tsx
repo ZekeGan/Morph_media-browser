@@ -280,7 +280,7 @@ export function FolderSourceImport({
       <div>
         <Group gap={4} wrap="nowrap">
           <Text fw={600}>{tr('從網站補充資訊')}</Text>
-          <HelpTip text={tr('選來源、貼連結、預覽後再決定要匯入的欄位。')} />
+          <HelpTip text={tr('從網站抓作品的標題、標籤等資料。')} />
         </Group>
       </div>
       <section className="settings-section">
@@ -298,12 +298,7 @@ export function FolderSourceImport({
               disabled={busy}
               maxLength={200}
               label={
-                <HelpLabel
-                  label={tr('用名稱搜尋')}
-                  help={tr(
-                    '用資料夾名稱（可修改）搜尋右邊按鈕選的來源（VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai；設定了金鑰時還有 TMDB 與 FANZA）。成人作品會標示「成人」。從候選中選一個再預覽，不會自動配對。'
-                  )}
-                />
+                <HelpLabel label={tr('用名稱搜尋')} help={tr('用名稱找作品，挑一個再預覽。')} />
               }
               value={query}
               onChange={(event) => setQuery(event.currentTarget.value)}
@@ -425,12 +420,7 @@ export function FolderSourceImport({
           <TextInput
             id="folder-source-url"
             disabled={busy}
-            label={
-              <HelpLabel
-                label={tr('作品網址或 ID')}
-                help={tr('貼上作品頁的網址，會自動認出是哪個網站，例如 https://vndb.org/v97')}
-              />
-            }
+            label={<HelpLabel label={tr('作品網址或 ID')} help={tr('例如 https://vndb.org/v97')} />}
             placeholder={tr('貼上作品網址（Steam 可直接輸入 App ID）')}
             error={source.trim() && !detected ? tr('無法辨識這個網址的來源') : undefined}
             rightSectionWidth={detectedName ? 96 : undefined}
@@ -512,7 +502,7 @@ export function FolderSourceImport({
           label={
             <HelpLabel
               label={tr('覆寫已填來源欄位')}
-              help={tr('預設只填空值；人工欄位保持原樣。')}
+              help={tr('勾選後，網站的新資料會取代舊的；你自己填的不會被改。')}
             />
           }
           checked={importer.replace}

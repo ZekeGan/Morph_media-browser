@@ -43,11 +43,7 @@ export function FallbackActions({
         <Text size="sm" fw={500}>
           {tr('備用動作')}
         </Text>
-        <HelpTip
-          text={tr(
-            '這個遊戲沒有綁定上面的動作時，依序改用下列動作；例如有些遊戲用 EXE、有些用捷徑。'
-          )}
-        />
+        <HelpTip text={tr('這個遊戲沒設定上面的動作時，改用這些。')} />
       </Group>
       {fallbacks.map((id, index) => (
         <Group key={id} gap={4} wrap="nowrap" align="center" className="fallback-row">
@@ -127,7 +123,7 @@ export function FallbackActions({
           <HelpTip
             text={[main, ...fallbacks]
               .filter((id): id is string => !!id)
-              .map((id) => `${label(id)}（${bound(id) ? tr('已綁定') : tr('未綁定')}）`)
+              .map((id) => `${label(id)}（${bound(id) ? tr('已設定') : tr('未設定')}）`)
               .join('、')}
           />
         </Group>

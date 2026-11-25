@@ -48,11 +48,7 @@ export function SourceLanguageSetting({ opened, locale }: { opened: boolean; loc
     <section className="settings-section" aria-label={tr('外部來源語言')}>
       <Group gap={4} wrap="nowrap" mb="xs">
         <Text fw={600}>{tr('外部來源語言')}</Text>
-        <HelpTip
-          text={tr(
-            '匯入外部來源時，標題與簡介依這個順序取來源有的語言，沒有就用網站預設；標籤固定一種語言，已匯入的資料不會改變。'
-          )}
-        />
+        <HelpTip text={tr('從網站抓資料時，優先用哪種語言。')} />
       </Group>
       <Checkbox
         label={tr('跟著介面語言')}

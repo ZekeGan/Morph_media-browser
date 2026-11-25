@@ -107,7 +107,7 @@ test('a folder own layout opened in the editor leaves the kind layout alone', ()
 
 test('panel layout lists are checked like card layouts', () => {
   const base: Project = { ...modelProject(), panelPresets: undefined }
-  assert.throws(() => validateProject({ ...base, panelPresets: [] }), /右側版面不合法/)
+  assert.throws(() => validateProject({ ...base, panelPresets: [] }), /詳情版面不合法/)
   assert.throws(
     () =>
       validateProject({
@@ -126,7 +126,7 @@ test('panel layout lists are checked like card layouts', () => {
         panelPresets: [{ id: 'a', name: 'A', cells: [] }],
         panelPresetId: 'b',
       }),
-    /右側預設版面不存在/
+    /詳情預設版面不存在/
   )
   assert.throws(() => validateProject({ ...base, panelPresetId: 'a' }), /清單不存在/)
 })

@@ -21,7 +21,6 @@ import {
 import type { FolderRow, Project } from '../../shared/model'
 import { t as tr } from '../i18n'
 import { Icon } from '../common/icons'
-import { HelpLabel } from '../common/HelpTip'
 import { describeError } from '../notices/errors'
 import { parseLaunchArgs } from '../../shared/launchArgs'
 import { useGameExtras } from './useGameExtras'
@@ -248,12 +247,7 @@ export function GameActionTargets({
             {template.kind === 'exe' && bound && (
               // R-319: Locale Emulator's default (Japanese) or one of the profiles made in it.
               <Select
-                label={
-                  <HelpLabel
-                    label={tr('用 Locale Emulator 啟動')}
-                    help={tr('在 Locale Emulator 裡建立的設定檔（例如簡體中文）會列在這裡')}
-                  />
-                }
+                label={tr('用 Locale Emulator 啟動')}
                 description={
                   localeReady === false
                     ? tr('先到「應用程式設定」指定 LEProc.exe 才能使用')

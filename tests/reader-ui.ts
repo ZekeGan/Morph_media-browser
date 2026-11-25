@@ -121,7 +121,7 @@ try {
   // R-362: the book's cover is a component of its template (no picture drawn beside it), showing the first image.
   assert.equal(await page.locator('.media-info-template .manga-cover').count(), 0)
   await page.locator('.media-info-template .card-cell img').first().waitFor()
-  await page.getByRole('button', { name: '右側版面配置…', exact: true }).first().waitFor()
+  await page.getByRole('button', { name: '詳情版面配置…', exact: true }).first().waitFor()
   // R-363: a folder can make its own manga template; the editor opens on it, the folder keeps the choice.
   await page.evaluate(() => {
     window.confirm = () => true
@@ -130,8 +130,8 @@ try {
   await page.getByRole('tab', { name: '類型與版面', exact: true }).click()
   // R-409: the folder's layouts are shown there and made in the layout window, from the folder's row menu.
   const layouts = page.getByRole('group', { name: '此資料夾的版面', exact: true })
-  await layouts.getByText('內建右側', { exact: true }).waitFor()
-  await layouts.getByRole('button', { name: '右側版面配置…', exact: true }).click()
+  await layouts.getByText('內建詳情', { exact: true }).waitFor()
+  await layouts.getByRole('button', { name: '詳情版面配置…', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: '版面配置' })
   await dialog
     .locator('.layout-config-item.picked')

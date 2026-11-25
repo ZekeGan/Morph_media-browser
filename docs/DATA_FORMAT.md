@@ -90,7 +90,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 | `groupSources`（選用） | 資料夾指定的群組來源：`{ <folderId>: { <groupId>: <attributeId> } }`，值須是該群組成員；只在本專案有效，成員移出或刪除時清除。讀取時（`shared/upgrade.ts` 的 `settleFieldGroups`）先整理舊版程式留下的不一致：已不存在、重複或型別不合的成員移出，空群組移除，與欄位同名的群組名稱加編號，指定來源與組件跟著調整，不因此拒絕整個專案 |
 | `cells` | 預設卡片版面：組件陣列，見下 |
 | `layoutPresets`、`activeLayoutId` | 卡片的多個命名版面（最多 30 個）、專案的預設卡片版面 |
-| `panelPresets`、`panelPresetId`（R-409） | 右側版面清單 `{ id, name, cells }`（最多 40 個，名稱不分大小寫不重複，各類型共用）與右側的預設版面（選用，須在清單內）。資料夾沒有規則選到右側版面時，顯示它類型的內建右側（書籍是封面加卡片欄位，其他類型不顯示） |
+| `panelPresets`、`panelPresetId`（R-409） | 詳情版面清單 `{ id, name, cells }`（最多 40 個，名稱不分大小寫不重複，各類型共用）與右側的預設版面（選用，須在清單內）。資料夾沒有規則選到詳情版面時，顯示它類型的內建詳情（書籍是封面加卡片欄位，其他類型不顯示） |
 | `stylePresets`（選用） | 此專案的命名樣式：`{ id, name, style }`，最多 20 個、名稱不分大小寫不可重複；`style` 與組件的 `style` 同規則 |
 | `actionTemplates` | 遊戲動作版型 `{ id, label, kind, color }` |
 | `list`、`cardView`、`excludedRelativePaths`、`scanAll`、`traversal` | 列表、顯示範圍、排除與掃描設定；`traversal`（R-510）已停用：讀到就忽略，保存專案時移除；`cardView.works`（R-340）為 `true` 時是「所有作品」，舊版讀到時依 `mode: multi` 顯示全部層 |
@@ -180,9 +180,9 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 
 | 格式 | 步驟 | 內容 |
 | --- | --- | --- |
-| 專案記錄 | v3 → v4（R-469） | 取消 `album-facts`、`video-facts`、`book-card` 三種組件，卡片、卡片版面與右側版面的每份清單一起轉換：每個舊組件換成在**原位置內**一行一個的小組件（`album-facts`：專輯名稱；演出者、年份；曲數、總長度。`video-facts`：影片數；`video-play` 按鈕。`book-card`：書名；作者。除 `video-play` 外都是 `system-info`）。行數取舊組件的高度（最多三行），最後一行佔滿剩下的高度；寬至少兩欄時同一行兩個組件左右平分（左邊取整數上限），只有一欄時每行只留第一個。第一個沿用原 ID，其餘為「原 ID-種類」，重複時加數字；全部沿用原樣式。其他組件、其他欄位與不認得的欄位不變，重複升級結果相同。舊版程式讀到 v4 專案時唯讀 |
-| 專案記錄 | v2 → v3（R-437） | 取消 `game-cover`、`album-info`、`video-info` 三種組件，卡片、卡片版面與右側版面的每份清單一起轉換：`game-cover` 成為 `imageCover: true` 的圖片組件，位置與 `imageFit` 不變（沒設定時寫成 `blur`，維持原本的預設）；`album-info`／`video-info` 成為左邊三分之一寬（至少一欄）的資料夾封面圖片組件，加上其餘寬度的新組件 `album-facts`／`video-facts`（寬度只有一欄時只留新組件）；轉出的封面組件 ID 為「原 ID-cover」，重複時加數字。其他組件（包括 R-435 的 `imageRole`）、其他欄位與不認得的欄位不變，重複升級結果相同。新組件為**暫定**。舊版程式讀到 v3 專案時唯讀 |
-| 專案記錄 | v1 → v2（R-409） | 右側版面獨立成 `panelPresets`：`bookPresets` 照原 ID 與名稱搬入，`bookPresetId` 成為 `layoutRules.panel.types.book`；沒有 `bookPresets` 時，編輯過的 `contentCells.book` 成為「書籍 預設」（沒有 `contentCover` 的 R-362 前模板補上左側封面組件，其餘縮進右側三分之二，放不下時維持原樣）；非空的 `contentCells.game`／`media`／`general` 成為「遊戲 預設」「音樂／影片 預設」「一般 預設」並指定給對應類型（`media` 給音樂與影片，空清單原本就不顯示，捨棄）。沒有 `layoutRules` 時，`kindLayouts`（`media` 給音樂與影片）、`folderLayouts`、`folderBookPresets` 換算成卡片與右側規則；已有的規則一律不覆蓋。移除 `contentCells`、`contentCover`、`bookPresets`、`bookPresetId`、`folderBookPresets`、`kindLayouts`、`folderLayouts`；其他欄位與不認得的欄位不變。名稱重複時加「 (2)」。舊版程式讀到 v2 專案時唯讀 |
+| 專案記錄 | v3 → v4（R-469） | 取消 `album-facts`、`video-facts`、`book-card` 三種組件，卡片、卡片版面與詳情版面的每份清單一起轉換：每個舊組件換成在**原位置內**一行一個的小組件（`album-facts`：專輯名稱；演出者、年份；曲數、總長度。`video-facts`：影片數；`video-play` 按鈕。`book-card`：書名；作者。除 `video-play` 外都是 `system-info`）。行數取舊組件的高度（最多三行），最後一行佔滿剩下的高度；寬至少兩欄時同一行兩個組件左右平分（左邊取整數上限），只有一欄時每行只留第一個。第一個沿用原 ID，其餘為「原 ID-種類」，重複時加數字；全部沿用原樣式。其他組件、其他欄位與不認得的欄位不變，重複升級結果相同。舊版程式讀到 v4 專案時唯讀 |
+| 專案記錄 | v2 → v3（R-437） | 取消 `game-cover`、`album-info`、`video-info` 三種組件，卡片、卡片版面與詳情版面的每份清單一起轉換：`game-cover` 成為 `imageCover: true` 的圖片組件，位置與 `imageFit` 不變（沒設定時寫成 `blur`，維持原本的預設）；`album-info`／`video-info` 成為左邊三分之一寬（至少一欄）的資料夾封面圖片組件，加上其餘寬度的新組件 `album-facts`／`video-facts`（寬度只有一欄時只留新組件）；轉出的封面組件 ID 為「原 ID-cover」，重複時加數字。其他組件（包括 R-435 的 `imageRole`）、其他欄位與不認得的欄位不變，重複升級結果相同。新組件為**暫定**。舊版程式讀到 v3 專案時唯讀 |
+| 專案記錄 | v1 → v2（R-409） | 詳情版面獨立成 `panelPresets`：`bookPresets` 照原 ID 與名稱搬入，`bookPresetId` 成為 `layoutRules.panel.types.book`；沒有 `bookPresets` 時，編輯過的 `contentCells.book` 成為「書籍 預設」（沒有 `contentCover` 的 R-362 前模板補上左側封面組件，其餘縮進右側三分之二，放不下時維持原樣）；非空的 `contentCells.game`／`media`／`general` 成為「遊戲 預設」「音樂／影片 預設」「一般 預設」並指定給對應類型（`media` 給音樂與影片，空清單原本就不顯示，捨棄）。沒有 `layoutRules` 時，`kindLayouts`（`media` 給音樂與影片）、`folderLayouts`、`folderBookPresets` 換算成卡片與右側規則；已有的規則一律不覆蓋。移除 `contentCells`、`contentCover`、`bookPresets`、`bookPresetId`、`folderBookPresets`、`kindLayouts`、`folderLayouts`；其他欄位與不認得的欄位不變。名稱重複時加「 (2)」。舊版程式讀到 v2 專案時唯讀 |
 | 資料夾記錄 | v1 → v2（R-387） | 資料夾類型的「影音」拆成 `music` 與 `video`。`details.kind` 是 `media` 時移除這個鍵（之後依內容自動判斷）；其他欄位、其他類型值與不認得的欄位都不變。`details` 自己的 `schemaVersion` 仍是 `1`。舊版程式讀到 v2 的記錄時依「較新版本的資料」處理（唯讀）。專案匯出包的 `EXPORT_VERSION` 不變：包內的 v1 記錄匯入時走同一個步驟；舊版程式匯入這一版的匯出包時，包裝版本檢查會通過，但包內的 v2 記錄在寫入前的驗證就被判定為「較新版本的資料」，整份匯入拒絕、什麼都不寫 |
 
 ### 每次升格式版本的必備項目

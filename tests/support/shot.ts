@@ -308,7 +308,7 @@ try {
     await page.getByRole('button', { name: '關閉資料夾內容', exact: true }).click()
     await page.waitForTimeout(600)
     const timing = await page.evaluate(async () => {
-      const toggle = document.querySelector<HTMLElement>('[aria-label="切換右側內容"]')!
+      const toggle = document.querySelector<HTMLElement>('[aria-label="切換詳情內容"]')!
       const start = performance.now()
       toggle.click()
       let shell = 0

@@ -117,7 +117,7 @@ try {
   const modeText = (await page.locator('.center-mode').textContent()) ?? ''
   for (const name of ['卡片', '表格', '樹狀圖']) assert.ok(modeText.includes(name), name)
   await page.locator('.center-mode').getByText('表格', { exact: true }).click()
-  await button('切換右側內容').click()
+  await button('切換詳情內容').click()
   assert.equal(await page.locator('.folder-panel').count(), 0)
   await page
     .locator('.folder-table tbody tr')
@@ -128,7 +128,7 @@ try {
     0,
     'entering a folder must not open a hidden pane'
   )
-  await button('切換右側內容').click()
+  await button('切換詳情內容').click()
   await button('返回').click()
   await page.locator('.folder-panel').waitFor()
   await page.locator('.folder-panel-header strong').getByText('Library', { exact: true }).waitFor()
@@ -219,7 +219,7 @@ try {
   await drawer.getByRole('tab', { name: '類型與版面', exact: true }).click()
   await drawer
     .getByRole('group', { name: '此資料夾的版面', exact: true })
-    .getByText('內建右側', { exact: true })
+    .getByText('內建詳情', { exact: true })
     .waitFor()
   await drawer.getByRole('tab', { name: /^資料/ }).click()
   // The source is recognised from the address; the preview button is enabled only for a known site.

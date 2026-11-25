@@ -179,9 +179,9 @@ export function BrowsePanel(props: Props) {
               )}
               {/* R-445: every kind: the layout window opens on its right panel with this folder picked. */}
               {detail && (
-                <Tooltip label={tr('右側版面配置…')}>
+                <Tooltip label={tr('詳情版面配置…')}>
                   <ActionIcon
-                    aria-label={tr('右側版面配置…')}
+                    aria-label={tr('詳情版面配置…')}
                     variant="subtle"
                     color="gray"
                     disabled={busy}
@@ -210,7 +210,7 @@ export function BrowsePanel(props: Props) {
             </>
           }
           tabs={
-            <div className="folder-panel-dock-tabs" role="tablist" aria-label={tr('右側面板分頁')}>
+            <div className="folder-panel-dock-tabs" role="tablist" aria-label={tr('詳情面板分頁')}>
               <Button
                 size="compact-sm"
                 variant={config ? 'subtle' : 'light'}

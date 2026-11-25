@@ -767,12 +767,12 @@ function BrowseWorkspaceBody({
     >
       {toolbarTarget &&
         createPortal(
-          <Tooltip label={browse.panelVisible === false ? tr('顯示右側內容') : tr('隱藏右側內容')}>
+          <Tooltip label={browse.panelVisible === false ? tr('顯示詳情內容') : tr('隱藏詳情內容')}>
             <ActionIcon
               ref={panelToggle}
               variant="subtle"
               color="gray"
-              aria-label={tr('切換右側內容')}
+              aria-label={tr('切換詳情內容')}
               onMouseEnter={preloadPanel}
               aria-pressed={browse.panelVisible !== false}
               disabled={!ready}
@@ -957,7 +957,7 @@ function BrowseWorkspaceBody({
           {!current.length && browse.mode !== 'TREE' && (
             <div className="empty-folder">
               {tr('此資料夾沒有子資料夾')}
-              <small>{tr('資料夾的內容顯示在右側面板。')}</small>
+              <small>{tr('資料夾的內容顯示在詳情面板。')}</small>
             </div>
           )}
         </div>

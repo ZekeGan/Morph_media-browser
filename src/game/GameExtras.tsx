@@ -120,7 +120,7 @@ export function GameExtraSettings({
         <section className="settings-section">
           <Group gap={4} wrap="nowrap" mb="xs">
             <Text fw={600}>{tr('其他按鈕')}</Text>
-            <HelpTip text={tr('預設不顯示在遊戲的按鈕列；按眼睛顯示。')} />
+            <HelpTip text={tr('按眼睛圖示，就會顯示在遊戲頁。')} />
           </Group>
           <Stack gap={4}>
             {offered.map(({ extra, label }) => {
@@ -223,11 +223,7 @@ export function GameExtraSettings({
         <section className="settings-section">
           <Group gap={4} wrap="nowrap" mb="xs">
             <Text fw={600}>{tr('附帶的程式與說明書')}</Text>
-            <HelpTip
-              text={tr(
-                '在遊戲資料夾找到的設定程式與說明書；按「加入」才會變成操作按鈕，不會自動執行。'
-              )}
-            />
+            <HelpTip text={tr('按「加入」才會出現在遊戲頁。')} />
           </Group>
           <Stack gap={6}>
             {extras.suggestions.map((item) => (

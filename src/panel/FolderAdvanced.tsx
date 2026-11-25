@@ -62,11 +62,7 @@ export function FolderBoundary({
     <section className="settings-section">
       <Group gap={4} wrap="nowrap">
         <Text fw={600}>{tr('掃描範圍')}</Text>
-        <HelpTip
-          text={tr(
-            '遊戲與工具資料夾裡的檔案很多，也不該被改動。所以只把它的主資料夾這一層當成一筆資料夾資訊，裡面的子資料夾受保護，不會被掃描或寫入。'
-          )}
-        />
+        <HelpTip text={tr('遊戲和工具裡的檔案不會被讀取或改動。')} />
       </Group>
       {confirmed ? (
         <>
@@ -148,11 +144,6 @@ function ToolMark({
     <section className="settings-section">
       <Group gap={4} wrap="nowrap">
         <Text fw={600}>{tr('工具資料夾')}</Text>
-        <HelpTip
-          text={tr(
-            '工具（程式）資料夾裡的檔案很多，也不該被改動。設為工具資料夾後，只把這一層當成一筆資料夾資訊，裡面的子資料夾受保護，不會被掃描或寫入。'
-          )}
-        />
       </Group>
       <Group mt="sm">
         <Button

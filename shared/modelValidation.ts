@@ -656,11 +656,11 @@ export function validateProject(v: unknown): asserts v is Project {
       ).size !== v.panelPresets.length ||
       !v.panelPresets.every((p) => obj(p) && id(p.id) && text(p.name, 100) && p.name.trim())
     )
-      throw new Error('右側版面不合法或名稱重複')
+      throw new Error('詳情版面不合法或名稱重複')
     if (v.panelPresetId !== undefined && !v.panelPresets.some((p) => p.id === v.panelPresetId))
-      throw new Error('右側預設版面不存在')
+      throw new Error('詳情預設版面不存在')
     for (const preset of v.panelPresets) validateProject(withOnlyCells(v, preset.cells))
-  } else if (v.panelPresetId !== undefined) throw new Error('右側版面清單不存在')
+  } else if (v.panelPresetId !== undefined) throw new Error('詳情版面清單不存在')
   if (
     v.traversal !== undefined &&
     (!obj(v.traversal) ||

@@ -227,7 +227,7 @@ export function LayoutConfig({
   }, [opened])
   // A panel without a layout shows its kind's built-in panel ('' stands for it).
   const name = (id: string) => {
-    if (panel && !presets.some((p) => p.id === id)) return tr('內建右側')
+    if (panel && !presets.some((p) => p.id === id)) return tr('內建詳情')
     const preset = presets.find((p) => p.id === id) ?? presets[0]
     return layoutName(preset)
   }
@@ -516,7 +516,7 @@ export function LayoutConfig({
         onChange={(value) => setTarget(value as Target)}
         data={[
           { value: 'card', label: tr('卡片') },
-          { value: 'panel', label: tr('右側') },
+          { value: 'panel', label: tr('詳情') },
         ]}
       />
       <div className={'layout-config' + (rulesOpen ? '' : ' rules-closed')}>
@@ -593,7 +593,7 @@ export function LayoutConfig({
                   aria-label={tr('預設版面')}
                   className="set from-default"
                   value={base}
-                  data={panel ? [{ value: '', label: tr('內建右側') }, ...choices] : choices}
+                  data={panel ? [{ value: '', label: tr('內建詳情') }, ...choices] : choices}
                   onChange={(e) => setBase(e.currentTarget.value)}
                 />
                 <Text className="layout-config-reach">
@@ -840,12 +840,12 @@ export function LayoutConfig({
                 <Group gap={4}>
                   {previewFold}
                   <Text className="layout-config-heading">
-                    {tr('預覽：「{0}」的右側', pickedRow.name)}
+                    {tr('預覽：「{0}」的詳情', pickedRow.name)}
                   </Text>
                 </Group>
                 {editPanel && (
                   <Tooltip
-                    label={changes ? tr('先保存或取消變更') : tr('在編輯器打開這個右側版面')}
+                    label={changes ? tr('先保存或取消變更') : tr('在編輯器打開這個詳情版面')}
                     withArrow
                   >
                     <Button
@@ -858,7 +858,7 @@ export function LayoutConfig({
                         editPanel(kindOf(pickedRow), id || undefined, pickedRow.rowId)
                       }}
                     >
-                      {tr('編輯右側版面')}
+                      {tr('編輯詳情版面')}
                     </Button>
                   </Tooltip>
                 )}
@@ -876,7 +876,7 @@ export function LayoutConfig({
                     </div>
                   ) : (
                     <Text size="sm" c="dimmed">
-                      {tr('這個類型沒有右側版面，顯示內建的主視覺。')}
+                      {tr('這個類型沒有詳情版面，顯示內建的主視覺。')}
                     </Text>
                   )
                 })()}

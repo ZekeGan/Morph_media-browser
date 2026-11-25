@@ -591,6 +591,10 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .image-thumb img { width:100%; height:100%; object-fit:contain; }
 .image-thumb-empty { display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px; }
 .image-thumb-mini { width:28px; height:20px; object-fit:contain; border-radius:2px; background:var(--inset); }
+/* R-509: a picture shown because nothing is chosen, and the other image components side by side. */
+.image-thumb { position:relative; }
+.image-thumb-auto { position:absolute; left:6px; top:6px; padding:1px 6px; border-radius:999px; background:var(--surface); color:var(--muted); font-size:11px; line-height:16px; border:1px solid var(--line); }
+.image-slots { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:12px; }
 .folder-source { padding-bottom:2px; }
 .folder-settings-intro { display:flex; align-items:center; gap:8px; min-width:0; }
 .folder-settings-intro .path-line { flex:1; min-width:0; margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

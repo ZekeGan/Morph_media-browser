@@ -143,8 +143,8 @@ export function Editor({
     divider: tr('分隔線'),
     'open-folder': tr('一鍵開啟這個資料夾'),
     'game-launch': tr('一鍵啟動這個遊戲（使用資料夾綁定的啟動檔）'),
-    'video-play': tr('右側：播放影片，影片中斷過時改為繼續觀看'),
-    'book-continue': tr('右側：繼續閱讀或開始閱讀'),
+    'video-play': tr('詳情：播放影片，影片中斷過時改為繼續觀看'),
+    'book-continue': tr('詳情：繼續閱讀或開始閱讀'),
     'game-extra': tr('開啟存檔資料夾、用 Steam 啟動或在商店開啟；不能用時變灰並說明原因'),
   }
 

@@ -13,7 +13,6 @@ import {
 } from '@mantine/core'
 import { Icon } from '../common/icons'
 import { OptionTagsInput } from './OptionTagsInput'
-import { HelpTip } from '../common/HelpTip'
 import { t as tr } from '../i18n'
 import type {
   Attribute,
@@ -874,7 +873,6 @@ export function FieldManager({
     <Modal opened onClose={onClose} title={tr('管理欄位')} size="min(1000px, 92vw)">
       <div className="field-manager" data-view={current || currentGroup ? 'detail' : 'list'}>
         <Group gap="xs" wrap="nowrap" className="field-manager-tools">
-          <HelpTip text={tr('這裡整理欄位本身：名稱、用途與選項。要放上卡片，請用左側清單。')} />
           <TextInput
             flex={1}
             size="xs"

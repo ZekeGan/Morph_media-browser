@@ -34,11 +34,7 @@ export function VideoPlayerSetting({ opened }: { opened: boolean }) {
     <section className="settings-section" aria-label={tr('外部影片播放器')}>
       <Group gap={4} wrap="nowrap" mb="xs">
         <Text fw={600}>{tr('外部影片播放器')}</Text>
-        <HelpTip
-          text={tr(
-            '播放器的「用外部播放器開啟」會用這個程式開影片；認得 PotPlayer 與 mpv，會從目前的位置開始播放。沒指定時用系統預設播放器。'
-          )}
-        />
+        <HelpTip text={tr('「用外部播放器開啟」會用這個程式。')} />
       </Group>
       <Text size="sm" className="path" title={file}>
         {file ?? tr('尚未指定')}

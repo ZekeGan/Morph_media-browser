@@ -285,11 +285,11 @@ try {
         () => document.querySelector('.content-panel-slot')!.getBoundingClientRect().width === 0
       )
       assert.equal(await page.locator('.folder-panel').count(), 0)
-      await button('切換右側內容').click()
+      await button('切換詳情內容').click()
       await page.locator('.folder-panel').waitFor()
       for (let i = 0; i < 4; i++) {
-        await button('切換右側內容').click()
-        await button('切換右側內容').click()
+        await button('切換詳情內容').click()
+        await button('切換詳情內容').click()
       }
       await page.waitForFunction(
         () => document.querySelector('.content-panel-slot')!.getBoundingClientRect().width > 400

@@ -75,7 +75,7 @@
     },
     {
       "id": "panel",
-      "name": "右側面板與資料夾設定",
+      "name": "詳情面板與資料夾設定",
       "docs": [
         "WORKSPACE_REVISION.md#右側內容與覆蓋層",
         "MEDIA_WORKSPACE.md#右側組件共用邊界",

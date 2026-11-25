@@ -35,10 +35,10 @@ If the folder already holds an earlier project (a new computer, a moved folder, 
 ## 4. Browse
 
 - The top bar offers three modes over the same data: **CARD**, **TABLE** and **TREE**.
-- A **single click** on a folder previews it in the right panel (details, files, subfolders) without leaving the list; a **double click** enters it.
-- The right panel opens images, manga, video, music and PDF / ZIP / CBZ in place. When a video cannot be played, the app explains why and offers to open it with the system player.
+- A **single click** on a folder previews it in the details panel (details, files, subfolders) without leaving the list; a **double click** enters it.
+- The details panel opens images, manga, video, music and PDF / ZIP / CBZ in place. When a video cannot be played, the app explains why and offers to open it with the system player.
 - Filters, file scope, type and view settings are remembered per project.
-- When the window is narrow, the right panel opens over the list; close it to get back to the cards.
+- When the window is narrow, the details panel opens over the list; close it to get back to the cards.
 - `Ctrl+K` opens search: a space means "all of these", `~` means "any of these", `-` excludes, and quotes keep a phrase with spaces together, for example `folder_name:"my name"`. Number and date fields can be compared.
 
 ![Card mode: cover, name, tags, rating and status, with the selected folder's contents on the right](images/01-main-card.png)

@@ -118,7 +118,7 @@ try {
   // The layouts are shown in the Appearance tab (R-235) and set in the layout window, which opens at this folder
   // (R-409); cancelling it writes nothing.
   await drawer.getByRole('tab', { name: '類型與版面', exact: true }).click()
-  await layouts.getByText('內建右側', { exact: true }).waitFor()
+  await layouts.getByText('內建詳情', { exact: true }).waitFor()
   await layouts.getByRole('button', { name: '卡片版面配置…', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: '版面配置' })
   await dialog.locator('.layout-config-item.picked').waitFor()

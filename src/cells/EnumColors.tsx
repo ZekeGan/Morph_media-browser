@@ -1,5 +1,4 @@
 import { ColorInput, SimpleGrid, Stack, Text } from '@mantine/core'
-import { HelpTip } from '../common/HelpTip'
 import { t as tr } from '../i18n'
 import type { Project } from '../../shared/model'
 
@@ -33,9 +32,6 @@ export function EnumColors({
         <Text size="sm" fw={500}>
           {tr('選項顏色')}
         </Text>
-        <HelpTip
-          text={tr('在組件顯示方式為「狀態徽章」時，各選項用自己的顏色；沒設定的維持灰色。')}
-        />
       </div>
       <SimpleGrid cols={2} spacing={6}>
         {options.map((option) => (

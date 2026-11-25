@@ -75,7 +75,7 @@ try {
   await dialog.getByText('1 處尚未保存').waitFor()
   // R-409: the right panel has the same rules; switching keeps the card change. Music gets a panel layout and Album's
   // right panel shows it in the preview.
-  await dialog.getByText('右側', { exact: true }).click()
+  await dialog.getByText('詳情', { exact: true }).click()
   await item('Album').locator('.layout-config-source', { hasText: '預設' }).waitFor()
   await dialog.getByRole('combobox', { name: '音樂的版面' }).selectOption('panel-album')
   await item('Album').locator('.layout-config-source', { hasText: '類型' }).waitFor()
@@ -154,9 +154,9 @@ try {
     .first()
     .click()
   await dialog.waitFor()
-  await dialog.getByText('右側', { exact: true }).click()
+  await dialog.getByText('詳情', { exact: true }).click()
   await item('Album').click()
-  await dialog.getByRole('button', { name: '編輯右側版面', exact: true }).click()
+  await dialog.getByRole('button', { name: '編輯詳情版面', exact: true }).click()
   const palette = page.locator('.editor-palette')
   await palette.waitFor()
   await palette.locator('.palette-section-toggle', { hasText: '專輯' }).waitFor()

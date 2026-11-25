@@ -34,11 +34,7 @@ export function LocaleEmulatorSetting({ opened }: { opened: boolean }) {
     <section className="settings-section" aria-label="Locale Emulator">
       <Group gap={4} wrap="nowrap" mb="xs">
         <Text fw={600}>Locale Emulator</Text>
-        <HelpTip
-          text={tr(
-            '指定 LEProc.exe 後，遊戲的 EXE 操作可以選擇用 Locale Emulator 的語系設定檔啟動。'
-          )}
-        />
+        <HelpTip text={tr('選好後，遊戲可以用日文等語系啟動，避免亂碼。')} />
       </Group>
       <Text size="sm" className="path" title={file}>
         {file ?? tr('尚未指定')}

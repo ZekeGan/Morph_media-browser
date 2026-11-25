@@ -379,9 +379,7 @@ export function GroupView({
             if (e.key === 'Escape') setName(group.name)
           }}
         />
-        <HelpTip
-          text={tr('依順序顯示第一個有值的欄位。拖動可調整順序；把其他欄位拖到群組上即可加入。')}
-        />
+        <HelpTip text={tr('顯示第一個有填的。例如先用 Steam 標題，沒有再用 DLsite 標題。')} />
       </div>
       {addToCard && (
         <Button size="compact-xs" variant="light" mb={4} onClick={addToCard} disabled={!type}>

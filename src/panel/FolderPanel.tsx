@@ -155,14 +155,8 @@ export function FolderPanel({
       preset = choice && project.panelPresets?.find((p) => p.id === choice.id)
     return preset
       ? { name: presetName(preset), source: sourceLabel[choice!.source] }
-      : { name: tr('內建右側'), source: sourceLabel.default }
+      : { name: tr('內建詳情'), source: sourceLabel.default }
   })()
-  const kindReason: Record<string, string> = {
-    game: tr('偵測到遊戲引擎'),
-    content: tr('依檔案內容判斷'),
-    default: tr('無法判斷，視為一般'),
-    manual: '',
-  }
   const fields = useMemo(
     () =>
       [
@@ -189,18 +183,17 @@ export function FolderPanel({
     mainFields = fields.filter(
       (f) => configured.has(f.attributeId) && !groupOfField(project, f.attributeId)
     )
+  // R-509: each image component with where it is shown (card or details); one shown in both is listed once.
   const imageCells = [
-    ...new Map(
-      [
-        ...rowCells(project, row, isWork),
-        ...panelCells(project, row, effectiveKind(row, sample, parentKind), (k) =>
-          builtinPanel(project, k)
-        ),
-      ]
-        .filter((c) => c.kind === 'image')
-        .map((c) => [c.cellId, c])
-    ).values(),
-  ]
+    ...rowCells(project, row, isWork).map((cell) => ({ cell, where: 'card' as const })),
+    ...panelCells(project, row, effectiveKind(row, sample, parentKind), (k) =>
+      builtinPanel(project, k)
+    ).map((cell) => ({ cell, where: 'panel' as const })),
+  ].filter(
+    (item, index, all) =>
+      item.cell.kind === 'image' &&
+      all.findIndex((other) => other.cell.cellId === item.cell.cellId) === index
+  )
   const assets = row.record?.assets ?? []
   const showImages = imageCells.length > 0 || assets.length > 0 || !!row.record
   useEffect(() => {
@@ -670,11 +663,7 @@ export function FolderPanel({
                   <Text fw={600}>{tr('資料夾資料')}</Text>
                   <HelpTip
                     text={
-                      tr('填寫與此資料夾有關的資訊，保存後立即顯示。') +
-                      ' ' +
-                      (privateValues
-                        ? tr('修改只用在目前專案；其他專案仍用各專案共用的資訊。')
-                        : tr('修改會同步到使用這個資料夾的其他專案。'))
+                      privateValues ? tr('只有這個專案看得到。') : tr('其他專案也會看到這些修改。')
                     }
                   />
                 </Group>
@@ -813,15 +802,7 @@ export function FolderPanel({
                 label={
                   <HelpLabel
                     label={tr('資料夾類型')}
-                    help={
-                      row.record.details?.kind
-                        ? tr('已手動指定類型；選「自動」可改回自動判斷。')
-                        : (sample || detectedKind.source !== 'default'
-                            ? kindReason[detectedKind.source]
-                            : tr('偵測中…')) +
-                          '。' +
-                          tr('也可以手動指定。')
-                    }
+                    help={tr('決定點開時的畫面，例如遊戲、漫畫、音樂。')}
                   />
                 }
                 allowDeselect={false}
@@ -849,9 +830,7 @@ export function FolderPanel({
               <div className="folder-layouts" role="group" aria-label={tr('此資料夾的版面')}>
                 <HelpLabel
                   label={<Text size="sm">{tr('此資料夾的版面')}</Text>}
-                  help={tr(
-                    '卡片與右側版面由版面配置的規則決定：資料夾專屬 › 類型 › 層級 › 預設；在版面配置視窗修改。'
-                  )}
+                  help={tr('要換卡片或詳情的樣子，按下面的按鈕。')}
                 />
                 <dl>
                   <dt>{tr('卡片')}</dt>
@@ -859,7 +838,7 @@ export function FolderPanel({
                     <span>{shownCard.name}</span>
                     <small>{shownCard.source}</small>
                   </dd>
-                  <dt>{tr('右側')}</dt>
+                  <dt>{tr('詳情')}</dt>
                   <dd>
                     <span>{shownPanel.name}</span>
                     <small>{shownPanel.source}</small>
@@ -883,7 +862,7 @@ export function FolderPanel({
                       leftSection={<Icon name="layout" size={14} />}
                       onClick={() => onLayoutConfig('panel')}
                     >
-                      {tr('右側版面配置…')}
+                      {tr('詳情版面配置…')}
                     </Button>
                   </Group>
                 )}
@@ -906,11 +885,7 @@ export function FolderPanel({
           <Stack>
             <Group gap={4} wrap="nowrap">
               <Text fw={600}>{tr('遊戲操作')}</Text>
-              <HelpTip
-                text={tr(
-                  '操作套用到整個專案，在版面編輯器的「啟動遊戲」組件新增；目標與參數只屬於目前資料夾。'
-                )}
-              />
+              <HelpTip text={tr('選這個遊戲要開哪個檔案；新的按鈕種類在版面編輯器加。')} />
             </Group>
             <GameActionTargets
               key={row.rowId}

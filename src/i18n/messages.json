@@ -425,23 +425,23 @@
     "en": "Level",
     "es": "Nivel"
   },
-  "顯示右側內容": {
-    "ja": "右側の内容を表示",
-    "zh-CN": "显示右侧内容",
-    "en": "Show content panel",
-    "es": "Mostrar panel de contenido"
+  "顯示詳情內容": {
+    "ja": "詳細を表示",
+    "zh-CN": "显示详情内容",
+    "en": "Show details",
+    "es": "Mostrar detalles"
   },
-  "隱藏右側內容": {
-    "ja": "右側の内容を非表示",
-    "zh-CN": "隐藏右侧内容",
-    "en": "Hide content panel",
-    "es": "Ocultar panel de contenido"
+  "隱藏詳情內容": {
+    "ja": "詳細を非表示",
+    "zh-CN": "隐藏详情内容",
+    "en": "Hide details",
+    "es": "Ocultar detalles"
   },
-  "切換右側內容": {
-    "ja": "内容パネルを切り替え",
-    "zh-CN": "切换右侧内容",
-    "en": "Toggle content panel",
-    "es": "Alternar panel de contenido"
+  "切換詳情內容": {
+    "ja": "詳細を切り替え",
+    "zh-CN": "切换详情内容",
+    "en": "Toggle details",
+    "es": "Alternar detalles"
   },
   "資料夾瀏覽區": {
     "ja": "フォルダーブラウザー",
@@ -1433,12 +1433,6 @@
     "en": "Folder data",
     "es": "Datos de carpeta"
   },
-  "填寫與此資料夾有關的資訊，保存後立即顯示。": {
-    "ja": "フォルダーに関する情報を入力してください。保存後すぐに表示されます。",
-    "zh-CN": "填写与此文件夹有关的信息，保存後立即显示。",
-    "en": "Enter information about this folder. Changes appear after saving.",
-    "es": "Introduce información de la carpeta. Los cambios aparecen al guardar."
-  },
   "僅目前專案": {
     "ja": "このプロジェクトのみ",
     "zh-CN": "仅目前项目",
@@ -1498,12 +1492,6 @@
     "zh-CN": "从网站补充信息",
     "en": "Enrich from the web",
     "es": "Completar información desde la web"
-  },
-  "選來源、貼連結、預覽後再決定要匯入的欄位。": {
-    "ja": "出典を選び、リンクを貼り付けてプレビュー後、インポート項目を選択します。",
-    "zh-CN": "选来源、贴连结、预览後再决定要导入的栏位。",
-    "en": "Choose a source, paste a link, preview, then select fields to import.",
-    "es": "Elige un origen, pega un enlace, previsualiza y selecciona los campos a importar."
   },
   "Steam 商店網址或 App ID": {
     "ja": "SteamストアURLまたはApp ID",
@@ -3713,11 +3701,11 @@
     "ja": "全体を表示（余白を残す）",
     "es": "Mostrar completa (con márgenes)"
   },
-  "右側面板分頁": {
-    "zh-CN": "右侧面板分页",
-    "en": "Right panel tabs",
-    "ja": "右パネルのタブ",
-    "es": "Pestañas del panel derecho"
+  "詳情面板分頁": {
+    "zh-CN": "详情面板分页",
+    "en": "Details panel tabs",
+    "ja": "詳細パネルのタブ",
+    "es": "Pestañas del panel de detalles"
   },
   "設定": {
     "zh-CN": "设置",
@@ -3869,12 +3857,6 @@
     "ja": "「{0}」は {1} 個のフォルダーで使用中です。先にそれらを別の値に変更してから削除してください。",
     "es": "«{0}» sigue en uso en {1} carpeta(s). Cámbialas a otro valor antes de quitarla."
   },
-  "只在所選欄位符合條件時顯示這個組件；不符合時保留空位。": {
-    "zh-CN": "只在所选字段符合条件时显示这个组件；不符合时保留空位。",
-    "en": "Shown only when the chosen field matches; otherwise the space stays empty.",
-    "ja": "選んだ項目が条件に合うときだけ表示します。合わないときは空白のままです。",
-    "es": "Se muestra solo si el campo elegido cumple la condición; si no, el espacio queda vacío."
-  },
   "位置與大小": {
     "zh-CN": "位置与大小",
     "en": "Position and size",
@@ -3905,23 +3887,11 @@
     "ja": "小数点以下の桁数",
     "es": "Decimales"
   },
-  "留空則依數值原樣顯示": {
-    "zh-CN": "留空则按数值原样显示",
-    "en": "Leave empty to show the value as is",
-    "ja": "空欄の場合は値をそのまま表示します",
-    "es": "Déjalo vacío para mostrar el valor tal cual"
-  },
   "單位文字": {
     "zh-CN": "单位文字",
     "en": "Unit text",
     "ja": "単位",
     "es": "Texto de unidad"
-  },
-  "例如：分、集、%、$": {
-    "zh-CN": "例如：分、集、%、$",
-    "en": "e.g. pts, ep, %, $",
-    "ja": "例：点、話、%、$",
-    "es": "p. ej.: pts, ep., %, $"
   },
   "單位位置": {
     "zh-CN": "单位位置",
@@ -3988,12 +3958,6 @@
     "en": "Wrap long text",
     "ja": "長い文字を折り返す",
     "es": "Ajustar texto largo"
-  },
-  "關閉時只顯示一行，過長的部分以「…」截斷": {
-    "zh-CN": "关闭时只显示一行，过长的部分以“…”截断",
-    "en": "When off, only one line is shown and the rest is cut with \"…\"",
-    "ja": "オフの場合は1行のみ表示し、はみ出す部分は「…」で省略します",
-    "es": "Si está desactivado, solo se muestra una línea y el resto se corta con «…»"
   },
   "沒有權限完成這個操作": {
     "zh-CN": "没有权限完成这个操作",
@@ -4091,11 +4055,11 @@
     "ja": "このフォルダーにはサブフォルダーがありません",
     "es": "Esta carpeta no tiene subcarpetas"
   },
-  "資料夾的內容顯示在右側面板。": {
-    "zh-CN": "文件夹的内容显示在右侧面板。",
-    "en": "Its contents are shown in the right panel.",
-    "ja": "内容は右側のパネルに表示されます。",
-    "es": "Su contenido se muestra en el panel derecho."
+  "資料夾的內容顯示在詳情面板。": {
+    "zh-CN": "文件夹的内容显示在详情面板。",
+    "en": "Its contents are shown in the details panel.",
+    "ja": "内容は詳細パネルに表示されます。",
+    "es": "Su contenido se muestra en el panel de detalles."
   },
   "請輸入專案名稱": {
     "zh-CN": "请输入项目名称",
@@ -4283,12 +4247,6 @@
     "ja": "フォルダー内の {0} 枚目の画像",
     "es": "Imagen {0} de la carpeta"
   },
-  "可新增多張；保存版面後，在資料夾設定的「圖片」頁分別選圖，沒有圖片可留空。": {
-    "zh-CN": "可添加多张；保存布局后，在文件夹设置的“图片”页分别选图，没有图片可留空。",
-    "en": "You can add several image components. After saving the layout, choose an image for each component on the Images tab of the folder settings. Leave it empty if no image is available.",
-    "ja": "複数追加できます。レイアウトを保存したら、フォルダー設定の「画像」タブで各画像コンポーネントの画像を個別に選びます。画像がなければ空のままで構いません。",
-    "es": "Puedes añadir varios componentes de imagen. Tras guardar el diseño, elige una imagen para cada componente en la pestaña Imágenes de los ajustes de la carpeta. Déjalo vacío si no hay imagen."
-  },
   "沒有手動選圖時": {
     "zh-CN": "没有手动选图时",
     "en": "When no picture is chosen by hand",
@@ -4313,35 +4271,17 @@
     "ja": "何枚目の画像か",
     "es": "Número de imagen"
   },
-  "依檔名排序，只看這個資料夾直接包含的圖片（不含子資料夾）。資料夾已手動選圖時以手動為準；沒有那一張時留空。": {
-    "zh-CN": "按文件名排序，只看这个文件夹直接包含的图片（不含子文件夹）。文件夹已手动选图时以手动为准；没有那一张时留空。",
-    "en": "Sorted by file name, counting only images directly inside the folder (not subfolders). A picture chosen by hand wins; empty if there is no such image.",
-    "ja": "ファイル名順で、このフォルダー直下の画像だけを数えます（サブフォルダーは含みません）。手動で選んだ画像が優先され、該当の画像がなければ空になります。",
-    "es": "Ordenadas por nombre; solo cuentan las imágenes directas de la carpeta (no las subcarpetas). Una imagen elegida a mano tiene prioridad; si no existe, queda vacío."
-  },
   "內容多時可捲動": {
     "zh-CN": "内容多时可滚动",
     "en": "Scroll when long",
     "ja": "長いときはスクロール",
     "es": "Desplazar si es largo"
   },
-  "保持組件高度，超出的內容用捲動查看，不會被截掉": {
-    "zh-CN": "保持组件高度，超出的内容用滚动查看，不会被截掉",
-    "en": "Keeps the component height; extra content is reached by scrolling instead of being cut off.",
-    "ja": "コンポーネントの高さを保ち、はみ出した内容はスクロールで確認できます（切り捨てません）。",
-    "es": "Mantiene la altura del componente; el contenido sobrante se ve desplazándose en lugar de cortarse."
-  },
   "備用動作": {
     "zh-CN": "备用动作",
     "en": "Fallback actions",
     "ja": "代替アクション",
     "es": "Acciones alternativas"
-  },
-  "這個遊戲沒有綁定上面的動作時，依序改用下列動作；例如有些遊戲用 EXE、有些用捷徑。": {
-    "zh-CN": "这个游戏没有绑定上面的动作时，依序改用下列动作；例如有些游戏用 EXE、有些用快捷方式。",
-    "en": "When this game has no target for the action above, the following ones are tried in order; for example some games start from an EXE and others from a shortcut.",
-    "ja": "このゲームに上のアクションの対象がない場合、以下を順に使います。例：EXE で起動するゲームとショートカットで起動するゲーム。",
-    "es": "Si este juego no tiene destino para la acción de arriba, se prueban las siguientes en orden; por ejemplo, unos juegos arrancan con un EXE y otros con un acceso directo."
   },
   "第 {0} 順位動作": {
     "zh-CN": "第 {0} 顺位动作",
@@ -4384,12 +4324,6 @@
     "en": "In the preview, “{0}” has no action bound",
     "ja": "プレビュー中の「{0}」にはどのアクションも割り当てられていません",
     "es": "En la vista previa, «{0}» no tiene ninguna acción vinculada"
-  },
-  "已綁定": {
-    "zh-CN": "已绑定",
-    "en": "bound",
-    "ja": "割り当て済み",
-    "es": "vinculada"
   },
   "未綁定": {
     "zh-CN": "未绑定",
@@ -4751,12 +4685,6 @@
     "ja": "選択肢の色",
     "es": "Colores de opciones"
   },
-  "在組件顯示方式為「狀態徽章」時，各選項用自己的顏色；沒設定的維持灰色。": {
-    "zh-CN": "在组件显示方式为“状态徽章”时，各选项使用自己的颜色；未设置的保持灰色。",
-    "en": "When the component is shown as a status badge, each option uses its own colour; options without one stay grey.",
-    "ja": "コンポーネントが「ステータスバッジ」表示のとき、各選択肢が自分の色を使います。未設定のものはグレーのままです。",
-    "es": "Cuando el componente se muestra como insignia de estado, cada opción usa su propio color; las que no tienen color siguen en gris."
-  },
   "選項顏色 {0}": {
     "zh-CN": "选项颜色 {0}",
     "en": "Colour of option {0}",
@@ -4931,18 +4859,6 @@
     "en": "Imported from a website",
     "es": "Importado de un sitio web"
   },
-  "修改會同步到使用這個資料夾的其他專案。": {
-    "ja": "変更は、このフォルダーを使う他のプロジェクトにも反映されます。",
-    "zh-CN": "修改会同步到使用这个文件夹的其他项目。",
-    "en": "Changes also apply to other projects that use this folder.",
-    "es": "Los cambios también se aplican a otros proyectos que usan esta carpeta."
-  },
-  "修改只用在目前專案；其他專案仍用各專案共用的資訊。": {
-    "ja": "変更はこのプロジェクトだけに使われます。ほかのプロジェクトは共有の情報を使い続けます。",
-    "zh-CN": "修改只用在目前项目；其他项目仍用各项目共用的信息。",
-    "en": "Changes apply to this project only; other projects keep the shared info.",
-    "es": "Los cambios solo se aplican a este proyecto; los demás conservan la información compartida."
-  },
   "圖片庫": {
     "ja": "画像ライブラリ",
     "zh-CN": "图片库",
@@ -5002,30 +4918,6 @@
     "zh-CN": "书籍／漫画",
     "en": "Book / comic",
     "es": "Libro / cómic"
-  },
-  "偵測到遊戲引擎": {
-    "ja": "ゲームエンジンを検出",
-    "zh-CN": "检测到游戏引擎",
-    "en": "Game engine detected",
-    "es": "Motor de juego detectado"
-  },
-  "依檔案內容判斷": {
-    "ja": "ファイルの内容から判断",
-    "zh-CN": "依据文件内容判断",
-    "en": "Judged from the files inside",
-    "es": "Según los archivos que contiene"
-  },
-  "無法判斷，視為一般": {
-    "ja": "判断できないため一般として扱います",
-    "zh-CN": "无法判断，视为一般",
-    "en": "Cannot tell, treated as general",
-    "es": "No se puede determinar; se trata como general"
-  },
-  "偵測中…": {
-    "ja": "検出中…",
-    "zh-CN": "检测中…",
-    "en": "Detecting…",
-    "es": "Detectando…"
   },
   "資料夾類型": {
     "ja": "フォルダーの種類",
@@ -5236,18 +5128,6 @@
     "en": "Hide this column",
     "ja": "この列を隠す",
     "es": "Ocultar esta columna"
-  },
-  "已手動指定類型；選「自動」可改回自動判斷。": {
-    "zh-CN": "已手动指定类型；选“自动”可改回自动判断。",
-    "en": "The type was set by hand; choose “Automatic” to go back to detection.",
-    "ja": "種類は手動で指定されています。「自動」を選ぶと自動判定に戻ります。",
-    "es": "El tipo se fijó a mano; elige «Automático» para volver a la detección."
-  },
-  "也可以手動指定。": {
-    "zh-CN": "也可以手动指定。",
-    "en": "You can also set it by hand.",
-    "ja": "手動で指定することもできます。",
-    "es": "También puedes fijarlo a mano."
   },
   "這個資料夾看起來是 {0} 遊戲。": {
     "zh-CN": "这个文件夹看起来是 {0} 游戏。",
@@ -6299,12 +6179,6 @@
     "en": "This field is not in this project yet.",
     "es": "Este campo aún no está en este proyecto."
   },
-  "這裡整理欄位本身：名稱、用途與選項。要放上卡片，請用左側清單。": {
-    "ja": "ここではフィールドそのもの（名前・用途・選択肢）を整理します。カードに置くには左のリストを使います。",
-    "zh-CN": "这里整理字段本身：名称、用途与选项。要放上卡片，请用左侧列表。",
-    "en": "Organise the fields themselves here: name, purpose and options. To put one on the card, use the list on the left.",
-    "es": "Aquí organizas los campos: nombre, uso y opciones. Para ponerlos en la tarjeta, usa la lista de la izquierda."
-  },
   "搜尋名稱、用途或來源": {
     "ja": "名前・用途・取得元を検索",
     "zh-CN": "搜索名称、用途或来源",
@@ -6430,12 +6304,6 @@
     "en": "A group can hold up to {0} fields",
     "ja": "1 つのグループに入れられるのは {0} 個まで",
     "es": "Un grupo admite como máximo {0} campos"
-  },
-  "依順序顯示第一個有值的欄位。拖動可調整順序；把其他欄位拖到群組上即可加入。": {
-    "zh-CN": "依顺序显示第一个有值的字段。拖动可调整顺序；把其他字段拖到群组上即可加入。",
-    "en": "Shows the first field with a value, in order. Drag to reorder; drop another field on the group to add it.",
-    "ja": "値のある最初のフィールドを順番に表示します。ドラッグで並べ替え、ほかのフィールドをグループにドロップすると追加されます。",
-    "es": "Muestra el primer campo con valor, en orden. Arrastra para reordenar; suelta otro campo sobre el grupo para añadirlo."
   },
   "依順序顯示第一個有值的欄位；個別資料夾可在資料夾設定指定來源。": {
     "zh-CN": "依顺序显示第一个有值的字段；个别文件夹可在文件夹设置指定来源。",
@@ -7061,12 +6929,6 @@
     "ja": "条件で文字を切り替え",
     "es": "Texto según condición"
   },
-  "由上往下比對，第一個符合的規則顯示它的文字；都不符合時顯示下方的文字，留空就不顯示。": {
-    "zh-CN": "由上往下比对，第一个符合的规则显示它的文字；都不符合时显示下方的文字，留空就不显示。",
-    "en": "Rules are checked from the top; the first that matches shows its text. If none matches, the text below shows, or nothing when it is empty.",
-    "ja": "上から順に比べ、最初に一致したルールの文字を表示します。どれも一致しないときは下の文字を表示し、空欄なら何も表示しません。",
-    "es": "Las reglas se comprueban desde arriba; la primera que se cumple muestra su texto. Si ninguna se cumple, se muestra el texto de abajo, o nada si está vacío."
-  },
   "規則 {0} 的欄位": {
     "zh-CN": "规则 {0} 的字段",
     "en": "Rule {0} field",
@@ -7456,12 +7318,6 @@
     "en": "Bundled tools and manuals",
     "ja": "付属のツールと説明書",
     "es": "Herramientas y manuales incluidos"
-  },
-  "在遊戲資料夾找到的設定程式與說明書；按「加入」才會變成操作按鈕，不會自動執行。": {
-    "zh-CN": "在游戏文件夹找到的设置程序与说明书；按“加入”才会变成操作按钮，不会自动执行。",
-    "en": "Settings tools and manuals found in the game folder. They become action buttons only when you click Add, and never run on their own.",
-    "ja": "ゲームフォルダーで見つかった設定ツールと説明書です。「追加」を押すと操作ボタンになります。自動では実行しません。",
-    "es": "Herramientas de configuración y manuales encontrados en la carpeta del juego. Solo se convierten en botones al pulsar Añadir y nunca se ejecutan solos."
   },
   "設定程式": {
     "zh-CN": "设置程序",
@@ -10907,12 +10763,6 @@
     "ja": "その他のボタン",
     "es": "Otros botones"
   },
-  "預設不顯示在遊戲的按鈕列；按眼睛顯示。": {
-    "zh-CN": "默认不显示在游戏的按钮栏；按眼睛显示。",
-    "en": "Not shown in the game's button row by default; press the eye to show.",
-    "ja": "既定ではゲームのボタン列に表示しません。目のアイコンで表示します。",
-    "es": "No se muestran en la fila de botones del juego por defecto; pulsa el ojo para mostrarlos."
-  },
   "展開全文": {
     "zh-CN": "展开全文",
     "en": "Show all",
@@ -10931,12 +10781,6 @@
     "ja": "Flash プレーヤー",
     "es": "Reproductor de Flash"
   },
-  "指定播放 .swf 的程式（Flash Player projector 或 Ruffle 桌面版）後，遊戲的「啟動遊戲」可以選 .swf 檔。": {
-    "zh-CN": "指定播放 .swf 的程序（Flash Player projector 或 Ruffle 桌面版）后，游戏的「启动游戏」可以选 .swf 文件。",
-    "en": "Once a program that plays .swf files is set (Flash Player projector or Ruffle desktop), a game's \"Launch game\" can use an .swf file.",
-    "ja": ".swf を再生するプログラム（Flash Player projector または Ruffle デスクトップ版）を指定すると、ゲームの「ゲームを起動」で .swf ファイルを選べます。",
-    "es": "Con un programa que reproduzca .swf (Flash Player projector o Ruffle de escritorio), «Iniciar juego» puede usar un archivo .swf."
-  },
   "選擇播放程式": {
     "zh-CN": "选择播放程序",
     "en": "Choose player",
@@ -10948,12 +10792,6 @@
     "en": "Start with Locale Emulator",
     "ja": "Locale Emulator で起動",
     "es": "Iniciar con Locale Emulator"
-  },
-  "在 Locale Emulator 裡建立的設定檔（例如簡體中文）會列在這裡": {
-    "zh-CN": "在 Locale Emulator 里建立的配置文件（例如简体中文）会列在这里",
-    "en": "Profiles made in Locale Emulator (Simplified Chinese, for example) are listed here",
-    "ja": "Locale Emulator で作ったプロファイル（簡体字中国語など）がここに並びます",
-    "es": "Aquí aparecen los perfiles creados en Locale Emulator (por ejemplo, chino simplificado)"
   },
   "不使用": {
     "zh-CN": "不使用",
@@ -10972,12 +10810,6 @@
     "en": "Profile not found",
     "ja": "見つからないプロファイル",
     "es": "Perfil no encontrado"
-  },
-  "指定 LEProc.exe 後，遊戲的 EXE 操作可以選擇用 Locale Emulator 的語系設定檔啟動。": {
-    "zh-CN": "指定 LEProc.exe 后，游戏的 EXE 操作可以选择用 Locale Emulator 的语系配置文件启动。",
-    "en": "Once LEProc.exe is set, a game's EXE action can start with one of Locale Emulator's locale profiles.",
-    "ja": "LEProc.exe を指定すると、ゲームの EXE 操作を Locale Emulator の言語プロファイルで起動できます。",
-    "es": "Con LEProc.exe indicado, la acción EXE de un juego puede iniciarse con un perfil de idioma de Locale Emulator."
   },
   "尚未設定 Flash 播放器；請到應用程式設定指定": {
     "zh-CN": "尚未设置 Flash 播放器；请到应用程序设置指定",
@@ -11026,12 +10858,6 @@
     "en": "via VNDB",
     "ja": "VNDB 経由",
     "es": "vía VNDB"
-  },
-  "貼上作品頁的網址，會自動認出是哪個網站，例如 https://vndb.org/v97": {
-    "zh-CN": "粘贴作品页的网址，会自动认出是哪个网站，例如 https://vndb.org/v97",
-    "en": "Paste the work page's address and the site is recognised, e.g. https://vndb.org/v97",
-    "ja": "作品ページの URL を貼ると、どのサイトか自動で判別します。例：https://vndb.org/v97",
-    "es": "Pega la dirección de la página de la obra y se reconoce el sitio, p. ej. https://vndb.org/v97"
   },
   "收合支援的網站": {
     "zh-CN": "收起支持的网站",
@@ -11771,23 +11597,11 @@
     "ja": "内容が高いとき自動で高くする",
     "es": "Crecer si el contenido es alto"
   },
-  "內容放不下時多佔幾列，下面的組件跟著往下移；不勾選則維持原高度。與「內容多時可捲動」擇一": {
-    "zh-CN": "内容放不下时多占几行，下面的组件跟着往下移；不勾选则保持原高度。与“内容多时可滚动”二选一",
-    "en": "Takes more rows when the content does not fit, and the components below move down. Unchecked keeps the height. Use this or \"Scroll when long\", not both",
-    "ja": "内容が収まらないとき行数を増やし、下のコンポーネントが下に移動します。オフなら高さはそのままです。「長いときはスクロール」とはどちらか一方のみ",
-    "es": "Ocupa más filas si el contenido no cabe y los componentes de abajo bajan. Sin marcar, mantiene la altura. Elige esta opción o «Desplazar si es largo», no ambas"
-  },
   "最多加高幾列": {
     "zh-CN": "最多加高几行",
     "en": "Most extra rows",
     "ja": "最大で増やす行数",
     "es": "Máximo de filas extra"
-  },
-  "可捲動或自動加高時一律換行顯示": {
-    "zh-CN": "可滚动或自动加高时一律换行显示",
-    "en": "Always wrapped when scrollable or growing",
-    "ja": "スクロールまたは自動で高くするときは常に折り返します",
-    "es": "Siempre con saltos de línea si es desplazable o crece"
   },
   "還沒有存檔": {
     "zh-CN": "还没有存档",
@@ -11848,12 +11662,6 @@
     "en": "Languages for online sources",
     "ja": "外部ソースの言語",
     "es": "Idiomas de las fuentes en línea"
-  },
-  "匯入外部來源時，標題與簡介依這個順序取來源有的語言，沒有就用網站預設；標籤固定一種語言，已匯入的資料不會改變。": {
-    "zh-CN": "导入外部来源时，标题与简介按这个顺序取来源有的语言，没有就用网站默认；标签固定一种语言，已导入的数据不会改变。",
-    "en": "When importing from an online source, titles and descriptions use the first language in this order that the source has, otherwise the site's default. Tags stay in one language, and data already imported does not change.",
-    "ja": "外部ソースから取り込むとき、タイトルと説明はこの順でソースにある言語を使い、なければサイトの既定を使います。タグは1つの言語に固定され、取り込み済みのデータは変わりません。",
-    "es": "Al importar de una fuente en línea, los títulos y descripciones usan el primer idioma de este orden que tenga la fuente; si no, el predeterminado del sitio. Las etiquetas quedan en un solo idioma y los datos ya importados no cambian."
   },
   "跟著介面語言": {
     "zh-CN": "跟随界面语言",
@@ -12335,12 +12143,6 @@
     "ja": "外部ビデオプレーヤー",
     "es": "Reproductor de vídeo externo"
   },
-  "播放器的「用外部播放器開啟」會用這個程式開影片；認得 PotPlayer 與 mpv，會從目前的位置開始播放。沒指定時用系統預設播放器。": {
-    "zh-CN": "播放器的“用外部播放器打开”会用这个程序打开视频；认得 PotPlayer 与 mpv，会从当前位置开始播放。没指定时用系统默认播放器。",
-    "en": "The player's \"Open in external player\" button opens the video with this program. PotPlayer and mpv are recognised and start from the current position. Without one, the system default player is used.",
-    "ja": "プレーヤーの「外部プレーヤーで開く」はこのプログラムで動画を開きます。PotPlayer と mpv は現在の位置から再生されます。指定がない場合はシステムの既定のプレーヤーを使います。",
-    "es": "El botón «Abrir en un reproductor externo» abre el vídeo con este programa. Se reconocen PotPlayer y mpv, que empiezan desde la posición actual. Si no hay ninguno, se usa el reproductor predeterminado del sistema."
-  },
   "用外部播放器開啟": {
     "zh-CN": "用外部播放器打开",
     "en": "Open in external player",
@@ -12455,29 +12257,29 @@
     "ja": "音楽／動画 既定",
     "es": "Música/vídeo predeterminado"
   },
-  "右側版面不合法或名稱重複": {
-    "zh-CN": "右侧版面不合法或名称重复",
-    "en": "Right-panel layouts are invalid or have duplicate names",
-    "ja": "右側レイアウトが不正か、名前が重複しています",
-    "es": "Los diseños del panel derecho no son válidos o tienen nombres repetidos"
+  "詳情版面不合法或名稱重複": {
+    "zh-CN": "详情版面不合法或名称重复",
+    "en": "Details layouts are invalid or have duplicate names",
+    "ja": "詳細レイアウトが不正か、名前が重複しています",
+    "es": "Los diseños del panel de detalles no son válidos o tienen nombres repetidos"
   },
-  "右側預設版面不存在": {
-    "zh-CN": "右侧默认版面不存在",
-    "en": "The default right-panel layout does not exist",
-    "ja": "右側の既定レイアウトがありません",
-    "es": "El diseño predeterminado del panel derecho no existe"
+  "詳情預設版面不存在": {
+    "zh-CN": "详情默认版面不存在",
+    "en": "The default details layout does not exist",
+    "ja": "詳細の既定レイアウトがありません",
+    "es": "El diseño predeterminado del panel de detalles no existe"
   },
-  "右側版面清單不存在": {
-    "zh-CN": "右侧版面列表不存在",
-    "en": "There is no list of right-panel layouts",
-    "ja": "右側レイアウトの一覧がありません",
-    "es": "No hay lista de diseños del panel derecho"
+  "詳情版面清單不存在": {
+    "zh-CN": "详情版面列表不存在",
+    "en": "There is no list of details layouts",
+    "ja": "詳細レイアウトの一覧がありません",
+    "es": "No hay lista de diseños del panel de detalles"
   },
-  "內建右側": {
-    "zh-CN": "内置右侧",
-    "en": "Built-in panel",
-    "ja": "組み込みの右側",
-    "es": "Panel integrado"
+  "內建詳情": {
+    "zh-CN": "内置详情",
+    "en": "Built-in details",
+    "ja": "組み込みの詳細",
+    "es": "Detalles integrados"
   },
   "設定哪一種版面": {
     "zh-CN": "设置哪一种版面",
@@ -12485,11 +12287,11 @@
     "ja": "設定するレイアウト",
     "es": "Qué diseños configurar"
   },
-  "右側": {
-    "zh-CN": "右侧",
-    "en": "Right panel",
-    "ja": "右側",
-    "es": "Panel derecho"
+  "詳情": {
+    "zh-CN": "详情",
+    "en": "Details",
+    "ja": "詳細",
+    "es": "Detalles"
   },
   "{0} 的更多選項": {
     "zh-CN": "{0} 的更多选项",
@@ -12497,11 +12299,11 @@
     "ja": "{0} のその他のオプション",
     "es": "Más opciones de {0}"
   },
-  "預覽：「{0}」的右側": {
-    "zh-CN": "预览：“{0}”的右侧",
-    "en": "Preview: right panel of “{0}”",
-    "ja": "プレビュー：「{0}」の右側",
-    "es": "Vista previa: panel derecho de «{0}»"
+  "預覽：「{0}」的詳情": {
+    "zh-CN": "预览：“{0}”的详情",
+    "en": "Preview: details of “{0}”",
+    "ja": "プレビュー：「{0}」の詳細",
+    "es": "Vista previa: panel de detalles de «{0}»"
   },
   "先保存或取消變更": {
     "zh-CN": "先保存或取消更改",
@@ -12509,23 +12311,23 @@
     "ja": "先に変更を保存するか取り消してください",
     "es": "Guarda o cancela los cambios primero"
   },
-  "在編輯器打開這個右側版面": {
-    "zh-CN": "在编辑器打开这个右侧版面",
-    "en": "Open this right-panel layout in the editor",
-    "ja": "この右側レイアウトをエディターで開く",
-    "es": "Abrir este diseño del panel derecho en el editor"
+  "在編輯器打開這個詳情版面": {
+    "zh-CN": "在编辑器打开这个详情版面",
+    "en": "Open this details layout in the editor",
+    "ja": "この詳細レイアウトをエディターで開く",
+    "es": "Abrir este diseño del panel de detalles en el editor"
   },
-  "編輯右側版面": {
-    "zh-CN": "编辑右侧版面",
-    "en": "Edit right panel",
-    "ja": "右側レイアウトを編集",
-    "es": "Editar panel derecho"
+  "編輯詳情版面": {
+    "zh-CN": "编辑详情版面",
+    "en": "Edit details layout",
+    "ja": "詳細レイアウトを編集",
+    "es": "Editar diseño de detalles"
   },
-  "這個類型沒有右側版面，顯示內建的主視覺。": {
-    "zh-CN": "这个类型没有右侧版面，显示内置的主视觉。",
-    "en": "This kind has no right-panel layout; its built-in view is shown.",
-    "ja": "この種類には右側レイアウトがなく、組み込みの表示になります。",
-    "es": "Este tipo no tiene diseño de panel derecho; se muestra su vista integrada."
+  "這個類型沒有詳情版面，顯示內建的主視覺。": {
+    "zh-CN": "这个类型没有详情版面，显示内置的主视觉。",
+    "en": "This kind has no details layout; its built-in view is shown.",
+    "ja": "この種類には詳細レイアウトがなく、組み込みの表示になります。",
+    "es": "Este tipo no tiene diseño de panel de detalles; se muestra su vista integrada."
   },
   "此資料夾的版面": {
     "zh-CN": "此文件夹的版面",
@@ -12533,23 +12335,17 @@
     "ja": "このフォルダーのレイアウト",
     "es": "Diseños de esta carpeta"
   },
-  "卡片與右側版面由版面配置的規則決定：資料夾專屬 › 類型 › 層級 › 預設；在版面配置視窗修改。": {
-    "zh-CN": "卡片与右侧版面由版面配置的规则决定：文件夹专属 › 类型 › 层级 › 默认；在版面配置窗口修改。",
-    "en": "The card and right-panel layouts follow the layout rules: the folder's own › kind › level › default. Change them in the layout window.",
-    "ja": "カードと右側のレイアウトはレイアウト配置の規則で決まります：フォルダー専用 › 種類 › 階層 › 既定。レイアウト配置ウィンドウで変更します。",
-    "es": "Los diseños de tarjeta y panel derecho siguen las reglas de diseño: propio de la carpeta › tipo › nivel › predeterminado. Cámbialos en la ventana de diseños."
-  },
   "卡片版面配置…": {
     "zh-CN": "卡片版面配置…",
     "en": "Card layouts…",
     "ja": "カードのレイアウト配置…",
     "es": "Diseños de tarjeta…"
   },
-  "右側版面配置…": {
-    "zh-CN": "右侧版面配置…",
-    "en": "Right-panel layouts…",
-    "ja": "右側のレイアウト配置…",
-    "es": "Diseños del panel derecho…"
+  "詳情版面配置…": {
+    "zh-CN": "详情版面配置…",
+    "en": "Details layouts…",
+    "ja": "詳細のレイアウト配置…",
+    "es": "Diseños de detalles…"
   },
   "在商店開啟": {
     "zh-CN": "在商店打开",
@@ -12623,12 +12419,6 @@
     "ja": "スキャン時に検出したゲームエンジン",
     "es": "El motor de juego detectado al escanear"
   },
-  "卡片按鈕要執行哪一個遊戲操作（啟動、開資料夾、網頁或說明書都可以）；未指定時用預設啟動遊戲。": {
-    "zh-CN": "卡片按钮要执行哪一个游戏操作（启动、打开文件夹、网页或说明书都可以）；未指定时用默认启动游戏。",
-    "en": "Which game action the card button runs (start, a folder, a page or a manual); without one, the default game launch.",
-    "ja": "カードのボタンが実行するゲーム操作（起動、フォルダー、ページ、説明書のどれでも）。未指定なら既定のゲーム起動。",
-    "es": "Qué acción del juego ejecuta el botón (iniciar, una carpeta, una página o un manual); sin elegir, el inicio predeterminado."
-  },
   "新增遊戲操作": {
     "zh-CN": "新增游戏操作",
     "en": "New game action",
@@ -12652,12 +12442,6 @@
     "en": "Add",
     "ja": "追加",
     "es": "Añadir"
-  },
-  "操作套用到整個專案，在版面編輯器的「啟動遊戲」組件新增；目標與參數只屬於目前資料夾。": {
-    "zh-CN": "操作套用到整个项目，在版面编辑器的“启动游戏”组件新增；目标与参数只属于当前文件夹。",
-    "en": "Actions apply to the whole project and are added from the launch component in the layout editor; targets and arguments belong to this folder only.",
-    "ja": "操作はプロジェクト全体に適用され、レイアウトエディターの「ゲーム起動」コンポーネントで追加します。対象と引数はこのフォルダーだけのものです。",
-    "es": "Las acciones se aplican a todo el proyecto y se añaden desde el componente de inicio en el editor de diseño; los destinos y argumentos son solo de esta carpeta."
   },
   "使用中 {0}／共 {1} 個": {
     "zh-CN": "使用中 {0}／共 {1} 个",
@@ -12791,12 +12575,6 @@
     "ja": "この種類の既定に戻す",
     "es": "Restablecer los valores de este tipo"
   },
-  "用資料夾名稱（可修改）搜尋右邊按鈕選的來源（VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai；設定了金鑰時還有 TMDB 與 FANZA）。成人作品會標示「成人」。從候選中選一個再預覽，不會自動配對。": {
-    "zh-CN": "用文件夹名称（可修改）搜索右边按钮选的来源（VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai；设置了密钥时还有 TMDB 与 FANZA）。成人作品会标示“成人”。从候选中选一个再预览，不会自动匹配。",
-    "en": "Search the sources chosen in the button on the right by the folder name (editable): VNDB, MusicBrainz, AniList, Bangumi, Steam, DLsite and nhentai, plus TMDB and FANZA when a key is set. Adult works are marked \"Adult\". Pick one candidate to preview; nothing is matched automatically.",
-    "ja": "フォルダー名（変更可）で、右のボタンで選んだソース（VNDB、MusicBrainz、AniList、Bangumi、Steam、DLsite、nhentai。キーを設定すると TMDB と FANZA も）を検索します。成人向け作品には「成人向け」と表示されます。候補を1つ選んでプレビューします。自動では照合しません。",
-    "es": "Busca por el nombre de la carpeta (editable) en las fuentes elegidas en el botón de la derecha: VNDB, MusicBrainz, AniList, Bangumi, Steam, DLsite y nhentai, y también TMDB y FANZA si hay clave. Las obras para adultos se marcan como «Adultos». Elige un candidato para previsualizarlo; no se empareja automáticamente."
-  },
   "專輯": {
     "zh-CN": "专辑",
     "en": "Album",
@@ -12863,53 +12641,53 @@
     "ja": "初回発売日",
     "es": "Primera publicación"
   },
-  "右側：專輯的名稱，沒有標籤時用資料夾名稱": {
-    "zh-CN": "右侧：专辑的名称，没有标签时用文件夹名称",
-    "en": "Right panel: the album's name (the folder's name without tags)",
-    "ja": "右側：アルバム名（タグがなければフォルダー名）",
-    "es": "Panel derecho: nombre del álbum (el de la carpeta si no hay etiquetas)"
+  "詳情：專輯的名稱，沒有標籤時用資料夾名稱": {
+    "zh-CN": "详情：专辑的名称，没有标签时用文件夹名称",
+    "en": "Details: the album's name (the folder's name without tags)",
+    "ja": "詳細：アルバム名（タグがなければフォルダー名）",
+    "es": "Detalles: nombre del álbum (el de la carpeta si no hay etiquetas)"
   },
-  "右側：專輯的演出者": {
-    "zh-CN": "右侧：专辑的演出者",
-    "en": "Right panel: the album's artist",
-    "ja": "右側：アルバムのアーティスト",
-    "es": "Panel derecho: artista del álbum"
+  "詳情：專輯的演出者": {
+    "zh-CN": "详情：专辑的演出者",
+    "en": "Details: the album's artist",
+    "ja": "詳細：アルバムのアーティスト",
+    "es": "Detalles: artista del álbum"
   },
-  "右側：專輯的年份（播客不顯示）": {
-    "zh-CN": "右侧：专辑的年份（播客不显示）",
-    "en": "Right panel: the album's year (not shown for podcasts)",
-    "ja": "右側：アルバムの年（ポッドキャストでは非表示）",
-    "es": "Panel derecho: año del álbum (no se muestra en podcasts)"
+  "詳情：專輯的年份（播客不顯示）": {
+    "zh-CN": "详情：专辑的年份（播客不显示）",
+    "en": "Details: the album's year (not shown for podcasts)",
+    "ja": "詳細：アルバムの年（ポッドキャストでは非表示）",
+    "es": "Detalles: año del álbum (no se muestra en podcasts)"
   },
-  "右側：曲數（播客顯示集數）": {
-    "zh-CN": "右侧：曲数（播客显示集数）",
-    "en": "Right panel: track count (episodes for a podcast)",
-    "ja": "右側：曲数（ポッドキャストではエピソード数）",
-    "es": "Panel derecho: número de pistas (episodios en un podcast)"
+  "詳情：曲數（播客顯示集數）": {
+    "zh-CN": "详情：曲数（播客显示集数）",
+    "en": "Details: track count (episodes for a podcast)",
+    "ja": "詳細：曲数（ポッドキャストではエピソード数）",
+    "es": "Detalles: número de pistas (episodios en un podcast)"
   },
-  "右側：專輯的總長度，讀完才顯示": {
-    "zh-CN": "右侧：专辑的总时长，读完才显示",
-    "en": "Right panel: the album's total length, shown once every track is read",
-    "ja": "右側：アルバムの総再生時間（全曲を読み終えてから表示）",
-    "es": "Panel derecho: duración total, una vez leídas todas las pistas"
+  "詳情：專輯的總長度，讀完才顯示": {
+    "zh-CN": "详情：专辑的总时长，读完才显示",
+    "en": "Details: the album's total length, shown once every track is read",
+    "ja": "詳細：アルバムの総再生時間（全曲を読み終えてから表示）",
+    "es": "Detalles: duración total, una vez leídas todas las pistas"
   },
-  "右側：資料夾裡的影片數": {
-    "zh-CN": "右侧：文件夹里的视频数",
-    "en": "Right panel: how many videos the folder holds",
-    "ja": "右側：フォルダー内の動画数",
-    "es": "Panel derecho: cuántos vídeos hay en la carpeta"
+  "詳情：資料夾裡的影片數": {
+    "zh-CN": "详情：文件夹里的视频数",
+    "en": "Details: how many videos the folder holds",
+    "ja": "詳細：フォルダー内の動画数",
+    "es": "Detalles: cuántos vídeos hay en la carpeta"
   },
-  "右側：只有一本 EPUB 的資料夾顯示它的書名": {
-    "zh-CN": "右侧：只有一本 EPUB 的文件夹显示它的书名",
-    "en": "Right panel: the title of the one EPUB in the folder",
-    "ja": "右側：EPUB が 1 冊だけのフォルダーでその書名",
-    "es": "Panel derecho: título del único EPUB de la carpeta"
+  "詳情：只有一本 EPUB 的資料夾顯示它的書名": {
+    "zh-CN": "详情：只有一本 EPUB 的文件夹显示它的书名",
+    "en": "Details: the title of the one EPUB in the folder",
+    "ja": "詳細：EPUB が 1 冊だけのフォルダーでその書名",
+    "es": "Detalles: título del único EPUB de la carpeta"
   },
-  "右側：只有一本 EPUB 的資料夾顯示它的作者": {
-    "zh-CN": "右侧：只有一本 EPUB 的文件夹显示它的作者",
-    "en": "Right panel: the author of the one EPUB in the folder",
-    "ja": "右側：EPUB が 1 冊だけのフォルダーでその著者",
-    "es": "Panel derecho: autor del único EPUB de la carpeta"
+  "詳情：只有一本 EPUB 的資料夾顯示它的作者": {
+    "zh-CN": "详情：只有一本 EPUB 的文件夹显示它的作者",
+    "en": "Details: the author of the one EPUB in the folder",
+    "ja": "詳細：EPUB が 1 冊だけのフォルダーでその著者",
+    "es": "Detalles: autor del único EPUB de la carpeta"
   },
   "最近讀的文字書讀到的百分比": {
     "zh-CN": "最近读的文字书读到的百分比",
@@ -12917,29 +12695,29 @@
     "ja": "最後に読んだテキスト本の進捗（％）",
     "es": "Porcentaje leído del libro de texto más reciente"
   },
-  "右側：漫畫的頁數": {
-    "zh-CN": "右侧：漫画的页数",
-    "en": "Right panel: a comic's page count",
-    "ja": "右側：マンガのページ数",
-    "es": "Panel derecho: número de páginas del cómic"
+  "詳情：漫畫的頁數": {
+    "zh-CN": "详情：漫画的页数",
+    "en": "Details: a comic's page count",
+    "ja": "詳細：マンガのページ数",
+    "es": "Detalles: número de páginas del cómic"
   },
-  "右側：漫畫讀到的頁": {
-    "zh-CN": "右侧：漫画读到的页",
-    "en": "Right panel: the page a comic was read to",
-    "ja": "右側：マンガの読んだページ",
-    "es": "Panel derecho: página hasta la que se leyó el cómic"
+  "詳情：漫畫讀到的頁": {
+    "zh-CN": "详情：漫画读到的页",
+    "en": "Details: the page a comic was read to",
+    "ja": "詳細：マンガの読んだページ",
+    "es": "Detalles: página hasta la que se leyó el cómic"
   },
-  "右側：播放影片，影片中斷過時改為繼續觀看": {
-    "zh-CN": "右侧：播放视频，视频中断过时改为继续观看",
-    "en": "Right panel: play the videos, or continue watching one left partway",
-    "ja": "右側：動画を再生（途中のものがあれば続きを再生）",
-    "es": "Panel derecho: reproducir los vídeos o seguir viendo uno a medias"
+  "詳情：播放影片，影片中斷過時改為繼續觀看": {
+    "zh-CN": "详情：播放视频，视频中断过时改为继续观看",
+    "en": "Details: play the videos, or continue watching one left partway",
+    "ja": "詳細：動画を再生（途中のものがあれば続きを再生）",
+    "es": "Detalles: reproducir los vídeos o seguir viendo uno a medias"
   },
-  "右側：繼續閱讀或開始閱讀": {
-    "zh-CN": "右侧：继续阅读或开始阅读",
-    "en": "Right panel: continue or start reading",
-    "ja": "右側：続きを読む／読み始める",
-    "es": "Panel derecho: seguir o empezar a leer"
+  "詳情：繼續閱讀或開始閱讀": {
+    "zh-CN": "详情：继续阅读或开始阅读",
+    "en": "Details: continue or start reading",
+    "ja": "詳細：続きを読む／読み始める",
+    "es": "Detalles: seguir o empezar a leer"
   },
   "專輯名稱": {
     "zh-CN": "专辑名称",
@@ -13043,12 +12821,6 @@
     "ja": "ツールフォルダーにする",
     "es": "Marcar como carpeta de herramienta"
   },
-  "遊戲與工具資料夾裡的檔案很多，也不該被改動。所以只把它的主資料夾這一層當成一筆資料夾資訊，裡面的子資料夾受保護，不會被掃描或寫入。": {
-    "zh-CN": "游戏与工具文件夹里的文件很多，也不该被改动。所以只把它的主文件夹这一层当成一笔文件夹信息，里面的子文件夹受保护，不会被扫描或写入。",
-    "en": "Game and tool folders hold many files that should not be changed. So only their main folder counts as one folder entry; the subfolders inside are protected and never scanned or written to.",
-    "ja": "ゲームやツールのフォルダーにはファイルが多く、変更すべきではありません。そのためメインフォルダーの階層だけを 1 件のフォルダー情報とし、中のサブフォルダーは保護され、スキャンも書き込みもされません。",
-    "es": "Las carpetas de juegos y herramientas tienen muchos archivos que no deben cambiarse. Por eso solo su carpeta principal cuenta como una entrada; las subcarpetas de dentro quedan protegidas y nunca se escanean ni se escriben."
-  },
   "這個資料夾已設為工具資料夾，裡面的檔案受保護。": {
     "zh-CN": "这个文件夹已设为工具文件夹，里面的文件受保护。",
     "en": "This folder is set as a tool folder; the files inside are protected.",
@@ -13084,12 +12856,6 @@
     "en": "Tool folder",
     "ja": "ツールフォルダー",
     "es": "Carpeta de herramienta"
-  },
-  "工具（程式）資料夾裡的檔案很多，也不該被改動。設為工具資料夾後，只把這一層當成一筆資料夾資訊，裡面的子資料夾受保護，不會被掃描或寫入。": {
-    "zh-CN": "工具（程序）文件夹里的文件很多，也不该被改动。设为工具文件夹后，只把这一层当成一笔文件夹信息，里面的子文件夹受保护，不会被扫描或写入。",
-    "en": "A tool (program) folder holds many files that should not be changed. Once set as a tool folder, only this level counts as one folder entry; the subfolders inside are protected and never scanned or written to.",
-    "ja": "ツール（プログラム）のフォルダーにはファイルが多く、変更すべきではありません。ツールフォルダーにすると、この階層だけを 1 件のフォルダー情報とし、中のサブフォルダーは保護され、スキャンも書き込みもされません。",
-    "es": "Una carpeta de herramienta (programa) tiene muchos archivos que no deben cambiarse. Al marcarla como carpeta de herramienta, solo este nivel cuenta como una entrada; las subcarpetas de dentro quedan protegidas y nunca se escanean ni se escriben."
   },
   "可能是工具（程式），尚未確認": {
     "zh-CN": "可能是工具（程序），尚未确认",
@@ -13414,5 +13180,215 @@
     "en": "These are game folders; nothing is written inside them",
     "ja": "これらはゲームのフォルダーです。内部には書き込みません",
     "es": "Son carpetas de juego; no se escribe nada dentro"
+  },
+  "這個遊戲沒設定上面的動作時，改用這些。": {
+    "zh-CN": "这个游戏没设置上面的动作时，改用这些。",
+    "en": "If this game has none of the actions above set, these are used instead.",
+    "ja": "このゲームに上の操作が設定されていないときは、これらを使います。",
+    "es": "Si este juego no tiene configurada la acción de arriba, se usan estas."
+  },
+  "符合條件才顯示，例如：評分 ≥ 4。": {
+    "zh-CN": "符合条件才显示，例如：评分 ≥ 4。",
+    "en": "Shown only when the condition is met, e.g. rating ≥ 4.",
+    "ja": "条件に合うときだけ表示します。例：評価 ≥ 4。",
+    "es": "Solo se muestra si se cumple la condición, p. ej. puntuación ≥ 4."
+  },
+  "文字太多時，卡片自動變高。": {
+    "zh-CN": "文字太多时，卡片自动变高。",
+    "en": "When the text does not fit, the card grows taller.",
+    "ja": "文字が多いときはカードが自動で高くなります。",
+    "es": "Si el texto no cabe, la tarjeta se hace más alta."
+  },
+  "用第一條符合的文字。": {
+    "zh-CN": "用第一条符合的文字。",
+    "en": "The text of the first matching rule is used.",
+    "ja": "最初に合ったルールの文字を使います。",
+    "es": "Se usa el texto de la primera regla que se cumpla."
+  },
+  "按下這顆按鈕要做的事。": {
+    "zh-CN": "按下这个按钮要做的事。",
+    "en": "What this button does when pressed.",
+    "ja": "このボタンを押したときの動作です。",
+    "es": "Lo que hace este botón al pulsarlo."
+  },
+  "依檔名順序，例如 3 = 資料夾裡第 3 張圖。": {
+    "zh-CN": "按文件名顺序，例如 3 = 文件夹里第 3 张图。",
+    "en": "In file name order, e.g. 3 = the third picture in the folder.",
+    "ja": "ファイル名順です。例：3 = フォルダー内の 3 枚目の画像。",
+    "es": "Por orden de nombre, p. ej. 3 = la tercera imagen de la carpeta."
+  },
+  "例如填 1：3.14 → 3.1": {
+    "zh-CN": "例如填 1：3.14 → 3.1",
+    "en": "For example 1: 3.14 → 3.1",
+    "ja": "例：1 なら 3.14 → 3.1",
+    "es": "Por ejemplo 1: 3,14 → 3,1"
+  },
+  "例如：分、集": {
+    "zh-CN": "例如：分、集",
+    "en": "For example: pts, episodes",
+    "ja": "例：点、話",
+    "es": "Por ejemplo: pts, episodios"
+  },
+  "顯示第一個有填的。例如先用 Steam 標題，沒有再用 DLsite 標題。": {
+    "zh-CN": "显示第一个有填的。例如先用 Steam 标题，没有再用 DLsite 标题。",
+    "en": "Shows the first one that is filled in, e.g. the Steam title, else the DLsite title.",
+    "ja": "最初に入力されているものを表示します。例：Steam のタイトル、なければ DLsite のタイトル。",
+    "es": "Muestra el primero que tenga valor, p. ej. el título de Steam y, si no hay, el de DLsite."
+  },
+  "選好後就能開 .swf 遊戲。": {
+    "zh-CN": "选好后就能开 .swf 游戏。",
+    "en": "Once chosen, .swf games can be opened.",
+    "ja": "選ぶと .swf のゲームを開けるようになります。",
+    "es": "Una vez elegido, se pueden abrir juegos .swf."
+  },
+  "按眼睛圖示，就會顯示在遊戲頁。": {
+    "zh-CN": "按眼睛图标，就会显示在游戏页。",
+    "en": "Press the eye icon to show it on the game page.",
+    "ja": "目のアイコンを押すとゲームページに表示されます。",
+    "es": "Pulsa el icono del ojo para mostrarlo en la página del juego."
+  },
+  "按「加入」才會出現在遊戲頁。": {
+    "zh-CN": "按“加入”才会出现在游戏页。",
+    "en": "Press \"Add\" to show it on the game page.",
+    "ja": "「追加」を押すとゲームページに表示されます。",
+    "es": "Pulsa «Añadir» para que aparezca en la página del juego."
+  },
+  "選好後，遊戲可以用日文等語系啟動，避免亂碼。": {
+    "zh-CN": "选好后，游戏可以用日文等语系启动，避免乱码。",
+    "en": "Once chosen, games can start in Japanese or another locale, so the text is not garbled.",
+    "ja": "選ぶと、日本語などのロケールでゲームを起動でき、文字化けを防げます。",
+    "es": "Una vez elegido, los juegos pueden iniciarse en japonés u otro idioma, sin texto ilegible."
+  },
+  "從網站抓作品的標題、標籤等資料。": {
+    "zh-CN": "从网站抓作品的标题、标签等资料。",
+    "en": "Get a work's title, tags and more from a website.",
+    "ja": "サイトから作品のタイトルやタグなどを取得します。",
+    "es": "Obtén el título, las etiquetas y más de una web."
+  },
+  "用名稱找作品，挑一個再預覽。": {
+    "zh-CN": "用名称找作品，挑一个再预览。",
+    "en": "Search for the work by name, then pick one to preview.",
+    "ja": "名前で作品を探し、1 つ選んでプレビューします。",
+    "es": "Busca la obra por nombre y elige una para verla."
+  },
+  "例如 https://vndb.org/v97": {
+    "zh-CN": "例如 https://vndb.org/v97",
+    "en": "For example https://vndb.org/v97",
+    "ja": "例：https://vndb.org/v97",
+    "es": "Por ejemplo https://vndb.org/v97"
+  },
+  "勾選後，網站的新資料會取代舊的；你自己填的不會被改。": {
+    "zh-CN": "勾选后，网站的新资料会取代旧的；你自己填的不会被改。",
+    "en": "When ticked, new data from the website replaces the old; what you filled in yourself is never changed.",
+    "ja": "チェックすると、サイトの新しいデータで古いものを置き換えます。自分で入力したものは変わりません。",
+    "es": "Si se marca, los datos nuevos de la web sustituyen a los antiguos; lo que escribiste tú no se cambia."
+  },
+  "遊戲和工具裡的檔案不會被讀取或改動。": {
+    "zh-CN": "游戏和工具里的文件不会被读取或改动。",
+    "en": "Files inside games and tools are never read or changed.",
+    "ja": "ゲームやツールの中のファイルは読み取りも変更もされません。",
+    "es": "Los archivos dentro de juegos y herramientas no se leen ni se cambian."
+  },
+  "要換卡片或詳情的樣子，按下面的按鈕。": {
+    "zh-CN": "要换卡片或详情的样子，按下面的按钮。",
+    "en": "To change how the card or details look, use the buttons below.",
+    "ja": "カードや詳細の見た目を変えるには、下のボタンを押します。",
+    "es": "Para cambiar el aspecto de la tarjeta o los detalles, usa los botones de abajo."
+  },
+  "選這個遊戲要開哪個檔案；新的按鈕種類在版面編輯器加。": {
+    "zh-CN": "选这个游戏要开哪个文件；新的按钮种类在版面编辑器加。",
+    "en": "Choose which file this game opens; new kinds of buttons are added in the layout editor.",
+    "ja": "このゲームで開くファイルを選びます。新しいボタンの種類はレイアウトエディターで追加します。",
+    "es": "Elige qué archivo abre este juego; los nuevos tipos de botón se añaden en el editor de diseño."
+  },
+  "從網站抓資料時，優先用哪種語言。": {
+    "zh-CN": "从网站抓资料时，优先用哪种语言。",
+    "en": "Which language to prefer when getting data from a website.",
+    "ja": "サイトからデータを取得するとき、優先する言語です。",
+    "es": "Qué idioma preferir al obtener datos de una web."
+  },
+  "「用外部播放器開啟」會用這個程式。": {
+    "zh-CN": "“用外部播放器打开”会用这个程序。",
+    "en": "\"Open in external player\" uses this program.",
+    "ja": "「外部プレーヤーで開く」はこのプログラムを使います。",
+    "es": "«Abrir en reproductor externo» usa este programa."
+  },
+  "只有這個專案看得到。": {
+    "zh-CN": "只有这个项目看得到。",
+    "en": "Only this project sees it.",
+    "ja": "このプロジェクトだけに表示されます。",
+    "es": "Solo lo ve este proyecto."
+  },
+  "其他專案也會看到這些修改。": {
+    "zh-CN": "其他项目也会看到这些修改。",
+    "en": "Other projects see these changes too.",
+    "ja": "ほかのプロジェクトにもこの変更が表示されます。",
+    "es": "Los demás proyectos también ven estos cambios."
+  },
+  "決定點開時的畫面，例如遊戲、漫畫、音樂。": {
+    "zh-CN": "决定点开时的画面，例如游戏、漫画、音乐。",
+    "en": "Decides what you see when you open it, e.g. game, manga, music.",
+    "ja": "開いたときの画面を決めます。例：ゲーム、マンガ、音楽。",
+    "es": "Decide qué ves al abrirla, p. ej. juego, manga, música."
+  },
+  "卡片的圖片 {0}": {
+    "zh-CN": "卡片的图片 {0}",
+    "en": "Card picture {0}",
+    "ja": "カードの画像 {0}",
+    "es": "Imagen {0} de la tarjeta"
+  },
+  "詳情的圖片 {0}": {
+    "zh-CN": "详情的图片 {0}",
+    "en": "Details picture {0}",
+    "ja": "詳細の画像 {0}",
+    "es": "Imagen {0} de los detalles"
+  },
+  "你選的圖片": {
+    "zh-CN": "你选的图片",
+    "en": "The picture you chose",
+    "ja": "選んだ画像",
+    "es": "La imagen que elegiste"
+  },
+  "已保存的第一張圖片": {
+    "zh-CN": "已保存的第一张图片",
+    "en": "The first saved picture",
+    "ja": "保存済みの最初の画像",
+    "es": "La primera imagen guardada"
+  },
+  "自動：資料夾裡的圖片或音樂封面": {
+    "zh-CN": "自动：文件夹里的图片或音乐封面",
+    "en": "Automatic: a picture in the folder or a music cover",
+    "ja": "自動：フォルダー内の画像か音楽のジャケット",
+    "es": "Automática: una imagen de la carpeta o la portada de la música"
+  },
+  "自動": {
+    "zh-CN": "自动",
+    "en": "Auto",
+    "ja": "自動",
+    "es": "Auto"
+  },
+  "版面上的其他圖片": {
+    "zh-CN": "版面上的其他图片",
+    "en": "Other pictures in the layouts",
+    "ja": "レイアウトのほかの画像",
+    "es": "Otras imágenes de los diseños"
+  },
+  "沒選圖時：資料夾封面": {
+    "zh-CN": "没选图时：文件夹封面",
+    "en": "With none chosen: the folder cover",
+    "ja": "未選択のとき：フォルダーのカバー",
+    "es": "Sin elegir: la portada de la carpeta"
+  },
+  "沒選圖時：資料夾裡第 {0} 張圖": {
+    "zh-CN": "没选图时：文件夹里第 {0} 张图",
+    "en": "With none chosen: picture {0} in the folder",
+    "ja": "未選択のとき：フォルダー内の {0} 枚目",
+    "es": "Sin elegir: la imagen {0} de la carpeta"
+  },
+  "沒選圖時：留空": {
+    "zh-CN": "没选图时：留空",
+    "en": "With none chosen: empty",
+    "ja": "未選択のとき：空欄",
+    "es": "Sin elegir: vacío"
   }
 }

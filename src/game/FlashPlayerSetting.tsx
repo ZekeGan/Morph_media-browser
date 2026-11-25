@@ -34,11 +34,7 @@ export function FlashPlayerSetting({ opened }: { opened: boolean }) {
     <section className="settings-section" aria-label={tr('Flash 播放器')}>
       <Group gap={4} wrap="nowrap" mb="xs">
         <Text fw={600}>{tr('Flash 播放器')}</Text>
-        <HelpTip
-          text={tr(
-            '指定播放 .swf 的程式（Flash Player projector 或 Ruffle 桌面版）後，遊戲的「啟動遊戲」可以選 .swf 檔。'
-          )}
-        />
+        <HelpTip text={tr('選好後就能開 .swf 遊戲。')} />
       </Group>
       <Text size="sm" className="path" title={file}>
         {file ?? tr('尚未指定')}

@@ -243,11 +243,7 @@ export function EditorInspector(props: EditorInspectorProps) {
                 condition={condition}
                 fields={draft.fieldBindings}
                 placeholder={index === 0 ? tr('一律顯示') : undefined}
-                help={
-                  index === 0
-                    ? tr('只在所選欄位符合條件時顯示這個組件；不符合時保留空位。')
-                    : undefined
-                }
+                help={index === 0 ? tr('符合條件才顯示，例如：評分 ≥ 4。') : undefined}
                 labels={
                   index === 0
                     ? { field: tr('顯示條件欄位'), operator: tr('顯示條件'), value: tr('比較值') }
@@ -322,12 +318,7 @@ export function EditorInspector(props: EditorInspectorProps) {
           <>
             {['field-text', 'field-tags', 'static-text'].includes(selectedCell.kind) && (
               <Checkbox
-                label={
-                  <HelpLabel
-                    label={tr('內容多時可捲動')}
-                    help={tr('保持組件高度，超出的內容用捲動查看，不會被截掉')}
-                  />
-                }
+                label={tr('內容多時可捲動')}
                 checked={selectedCell.scroll ?? false}
                 onChange={(event) =>
                   updateCell({
@@ -339,16 +330,7 @@ export function EditorInspector(props: EditorInspectorProps) {
             )}
             {['name', 'path', 'field-text'].includes(selectedCell.kind) && (
               <Checkbox
-                label={
-                  <HelpLabel
-                    label={tr('長文字換行顯示')}
-                    help={
-                      selectedCell.scroll || selectedCell.growMax
-                        ? tr('可捲動或自動加高時一律換行顯示')
-                        : tr('關閉時只顯示一行，過長的部分以「…」截斷')
-                    }
-                  />
-                }
+                label={tr('長文字換行顯示')}
                 disabled={!!selectedCell.scroll || !!selectedCell.growMax}
                 checked={selectedCell.wrap ?? (!!selectedCell.scroll || !!selectedCell.growMax)}
                 onChange={(event) => updateCell({ wrap: event.currentTarget.checked || undefined })}
@@ -360,9 +342,7 @@ export function EditorInspector(props: EditorInspectorProps) {
                   label={
                     <HelpLabel
                       label={tr('內容過高時自動加高')}
-                      help={tr(
-                        '內容放不下時多佔幾列，下面的組件跟著往下移；不勾選則維持原高度。與「內容多時可捲動」擇一'
-                      )}
+                      help={tr('文字太多時，卡片自動變高。')}
                     />
                   }
                   checked={!!selectedCell.growMax}
@@ -500,9 +480,7 @@ export function EditorInspector(props: EditorInspectorProps) {
                               {tr('依條件顯示文字')}
                             </Text>
                           }
-                          help={tr(
-                            '由上往下比對，第一個符合的規則顯示它的文字；都不符合時顯示下方的文字，留空就不顯示。'
-                          )}
+                          help={tr('用第一條符合的文字。')}
                         />
                         {rules.map((rule, index) => (
                           <div key={index} className="inspector-rule">
@@ -694,9 +672,7 @@ export function EditorInspector(props: EditorInspectorProps) {
                             label={
                               <HelpLabel
                                 label={tr('啟動動作')}
-                                help={tr(
-                                  '卡片按鈕要執行哪一個遊戲操作（啟動、開資料夾、網頁或說明書都可以）；未指定時用預設啟動遊戲。'
-                                )}
+                                help={tr('按下這顆按鈕要做的事。')}
                               />
                             }
                             placeholder={tr('自動（預設啟動遊戲）')}
@@ -722,12 +698,7 @@ export function EditorInspector(props: EditorInspectorProps) {
                       ))}
                     {selectedCell.kind === 'image' && (
                       <Stack gap="xs">
-                        <HelpLabel
-                          label={<Text size="sm">{tr('選用圖片')}</Text>}
-                          help={tr(
-                            '可新增多張；保存版面後，在資料夾設定的「圖片」頁分別選圖，沒有圖片可留空。'
-                          )}
-                        />
+                        <Text size="sm">{tr('選用圖片')}</Text>
                         <Select
                           label={tr('沒有手動選圖時')}
                           allowDeselect={false}
@@ -762,9 +733,7 @@ export function EditorInspector(props: EditorInspectorProps) {
                             label={
                               <HelpLabel
                                 label={tr('第幾張圖片')}
-                                help={tr(
-                                  '依檔名排序，只看這個資料夾直接包含的圖片（不含子資料夾）。資料夾已手動選圖時以手動為準；沒有那一張時留空。'
-                                )}
+                                help={tr('依檔名順序，例如 3 = 資料夾裡第 3 張圖。')}
                               />
                             }
                             min={1}
@@ -795,7 +764,7 @@ export function EditorInspector(props: EditorInspectorProps) {
                     {selectedCell.kind === 'field-number' && (
                       <NumberInput
                         label={
-                          <HelpLabel label={tr('小數位數')} help={tr('留空則依數值原樣顯示')} />
+                          <HelpLabel label={tr('小數位數')} help={tr('例如填 1：3.14 → 3.1')} />
                         }
                         min={0}
                         max={6}
@@ -811,9 +780,7 @@ export function EditorInspector(props: EditorInspectorProps) {
                     {selectedCell.kind === 'field-number' && !selectedCell.presentation && (
                       <div>
                         <TextInput
-                          label={
-                            <HelpLabel label={tr('單位文字')} help={tr('例如：分、集、%、$')} />
-                          }
+                          label={<HelpLabel label={tr('單位文字')} help={tr('例如：分、集')} />}
                           maxLength={20}
                           value={selectedCell.unit ?? ''}
                           onChange={(event) =>

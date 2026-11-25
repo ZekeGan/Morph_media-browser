@@ -132,7 +132,7 @@ test('optional project rules preserve CARD limits, presets and first error order
   )
   reject(validateProject, { ...project, activeLayoutId: 'missing' }, '作用中方案不存在')
   reject(validateProject, { ...project, layoutPresets: undefined }, '方案清單不存在')
-  reject(validateProject, { ...project, panelPresetId: 'missing' }, '右側預設版面不存在')
+  reject(validateProject, { ...project, panelPresetId: 'missing' }, '詳情預設版面不存在')
   reject(
     validateProject,
     { ...project, savedSearches: Array.from({ length: 101 }, () => project.savedSearches![0]) },
