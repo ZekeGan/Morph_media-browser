@@ -23,6 +23,7 @@
 
 - **R-518** 圖片縮圖改由主程序原生解碼：不再在主介面視窗用 fetch＋canvas 產生，改用 sharp/libvips（worker 執行緒）或 Windows 系統縮圖（createThumbnailFromPath，系統快取可直接命中），由主程序直接讀檔、不繞回 media://file；開工前先用 D:\MEDIA\image\ebora 前 15 張（13 張 5～11MB PNG，現約 4～5 秒）唯讀實測兩者再選；預估全部出現快 55～80% ｜中｜安全邊界｜無｜領域：media、gallery｜依賴：無
   2026-11-25 量測：上層資料夾檢查每次 4～13ms，不是瓶頸；瓶頸是大 PNG 在 renderer 解碼
+  2026-11-25 再量（ebora 全部 1159 張，4 張同時，獨立程序）：現行 142.8 秒（≤3MB 平均 375ms、>3MB 705ms）；sharp 預設 119.3 秒（大 PNG 反而 849ms、最久 6.4 秒）；sharp.concurrency(2) 71.0 秒（161／396ms）；Windows 系統縮圖 223.3 秒，不選。首次讀原檔平均 38ms／張。實際程式冷開 6 張（清掉縮圖與 Chromium 快取，各 3 次）：現行 0.98～1.12 秒全部出現、每張解碼 380～500ms（和介面搶 renderer，比獨立慢約一倍）；暫時換 sharp 0.36～0.51 秒、每張 130～240ms。縮圖已有快取時 40～130ms，不需改。結論：用 sharp、concurrency 2、在主程序直接讀檔
 
 ## 已核定（未做）
 
