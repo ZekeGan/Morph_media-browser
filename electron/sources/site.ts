@@ -28,6 +28,8 @@ export interface RequestExtra {
   // A form-encoded body (OAuth token requests).
   form?: string
   method?: 'GET' | 'POST'
+  // R-523: follow redirects (at most three) that stay on this source's request hosts; told each new address.
+  follow?: (url: URL) => void
 }
 export interface SiteResult {
   title: string

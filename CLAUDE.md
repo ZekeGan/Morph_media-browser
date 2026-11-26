@@ -50,7 +50,7 @@ M:orph：Windows 優先的資料夾檢視器（Electron＋React＋Vite，pnpm）
 - 可攜記錄是資料來源，SQLite 只是可重建索引（[FOLDER_PROJECT_MODEL](docs/FOLDER_PROJECT_MODEL.md)、[STORAGE_OPTIONS](docs/STORAGE_OPTIONS.md)）。
 - 遊戲 ROOT 內部受保護，導覽不得自動初始化缺失記錄（[GAME_ENGINE_DETECTION](docs/GAME_ENGINE_DETECTION.md)）。
 - 掃描與寫入驗證只用受控測試資料；真實收藏只做唯讀檢查（`pnpm detect`），批次寫入或遷移前須有備份與復原路徑。
-- Electron 保留 contextIsolation、sandbox、停用 nodeIntegration；renderer 不得任意讀路徑或執行命令（[ARCHITECTURE](docs/ARCHITECTURE.md)）。
+- Electron 保留 contextIsolation、sandbox、停用 nodeIntegration；renderer 不得任意讀路徑或執行命令（[ARCHITECTURE](docs/ARCHITECTURE.md)）。唯一例外：`-beta` 版本暫時關閉程序沙箱（C-149），正式版前恢復（WORK_ITEMS 的 R-SIGN）。
 
 ## 常用命令
 

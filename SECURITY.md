@@ -19,7 +19,7 @@ This is a one-person project, so replies are best effort: expect an acknowledgem
 
 M:orph runs on your own computer and reads folders you choose, so the most important risks are:
 
-- the interface reading or writing paths it was not given, or running commands (the renderer is sandboxed and must not be able to);
+- the interface reading or writing paths it was not given, or running commands (the renderer must not be able to; Beta versions run without the Chromium process sandbox because of a conflict with some antivirus software, see docs/decisions/2026-11.md C-149, and it returns from 1.0.0);
 - crafted folder names, record files, archives, subtitles, images or web responses that crash the app, escape a folder, overwrite or delete original files, or run code;
 - the launch actions (EXE, shortcut, URL) doing more than the user bound;
 - the import from websites sending more data than the page address, or accepting redirects to other hosts.

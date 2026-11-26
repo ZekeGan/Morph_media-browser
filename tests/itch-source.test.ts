@@ -13,6 +13,11 @@ const network = (replies: Record<string, Reply>, seen: { url: string; body?: str
     const reply = replies[url]
     if (reply === undefined) return new Response('', { status: 404 })
     if (typeof reply === 'number') return new Response('', { status: reply })
+    // "→ address": a redirect, which a fetch made with redirect: 'error' refuses like the real one.
+    if (typeof reply === 'string' && reply.startsWith('→ ')) {
+      if (init?.redirect !== 'manual') throw new TypeError('fetch failed: redirect')
+      return new Response(null, { status: 302, headers: { location: reply.slice(2) } })
+    }
     return new Response(
       Buffer.isBuffer(reply)
         ? new Uint8Array(reply)
@@ -113,6 +118,63 @@ test('R-359: without the page or VNDB the preview still comes from data.json', a
   // A link or cover off itch.io is not followed.
   assert.equal(result.preview.source, 'https://someone.itch.io/game')
   assert.ok(keys.includes('COVER_STATUS'))
+})
+
+test('R-523: a renamed author redirects to the new subdomain, which is followed and kept', async () => {
+  const seen: { url: string; body?: string }[] = []
+  const result = await metadata(
+    'https://old-name.itch.io/imperial-grace',
+    network(
+      {
+        'https://old-name.itch.io/imperial-grace/data.json':
+          '→ https://abiding-bridge.itch.io/imperial-grace/data.json',
+        'https://abiding-bridge.itch.io/imperial-grace/data.json': data,
+        'https://abiding-bridge.itch.io/imperial-grace': page,
+        'https://api.vndb.org/kana/release': { results: [] },
+      },
+      seen
+    )
+  )
+  assert.equal(result.preview.title, 'Imperial & Grace')
+  assert.equal(result.preview.source, 'https://abiding-bridge.itch.io/imperial-grace')
+  assert.ok(result.preview.values.some((v) => v.key === 'GENRES'))
+  const lookup = seen.find((request) => request.url === 'https://api.vndb.org/kana/release')
+  assert.deepEqual(JSON.parse(lookup!.body!).filters[2], ['itch', 'abiding-bridge/imperial-grace'])
+})
+
+test('R-523: a redirect off itch.io, to a non-game address or in a loop is not followed', async () => {
+  const off = await metadata(
+    'https://someone.itch.io/game',
+    network({ 'https://someone.itch.io/game/data.json': '→ https://evil.example/game/data.json' })
+  ).catch((error: Error) => error)
+  assert.match(String(off), /not allowed/)
+  await assert.rejects(
+    metadata(
+      'https://someone.itch.io/game',
+      network({ 'https://someone.itch.io/game/data.json': '→ https://other.itch.io/profile' })
+    ),
+    /找不到這個作品/
+  )
+  await assert.rejects(
+    metadata(
+      'https://a.itch.io/game',
+      network({
+        'https://a.itch.io/game/data.json': '→ https://b.itch.io/game/data.json',
+        'https://b.itch.io/game/data.json': '→ https://a.itch.io/game/data.json',
+      })
+    ),
+    /無法連線/
+  )
+  // Other requests still refuse redirects: the page itself redirecting only loses the page's extra values.
+  const result = await metadata(
+    'https://someone.itch.io/game',
+    network({
+      'https://someone.itch.io/game/data.json': data,
+      'https://someone.itch.io/game': '→ https://evil.example/',
+      'https://api.vndb.org/kana/release': 500,
+    })
+  )
+  assert.ok(!result.preview.values.some((v) => v.key === 'GENRES'))
 })
 
 test('R-359: an account page or a missing game is not a game', async () => {

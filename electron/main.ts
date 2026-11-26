@@ -75,6 +75,12 @@ if (quietTest || watchTest) {
   app.commandLine.appendSwitch('disable-backgrounding-occluded-windows')
   app.commandLine.appendSwitch('disable-renderer-backgrounding')
 }
+// C-149, Beta only: security software that does not know the unsigned Morph.exe (Kaspersky injects klhkum.dll) puts
+// its own DLL into Chromium's sandboxed page process, which then stops at once and the window never loads. Until the
+// releases are signed (R-SIGN, before 1.0.0) a -beta version runs without the process sandbox. Context isolation,
+// no Node in the page and the sandboxed preload (webPreferences below) stay as they are. The version number ends this
+// on its own: 1.0.0 has no -beta, so the sandbox is back.
+if (/-beta\.\d+$/.test(app.getVersion())) app.commandLine.appendSwitch('no-sandbox')
 // The product is called M:orph now, but its data stays in the original folder so no settings or index are lost.
 if (process.env.MEDIA_VIEWER_TEST_DATA)
   app.setPath('userData', path.resolve(process.env.MEDIA_VIEWER_TEST_DATA))
@@ -456,6 +462,16 @@ else {
       })
       win.webContents.on('will-navigate', (event, url) => {
         if (!trusted(url)) event.preventDefault()
+      })
+      // C-149: with the process sandbox off in Beta, a redirect of the page or a frame (the PDF viewer's media://
+      // frame) may not lead to a web or file address either.
+      win.webContents.on('will-redirect', (details) => {
+        if (details.isMainFrame ? !trusted(details.url) : /^(https?|file|ftp):/i.test(details.url))
+          details.preventDefault()
+      })
+      win.webContents.on('will-frame-navigate', (details) => {
+        if (!details.isMainFrame && /^(https?|file|ftp):/i.test(details.url))
+          details.preventDefault()
       })
       const allowFullscreen = (
         contents: Electron.WebContents | null,

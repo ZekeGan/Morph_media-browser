@@ -36,6 +36,13 @@ export class SourceError extends Error {
     super(sourceErrorText[kind])
   }
 }
+// R-523: a redirect answered to a request made with redirect: 'manual'; the caller checks the new address before
+// following it. Any other request treats a redirect as a failure. Never shown: request() turns it into a SourceError.
+export class SourceRedirect extends Error {
+  constructor(readonly location: URL) {
+    super('redirect')
+  }
+}
 export function sourceStatusKind(status: number): SourceErrorKind {
   if (status === 404 || status === 410) return 'notFound'
   // 400 is how token endpoints (Twitch, DMM) answer wrong credentials.
@@ -88,6 +95,16 @@ export async function sourceRequest(
       )
     })
     if (signal?.aborted) throw new SourceError('busy')
+  }
+  if (init.redirect === 'manual' && [301, 302, 303, 307, 308].includes(response!.status)) {
+    const location = response!.headers.get('location')
+    await response!.body?.cancel().catch(() => {})
+    let next: URL | undefined
+    try {
+      next = location ? new URL(location, url) : undefined
+    } catch {}
+    if (!next) throw new SourceError('offline')
+    throw new SourceRedirect(next)
   }
   if (!response!.ok) throw new SourceError(sourceStatusKind(response!.status))
   try {

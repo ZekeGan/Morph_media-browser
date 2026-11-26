@@ -208,6 +208,10 @@ try {
   await button('隨機播放').click()
   await page.getByRole('button', { name: '復原', exact: true }).click()
   await page.locator('.album-undo').waitFor({ state: 'detached' })
+  // R-521: playback stops first. The one-sample track may still be playing; when it ends after the folder became a
+  // podcast its place is saved and the episode reads 已聽完 instead of 未聽.
+  await button('關閉媒體檢視器').click()
+  await page.locator('.media-viewer-shell').waitFor({ state: 'detached' })
   // Shown as a podcast (kept on this computer only): newest first, how far each episode was heard, no shuffle.
   await page.getByRole('switch', { name: '以 Podcast 顯示', exact: true }).click()
   await button('播放最新一集').waitFor()

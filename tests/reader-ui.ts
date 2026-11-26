@@ -453,9 +453,21 @@ try {
     if (await reader().isVisible()) await page.keyboard.press('Escape')
     await reader().waitFor({ state: 'hidden' })
   }
+  // R-522: leaving saves the place without waiting for it, and the next save carries the record's revision, so the
+  // reader is opened again only once the record holds that page (and the window has the new revision).
+  const savedPage = async (index: number) => {
+    const file = path.join(comic, '.media-viewer', 'folder.json')
+    for (let i = 0; i < 100; i++) {
+      const text = await fs.readFile(file, 'utf8').catch(() => '')
+      if (text && JSON.parse(text).details?.reading?.page === index) break
+      await page.waitForTimeout(50)
+    }
+    await page.waitForTimeout(150)
+  }
   await thumbnail(4)
   const marked = await page.locator('.reader-frame-layer.is-active').getAttribute('data-pages')
   await leave()
+  await savedPage(4)
   await thumbnail(12)
   const offer = reader().locator('.reader-notice')
   await offer.waitFor()
@@ -467,6 +479,7 @@ try {
   const picked = await page.locator('.reader-frame-layer.is-active').getAttribute('data-pages')
   assert.ok(picked?.startsWith('13'), 'the picked page opens: ' + picked)
   await leave()
+  await savedPage(12)
   // Only "繼續閱讀" goes to the saved page, without a notice.
   await page.getByRole('button', { name: '繼續閱讀', exact: true }).first().click()
   await reader().waitFor()

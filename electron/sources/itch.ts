@@ -65,12 +65,26 @@ function product(html: string) {
   return undefined
 }
 
+const authorHost = /^([a-z0-9-]{1,63})\.itch\.io$/
 export const itch: Adapter = async (site) => {
-  const author = /^([a-z0-9-]{1,63})\.itch\.io$/.exec(site.input.hostname.toLowerCase())?.[1]
-  const game = site.match(gamePath)[1].toLowerCase()
+  let author = authorHost.exec(site.input.hostname.toLowerCase())?.[1]
+  let game = site.match(gamePath)[1].toLowerCase()
   if (!author) throw new Error('請輸入此來源的完整作品網址')
+  // R-523: an author who renamed their account leaves the old address redirecting to the new subdomain. itch.io
+  // itself answers that redirect, so the game is read from where it went (only other *.itch.io hosts, see config.ts)
+  // and the new address is the one kept.
+  let moved = undefined as URL | undefined
+  const data = await site.json(`https://${author}.itch.io/${game}/data.json`, undefined, {
+    follow: (url) => (moved = url),
+  })
+  if (moved) {
+    const to = authorHost.exec(moved.hostname)?.[1],
+      path = /^\/([a-z0-9][a-z0-9_-]{0,99})\/data\.json$/i.exec(moved.pathname)?.[1]
+    if (!to || !path) throw new SourceError('notFound')
+    author = to
+    game = path.toLowerCase()
+  }
   const page = `https://${author}.itch.io/${game}`
-  const data = await site.json(page + '/data.json')
   if (!data || typeof data.title !== 'string' || typeof data.id !== 'number')
     throw new SourceError('notFound')
   site.text('ITCH_ID', String(data.id))

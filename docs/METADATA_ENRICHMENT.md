@@ -1,6 +1,6 @@
 # 外部資料預覽與匯入
 
-> 最後確認：2026-11-25（R-504）。從網站補充資料夾資訊的現行規則。程式：`shared/sources.ts`、`electron/metadata.ts`、`electron/metadata-public.ts`、`electron/sources/`、`src/metadata/FolderSourceImport.tsx`、`electron/explorer-source.ts`；測試：`tests/metadata.test.ts`、`tests/date-fields.test.ts`。
+> 最後確認：2026-11-26（R-523）。從網站補充資料夾資訊的現行規則。程式：`shared/sources.ts`、`electron/metadata.ts`、`electron/metadata-public.ts`、`electron/sources/`、`src/metadata/FolderSourceImport.tsx`、`electron/explorer-source.ts`；測試：`tests/metadata.test.ts`、`tests/date-fields.test.ts`。
 
 已接入的來源以 `shared/sources.ts` 為準（目前：E-Hentai、ExHentai、Hitomi.la、nhentai、Bangumi、AniList、DLsite、Steam、VNDB、itch.io、MusicBrainz、Open Library、Pixiv、Wikimedia Commons、Wikidata、MangaDex、Kitsu、MangaUpdates、小説家になろう、Apple Music、Deezer、Danbooru、Google Books、BOOTH、カクヨム；需要使用者金鑰的 TMDB、SteamGridDB、FANZA／DMM；以及任何 HTTPS 網頁（Web））。此頁持有來源流程與人工值保護；程式入口：[metadata](../electron/metadata.ts)、[Explorer](../electron/explorer.ts) 的 metadataPreview／applyMetadata。
 
@@ -53,11 +53,11 @@ nhentai 讀官方 v2 API `/api/v2/galleries/<編號>`（2026-11-13 實測：單�
 
 ### itch.io（R-359）
 
-itch.io 的官方 API 只能查自己的作品，改讀每個作品頁旁公開的 `data.json`（標題、封面、作者、標籤、價格、作品 ID），再讀作品頁的「More information」表格補上類型、平台、發售狀態、製作工具、語言，以及「Published」首次發行日（只有「Updated」時不填發行日）；頁面內嵌的 schema.org 資料補簡介與評分。表格讀不到時只用 `data.json`。不需登入或金鑰，成人作品也沒有年齡確認（2026-11-13 抽 7 個作品實測）；robots.txt 不禁止作品頁，條款沒有禁止自動存取。請求只送往貼上網址的 `<作者>.itch.io` 與 `api.vndb.org`，封面只收 `img.itch.zone`；作品搬到別的帳號時以 `data.json` 裡同在 itch.io 的正式網址為來源網址。
+itch.io 的官方 API 只能查自己的作品，改讀每個作品頁旁公開的 `data.json`（標題、封面、作者、標籤、價格、作品 ID），再讀作品頁的「More information」表格補上類型、平台、發售狀態、製作工具、語言，以及「Published」首次發行日（只有「Updated」時不填發行日）；頁面內嵌的 schema.org 資料補簡介與評分。表格讀不到時只用 `data.json`。不需登入或金鑰，成人作品也沒有年齡確認（2026-11-13 抽 7 個作品實測）；robots.txt 不禁止作品頁，條款沒有禁止自動存取。請求只送往 `<作者>.itch.io` 與 `api.vndb.org`，封面只收 `img.itch.zone`。作者帳號改名後舊網址會由 itch.io 轉到新子網域：只有讀 `data.json` 這一個請求跟著轉址，最多 3 次、只轉到其他 `<作者>.itch.io` 的 `<作品>/data.json`，之後的作品頁、VNDB 查詢與來源網址都用新網址（R-523）；轉到其他網站時報錯，轉到不是作品的位址時說找不到作品。
 
 同一作品若在 VNDB 有 itch.io 連結（`itch:作者/作品`），預覽上方提示「VNDB 也有這部作品」，按「改看 VNDB 的資料」另開 VNDB 預覽；兩邊各自套用、各存在自己的來源命名空間，不自動合併。VNDB 查不到或失敗時不提示。
 
-限制：來源請求一律不跟隨轉址，作品搬到別的帳號後舊網址讀不到，要貼現在的網址；封面只收 JPG／PNG／WebP，itch.io 常見的 GIF 封面顯示「封面無法取得」。作品頁由任何 itch.io 使用者撰寫，表格與內嵌資料用有上限的方式讀取（最多 60 列、5 段）；正式網址只採用同一作者子網域的連結。
+限制：除了上面的 `data.json`，來源請求一律不跟隨轉址；封面只收 JPG／PNG／WebP，itch.io 常見的 GIF 封面顯示「封面無法取得」。作品頁由任何 itch.io 使用者撰寫，表格與內嵌資料用有上限的方式讀取（最多 60 列、5 段）；正式網址只採用同一作者子網域的連結。
 
 ### 需要使用者金鑰的來源（R-285～R-290、R-321）
 

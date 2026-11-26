@@ -1,6 +1,13 @@
 import type { MetadataPreview } from '../shared/explorer'
 import { KEY_MISSING, KEY_REJECTED } from '../shared/keys'
-import { imageType, limitedBytes, SourceError, sourceJson, sourceRequest } from './metadata-common'
+import {
+  imageType,
+  limitedBytes,
+  SourceError,
+  sourceJson,
+  SourceRedirect,
+  sourceRequest,
+} from './metadata-common'
 import { sourceConfig, userAgent, type PublicSourceId } from './sources/config'
 import { detectScript, scriptAccepted } from './sources/language'
 import { clean, tags, type Adapter, type RequestExtra, type Site } from './sources/site'
@@ -118,8 +125,7 @@ export async function publicMetadata(
   // R-293: a DMM/FANZA address without the user's key is looked up through VNDB (games only).
   if (provider === 'fanza' && !Object.keys(keys).length)
     return publicMetadata('vndb', source, fetcher, options)
-  const request = async (url: string, body?: unknown, extra: RequestExtra = {}) => {
-    const target = new URL(url)
+  const allowed = (target: URL) => {
     if (
       target.protocol !== 'https:' ||
       target.port ||
@@ -131,6 +137,30 @@ export async function publicMetadata(
       )
     )
       throw new Error('Request host not allowed for this source: ' + target.hostname)
+  }
+  const request = async (url: string, body?: unknown, extra: RequestExtra = {}) => {
+    let target = new URL(url)
+    allowed(target)
+    // R-523: a GET that may follow redirects does so at most three times, each new address checked like the first.
+    const follow = extra.follow && body === undefined && !extra.raw && !extra.form
+    for (let hop = 0; ; hop++) {
+      try {
+        return await send(target, body, extra, follow ? 'manual' : 'error')
+      } catch (error) {
+        if (!(error instanceof SourceRedirect)) throw error
+        if (!follow || hop >= 2) throw new SourceError('offline')
+        target = error.location
+        allowed(target)
+        extra.follow!(target)
+      }
+    }
+  }
+  const send = async (
+    target: URL,
+    body: unknown,
+    extra: RequestExtra,
+    redirect: 'manual' | 'error'
+  ) => {
     const raw = typeof extra.raw === 'string',
       form = typeof extra.form === 'string'
     try {
@@ -153,7 +183,7 @@ export async function publicMetadata(
               ? { body: extra.form }
               : {}),
         signal: AbortSignal.timeout(15000),
-        redirect: 'error',
+        redirect,
       })
       return bytes.toString('utf8')
     } catch (error) {
