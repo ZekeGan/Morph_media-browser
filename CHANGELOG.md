@@ -6,7 +6,7 @@ The application version is independent of portable record `schemaVersion`.
 
 | Versions | Theme |
 | --- | --- |
-| 0.41 (0.41.0-beta.1, 0.41.1-beta.1) | First Beta: name search across online sources with per-kind choices and keys, music / video / manga folder types (manga by page-number names), one layout window with Details layouts, novel reader, webtoon, CBR / CB7, embedded and picture subtitles, sort menu and file list toolbar, thumbnails twice as fast (sharp) |
+| 0.41 (0.41.0-beta.1 – 0.41.2-beta.1) | First Beta: name search across online sources with per-kind choices and keys, music / video / manga folder types (manga by page-number names), one layout window with Details layouts, novel reader, webtoon, CBR / CB7, embedded and picture subtitles, sort menu and file list toolbar, thumbnails twice as fast (sharp) |
 | 0.40 | Media queue previews and covers, one play-order button; reader icon toolbar, immersive edge panels (tools, progress with previews, queue), sliding page turns, swipe to turn, resume reading, next book; src grouped by feature |
 | 0.39 | Folder settings redesign (import inside Data, sticky save bar, image thumbnails and delete, "still to add" card, test launch), one top-bar refresh button, smaller package, translation fixes |
 | 0.38 | First packaged Windows build (installer and portable) |
@@ -19,6 +19,10 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+## 0.41.2-beta.1 — 2026-11-26
+
+Fix release; includes the Kaspersky start-up fix of 0.41.1-beta.1, which was not published.
+
 - itch.io: the old address of a game whose author renamed their account now opens the game at its new address, instead of saying the site cannot be reached; only redirects to another itch.io author are followed (R-523). Two interface tests no longer fail now and then: the podcast step stops playback first, and the reader steps wait for the saved page (R-521, R-522).
 
 ## 0.41.1-beta.1 — 2026-11-26
@@ -29,7 +33,7 @@ Fix release for 0.41.0-beta.1, which does not start on a computer with Kaspersky
 
 ## 0.41.0-beta.1 — 2026-11-25
 
-**Do not use:** does not start on computers with Kaspersky; use 0.41.1-beta.1.
+**Do not use:** does not start on computers with Kaspersky; use 0.41.2-beta.1.
 
 First Beta. From this version on, a change to the data format comes with an automatic upgrade, and data saved by this version is kept as a sample every later version must open unchanged (see docs/RELEASING.md). Not published yet: no tag or GitHub Release until it is confirmed ready for others.
 

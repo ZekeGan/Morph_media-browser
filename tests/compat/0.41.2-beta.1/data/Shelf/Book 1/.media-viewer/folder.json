@@ -1,0 +1,19 @@
+{
+  "kind": "media-viewer.folder",
+  "schemaVersion": 2,
+  "folderId": "2f191430-d8c4-41b5-8135-4ed7cdfaa516",
+  "revision": 2,
+  "attributes": [],
+  "projectOverrides": {},
+  "assets": [],
+  "details": {
+    "schemaVersion": 1,
+    "reading": {
+      "mode": "manga",
+      "page": 2,
+      "spread": true,
+      "rtl": true,
+      "firstSingle": false
+    }
+  }
+}
