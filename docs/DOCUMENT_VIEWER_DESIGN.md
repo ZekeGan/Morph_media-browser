@@ -19,7 +19,7 @@
 
 PDF／ZIP 在全視窗的媒體檢視器開啟，旁邊是同資料夾的檔案佇列（`MediaViewer`），依 [統一媒體工作區](MEDIA_WORKSPACE.md#統一媒體工作區)；外側文件清單與 PDF／ZIP 內部頁序分開。下列原生 viewer／唯讀／授權限制照舊。
 
-`DocumentViewer` 使用 Electron 內建 Chromium PDF viewer，沿用受控 Range 串流，提供原生頁碼、縮圖及縮放。主視窗仍保持 renderer sandbox、contextIsolation 及禁止 Node integration；僅啟用內建 PDF plugin，沒有新文件解碼依賴。文件 JavaScript 由原生 PDF viewer 封鎖。
+`DocumentViewer` 使用 Electron 內建 Chromium PDF viewer，沿用受控 Range 串流，提供原生頁碼、縮圖及縮放。主視窗仍保持 renderer sandbox（Beta 版例外，見 C-149）、contextIsolation 及禁止 Node integration；僅啟用內建 PDF plugin，沒有新文件解碼依賴。文件 JavaScript 由原生 PDF viewer 封鎖。
 
 焦點限制在檢視區，外層關閉／Esc 回到入口；離開卸載 iframe，不自動保存或改寫原 PDF。原生 PDF 工具列及其介面語言由 Chromium 提供，不是應用程式的可攜設定；PDF 內原文保持原樣。加密、表單、特殊字型與大型真實文件仍需樣本查收。
 

@@ -10,7 +10,7 @@ M:orph (Media Browser) is a Windows-first desktop app (Electron + React + Vite, 
 - **Portable records are the source of truth.** Each managed folder keeps a `.media-viewer/folder.json`; the SQLite search index is a rebuildable copy. See [DATA_FORMAT](DATA_FORMAT.md).
 - **Data and appearance are separate.** Projects define a card layout once; folders only carry data.
 - **Game roots are protected.** No records are created inside a detected game.
-- **Strict Electron boundary.** `contextIsolation` and sandbox are on, `nodeIntegration` is off; only `main` touches the file system.
+- **Strict Electron boundary.** `contextIsolation` and sandbox are on, `nodeIntegration` is off (Beta versions run without the Chromium process sandbox, see decision C-149); only `main` touches the file system.
 
 ## Where things are
 
