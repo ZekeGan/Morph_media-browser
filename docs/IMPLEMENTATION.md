@@ -110,3 +110,30 @@
 本輪交付只回報實際執行的檢查及限制；沒有跑的明寫「未執行」。[0.5.0](archive/RELEASE_0_5_0.md)、[前輪階段](archive/STAGES_2_3.md) 與 [POC 驗收](archive/POC_ACCEPTANCE.md) 是歷史證據，不能當本輪通過；原基準／備份資訊保存在 [整理前實作頁](history/agent-docs-before-cleanup.md#implementation)，不需每次讀取。
 
 本輪新增目標 runner：`tests/workspace-toolbar-ui.ts`（CARD／TABLE／檔案工具列與浮層）、`tests/search-dialog-ui.ts`（條件保存／配對／刪除／ESC）、`tests/game-actions-ui.ts`（目標、參數、排序與選擇器取消）、`tests/cell-editor-ui.ts`（呈現、條件、複製、畫布與拖曳座標）；依受影響範圍選跑，不要求每輪全部執行。遊戲與 CELL 純邏輯在 game-actions.test／cells.test。
+
+## 程式碼可讀性與命名約定
+
+本節為本專案程式碼可讀性的統一約定，兼顧人類閱讀與 AI 代理定位／局部編輯；**新寫與本次改動到的段落直接遵守，既有舊程式不順手大改**，整理作業依 [WORK_ITEMS](WORK_ITEMS.md) 分階段執行。
+
+### 格式與視覺節奏
+
+- **單一宣告**：每個 `const`／`let` 獨立宣告，不用逗號串接多個變數或 React `useState`。
+- **控制流大括號**：跨行或巢狀的 `if`／`for`／`while`／`else` 一律加 `{}`；單行 guard clause（如 `if (this.closed) return`）可省略。
+- **Import 規範**：所有 `import` 置於檔案最上方、不重複引入同一路徑，依「Node 內建與外部套件 → `shared/` → 同層與子模組 → CSS」分組，組間留一行空行。
+- **區塊留白**：頂層宣告（import 區塊、型別定義、函式／方法）以及元件內邏輯段落（state、effect、handler、return）之間留一行空行，避免全檔緊貼無留白。
+
+### 命名約定
+
+- **布林值**：優先使用 `is*`、`has*`、`can*`、`should*`（例如 isEditorOpen、hasUnsavedChanges），避免裸名詞（如 `editor`、`problems`）與物件或視窗混用。
+- **識別碼與草稿**：ID 帶 `*Id` 後綴（例如 selectedProjectId）；編輯中未保存的副本帶 `*Draft`（例如 projectSettingsDraft），避免與視窗開關（例如 isAppSettingsOpen）撞名。
+- **函式與方法**：用動賓片語表明動作（例如 readCheckedRecord、updateFolderDetails、requestLibrary、requestExplorer），避免過短或名詞化（如 `act`、`run`、`record`、`details`）。
+- **驗證與型別守衛**：統一以 `is*`／`isValid*` 開頭（如 `isFolderKind`、isPlainObject、isValidAsset）。
+- **參數名稱**：跨多行函式、驗證器與複雜 callback 避免單字母參數（`v`、`a`、`f`、`r`、`p`），改用有語意的名詞（`value`、`asset`、`field`、`row`、`project`）。
+- **新檔檔名**：React 元件用 `PascalCase.tsx`、custom hook 用 `use*.ts`（如 `useCardSettings.ts`）、`electron/` 與 `shared/` 的新建純 TypeScript 模組統一用 `kebab-case.ts`；既有舊檔不為風格單獨搬移。
+
+### 結構與單檔規模
+
+- **檔案頭責任摘要**：主要模組頂部留 2～3 行註解，說明本檔負責什麼、不管什麼與關鍵不變量；保留解釋「為什麼」與 `R-xxx` 脈絡的註解。
+- **優先 Early Return**：多條件驗證（如資料模型檢查）與啟動流程採條列式 `if (!...) return false` 或分段輔助函式，減少深層巢狀、巨型 `&&` 鏈與多層三元運算。
+- **抽具名型別與收斂狀態**：React 元件超過約 4 個 props 時抽出頂部具名 `interface <Name>Props`；成對連動的多個 `useState` 收斂為單一狀態物件或 custom hook。Class／模組頂部複雜的 `Map` 或快取結構抽出具名 `interface`，標明 `private`／`readonly` 並分區。
+- **合理模組粒度**：新檔目標約 200～500 行；超過約 800 行且持續演進的熱點檔，應按責任拆出純邏輯、子 hook 或分派模組，同時避免切得過碎成數十行的小檔。

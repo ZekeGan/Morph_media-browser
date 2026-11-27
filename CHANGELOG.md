@@ -19,6 +19,8 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Coding readability, naming, and module structure conventions documented in docs/IMPLEMENTATION.md and referenced in CLAUDE.md (R-524).
+
 ## 0.41.2-beta.1 — 2026-11-26
 
 Fix release; includes the Kaspersky start-up fix of 0.41.1-beta.1, which was not published.
