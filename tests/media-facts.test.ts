@@ -25,8 +25,11 @@ function wav(seconds: number) {
 }
 
 const open: MediaFacts[] = []
+// No real hidden files are created here (test 3 supplies its own hidden list); skipping the PowerShell
+// hidden-file helper avoids tripping antivirus behaviour checks alongside rapid file writes and DB renames (R-473).
+const noHidden = async () => new Set<string>()
 const opened = (path: string) => {
-  const facts = new MediaFacts(path)
+  const facts = new MediaFacts(path, noHidden)
   open.push(facts)
   return facts
 }
