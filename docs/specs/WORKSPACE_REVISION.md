@@ -1,6 +1,6 @@
 # 工作區現行規則
 
-> 最後確認：2026-11-25（R-500 R-501）。外框、專案建立、三模式與詳情面板的現行規則；檔案總覽與媒體頁在 [媒體工作區](MEDIA_WORKSPACE.md)。領域對應見 [areas.json](areas.json)（shell、browse、panel、project、backup），理由見 [決策索引](DECISIONS.md)（C-87 起）。
+> 最後確認：2026-11-27（R-532）。外框、專案建立、三模式與詳情面板的現行規則；檔案總覽與媒體頁在 [媒體工作區](MEDIA_WORKSPACE.md)。領域對應見 [areas.json](../areas.json)（shell、browse、panel、project、backup），理由見 [決策索引](../DECISIONS.md)（C-87 起）。
 
 ## 外框與專案區
 
@@ -92,7 +92,7 @@ CARD 範圍與密度的摘要直接顯示在上述按鈕上。工具列最右維
 
 ## 工作區介面細節
 
-實作差距見 [當前工作](WORK_ITEMS.md)；細部尺寸及動畫數值為可調基線。
+實作差距見 [當前工作](../WORK_ITEMS.md)；細部尺寸及動畫數值為可調基線。
 
 - 檔案模式的資料夾選擇需適合長路徑與大量資料夾。以資料夾名稱為主、單行省略的相對路徑輔助辨識，完整路徑可在 Hover／鍵盤聚焦時查看；支援名稱／路徑搜尋、鍵盤選取，選單高度受可視區限制並可捲動，不讓任意長路徑換行擠掉其他選項。同名資料夾保留來源區分，選取仍沿用既有授權與範圍。
 - 屬性為遊戲時隱藏「檔案」檢視模式，維持資料夾瀏覽與遊戲專用內容。切換專案／分類或載入舊偏好時，若留有檔案模式需回退資料夾模式；不以隱藏入口取代遊戲 ROOT 的既有保護。
@@ -104,15 +104,15 @@ CARD 範圍與密度的摘要直接顯示在上述按鈕上。工具列最右維
 
 ## 專案設定與移除
 
-各專案 ⋯ 選單開啟名稱／分類與連結資料設定；「移除」分頁有兩個按鈕（[C-122](DECISIONS.md#c-122移除專案改成兩個按鈕共用選項只在需要時出現2026-11-04)）：
+各專案 ⋯ 選單開啟名稱／分類與連結資料設定；「移除」分頁有兩個按鈕（[C-122](../DECISIONS.md#c-122移除專案改成兩個按鈕共用選項只在需要時出現2026-11-04)）：
 
 - **從清單移除**：只取消連結，資料都留著，之後可用「新增專案」接回。
 - **刪除這個專案的資訊…**：預設只刪這個專案的設定與私有資訊；勾選預設不勾的「也刪除這些資料夾裡 M:orph 建立的其他資訊」才完全移除，並列出也使用這些資料夾的已連結專案。
 
-影響範圍、確認、備份與失敗復原由 [儲存安全](STORAGE_OPTIONS.md#移除單一專案) 持有。
+影響範圍、確認、備份與失敗復原由 [儲存安全](../architecture/STORAGE_OPTIONS.md#移除單一專案) 持有。
 
 ## 設定包移轉
 
-設定包是「應用程式設定 › 備份」裡 `settings.json` 的格式，不單獨匯出匯入（見 [DATA_FORMAT](DATA_FORMAT.md#備份資料夾2026-11-04)）：`media-viewer.settings` JSON，只含群組、收藏／專案排序、側欄、主題、語言、音量及瀏覽操作偏好；不含媒體、registry 路徑、單機 browse 位置或未知／登入欄位。還原時先預覽差異，預設合併保留目前同身分設定，可明確改為取代；媒體連結保持原樣。預覽 token 綁定目前 revision，過期需重看；較舊格式先升級（[DATA_FORMAT](DATA_FORMAT.md#格式升級與相容規則)）。
+設定包是「應用程式設定 › 備份」裡 `settings.json` 的格式，不單獨匯出匯入（見 [DATA_FORMAT](../architecture/DATA_FORMAT.md#備份資料夾2026-11-04)）：`media-viewer.settings` JSON，只含群組、收藏／專案排序、側欄、主題、語言、音量及瀏覽操作偏好；不含媒體、registry 路徑、單機 browse 位置或未知／登入欄位。還原時先預覽差異，預設合併保留目前同身分設定，可明確改為取代；媒體連結保持原樣。預覽 token 綁定目前 revision，過期需重看；較舊格式先升級（[DATA_FORMAT](../architecture/DATA_FORMAT.md#格式升級與相容規則)）。
 
-套用前先把目前 workspace 設定原子備份到 `userData/workspace-backups`，再保存；備份或保存失敗不切換記憶體狀態。還原設定後備份頁顯示「回到還原之前」，使用的就是這份存檔（[C-125](DECISIONS.md#c-125還原不再自動建立備份只為設定提供退路2026-11-04)）。還原不掃描或遷移實際收藏；雲端同步延後。入口 `electron/settings-package.ts`、`electron/backup.ts`、`electron/workspace.ts`、ApplicationSettings；驗證 `tests/decided.test.ts`、`tests/backup-ui.ts`。
+套用前先把目前 workspace 設定原子備份到 `userData/workspace-backups`，再保存；備份或保存失敗不切換記憶體狀態。還原設定後備份頁顯示「回到還原之前」，使用的就是這份存檔（[C-125](../DECISIONS.md#c-125還原不再自動建立備份只為設定提供退路2026-11-04)）。還原不掃描或遷移實際收藏；雲端同步延後。入口 `electron/settings-package.ts`、`electron/backup.ts`、`electron/workspace.ts`、ApplicationSettings；驗證 `tests/decided.test.ts`、`tests/backup-ui.ts`。

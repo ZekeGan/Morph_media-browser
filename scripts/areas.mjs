@@ -85,7 +85,7 @@ export function problems() {
 function table() {
   const docLink = (target) => {
     const [file, anchor] = target.split('#')
-    return `[${anchor ?? file.replace(/\.md$/, '')}](${target})`
+    return `[${anchor ?? path.basename(file, '.md')}](${target})`
   }
   const rows = areas.map((area) => {
     const ui = expand(area.ui)

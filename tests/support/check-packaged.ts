@@ -1,4 +1,4 @@
-// Packaged start check (R-278), step 6 of docs/RELEASING.md, after pnpm dist:
+// Packaged start check (R-278), step 6 of docs/architecture/RELEASING.md, after pnpm dist:
 //   pnpm check:packaged
 // Starts the unpacked build in release/morph <version>/win-unpacked with a throw-away data folder (never the real
 // one), waits for the home page and checks the status bar shows this version and the window reports no errors.

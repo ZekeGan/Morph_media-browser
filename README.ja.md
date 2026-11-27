@@ -165,7 +165,7 @@ Windows 向けに二種類の実行版を予定しています。
 
 開発者は、下記のコマンドで起動やビルドができます。
 
-詳しい操作方法は[使い方ガイド](docs/USER_GUIDE.md)（英語）を参照してください。画面のデータはすべて自作のサンプルです。
+詳しい操作方法は[使い方ガイド](docs/guides/USER_GUIDE.md)（英語）を参照してください。画面のデータはすべて自作のサンプルです。
 
 ## データの保存方法
 
@@ -232,7 +232,7 @@ pnpm dev
 
 主な技術：Electron、React 19、Vite 7、TypeScript、Mantine 8、Node SQLite、Playwright。
 
-アーキテクチャ全体、モジュールの責任、検証方法は、[アーキテクチャ文書](docs/ARCHITECTURE.md)と[実装と検証](docs/IMPLEMENTATION.md)を参照してください。
+アーキテクチャ全体、モジュールの責任、検証方法は、[アーキテクチャ文書](docs/architecture/ARCHITECTURE.md)と[実装と検証](docs/architecture/IMPLEMENTATION.md)を参照してください。
 
 ## 開発状況
 
@@ -248,10 +248,10 @@ M:orph は作者が主導するソースコードを公開している個人プ�
 
 ## ドキュメント
 
-- [使い方ガイド](docs/USER_GUIDE.md)（英語）
+- [使い方ガイド](docs/guides/USER_GUIDE.md)（英語）
 - [ドキュメント索引](docs/README.md)
 - [製品の範囲](docs/PRODUCT.md)
-- [アーキテクチャ](docs/ARCHITECTURE.md)
+- [アーキテクチャ](docs/architecture/ARCHITECTURE.md)
 - [現在の作業と既知の制限](docs/WORK_ITEMS.md)
 - [コントリビューションガイド](CONTRIBUTING.md)
 - [セキュリティポリシー](SECURITY.md)

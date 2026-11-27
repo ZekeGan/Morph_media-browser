@@ -2,7 +2,7 @@
 
 > 最後確認：2026-11-26（R-523）。從網站補充資料夾資訊的現行規則。程式：`shared/sources.ts`、`electron/metadata.ts`、`electron/metadata-public.ts`、`electron/sources/`、`src/metadata/FolderSourceImport.tsx`、`electron/explorer-source.ts`；測試：`tests/metadata.test.ts`、`tests/date-fields.test.ts`。
 
-已接入的來源以 `shared/sources.ts` 為準（目前：E-Hentai、ExHentai、Hitomi.la、nhentai、Bangumi、AniList、DLsite、Steam、VNDB、itch.io、MusicBrainz、Open Library、Pixiv、Wikimedia Commons、Wikidata、MangaDex、Kitsu、MangaUpdates、小説家になろう、Apple Music、Deezer、Danbooru、Google Books、BOOTH、カクヨム；需要使用者金鑰的 TMDB、SteamGridDB、FANZA／DMM；以及任何 HTTPS 網頁（Web））。此頁持有來源流程與人工值保護；程式入口：[metadata](../electron/metadata.ts)、[Explorer](../electron/explorer.ts) 的 metadataPreview／applyMetadata。
+已接入的來源以 `shared/sources.ts` 為準（目前：E-Hentai、ExHentai、Hitomi.la、nhentai、Bangumi、AniList、DLsite、Steam、VNDB、itch.io、MusicBrainz、Open Library、Pixiv、Wikimedia Commons、Wikidata、MangaDex、Kitsu、MangaUpdates、小説家になろう、Apple Music、Deezer、Danbooru、Google Books、BOOTH、カクヨム；需要使用者金鑰的 TMDB、SteamGridDB、FANZA／DMM；以及任何 HTTPS 網頁（Web））。此頁持有來源流程與人工值保護；程式入口：[metadata](../../electron/metadata.ts)、[Explorer](../../electron/explorer.ts) 的 metadataPreview／applyMetadata。
 
 ## 目前能力
 
@@ -82,7 +82,7 @@ VNDB、Steam 的截圖（`SCREENSHOTS`，各最多 12 張）可選匯入為資�
 
 - **下載**：取得預覽時 main 依序下載（`electron/source-images.ts`），只取預覽本身已檢查過的網址：HTTPS、無埠號與帳密，主機須在該來源的圖片主機（`sources/config.ts` 的 `coverHosts`；Steam 用 `metadata.ts` 的 Steam 圖片主機）；不跟轉址（只有該來源設定 `coverRedirectHosts` 的封面路徑除外）、15 秒逾時、單張 ≤ 10 MiB、以 `imageType` 檢查是 JPEG／PNG／WebP；失敗或被拒的略過。整個預覽最多 30 MiB（再放不下一張 10 MiB 就停）。其他來源不下載。
 - **預覽**：視窗收到 `preview.images`（角色、截圖序號 `n`、data URI），縮圖清單預設都不勾，標示「截圖 n」「橫幅」「標誌」「圖示」。視窗不能指定任何網址，下載的圖片只存在 main 的預覽（以 token 對應，最近三個預覽保留圖片，15 分鐘到期即丟棄；匯入後釋放）。
-- **匯入**：`metadataApply` 的 `images` 只帶預覽圖片的位置（整數、不重複、須在範圍內，否則整個請求拒絕、不寫任何檔案）。選中的圖片和封面一樣存進可攜記錄的 `assets/`，`originalName` 為 `<來源>-<角色>[-<n>].<副檔名>`，並帶 `role`（`screenshot`、`hero`、`logo`、`icon`，暫定，見 [DATA_FORMAT](DATA_FORMAT.md)）；已有同名圖片就不重複加入；寫入失敗時清掉本次寫的檔案。橫幅、標誌、圖示可由圖片組件選用（R-435，見 [CELL 目錄](CELL_CATALOG.md#新增組件與型別)）。
+- **匯入**：`metadataApply` 的 `images` 只帶預覽圖片的位置（整數、不重複、須在範圍內，否則整個請求拒絕、不寫任何檔案）。選中的圖片和封面一樣存進可攜記錄的 `assets/`，`originalName` 為 `<來源>-<角色>[-<n>].<副檔名>`，並帶 `role`（`screenshot`、`hero`、`logo`、`icon`，暫定，見 [DATA_FORMAT](../architecture/DATA_FORMAT.md)）；已有同名圖片就不重複加入；寫入失敗時清掉本次寫的檔案。橫幅、標誌、圖示可由圖片組件選用（R-435，見 [CELL 目錄](CELL_CATALOG.md#新增組件與型別)）。
 
 ## 預覽、套用與追溯
 

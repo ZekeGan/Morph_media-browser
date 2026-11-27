@@ -1,6 +1,6 @@
 # 執行與驗證
 
-本頁只維護操作入口與驗證選擇。現況模組見 [ARCHITECTURE](ARCHITECTURE.md)，功能行為見 [任務索引](README.md)，待辦見 [WORK_ITEMS](WORK_ITEMS.md)。版本／套件以 package.json 與 lockfile 為準，避免多處抄錄。
+本頁只維護操作入口與驗證選擇。現況模組見 [ARCHITECTURE](ARCHITECTURE.md)，功能行為見 [任務索引](../README.md)，待辦見 [WORK_ITEMS](../WORK_ITEMS.md)。版本／套件以 package.json 與 lockfile 為準，避免多處抄錄。
 
 ## 命令
 
@@ -16,7 +16,7 @@
 | `pnpm lint`／`pnpm lint:fix` | ESLint（設定見 eslint.config.mjs）；檢查單一宣告、多行大括號、重複 import、import 分組排序與區塊空行，涵蓋 src、shared、electron、tests、scripts；pre-commit 檢查暫存檔（改到設定檔時跑全站），CI 每次跑全站 |
 | `pnpm test:workspace` | 現行完整 Electron UI：`tests/workspace-ui.ts`；runner 會自動確保建置為最新 |
 | `pnpm dist`／`pnpm dist:dir` | 先 build，再用 electron-builder 產生 `release/morph <版本>/` 內的安裝程式（每個版本一個資料夾，舊版保留）與免安裝版（`dist:dir` 只產生未封裝資料夾）；設定在 package.json 的 `build`，圖示在 `build/`，未簽章 |
-| `pnpm test:ui:all`／`:smoke`／`:changed` | 依序執行 `tests/*-ui.ts` 並計時；`:smoke` 為核心 6 項（約 1～2 分鐘），`:changed` 依改動檔（對比 origin/main 與工作樹）對應測試，對應表沒涵蓋的檔案會列出並改跑 smoke，也可加檔名片段如 `pnpm test:ui:all video`；任一失敗會自動重跑一次，第二次才過的標為 FLAKY（拖放類測試怕滑鼠干擾，跑測試時請勿操作滑鼠）；重跑仍失敗才非零結束；單一測試超過 4 分鐘（`UI_TEST_TIMEOUT` 秒數可改）視為卡住，標 TIMEOUT 並停掉其 Electron，不重跑。對應來自 [領域登錄表](areas.json)。GitHub Actions（`.github/workflows/ci.yml`，Windows）推送時跑 typecheck、lint、format:check 與 `pnpm test`，不跑 UI 測試。提交前由 `.githooks/pre-commit` 自動跑型別檢查、格式檢查、ESLint 檢查、UI 測試名稱檢查（`scripts/check-ui-names.mjs`：測試找的按鈕／文字須仍存在於程式或語系檔）、領域登錄表檢查（`node scripts/areas.mjs check`：每個原始檔都屬於某個領域）與所提交 Markdown 的連結檢查（`pnpm install` 會啟用）；CI 另有不阻擋合併的 UI smoke 工作。UI runner 啟動時會先印出 out/ 建置時間，並在 out/ 缺少或比 src／shared／electron／建置設定舊時自動先跑 `pnpm build`；也會先停掉上次測試遺留的 Electron 行程（只限 Playwright 啟動、命令列帶 `--remote-debugging-port=0` 的本專案 Electron 與其子行程；`pnpm dev` 開的視窗不受影響，可以邊開 dev 邊跑測試，R-456）；測試時應用程式視窗預設全透明、可點穿、不取得焦點也不進工作列（要看畫面設 `MEDIA_VIEWER_TEST_VISIBLE=1`（半透明、可點穿、不搶焦點））；原生訊息方塊（如「放棄未保存的變更」）由 `tests/support/app.ts` 的 `launchApp` 自動回答，`closeApp` 關閉時略過未保存提示，所有 UI 測試都用 `closeApp` 結束；要驗證提示本身的測試自行替換 stub；全數通過時會刪除該次在 `.test-output` 新增的產物（失敗時保留供檢查）；`pnpm clean:test` 清除過期產物並保留 `fixtures` |
+| `pnpm test:ui:all`／`:smoke`／`:changed` | 依序執行 `tests/*-ui.ts` 並計時；`:smoke` 為核心 6 項（約 1～2 分鐘），`:changed` 依改動檔（對比 origin/main 與工作樹）對應測試，對應表沒涵蓋的檔案會列出並改跑 smoke，也可加檔名片段如 `pnpm test:ui:all video`；任一失敗會自動重跑一次，第二次才過的標為 FLAKY（拖放類測試怕滑鼠干擾，跑測試時請勿操作滑鼠）；重跑仍失敗才非零結束；單一測試超過 4 分鐘（`UI_TEST_TIMEOUT` 秒數可改）視為卡住，標 TIMEOUT 並停掉其 Electron，不重跑。對應來自 [領域登錄表](../areas.json)。GitHub Actions（`.github/workflows/ci.yml`，Windows）推送時跑 typecheck、lint、format:check 與 `pnpm test`，不跑 UI 測試。提交前由 `.githooks/pre-commit` 自動跑型別檢查、格式檢查、ESLint 檢查、UI 測試名稱檢查（`scripts/check-ui-names.mjs`：測試找的按鈕／文字須仍存在於程式或語系檔）、領域登錄表檢查（`node scripts/areas.mjs check`：每個原始檔都屬於某個領域）與所提交 Markdown 的連結檢查（`pnpm install` 會啟用）；CI 另有不阻擋合併的 UI smoke 工作。UI runner 啟動時會先印出 out/ 建置時間，並在 out/ 缺少或比 src／shared／electron／建置設定舊時自動先跑 `pnpm build`；也會先停掉上次測試遺留的 Electron 行程（只限 Playwright 啟動、命令列帶 `--remote-debugging-port=0` 的本專案 Electron 與其子行程；`pnpm dev` 開的視窗不受影響，可以邊開 dev 邊跑測試，R-456）；測試時應用程式視窗預設全透明、可點穿、不取得焦點也不進工作列（要看畫面設 `MEDIA_VIEWER_TEST_VISIBLE=1`（半透明、可點穿、不搶焦點））；原生訊息方塊（如「放棄未保存的變更」）由 `tests/support/app.ts` 的 `launchApp` 自動回答，`closeApp` 關閉時略過未保存提示，所有 UI 測試都用 `closeApp` 結束；要驗證提示本身的測試自行替換 stub；全數通過時會刪除該次在 `.test-output` 新增的產物（失敗時保留供檢查）；`pnpm clean:test` 清除過期產物並保留 `fixtures` |
 | `pnpm shot <類型>` | `tests/support/shot.ts`：以內建範例資料（game／manga／album／other）開專案並截圖，可設 `--width`、`--height`、`--mode`、`--child`、`--settings`、`--out`；輸出於 `.test-output/shot/`，執行完自動清除暫存資料 |
 | `pnpm detect <資料夾…> [--children]` | `tests/support/detect.ts`：唯讀執行遊戲引擎偵測並印出引擎與證據；`--children` 逐一檢查子資料夾（一整個遊戲資料夾）。不寫入、不建記錄、不啟動任何程式 |
 | `node scripts/run-ui-tests.mjs <名稱> --verbose` | 照常跑，另外顯示測試自己印出的內容（除錯用）。平常的輸出只有建置是否完成、每個測試的結果，失敗時是錯誤訊息、停在測試哪一行、頁面訊息與截圖位置 |
@@ -25,9 +25,9 @@
 | `pnpm i18n add <檔案.json>` | 一次加入五種語系的介面文字；檢查每種語言都有、`{0}` 佔位符一致，用到禁用詞的句子不收（R-515），已有的句子要加 `--force` 才取代 |
 | `pnpm i18n diff [ref]` | 列出相對 ref（預設 origin/main，即這批還沒推送的部分）新增、改翻譯與移除的介面文字，新句子附使用位置；每批收尾貼進回報 |
 | `pnpm verify:old <測試> [--ref <提交>]` | 在 `.test-output` 另開 git worktree，用目前的測試跑舊版程式（預設上一次提交），證明新測試抓得到舊錯誤；工作目錄不動，結束後移除 worktree（`node_modules` 以連結共用，先拆連結再刪） |
-| `pnpm status`（`--short`） | 依 [需求清單](WORK_ITEMS.md) 印出每次回覆結尾的狀態區塊 |
+| `pnpm status`（`--short`） | 依 [需求清單](../WORK_ITEMS.md) 印出每次回覆結尾的狀態區塊 |
 | `pnpm stale` | 收尾時點名可能過時的內容：領域登錄表缺漏、程式在「最後確認」之後改過的規格卡、文件提到不存在的檔案、沒有程式使用的語系文字、清單殘留的完成項目、規格裡的「待實作」與過大的規格；只提示不阻擋（`--strict` 才失敗） |
-| `node scripts/areas.mjs check／readme／which <檔案>` | 領域登錄表：檢查涵蓋、重產 [README](README.md) 定位表、查某個檔案屬於哪個領域與該跑哪些 UI 測試 |
+| `node scripts/areas.mjs check／readme／which <檔案>` | 領域登錄表：檢查涵蓋、重產 [README](../README.md) 定位表、查某個檔案屬於哪個領域與該跑哪些 UI 測試 |
 | `node scripts/check-layers.mjs` | 分層引用檢查：`src/` 不得引用 `electron/`、Electron 或 Node 內建模組，`shared/` 不得引用 `src/`、`electron/`、Electron、Node、React 或 Mantine，`electron/` 不得引用 `src/`；`import type` 不受限。pre-commit 自動執行 |
 | `pnpm shot:docs [名稱…]` | `tests/support/docs-shots.ts`：用 `demo-data.ts` 產生的自製示範收藏（自製封面、虛構標題）重拍文件截圖，寫入 `docs/images/`；需先 `pnpm build`，示範資料建在磁碟根目錄的 `Morph-Demo` 並於結束時刪除 |
 
@@ -39,7 +39,7 @@
 
 `node scripts/check-docs.mjs` 預設只查 CLAUDE、任務索引及 WORK_ITEMS；指定檔案可限定本輪範圍，例如 `node scripts/check-docs.mjs docs/EDITOR_DESIGN.md docs/SEARCH_DESIGN.md`。修改章節／檔名時，加上直接引用它的文件，不預設掃完整歷史。
 
-[檢查器](../scripts/check-docs.mjs) 無額外依賴，檢查本機 Markdown 連結、章節／HTML anchor，以及索引連結的程式／測試路徑；略過 fenced code、行內程式範例及外站網址。支援一般 inline／reference 連結與 ATX 標題，是本儲存庫慣例的輕量檢查，不解析完整 Markdown、程式符號、語意矛盾或外站有效性。變更來源與主文件的關係沿用 [索引](README.md#按任務定位)，沒有另一套映射清單。
+[檢查器](../../scripts/check-docs.mjs) 無額外依賴，檢查本機 Markdown 連結、章節／HTML anchor，以及索引連結的程式／測試路徑；略過 fenced code、行內程式範例及外站網址。支援一般 inline／reference 連結與 ATX 標題，是本儲存庫慣例的輕量檢查，不解析完整 Markdown、程式符號、語意矛盾或外站有效性。變更來源與主文件的關係沿用 [索引](../README.md#按任務定位)，沒有另一套映射清單。
 
 修改檢查器時跑 `node scripts/check-docs.mjs --self-test`，用系統暫存目錄的受控檔案驗證有效／失效連結、重複標題、舊 anchor、空白路徑與不存在的來源／測試；不啟動應用或讀寫收藏。純文件收尾再檢查相關 diff／空白即可，不執行產品測試。語意候選仍須核對核定需求、相關程式及證據，不能按日期或「未實作」關鍵字自動改規格。
 
@@ -68,9 +68,9 @@
 
 ## 發行前文案與語系關卡
 
-每次發行必做，文案契約由 [UI_RULES](UI_RULES.md#文案與語系一致性) 持有。一般開發先局部同步；發行前以版本相對上次發行的完整改動為範圍核對，另補既有未受檢查覆蓋的介面，不只看最後一次 commit。
+每次發行必做，文案契約由 [UI_RULES](../specs/UI_RULES.md#文案與語系一致性) 持有。一般開發先局部同步；發行前以版本相對上次發行的完整改動為範圍核對，另補既有未受檢查覆蓋的介面，不只看最後一次 commit。
 
-1. 自動檢查（每次提交都跑）：`appearance.test.ts` 確認每個經過 tr() 的字串有五語系且佔位符一致（遞迴掃 src）；`scripts/check-i18n.mjs` 擋下畫面上不經 tr() 的中文，以及主程序新增、沒有翻譯鍵的訊息（主程序訊息以整句比對翻譯；帶數值的句子用 `shared/message.ts` 的 `fmt('…{0}…', 值)` 送出，畫面翻譯整句後再填值，紀錄與測試用 `plainMessage()` 取回繁中原句）；`pnpm stale` 點名沒有程式使用的翻譯。主程序既有缺口列在 `scripts/i18n-baseline.json`，翻譯或移除後用 `--update-baseline` 更新，只能變少。同一支檢查也擋下用到禁用詞（`scripts/text-rules.mjs`，見 [UI_RULES](UI_RULES.md#介面文字)）的新句子；既有的在 `scripts/wording-baseline.json`，改好後用 `--update-wording` 更新，只能變少。
+1. 自動檢查（每次提交都跑）：`appearance.test.ts` 確認每個經過 tr() 的字串有五語系且佔位符一致（遞迴掃 src）；`scripts/check-i18n.mjs` 擋下畫面上不經 tr() 的中文，以及主程序新增、沒有翻譯鍵的訊息（主程序訊息以整句比對翻譯；帶數值的句子用 `shared/message.ts` 的 `fmt('…{0}…', 值)` 送出，畫面翻譯整句後再填值，紀錄與測試用 `plainMessage()` 取回繁中原句）；`pnpm stale` 點名沒有程式使用的翻譯。主程序既有缺口列在 `scripts/i18n-baseline.json`，翻譯或移除後用 `--update-baseline` 更新，只能變少。同一支檢查也擋下用到禁用詞（`scripts/text-rules.mjs`，見 [UI_RULES](../specs/UI_RULES.md#介面文字)）的新句子；既有的在 `scripts/wording-baseline.json`，改好後用 `--update-wording` 更新，只能變少。
 2. 發行時人工抽查：用英文與日文截本版新增／改動的畫面，看截斷、換行、殘留中文與 Tooltip；資料名稱與使用者內容不得被翻譯。用受控資料，不操作實際收藏。
 3. 收尾只在 WORK_ITEMS 保留未解差距與必要證據入口，不另產翻譯報告；缺漏或顯示問題未解時，發行驗收不得標為通過，未測情境明列限制。
 
@@ -78,7 +78,7 @@
 
 不維護逐檔清單（容易過時）；用下列方式找：
 
-- **改了某個原始檔，要跑哪些 UI 測試**：`pnpm test:ui:changed` 依 [領域登錄表](areas.json) 挑選，並列出沒有歸入領域的檔案；新增原始檔時同批加進登錄表（pre-commit 會擋）。`node scripts/areas.mjs which <檔案>` 可單查。
+- **改了某個原始檔，要跑哪些 UI 測試**：`pnpm test:ui:changed` 依 [領域登錄表](../areas.json) 挑選，並列出沒有歸入領域的檔案；新增原始檔時同批加進登錄表（pre-commit 會擋）。`node scripts/areas.mjs which <檔案>` 可單查。
 - **某個功能有沒有測試**：`rg -l "<按鈕文字或函式名>" tests/`；資料測試是 `tests/*.test.ts`，UI 測試是 `tests/*-ui.ts`，共用 Electron 啟動與關閉在 `tests/support/app.ts`（測試程序裡要先建上百個資料夾記錄時包在 `withoutFlush` 裡，跳過逐檔寫入磁碟，只影響準備資料，R-507），資料 fixture 在 `tests/support/model-fixtures.ts`。
 - **UI 測試找的按鈕還在不在**：`node scripts/check-ui-names.mjs`（pre-commit 已自動執行）。
 
@@ -108,13 +108,13 @@
 
 ## 驗證紀錄的使用
 
-本輪交付只回報實際執行的檢查及限制；沒有跑的明寫「未執行」。[0.5.0](archive/RELEASE_0_5_0.md)、[前輪階段](archive/STAGES_2_3.md) 與 [POC 驗收](archive/POC_ACCEPTANCE.md) 是歷史證據，不能當本輪通過；原基準／備份資訊保存在 [整理前實作頁](history/agent-docs-before-cleanup.md#implementation)，不需每次讀取。
+本輪交付只回報實際執行的檢查及限制；沒有跑的明寫「未執行」。[0.5.0](../archive/RELEASE_0_5_0.md)、[前輪階段](../archive/STAGES_2_3.md) 與 [POC 驗收](../archive/POC_ACCEPTANCE.md) 是歷史證據，不能當本輪通過；原基準／備份資訊保存在 [整理前實作頁](../history/agent-docs-before-cleanup.md#implementation)，不需每次讀取。
 
 本輪新增目標 runner：`tests/workspace-toolbar-ui.ts`（CARD／TABLE／檔案工具列與浮層）、`tests/search-dialog-ui.ts`（條件保存／配對／刪除／ESC）、`tests/game-actions-ui.ts`（目標、參數、排序與選擇器取消）、`tests/cell-editor-ui.ts`（呈現、條件、複製、畫布與拖曳座標）；依受影響範圍選跑，不要求每輪全部執行。遊戲與 CELL 純邏輯在 game-actions.test／cells.test。
 
 ## 程式碼可讀性與命名約定
 
-本節為本專案程式碼可讀性的統一約定，兼顧人類閱讀與 AI 代理定位／局部編輯；**新寫與本次改動到的段落直接遵守，既有舊程式不順手大改**，整理作業依 [WORK_ITEMS](WORK_ITEMS.md) 分階段執行。
+本節為本專案程式碼可讀性的統一約定，兼顧人類閱讀與 AI 代理定位／局部編輯；**新寫與本次改動到的段落直接遵守，既有舊程式不順手大改**，整理作業依 [WORK_ITEMS](../WORK_ITEMS.md) 分階段執行。
 
 ### 格式與視覺節奏
 

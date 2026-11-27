@@ -165,7 +165,7 @@ M:orph 提供三種介面主題：
 
 開發者可以透過下方指令自行啟動或建置。
 
-詳細操作方式請參考 [繁體中文使用指南](docs/USER_GUIDE.zh-TW.md)。畫面中的資料都是自製的示範資料。
+詳細操作方式請參考 [繁體中文使用指南](docs/guides/USER_GUIDE.zh-TW.md)。畫面中的資料都是自製的示範資料。
 
 ## 資料保存方式
 
@@ -233,7 +233,7 @@ pnpm dev
 
 主要技術：Electron、React 19、Vite 7、TypeScript、Mantine 8、Node SQLite 與 Playwright。
 
-完整的架構、模組責任與驗證方式請參閱 [架構文件](docs/ARCHITECTURE.md) 及 [執行與驗證](docs/IMPLEMENTATION.md)。
+完整的架構、模組責任與驗證方式請參閱 [架構文件](docs/architecture/ARCHITECTURE.md) 及 [執行與驗證](docs/architecture/IMPLEMENTATION.md)。
 
 ## 開發狀態
 
@@ -249,10 +249,10 @@ M:orph 是由作者主導、公開原始碼的個人專案，目前仍持續開�
 
 ## 文件
 
-- [使用指南](docs/USER_GUIDE.zh-TW.md)
+- [使用指南](docs/guides/USER_GUIDE.zh-TW.md)
 - [文件索引](docs/README.md)
 - [產品範圍](docs/PRODUCT.md)
-- [系統架構](docs/ARCHITECTURE.md)
+- [系統架構](docs/architecture/ARCHITECTURE.md)
 - [目前工作與已知限制](docs/WORK_ITEMS.md)
 - [貢獻指南](CONTRIBUTING.md)
 - [安全政策](SECURITY.md)

@@ -2,7 +2,7 @@
 
 > 最後確認：2026-11-25（R-477）。搜尋畫面、語法與索引的現行規則；程式：`shared/query.ts`、`electron/search-index.ts`、`src/search/SearchDialog.tsx`。
 
-已選單一搜尋框＋欄位提示＋自由文字（方案 A）。本頁是語法及搜尋語意主文件；外框位置見 [工作區](WORKSPACE_REVISION.md)。程式入口：[query](../shared/query.ts)、[SearchIndex](../electron/search-index.ts)、[SearchDialog](../src/search/SearchDialog.tsx)。
+已選單一搜尋框＋欄位提示＋自由文字（方案 A）。本頁是語法及搜尋語意主文件；外框位置見 [工作區](WORKSPACE_REVISION.md)。程式入口：[query](../../shared/query.ts)、[SearchIndex](../../electron/search-index.ts)、[SearchDialog](../../src/search/SearchDialog.tsx)。
 
 ## 範圍與身分
 
@@ -20,7 +20,7 @@
 
 ## 搜尋對話框樣式
 
-說明文字、取消／開啟資料夾按鈕所在區域的背景、邊框、間距及對齊須與對話框主題一致；窄視窗及長語系文字不得裁切或遮住操作。驗收三主題、條件選單／保存／刪除與鍵盤焦點，搜尋語意及開啟流程沿用上述規則。使用者圖 2 回報的 CSS 問題與完成狀態只在 [工作清單](WORK_ITEMS.md) 追蹤。
+說明文字、取消／開啟資料夾按鈕所在區域的背景、邊框、間距及對齊須與對話框主題一致；窄視窗及長語系文字不得裁切或遮住操作。驗收三主題、條件選單／保存／刪除與鍵盤焦點，搜尋語意及開啟流程沿用上述規則。使用者圖 2 回報的 CSS 問題與完成狀態只在 [工作清單](../WORK_ITEMS.md) 追蹤。
 
 ## 基本語法
 
@@ -48,8 +48,8 @@ Node SQLite 是可重建索引；目前以正規化值＋Unicode 三字元 grams
 
 ## 欄位比較
 
-明確數值／日期欄位的 value 可加 >、>=、<、<=、=，例如 score:>=4、date:<2025-01-01；負數、日期緊湊格式及排除／OR 沿用既有解析。純日期與日期時間分開，非法曆日／時間拒絕；未填不參與比較。一般冒號查詢仍是子字串，不改既有條件。是／否可用介面語言的「是／否」等用語、該欄位自訂的顯示文字（R-234）或 true／false 搜尋。[查詢測試](../tests/decided-media.test.ts) 含改名、舊查詢保存、型別變更與數值／日期比較案例，執行範圍依驗證矩陣選擇。
+明確數值／日期欄位的 value 可加 >、>=、<、<=、=，例如 score:>=4、date:<2025-01-01；負數、日期緊湊格式及排除／OR 沿用既有解析。純日期與日期時間分開，非法曆日／時間拒絕；未填不參與比較。一般冒號查詢仍是子字串，不改既有條件。是／否可用介面語言的「是／否」等用語、該欄位自訂的顯示文字（R-234）或 true／false 搜尋。[查詢測試](../../tests/decided-media.test.ts) 含改名、舊查詢保存、型別變更與數值／日期比較案例，執行範圍依驗證矩陣選擇。
 
-穩定欄位身分與上述比較已有實作，不等同支援任意日期範圍簡寫或巢狀查詢。富文字、衍生公式及視覺條件建立器的延後方向見 [OPEN_DECISIONS](OPEN_DECISIONS.md)。
+穩定欄位身分與上述比較已有實作，不等同支援任意日期範圍簡寫或巢狀查詢。富文字、衍生公式及視覺條件建立器的延後方向見 [OPEN_DECISIONS](../OPEN_DECISIONS.md)。
 
-無 key 數字／日期的使用者格式及更複雜群組仍需細化，不能由已支援的欄位比較推定。舊方案比較、跨專案例子及效能研究見 [原稿](history/agent-docs-before-cleanup.md#search-design)，不是日常閱讀範圍。
+無 key 數字／日期的使用者格式及更複雜群組仍需細化，不能由已支援的欄位比較推定。舊方案比較、跨專案例子及效能研究見 [原稿](../history/agent-docs-before-cleanup.md#search-design)，不是日常閱讀範圍。

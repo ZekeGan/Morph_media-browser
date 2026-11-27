@@ -1,6 +1,6 @@
 # 版本、發布與資料相容
 
-本頁是版本階段、打 tag 與發布步驟的唯一來源。資料格式升級的技術規則在 [DATA_FORMAT](DATA_FORMAT.md#格式升級與相容規則)，備份與復原的範圍在 [STORAGE_OPTIONS](STORAGE_OPTIONS.md)。決策依據見 [DECISIONS C-119](DECISIONS.md#c-119版本階段打-tag-與資料自動升級2026-11-04)。
+本頁是版本階段、打 tag 與發布步驟的唯一來源。資料格式升級的技術規則在 [DATA_FORMAT](DATA_FORMAT.md#格式升級與相容規則)，備份與復原的範圍在 [STORAGE_OPTIONS](STORAGE_OPTIONS.md)。決策依據見 [DECISIONS C-119](../DECISIONS.md#c-119版本階段打-tag-與資料自動升級2026-11-04)。
 
 ## 階段
 
@@ -16,12 +16,12 @@
 
 ## 日常開發（所有階段）
 
-- 每批改動完成後 commit，變更寫進 [CHANGELOG](../CHANGELOG.md) 最上方的 Unreleased，不逐批升版本號、不打 tag。
+- 每批改動完成後 commit，變更寫進 [CHANGELOG](../../CHANGELOG.md) 最上方的 Unreleased，不逐批升版本號、不打 tag。
 - Beta 期間介面與細節仍會改，一樣只累積在 Unreleased；tag 數量等於「真的發布的次數」，不是批次數。
 
 ## 定版步驟（只在使用者說要發布時做）
 
-1. **查收完成。** [WORK_ITEMS](WORK_ITEMS.md) 的「待查收」已清空或使用者明確同意帶著發布。
+1. **查收完成。** [WORK_ITEMS](../WORK_ITEMS.md) 的「待查收」已清空或使用者明確同意帶著發布。
 2. **決定版本號。** 新功能升次版號，純修正升修訂號；Beta 加 `-beta.N`。次版號或主版號升級，推送前先問使用者。
 3. **整理 CHANGELOG。** Unreleased 改成版本標題與日期，更新 Version guide 表，重新開一個空的 Unreleased。
 4. **改 `package.json` 版本。** 同批檢查 README 與文件中寫死的版本號。

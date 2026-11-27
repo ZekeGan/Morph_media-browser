@@ -2,7 +2,7 @@
 
 > 最後確認：2026-11-27（R-526）。可攜記錄的寫入、清理、移除與復原規則；程式：`electron/files.ts`、`electron/maintenance.ts`、`electron/library-removal.ts`。
 
-本頁持有資料安全及失敗語意，適用所有寫入／掃描／遷移／清理工作。身分與共用值語意見 [資料模型](FOLDER_PROJECT_MODEL.md)；位置與程式入口見 [架構](ARCHITECTURE.md)。原研究／舊方案見 [封存原文](history/agent-docs-before-cleanup.md#storage-options)。
+本頁持有資料安全及失敗語意，適用所有寫入／掃描／遷移／清理工作。身分與共用值語意見 [資料模型](FOLDER_PROJECT_MODEL.md)；位置與程式入口見 [架構](ARCHITECTURE.md)。原研究／舊方案見 [封存原文](../history/agent-docs-before-cleanup.md#storage-options)。
 
 ## 權威與寫入
 
@@ -51,7 +51,7 @@
 
 </details>
 
-欄位刪除與完全移除共用 [maintenance](../electron/maintenance.ts) 的檔案驗證／樹外備份／復原流程。備份在 userData/maintenance-backups/<token>，manifest 記原位置及雜湊；恢復前須確認身分、停止相關寫入且不覆蓋後續資料。完全移除先持久化祖先排除及連結停止，再刪受管資料，主記錄最後；若資料復原不完整，停止設定與本機記憶狀態保持一致，避免下次掃描建立空白身分。
+欄位刪除與完全移除共用 [maintenance](../../electron/maintenance.ts) 的檔案驗證／樹外備份／復原流程。備份在 userData/maintenance-backups/<token>，manifest 記原位置及雜湊；恢復前須確認身分、停止相關寫入且不覆蓋後續資料。完全移除先持久化祖先排除及連結停止，再刪受管資料，主記錄最後；若資料復原不完整，停止設定與本機記憶狀態保持一致，避免下次掃描建立空白身分。
 
 ## 必要驗證
 

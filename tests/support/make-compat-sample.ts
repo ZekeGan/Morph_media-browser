@@ -1,4 +1,4 @@
-// Saves the old-data sample of the version being released (R-278), step 5 of docs/RELEASING.md:
+// Saves the old-data sample of the version being released (R-278), step 5 of docs/architecture/RELEASING.md:
 //   pnpm exec tsx tests/support/make-compat-sample.ts
 // Writes tests/compat/<package version>/ (the sample, with paths as a placeholder) and expected.json (what this
 // version reads back). Later versions must read the same from it: tests/compat.test.ts.

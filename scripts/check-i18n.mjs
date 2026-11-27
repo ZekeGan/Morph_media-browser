@@ -127,7 +127,9 @@ const badWording = worded.filter((key) => !wordingBaseline.has(key))
 const wordingGone = [...wordingBaseline].filter((key) => !worded.includes(key))
 if (badWording.length) {
   failed = true
-  console.error('Interface text with words people do not understand (docs/UI_RULES.md#介面文字):')
+  console.error(
+    'Interface text with words people do not understand (docs/specs/UI_RULES.md#介面文字):'
+  )
   for (const key of badWording) {
     console.error(`  ${key.slice(0, 60)}  ${wordingProblems(key).join('、')}`)
   }

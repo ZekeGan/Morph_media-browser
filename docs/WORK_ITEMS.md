@@ -13,6 +13,9 @@
 
 ## 待查收
 
+- **R-532** 分類整理 docs/ 文件結構並新增產品體驗與互動前置定義（UX_PRINCIPLES） ｜中｜一般｜無｜領域：core｜依賴：無
+  驗收：確認 docs/ 目錄已分為 specs/、architecture/、guides/、design/，閱讀 docs/specs/UX_PRINCIPLES.md，並確認 docs/README.md 定位表連結正常。
+
 ## 進行中
 
 ## 已核定（未做）
@@ -30,7 +33,7 @@
 ## 發行前關卡
 
 - **R-SIGN 程式碼簽章**（發布正式版 1.0.0 前必做，到時提醒使用者）：申請 SignPath Foundation 開源專案免費簽章（GitHub Actions 建置、SignPath 簽 Morph.exe、安裝檔、解除安裝程式與可攜版），打包流程改到 GitHub Actions，簽好的檔案附在 Release；同版恢復頁面程序沙箱（C-149 的 Beta 例外隨版本號自動結束，確認後刪掉那段程式與本項）。背景：未簽章的 Morph.exe 會被卡巴斯基注入 DLL，沙箱裡的頁面程序因此中止。
-- **R-I18N 語系關卡**（每次發行必做）：自動檢查每次提交都跑；發行時只做英日文抽查本版新畫面，見 [執行關卡](IMPLEMENTATION.md#發行前文案與語系關卡)。母語審閱與授權審閱已於 2026-11-05 完成。
+- **R-I18N 語系關卡**（每次發行必做）：自動檢查每次提交都跑；發行時只做英日文抽查本版新畫面，見 [執行關卡](architecture/IMPLEMENTATION.md#發行前文案與語系關卡)。母語審閱與授權審閱已於 2026-11-05 完成。
 
 ## 已知限制（不是需求）
 

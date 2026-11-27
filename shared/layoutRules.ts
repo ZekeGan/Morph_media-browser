@@ -5,7 +5,7 @@ import type { FolderRow, Project } from './model'
 // A folder's own choice wins; a work (album, video, game, book…) takes the layout of its kind, so the same kind looks
 // the same at any depth and a work inside a work keeps its own kind's layout; any other folder takes the layout set
 // for its level below the project root; everything else falls back to layout 0 (the project's default layout).
-// Rules: docs/LAYOUT_RULES.md.
+// Rules: docs/specs/LAYOUT_RULES.md.
 export interface LayoutRule {
   types?: Partial<Record<FolderKind, string>>
   // levels[0] is the first level below the project root.

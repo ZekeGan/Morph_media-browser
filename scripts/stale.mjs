@@ -33,16 +33,27 @@ function main() {
       .split('\n')
       .filter(Boolean)
   const today = new Date().toISOString().slice(0, 10)
-  const specs = fs
-    .readdirSync(path.join(root, 'docs'))
-    .filter((name) => name.endsWith('.md'))
-    .map((name) => 'docs/' + name)
+  const skipDirs = new Set(['archive', 'history', 'design', 'decisions', 'brand', 'images'])
+  const walkDocs = (dir, prefix = 'docs') => {
+    const out = []
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        if (!skipDirs.has(entry.name)) {
+          out.push(...walkDocs(path.join(dir, entry.name), `${prefix}/${entry.name}`))
+        }
+      } else if (entry.name.endsWith('.md')) {
+        out.push(`${prefix}/${entry.name}`)
+      }
+    }
+    return out
+  }
+  const specs = walkDocs(path.join(root, 'docs'))
   const historyDocs = new Set([
     'docs/DECISIONS.md',
     'docs/WORK_ITEMS.md',
     'docs/README.md',
-    'docs/IMPLEMENTATION.md',
-    'docs/WORKFLOW_PROMPT.md',
+    'docs/architecture/IMPLEMENTATION.md',
+    'docs/architecture/WORKFLOW_PROMPT.md',
   ])
   const findings = []
   const note = (group, line) => findings.push({ group, line })
@@ -65,8 +76,8 @@ function main() {
   const confirmedOf = (file) => /最後確認：(\d{4}-\d{2}-\d{2})/.exec(read(file).slice(0, 1500))?.[1]
   let unconfirmed = 0
   for (const spec of specs.filter((file) => !historyDocs.has(file))) {
-    const name = path.basename(spec)
-    const owners = areas.filter((area) => area.docs.some((doc) => doc.split('#')[0] === name))
+    const rel = spec.replace(/^docs\//, '')
+    const owners = areas.filter((area) => area.docs.some((doc) => doc.split('#')[0] === rel))
     if (!owners.length) continue
     const confirmed = confirmedOf(spec)
     if (!confirmed) {

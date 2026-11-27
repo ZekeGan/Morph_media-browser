@@ -37,7 +37,7 @@ import { isLayoutWork, KindIcon, LayoutWorksContext } from './folderKind'
 // for works, a layout per level for other folders), each with how many folders it reaches. Right: the folders as an
 // indented list, each with its layout and where it comes from; picking one there makes it that folder's own. Below:
 // the cards of the picked folder and its neighbours as they will look. Edited on a draft, saved together. Rules:
-// docs/LAYOUT_RULES.md. R-409: the same window sets the right-panel layouts ("卡片／右側"); both drafts are saved together.
+// docs/specs/LAYOUT_RULES.md. R-409: the same window sets the right-panel layouts ("卡片／右側"); both drafts are saved together.
 const kinds: { kind: FolderKind; label: string }[] = [
   { kind: 'game', label: '遊戲' },
   { kind: 'book', label: '書籍／漫畫' },

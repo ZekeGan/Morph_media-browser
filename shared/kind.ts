@@ -140,7 +140,7 @@ export interface DetectedKind {
 }
 
 // Order: what you set by hand, then a detected game (its boundary protection applies in any project), then what the files look like: video, music, text book, manga. Unsure means general.
-// PDF and plain ZIP files never decide a kind. Rules: docs/UI_RULES.md (資料夾類型).
+// PDF and plain ZIP files never decide a kind. Rules: docs/specs/UI_RULES.md (資料夾類型).
 // R-404: folders that only hold an album's or release's extras. The whole name (a number may follow) decides.
 const extrasName = /^(scans?|booklet|artworks?|covers?|bk|ジャケット|特典|スキャン)[\s_]*\d*$/i
 

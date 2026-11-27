@@ -2,7 +2,7 @@
 
 English · [繁體中文](USER_GUIDE.zh-TW.md)
 
-This guide is for people who **use** M:orph. The labels below are the ones on screen; the interface comes in five languages, and the names here are the English ones (the Traditional Chinese guide gives the original labels). For design and specifications see the [documentation index](README.md).
+This guide is for people who **use** M:orph. The labels below are the ones on screen; the interface comes in five languages, and the names here are the English ones (the Traditional Chinese guide gives the original labels). For design and specifications see the [documentation index](../README.md).
 
 ## 1. Install and start
 
@@ -28,7 +28,7 @@ Your settings and the search index live in `%APPDATA%\media-viewer`; each manage
 3. Press **Create project**. M:orph scans the folder and creates the folder info, and the project appears in the list.
 4. Use **Add group** to group projects; a project can also be marked as a favourite.
 
-![The New project dialog: choose a folder, the project name and its group](images/05-create-project.png)
+![The New project dialog: choose a folder, the project name and its group](../images/05-create-project.png)
 
 If the folder already holds an earlier project (a new computer, a moved folder, or a project you removed from the list), choosing it offers **Bring back the project**, which keeps its settings and info. To bring info back from a backup, use "Restore from backup" in application settings › Backup.
 
@@ -41,7 +41,7 @@ If the folder already holds an earlier project (a new computer, a moved folder, 
 - When the window is narrow, the details panel opens over the list; close it to get back to the cards.
 - `Ctrl+K` opens search: a space means "all of these", `~` means "any of these", `-` excludes, and quotes keep a phrase with spaces together, for example `folder_name:"my name"`. Number and date fields can be compared.
 
-![Card mode: cover, name, tags, rating and status, with the selected folder's contents on the right](images/01-main-card.png)
+![Card mode: cover, name, tags, rating and status, with the selected folder's contents on the right](../images/01-main-card.png)
 
 ## 5. Design the card (block editor)
 
@@ -52,7 +52,7 @@ If the folder already holds an earlier project (a new computer, a moved folder, 
 5. The preview menu in the toolbar lets you pick a real folder (or "Longest/Shortest value of each field"), with arrows for the previous/next folder, and see the components filled with its data; a line above the canvas says whether anything is cut off. When content is long, choose scrolling, wrapping, or the tag "+N" badge.
 6. Press **Save**, or **Discard changes** to drop them. A project can have several named layouts.
 
-![The layout editor: components on the left, the canvas with a real-data preview in the middle, component settings on the right](images/04-editor.png)
+![The layout editor: components on the left, the canvas with a real-data preview in the middle, component settings on the right](../images/04-editor.png)
 
 ## 6. Add information to a folder
 
@@ -87,4 +87,4 @@ The gear at the top right opens **Application settings**:
 
 **A video does not play?** Usually the file itself is damaged (for example an archive renamed to `.mp4`) or uses a codec the browser engine does not support. The message on screen says which, and you can open it with the system player.
 
-**How do I report a problem or a vulnerability?** Open an issue for ordinary problems; for security problems follow [SECURITY](../SECURITY.md) and report privately.
+**How do I report a problem or a vulnerability?** Open an issue for ordinary problems; for security problems follow [SECURITY](../../SECURITY.md) and report privately.

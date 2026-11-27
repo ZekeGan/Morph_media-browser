@@ -19,6 +19,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Categorized `docs/` into `specs/`, `architecture/`, `guides/`, and `design/`, added `docs/specs/UX_PRINCIPLES.md` (UI-agnostic UX & interaction principles), updated `scripts/stale.mjs`, `scripts/areas.mjs`, `docs/areas.json`, and all relative Markdown links (R-532).
 - Confirmed `tests/media-facts.test.ts` exit code 5 under `pnpm test` was caused by Kaspersky behavioral termination (20/20 consecutive full runs passed with antivirus disabled), and stopped `media-facts.test.ts` from spawning the PowerShell hidden-file helper when no real hidden files are tested (R-473).
 - Stabilized `video-embedded-ui` (await `subtitleTrack` after loading track in `VideoViewer`, pause 3s test sample inside cue window) and `explorer.test.ts` thumbnail cancellation test (fill all worker slots deterministically); added `NaN` validation and `stale.mjs` `.git-blame-ignore-revs` unit tests (R-530).
 - Registered all 15 previously unlisted unit/UI tests in `docs/areas.json` and added a reverse check in `scripts/areas.mjs check` so new test files cannot go unmapped (R-529).

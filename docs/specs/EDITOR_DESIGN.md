@@ -1,8 +1,8 @@
 # CELL 編輯器
 
-> 最後確認：2026-11-25（R-504）。積木（卡片版面）編輯器的現行規則。程式：`src/editor/Editor.tsx`、`src/editor/EditorPalette.tsx`、`src/editor/EditorInspector.tsx`、`src/cells/CellStyleEditor.tsx`、`src/editor/FieldManager.tsx`、`src/editor/FieldGroupPalette.tsx`、`src/editor/DisplaySource.tsx`、`src/editor/OptionTagsInput.tsx`、`src/editor/fieldTypes.ts`、`shared/fieldGroups.ts`、`shared/layouts.ts`；測試：`tests/field-types.test.ts`、`tests/date-fields.test.ts`、`tests/field-groups.test.ts`、`tests/cell-editor-ui.ts`、`tests/field-edit-ui.ts`、`tests/date-field-ui.ts`、`tests/editor-fields-ui.ts`、`tests/cell-style-ui.ts`、`tests/decided-ui.ts`。
+> 最後確認：2026-11-27（R-532）。積木（卡片版面）編輯器的現行規則。程式：`src/editor/Editor.tsx`、`src/editor/EditorPalette.tsx`、`src/editor/EditorInspector.tsx`、`src/cells/CellStyleEditor.tsx`、`src/editor/FieldManager.tsx`、`src/editor/FieldGroupPalette.tsx`、`src/editor/DisplaySource.tsx`、`src/editor/OptionTagsInput.tsx`、`src/editor/fieldTypes.ts`、`shared/fieldGroups.ts`、`shared/layouts.ts`；測試：`tests/field-types.test.ts`、`tests/date-fields.test.ts`、`tests/field-groups.test.ts`、`tests/cell-editor-ui.ts`、`tests/field-edit-ui.ts`、`tests/date-field-ui.ts`、`tests/editor-fields-ui.ts`、`tests/cell-style-ui.ts`、`tests/decided-ui.ts`。
 
-本頁持有模板編輯與編輯器內的方案管理行為；CELL 種類只列在 [CELL_CATALOG](CELL_CATALOG.md)，瀏覽時的 CARD 工具列與方案切換由 [工作區](WORKSPACE_REVISION.md) 持有。實作入口：[Editor](../src/editor/Editor.tsx)、[Card](../src/cells/Card.tsx)、[shared/layouts](../shared/layouts.ts)。
+本頁持有模板編輯與編輯器內的方案管理行為；CELL 種類只列在 [CELL_CATALOG](CELL_CATALOG.md)，瀏覽時的 CARD 工具列與方案切換由 [工作區](WORKSPACE_REVISION.md) 持有。實作入口：[Editor](../../src/editor/Editor.tsx)、[Card](../../src/cells/Card.tsx)、[shared/layouts](../../shared/layouts.ts)。
 
 ## 資料與畫布
 
@@ -47,7 +47,7 @@ CARD 專案方案與單一資料夾指定既有方案共用穩定方案身分；
 - 新專案先有可用模板。文字與背景色是目前基本樣式，背景預設透明；格線數／限制以 shared 驗證與 Editor 為準，不當成永久產品尺寸。
 - 字級、粗細、對齊、內距、邊框、圖片裁切、自訂色碼等是已確認的可擴充方向，未交付細節仍需分期，不宣稱整套設定均已存在。
 
-改動時驗證涉及的拖入／碰撞／尺寸／保存／取消及真實資料綁定；共用引擎變更才補其他模板，不每次重跑所有媒體。原驗收例子與待選細節保存在 [原稿](history/agent-docs-before-cleanup.md#editor-design)。
+改動時驗證涉及的拖入／碰撞／尺寸／保存／取消及真實資料綁定；共用引擎變更才補其他模板，不每次重跑所有媒體。原驗收例子與待選細節保存在 [原稿](../history/agent-docs-before-cleanup.md#editor-design)。
 
 ## 組件與方案管理
 
@@ -142,4 +142,4 @@ CARD 專案方案與單一資料夾指定既有方案共用穩定方案身分；
 - 刪除前先預覽受影響的欄位數，另列資料夾數、欄位值筆數及方案／表格／漫畫版面／常用搜尋等引用數，分清計數單位；有其他專案共用時列出受影響專案。未填值不算一筆已有資料，0 與 false 是有效值，不可漏算。
 - 使用者看到影響數量及範圍並確認後才刪除，即使沒有引用也需確認；取消不寫入。確認綁定預覽指紋，期間資料或引用變更需重看預覽。
 - 刪除範圍中的欄位配置、值與引用需一致處理，不留下失效引用或自動綁到其他同名欄位。離線／未納入的資料不得宣稱已刪除；只顯示可證明範圍的數量及限制。引用此欄位的組件與整條常用搜尋一併移除，避免刪掉搜尋條件後意外擴大結果；預覽明示數量。已驗證的原位置備份獨立去除舊引用，復原副本留在樹外；未連結專案私有值及無法解析的無關舊查詢保留並列限制，疑似目標引用無法辨識時拒絕執行。
-- 共用值／私有覆寫、受管資料所有權、備份與失敗復原依 [儲存安全](STORAGE_OPTIONS.md#清理與範圍) 處理；不刪除原始媒體或與欄位無關的資料。
+- 共用值／私有覆寫、受管資料所有權、備份與失敗復原依 [儲存安全](../architecture/STORAGE_OPTIONS.md#清理與範圍) 處理；不刪除原始媒體或與欄位無關的資料。

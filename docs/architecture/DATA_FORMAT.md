@@ -1,8 +1,8 @@
 # 資料格式參考
 
-> 最後確認：2026-11-25（R-474）。可攜記錄與應用程式資料的格式；型別以 `shared/model.ts`、`shared/workspace.ts` 為準，升級在 `shared/upgrade.ts`。
+> 最後確認：2026-11-27（R-532）。可攜記錄與應用程式資料的格式；型別以 `shared/model.ts`、`shared/workspace.ts` 為準，升級在 `shared/upgrade.ts`。
 
-M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是可重建的副本。此頁列出各檔案的位置與欄位，讓其他工具或貢獻者能讀懂；設計理由見 [資料模型](FOLDER_PROJECT_MODEL.md) 與 [儲存安全](STORAGE_OPTIONS.md)，型別定義的原始碼是 [shared/model.ts](../shared/model.ts)、[shared/explorer.ts](../shared/explorer.ts)、[shared/workspace.ts](../shared/workspace.ts)，驗證在同檔的 `validate*` 函式。
+M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是可重建的副本。此頁列出各檔案的位置與欄位，讓其他工具或貢獻者能讀懂；設計理由見 [資料模型](FOLDER_PROJECT_MODEL.md) 與 [儲存安全](STORAGE_OPTIONS.md)，型別定義的原始碼是 [shared/model.ts](../../shared/model.ts)、[shared/explorer.ts](../../shared/explorer.ts)、[shared/workspace.ts](../../shared/workspace.ts)，驗證在同檔的 `validate*` 函式。
 
 > 欄位以現行程式為準；`schemaVersion` 與應用程式版本號無關；資料夾記錄是 `2`、專案記錄是 `4`，其餘都是 `1`。改格式時的自動升級規則見[格式升級與相容規則](#格式升級與相容規則)。
 
@@ -53,7 +53,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 - `shownExtras`（R-315）：這個遊戲按鈕列要顯示的自動操作，`steam`／`store`／`save` 的子集；沒有時都不顯示。
 - `cellImages`：圖片組件各自選定的資產；`bannerAssetId`：封面資產。
 - 刪除已保存圖片（`deleteImage`）：同一次原子寫入（含版本檢查）移除 `assets` 項目並清掉 `cellImages`／`bannerAssetId` 對它的引用；寫入成功後才刪除 `.media-viewer/assets/` 內的受管檔案（需通過 `safePath`、必須是一般檔案、且無其他項目共用同一路徑）。寫入失敗則檔案與記錄都保留；使用者原始媒體檔不會被觸碰。刪除後不保留副本，但 `.bak` 仍含舊記錄，不會復活檔案。
-- `kind`：使用者手動指定的資料夾類型（`game`、`book`、`music`、`video`、`general`）；沒有時由程式偵測，不寫入記錄（規則見 [UI_RULES](UI_RULES.md) 的資料夾類型）。v1 的 `media`（影音合一）在升級到 v2 時移除。
+- `kind`：使用者手動指定的資料夾類型（`game`、`book`、`music`、`video`、`general`）；沒有時由程式偵測，不寫入記錄（規則見 [UI_RULES](../specs/UI_RULES.md) 的資料夾類型）。v1 的 `media`（影音合一）在升級到 v2 時移除。
 - `reading`、`playback`、`subtitles`：漫畫閱讀偏好、影片續播進度與字幕設定。`reading` 的 `webtoon`、`webtoonWidth`（10～100）、`webtoonAsked`（R-256）記條漫模式、寬度與是否已回答過條漫提示。舊記錄的 `reading.mode`（`image`／`manga`）不再寫入也不再讀（R-411），舊值留著不動。
 - `subtitleTrack`（R-432，**暫定**，選用，不升 `schemaVersion`）：資料夾裡最後一次手選的內嵌字幕軌 `{ name?, language? }`，`name` 最多 200 字、`language` 最多 35 字（軌的名稱與語言碼），至少有一項、不得為空字串、不得有其他欄位；同資料夾的其他影片打開時先選同名的軌、沒有再選同語言的軌。每個檔案自己保存的字幕選擇（`playback`）優先，不被它覆蓋。
 - `novels`（R-282）：文字書的閱讀位置，以檔名為鍵 `{ chapter, position, percent, updated, bookmarks? }`；`position`、`percent` 是 0～1 的比例，書籤最多 500 個。
@@ -83,7 +83,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 | 欄位 | 說明 |
 | --- | --- |
 | `projectId`、`rootFolderId`、`revision`、`name` | 身分與版本；`rootFolderId` 指向根資料夾的記錄 |
-| `layoutRules`（暫定，R-413） | 版面配置規則 `{ card?, panel? }`，各是 `{ types?, levels?, folders? }`（`types` 以資料夾類型 `game`、`book`、`music`、`video`、`general` 為鍵；值為版面 ID，`levels[0]` 是第 1 層、未設定的層為空字串）；`card` 指向 `layoutPresets`、`panel` 指向 `panelPresets`。規則見 [LAYOUT_RULES](LAYOUT_RULES.md) |
+| `layoutRules`（暫定，R-413） | 版面配置規則 `{ card?, panel? }`，各是 `{ types?, levels?, folders? }`（`types` 以資料夾類型 `game`、`book`、`music`、`video`、`general` 為鍵；值為版面 ID，`levels[0]` 是第 1 層、未設定的層為空字串）；`card` 指向 `layoutPresets`、`panel` 指向 `panelPresets`。規則見 [LAYOUT_RULES](../specs/LAYOUT_RULES.md) |
 | `depth` | `{ mode: 'through' | 'exact', level }` 掃描層級 |
 | `fieldBindings` | 專案的欄位清單：`{ alias, attributeId, type, options?, optionColors?, trueLabel?, falseLabel? }`；`trueLabel`／`falseLabel`（R-234）只用於是／否欄位，各 1～20 字的顯示文字 |
 | `fieldGroups`（選用） | 欄位群組：`{ groupId, name, memberIds }`，最多 100 個；成員 1～20 個、須在 `fieldBindings`、型別相同（文字與標籤可混用）、一個欄位只屬一個群組；名稱 1～100 字，不分大小寫不可與其他群組或欄位別名重複 |
@@ -96,7 +96,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 | `list`、`cardView`、`excludedRelativePaths`、`scanAll`、`traversal` | 列表、顯示範圍、排除與掃描設定；`traversal`（R-510）已停用：讀到就忽略，保存專案時移除；`cardView.works`（R-340）為 `true` 時是「所有作品」，舊版讀到時依 `mode: multi` 顯示全部層 |
 | `savedSearches` | 儲存的搜尋 |
 
-**組件 `Cell`**：`cellId`、`kind`（`name`、`path`、`field-text`、`field-tags`、`field-number`、`field-date`、`field-boolean`、`field-enum`、`field-url`、`field-date-only`、`static-text`、`spacer`、`system-info`、`image`、`divider`、`open-folder`、`game-launch`，以及 R-409／R-437／R-438 暫定的右側專屬元件 `video-play`、`book-continue` 與遊戲附加按鈕 `game-extra`；舊的 `game-cover`、`album-info`、`video-info` 已在 v3 取消，`album-facts`、`video-facts`、`book-card` 已在 v4 取消，讀取時轉換）、`grid`（12 欄、最多 100 列，組件不能重疊）、`style`，以及依型別的選用欄位：`attributeId`、`fallbackIds`（備用欄位，最多 5 個、同型別或文字／標籤相容顯示；舊設定，新設定用群組）、`groupId`（顯示欄位群組，此時 `attributeId` 為其成員之一、不可同時有 `fallbackIds`）、`condition`（顯示條件）、`wrap`／`scroll`／`growMax`（R-398，**暫定**，不升 `schemaVersion`：整數 1～20，內容比組件高時最多多佔的列數；只限文字欄位、標籤、版面文字、名稱、路徑，不可與 `scroll` 並存，缺省維持原高度）、`unit`／`decimals`／`maximum`、`presentation`、`imageFit`、`imageIndex`、`gameExtra`（R-409，**暫定**：`game-extra` 的按鈕 `save`／`steam`／`store`）、`systemInfo` 新增 `engine`（R-409）與 R-438（**暫定**）的 `albumName`、`albumArtist`、`albumYear`、`trackCount`、`totalLength`、`videoCount`、`bookTitle`、`bookAuthor`、`pages`、`readPage`、`imageCover`（R-409，**暫定**：`true` 表示沒有手動選圖時顯示資料夾封面，不可與 `imageIndex` 並存）、`imageRole`（R-435，已停用，R-511：`hero`／`logo`／`icon`，舊版存的照資料夾封面顯示，不再寫入；仍不可與 `imageIndex`、`imageCover` 並存）、`actionId`／`fallbackActionIds`、`tagColors`／`tagPrefix`。完整樣式欄位見 [CELL 目錄](CELL_CATALOG.md#組件樣式2026-11-02-新增)。
+**組件 `Cell`**：`cellId`、`kind`（`name`、`path`、`field-text`、`field-tags`、`field-number`、`field-date`、`field-boolean`、`field-enum`、`field-url`、`field-date-only`、`static-text`、`spacer`、`system-info`、`image`、`divider`、`open-folder`、`game-launch`，以及 R-409／R-437／R-438 暫定的右側專屬元件 `video-play`、`book-continue` 與遊戲附加按鈕 `game-extra`；舊的 `game-cover`、`album-info`、`video-info` 已在 v3 取消，`album-facts`、`video-facts`、`book-card` 已在 v4 取消，讀取時轉換）、`grid`（12 欄、最多 100 列，組件不能重疊）、`style`，以及依型別的選用欄位：`attributeId`、`fallbackIds`（備用欄位，最多 5 個、同型別或文字／標籤相容顯示；舊設定，新設定用群組）、`groupId`（顯示欄位群組，此時 `attributeId` 為其成員之一、不可同時有 `fallbackIds`）、`condition`（顯示條件）、`wrap`／`scroll`／`growMax`（R-398，**暫定**，不升 `schemaVersion`：整數 1～20，內容比組件高時最多多佔的列數；只限文字欄位、標籤、版面文字、名稱、路徑，不可與 `scroll` 並存，缺省維持原高度）、`unit`／`decimals`／`maximum`、`presentation`、`imageFit`、`imageIndex`、`gameExtra`（R-409，**暫定**：`game-extra` 的按鈕 `save`／`steam`／`store`）、`systemInfo` 新增 `engine`（R-409）與 R-438（**暫定**）的 `albumName`、`albumArtist`、`albumYear`、`trackCount`、`totalLength`、`videoCount`、`bookTitle`、`bookAuthor`、`pages`、`readPage`、`imageCover`（R-409，**暫定**：`true` 表示沒有手動選圖時顯示資料夾封面，不可與 `imageIndex` 並存）、`imageRole`（R-435，已停用，R-511：`hero`／`logo`／`icon`，舊版存的照資料夾封面顯示，不再寫入；仍不可與 `imageIndex`、`imageCover` 並存）、`actionId`／`fallbackActionIds`、`tagColors`／`tagPrefix`。完整樣式欄位見 [CELL 目錄](../specs/CELL_CATALOG.md#組件樣式2026-11-02-新增)。
 
 **顯示條件與依條件文字（R-239）**：`condition` 的 `operator` 另有 `within`／`older`（`value` 為 1～36500 的天數，只用於日期與日期時間欄位，依今天計算「距今 N 天內／超過 N 天」；只有日期的值以本機日曆日比較，含時間的值以當下時間比較，未來的日期算「N 天內」）。`moreConditions`（1～4 個，需先有 `condition`）與 `conditionMode: "any"`（只在有 `moreConditions` 時）讓組件有多個條件：預設全部符合才顯示，`any` 為任一符合。`textRules`（只限版面文字，1～10 條 `{ when, text }`，文字最多 1000 字，空白表示符合時不顯示）由上往下比對，第一個符合的顯示其文字，都不符合時顯示 `text`。刪除欄位時，讀它的額外條件與文字規則會被移除，主條件讀它時組件照舊一併移除。舊版程式讀到 `within`／`older` 會把專案視為不合法，Alpha 期間不另做相容。
 
@@ -141,7 +141,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 
 ## 格式升級與相容規則
 
-使用者的目標：資料結構在版本之間改變時，使用者不必做任何多餘操作，`%APPDATA%` 與資料夾裡的私有資料都自動轉換。階段與承諾範圍見 [RELEASING](RELEASING.md#階段)：Alpha 不承諾相容，**Beta 起必須符合本節**。決策見 [DECISIONS C-119](DECISIONS.md#c-119版本階段打-tag-與資料自動升級2026-11-04)。
+使用者的目標：資料結構在版本之間改變時，使用者不必做任何多餘操作，`%APPDATA%` 與資料夾裡的私有資料都自動轉換。階段與承諾範圍見 [RELEASING](RELEASING.md#階段)：Alpha 不承諾相容，**Beta 起必須符合本節**。決策見 [DECISIONS C-119](../DECISIONS.md#c-119版本階段打-tag-與資料自動升級2026-11-04)。
 
 > 實作：入口是 `shared/upgrade.ts`（`FORMAT_VERSION`、`UPGRADE_STEPS`、`upgradeFormat`、`NewerFormatError`）；已有的步驟列在[下面](#已有的升級步驟)。驗證函式依 `FORMAT_VERSION` 檢查，較新版本丟出 `NewerFormatError`。資料夾與專案記錄（含 `.bak`）一律經 `electron/files.ts` 的 `readJson` 讀取，讀到就已是最新格式，新增讀取路徑不必自己呼叫升級。測試在 `tests/upgrade.test.ts`：資料夾記錄用舊格式樣本 `tests/fixtures/folder-v1.json` 走真正的升級步驟，還沒有步驟的格式以暫時把它當成下一版的方式走完整條升級與唯讀路徑。
 
@@ -152,7 +152,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 
 **版本範圍**：資料夾記錄、專案記錄、`%APPDATA%` 的工作區與設定檔、設定包、專案匯出包各自有 `schemaVersion`，彼此獨立，也與應用程式版本號無關。搜尋索引是可重建副本，不遷移，版本不符就重建。
 
-**升級鏈**：每一步是 v→v+1 的純函式（不做 I/O、重複執行結果相同），登記在 `shared/upgrade.ts` 的 `UPGRADE_STEPS`，所有舊版依序升到最新。專案匯出包（備份）的 `migrateRecord` 只處理**包裝格式**（`EXPORT_VERSION`）；包內每筆記錄接著走同一份 `UPGRADE_STEPS`，記錄格式只有一套升級鏈（[DECISIONS C-126](DECISIONS.md#c-126記錄升級只有一套匯出包只升包裝2026-11-05)）。
+**升級鏈**：每一步是 v→v+1 的純函式（不做 I/O、重複執行結果相同），登記在 `shared/upgrade.ts` 的 `UPGRADE_STEPS`，所有舊版依序升到最新。專案匯出包（備份）的 `migrateRecord` 只處理**包裝格式**（`EXPORT_VERSION`）；包內每筆記錄接著走同一份 `UPGRADE_STEPS`，記錄格式只有一套升級鏈（[DECISIONS C-126](../DECISIONS.md#c-126記錄升級只有一套匯出包只升包裝2026-11-05)）。
 
 **升級時機**
 
@@ -191,5 +191,5 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 2. 升級鏈測試：從每個舊版本一路升到最新、重複升級結果相同、未知欄位保留。
 3. 失敗與取消測試：原檔與 `.bak` 保持，原始媒體檔不變。
 4. 「較新版本資料」的唯讀行為測試。
-5. 更新本頁欄位說明，並在 [CHANGELOG](../CHANGELOG.md) 註明這版改了格式。
-6. 這批改動屬資料寫入／遷移，提交前走獨立代理審查（見 [CLAUDE](../CLAUDE.md)）。
+5. 更新本頁欄位說明，並在 [CHANGELOG](../../CHANGELOG.md) 註明這版改了格式。
+6. 這批改動屬資料寫入／遷移，提交前走獨立代理審查（見 [CLAUDE](../../CLAUDE.md)）。

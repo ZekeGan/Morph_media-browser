@@ -1,5 +1,5 @@
 // Wording rules for interface text (R-515): words from the code and the specs that people do not understand, each
-// with what to write instead. Mirrors the table in docs/UI_RULES.md#介面文字; change both together.
+// with what to write instead. Mirrors the table in docs/specs/UI_RULES.md#介面文字; change both together.
 // Used by scripts/check-i18n.mjs (commit check) and scripts/i18n.mjs (adding sentences).
 export const banned = [
   { term: 'POC', use: '拿掉（開發用語）' },

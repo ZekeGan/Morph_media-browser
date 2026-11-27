@@ -9,7 +9,7 @@
 - **DeviantArt**：公開資料走 OAuth client credentials；另有免金鑰的 oEmbed，但只拿得到標題、作者、縮圖；使用者決定不接入（2026-11-12）。
 - **MobyGames**：非營利用途可免費申請金鑰（約每小時 720 次）；遊戲已有 Steam、VNDB、DLsite，依 R-321 不接入。
 
-接入規則（[C-134](DECISIONS.md#c-134網站來源改為可用使用者金鑰與有條件解析網頁2026-11-12)）：
+接入規則（[C-134](../DECISIONS.md#c-134網站來源改為可用使用者金鑰與有條件解析網頁2026-11-12)）：
 
 - **使用者自備金鑰**：需要 API 憑證的網站只在使用者於應用程式設定填入自己的金鑰後啟用；金鑰只存本機並加密、只有 main 讀取，不寫進可攜記錄或專案。不內建任何金鑰；沒填金鑰時就地提示並連到設定。
 - **網頁解析**：沒有 API 的網站可讀商品頁 HTML，只在使用者按下時請求一次；不執行遠端 JS、不開隱藏瀏覽器視窗；依序讀 JSON-LD、內嵌資料、OpenGraph，最後才用選擇器；依網頁宣告的編碼解碼。遵守 robots.txt 與網站條款，不繞過機器人防護。
@@ -45,4 +45,4 @@ Hitomi 的作品資料主機是 `ltn.gold-usergeneratedcontent.net`（2026-11 �
 
 首次發行日、平台／版本日期與購買日分開。批次／CSV 對照、名稱候選人工審核、galleryinfo.txt／本地線索擷取是候選，尚未自動納入現行流程。批次若選入需可暫停、分別報成功／模糊／失敗，不能繞過寫入安全。
 
-原 Steam／IGDB／E-Hentai 研究、SourceRecord 提案與完整例子見 [原稿](history/agent-docs-before-cleanup.md#metadata-enrichment)，不是現行能力或每輪必讀。新增來源前再驗證官方能力與要求，不依賴歷史研究推斷現況。
+原 Steam／IGDB／E-Hentai 研究、SourceRecord 提案與完整例子見 [原稿](../history/agent-docs-before-cleanup.md#metadata-enrichment)，不是現行能力或每輪必讀。新增來源前再驗證官方能力與要求，不依賴歷史研究推斷現況。

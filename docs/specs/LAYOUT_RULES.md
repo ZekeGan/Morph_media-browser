@@ -1,8 +1,8 @@
 # 版面配置規則
 
-最後確認：2026-11-25（R-496 R-497）
+最後確認：2026-11-27（R-532）
 
-一個專案的卡片版面與詳情版面，都由同一套規則決定，在同一個「版面配置」視窗設定。程式：[layoutRules.ts](../shared/layoutRules.ts)。
+一個專案的卡片版面與詳情版面，都由同一套規則決定，在同一個「版面配置」視窗設定。程式：[layoutRules.ts](../../shared/layoutRules.ts)。
 
 ## 決定順序
 
@@ -30,4 +30,4 @@
 
 ## 資料
 
-專案記錄的 `layoutRules`（暫定）：`{ card?, panel? }`，各是 `{ types?, levels?, folders? }`：`types` 以資料夾類型為鍵、`levels[0]` 是第 1 層、`folders` 以資料夾 ID 為鍵，值都是版面 ID；`card` 指向卡片版面（`layoutPresets`），`panel` 指向詳情版面（`panelPresets`）。專案格式 v1 的 `kindLayouts`、`folderLayouts`、`bookPresetId`、`folderBookPresets` 與內容模板在升到 v2 時換算成這些規則，見 [DATA_FORMAT](DATA_FORMAT.md)。
+專案記錄的 `layoutRules`（暫定）：`{ card?, panel? }`，各是 `{ types?, levels?, folders? }`：`types` 以資料夾類型為鍵、`levels[0]` 是第 1 層、`folders` 以資料夾 ID 為鍵，值都是版面 ID；`card` 指向卡片版面（`layoutPresets`），`panel` 指向詳情版面（`panelPresets`）。專案格式 v1 的 `kindLayouts`、`folderLayouts`、`bookPresetId`、`folderBookPresets` 與內容模板在升到 v2 時換算成這些規則，見 [DATA_FORMAT](../architecture/DATA_FORMAT.md)。

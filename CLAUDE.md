@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-M:orph：Windows 優先的資料夾檢視器（Electron＋React＋Vite，pnpm）。使用者最新指示優先；本檔是工作規則的唯一來源（`AGENTS.md` 只是入口）。命令與驗證細節在 [IMPLEMENTATION](docs/IMPLEMENTATION.md)，發布在 [RELEASING](docs/RELEASING.md)。
+M:orph：Windows 優先的資料夾檢視器（Electron＋React＋Vite，pnpm）。使用者最新指示優先；本檔是工作規則的唯一來源（`AGENTS.md` 只是入口）。命令與驗證細節在 [IMPLEMENTATION](docs/architecture/IMPLEMENTATION.md)，發布在 [RELEASING](docs/architecture/RELEASING.md)。
 
 ## 授權與分支
 
@@ -23,9 +23,9 @@ M:orph：Windows 優先的資料夾檢視器（Electron＋React＋Vite，pnpm）
 
 ## 修改原則
 
-- 最小必要修改、沿用現有風格；不加未要求的功能或抽象，不順手重構（另登記需求）。修錯先重現並找根因。新寫與改動到的程式遵守 [程式碼可讀性與命名約定](docs/IMPLEMENTATION.md#程式碼可讀性與命名約定)。
+- 最小必要修改、沿用現有風格；不加未要求的功能或抽象，不順手重構（另登記需求）。修錯先重現並找根因。新寫與改動到的程式遵守 [程式碼可讀性與命名約定](docs/architecture/IMPLEMENTATION.md#程式碼可讀性與命名約定)。
 - 規格寫目標，程式是現況，差距進需求清單；規格只寫現行規則，日期與理由寫進決策紀錄，未決選項寫 [OPEN_DECISIONS](docs/OPEN_DECISIONS.md)。新 UI 測試用 `tests/support/app.ts`。
-- 新增或修改的介面：文字照 [UI_RULES 介面文字](docs/UI_RULES.md#介面文字) 的五條寫；同批補齊五種語系（`pnpm i18n add <檔案>`）；沿用三主題、圖示、控制尺寸與焦點樣式；純圖示控制要有 tooltip 與 `aria-label`。用 `pnpm shot` 看暗色寬窗與寬 900 窄窗；動到版型或樣式再加 `--theme glass`、`--theme paper`。
+- 新增或修改的介面：文字照 [UI_RULES 介面文字](docs/specs/UI_RULES.md#介面文字) 的五條寫；同批補齊五種語系（`pnpm i18n add <檔案>`）；沿用三主題、圖示、控制尺寸與焦點樣式；純圖示控制要有 tooltip 與 `aria-label`。用 `pnpm shot` 看暗色寬窗與寬 900 窄窗；動到版型或樣式再加 `--theme glass`、`--theme paper`。
 - **長時間工作不能無聲卡住**：UI 測試一律經執行器（`pnpm test:ui:*`，或 `node scripts/run-ui-tests.mjs <名稱> [--repeat N]` 量偶發失敗，`--verbose` 顯示測試自己的輸出），不直接用 `tsx` 跑 UI 測試；其他可能很久的指令加 `timeout`。拆成小步驟、每步完成就回報，先說大概要多久；背景工作超過預估約兩倍（或 10 分鐘）還沒結束，就主動看輸出、回報卡在哪並停掉。驗證新測試在舊程式會失敗用 `pnpm verify:old <測試>`（在另一個 worktree 跑），不在工作目錄換回舊檔。
 - 含反斜線或跳脫字元的內容用檔案編輯工具或腳本檔寫入，不用 heredoc 或命令列拼接；格式化工具改到無關檔案時加進 `.prettierignore`。
 
@@ -40,18 +40,18 @@ M:orph：Windows 優先的資料夾檢視器（Electron＋React＋Vite，pnpm）
 
 - **查收暫停**：待查收超過約 5 項或一個大主題結束時，先停下新功能，跑 `pnpm test:ui:smoke` 與 `pnpm test:ui:all`、檢查三主題與窄窗，再交查收清單。使用者確認後 `pnpm item accept R-…` 刪除那些需求；Unreleased 含新功能時主動建議發布。
 - **高風險審查**：資料寫入、身分、清理、遷移，以及安全邊界（IPC、路徑、外部程式、網路）的改動，提交前用獨立代理審查一次（只給該次差異與要查的風險）。
-- **版本**：不逐批升版；使用者說要發布才定版（新功能升次版號、純修正升修訂號）。目前是 Beta（0.41.0-beta.1 起）：資料格式變動必須附自動升級；只有使用者確認「這版可以給人用」才打 tag、以 Pre-release 發布。改 `schemaVersion` 須符合 [DATA_FORMAT](docs/DATA_FORMAT.md#格式升級與相容規則)。
-- 模組責任或資料流改變時，同批更新 `docs/ARCHITECTURE.md` 的 mermaid 圖。修改本檔流程規則時，檢查 `docs/WORKFLOW_PROMPT.md` 是否要同步。
+- **版本**：不逐批升版；使用者說要發布才定版（新功能升次版號、純修正升修訂號）。目前是 Beta（0.41.0-beta.1 起）：資料格式變動必須附自動升級；只有使用者確認「這版可以給人用」才打 tag、以 Pre-release 發布。改 `schemaVersion` 須符合 [DATA_FORMAT](docs/architecture/DATA_FORMAT.md#格式升級與相容規則)。
+- 模組責任或資料流改變時，同批更新 `docs/architecture/ARCHITECTURE.md` 的 mermaid 圖。修改本檔流程規則時，檢查 `docs/architecture/WORKFLOW_PROMPT.md` 是否要同步。
 - 重大主題結束或對話變長時，先把決策寫進文件，再提示使用者開新對話。
 
 ## 不可省略的限制
 
 - 只檢視，不為瀏覽搬移或刪除使用者原始資料夾；不覆蓋或清理他人工作。
-- 可攜記錄是資料來源，SQLite 只是可重建索引（[FOLDER_PROJECT_MODEL](docs/FOLDER_PROJECT_MODEL.md)、[STORAGE_OPTIONS](docs/STORAGE_OPTIONS.md)）。
-- 遊戲 ROOT 內部受保護，導覽不得自動初始化缺失記錄（[GAME_ENGINE_DETECTION](docs/GAME_ENGINE_DETECTION.md)）。
+- 可攜記錄是資料來源，SQLite 只是可重建索引（[FOLDER_PROJECT_MODEL](docs/architecture/FOLDER_PROJECT_MODEL.md)、[STORAGE_OPTIONS](docs/architecture/STORAGE_OPTIONS.md)）。
+- 遊戲 ROOT 內部受保護，導覽不得自動初始化缺失記錄（[GAME_ENGINE_DETECTION](docs/specs/GAME_ENGINE_DETECTION.md)）。
 - 掃描與寫入驗證只用受控測試資料；真實收藏只做唯讀檢查（`pnpm detect`），批次寫入或遷移前須有備份與復原路徑。
-- Electron 保留 contextIsolation、sandbox、停用 nodeIntegration；renderer 不得任意讀路徑或執行命令（[ARCHITECTURE](docs/ARCHITECTURE.md)）。唯一例外：`-beta` 版本暫時關閉程序沙箱（C-149），正式版前恢復（WORK_ITEMS 的 R-SIGN）。
+- Electron 保留 contextIsolation、sandbox、停用 nodeIntegration；renderer 不得任意讀路徑或執行命令（[ARCHITECTURE](docs/architecture/ARCHITECTURE.md)）。唯一例外：`-beta` 版本暫時關閉程序沙箱（C-149），正式版前恢復（WORK_ITEMS 的 R-SIGN）。
 
 ## 常用命令
 
-`pnpm dev`／`pnpm build`（含 tsc）／`pnpm exec tsx --test tests/<name>.test.ts`／`pnpm test`／`pnpm test:ui:changed`（平常用）／`pnpm test:ui:smoke`／`pnpm test:ui:all`（發布前）／`pnpm shot <game|manga|album|other>`／`pnpm detect <資料夾> [--children]`／`pnpm status`／`pnpm stale`／`pnpm item`／`pnpm i18n add`（不帶參數印用法）。提交前的型別、格式、UI 名稱、領域登錄表與文件連結檢查由 `.githooks/pre-commit` 自動執行。依風險選最小有效驗證：[驗證選擇](docs/IMPLEMENTATION.md#驗證選擇)；回報分清實際執行、未執行與限制。
+`pnpm dev`／`pnpm build`（含 tsc）／`pnpm exec tsx --test tests/<name>.test.ts`／`pnpm test`／`pnpm test:ui:changed`（平常用）／`pnpm test:ui:smoke`／`pnpm test:ui:all`（發布前）／`pnpm shot <game|manga|album|other>`／`pnpm detect <資料夾> [--children]`／`pnpm status`／`pnpm stale`／`pnpm item`／`pnpm i18n add`（不帶參數印用法）。提交前的型別、格式、UI 名稱、領域登錄表與文件連結檢查由 `.githooks/pre-commit` 自動執行。依風險選最小有效驗證：[驗證選擇](docs/architecture/IMPLEMENTATION.md#驗證選擇)；回報分清實際執行、未執行與限制。

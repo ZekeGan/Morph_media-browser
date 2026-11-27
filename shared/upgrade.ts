@@ -4,11 +4,11 @@ import { fmt } from './message'
 // Every stored format carries its own `schemaVersion`. A newer app reads older data by running the steps below in
 // order (v1 -> v2 -> ...) right after reading; the upgraded value is written back only when that record is saved for
 // another reason. Data written by a newer app is never treated as damaged: it raises NewerFormatError, stays read-only
-// and is never restored over, cleaned or rewritten. Rules: docs/DATA_FORMAT.md#格式升級與相容規則.
+// and is never restored over, cleaned or rewritten. Rules: docs/architecture/DATA_FORMAT.md#格式升級與相容規則.
 export type FormatKind = 'folder' | 'details' | 'project' | 'workspace' | 'settings'
 
 // The version this build writes. Bump one together with a step from the previous version, a fixture of the old
-// format and a test (see the checklist in docs/DATA_FORMAT.md).
+// format and a test (see the checklist in docs/architecture/DATA_FORMAT.md).
 export const FORMAT_VERSION: Record<FormatKind, number> = {
   folder: 2,
   details: 1,

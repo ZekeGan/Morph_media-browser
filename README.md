@@ -165,7 +165,7 @@ The current development builds are not code-signed, so Windows may show a SmartS
 
 Developers can start or build the app with the commands below.
 
-For detailed instructions see the [user guide](docs/USER_GUIDE.md). All data shown in the screenshots is generated sample data.
+For detailed instructions see the [user guide](docs/guides/USER_GUIDE.md). All data shown in the screenshots is generated sample data.
 
 ## How your data is stored
 
@@ -232,7 +232,7 @@ Common commands:
 
 Main technologies: Electron, React 19, Vite 7, TypeScript, Mantine 8, Node SQLite and Playwright.
 
-For the full architecture, module responsibilities and how changes are verified, see the [architecture document](docs/ARCHITECTURE.md) and [implementation and verification](docs/IMPLEMENTATION.md).
+For the full architecture, module responsibilities and how changes are verified, see the [architecture document](docs/architecture/ARCHITECTURE.md) and [implementation and verification](docs/architecture/IMPLEMENTATION.md).
 
 ## Project status
 
@@ -248,10 +248,10 @@ See the [CHANGELOG](CHANGELOG.md) for updates.
 
 ## Documentation
 
-- [User guide](docs/USER_GUIDE.md)
+- [User guide](docs/guides/USER_GUIDE.md)
 - [Documentation index](docs/README.md)
 - [Product scope](docs/PRODUCT.md)
-- [Architecture](docs/ARCHITECTURE.md)
+- [Architecture](docs/architecture/ARCHITECTURE.md)
 - [Current work and known limits](docs/WORK_ITEMS.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)

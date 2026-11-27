@@ -5,32 +5,32 @@ Windows 優先的本機資料夾檢視器。此頁維護產品邊界；互動細
 ## 已確認方向
 
 - 以專案連結資料夾，提供 CARD／TABLE／TREE；LIST 就是 TABLE，沒有第四種模式。只檢視，不為瀏覽搬移或刪除原始資料。
-- 每個受管資料夾保存可攜記錄與資產，跨設備復原不依賴本機資料庫或舊絕對路徑。巢狀專案可重疊；值預設共用，私有覆寫須顯式建立；目的專案決定版面。身分與缺值語意見 [資料模型](FOLDER_PROJECT_MODEL.md)。
-- 遊戲 ROOT 是保護邊界；不能為一般導覽在遊戲內建立記錄。清理只移除明確受管資料，不移除遊戲或媒體原檔，詳見 [儲存安全](STORAGE_OPTIONS.md)。
+- 每個受管資料夾保存可攜記錄與資產，跨設備復原不依賴本機資料庫或舊絕對路徑。巢狀專案可重疊；值預設共用，私有覆寫須顯式建立；目的專案決定版面。身分與缺值語意見 [資料模型](architecture/FOLDER_PROJECT_MODEL.md)。
+- 遊戲 ROOT 是保護邊界；不能為一般導覽在遊戲內建立記錄。清理只移除明確受管資料，不移除遊戲或媒體原檔，詳見 [儲存安全](architecture/STORAGE_OPTIONS.md)。
 - 視圖、模板、屬性值與來源資料分離；共用編輯能力，資料夾卡片、漫畫資訊等版面分開。保存後畫面即時更新。
 - 專案分類控制呈現，不改資料夾原值；有可靠不符證據才提示，仍可檢視。缺失／損壞記錄與保護邊界的導覽限制另依工作區規則。
-- 圖片、影片、音樂、其他四種舊分類以共用媒體頁相容讀取，新建入口只保留媒體、漫畫及遊戲；舊專案需明確預覽確認才轉換。圖片／文件來源清單、跨專案影音佇列與轉換安全由 [統一媒體工作區](MEDIA_WORKSPACE.md#統一媒體工作區) 持有，實作差距依工作清單；不代表已授權批次轉換真實收藏。
-- Mac／ChatGPT 等舊風格圖仍是預覽；已採用深色、霧白玻璃與暖紙三套主題及系統字型，規則見 [共用 UI](UI_RULES.md)。品牌與專屬字型仍延後，不因舊線稿重新設計全站。
+- 圖片、影片、音樂、其他四種舊分類以共用媒體頁相容讀取，新建入口只保留媒體、漫畫及遊戲；舊專案需明確預覽確認才轉換。圖片／文件來源清單、跨專案影音佇列與轉換安全由 [統一媒體工作區](specs/MEDIA_WORKSPACE.md#統一媒體工作區) 持有，實作差距依工作清單；不代表已授權批次轉換真實收藏。
+- Mac／ChatGPT 等舊風格圖仍是預覽；已採用深色、霧白玻璃與暖紙三套主題及系統字型，規則見 [共用 UI](specs/UI_RULES.md)。品牌與專屬字型仍延後，不因舊線稿重新設計全站。
 
 ## 能力與唯一規格入口
 
 | 能力 | 主要規格 |
 | --- | --- |
-| 側欄群組／收藏／未分類、拖曳排序、專案建立與重連、模式／導覽、左右獨立窗格 | [工作區](WORKSPACE_REVISION.md) |
-| 統一媒體瀏覽、右側檔案、應用內大視窗、圖片／文件來源清單及跨專案影音佇列 | [統一媒體工作區](MEDIA_WORKSPACE.md#統一媒體工作區) |
-| 焦點、ESC、草稿、錯誤及無障礙共用規則 | [共用 UI](UI_RULES.md) |
-| 屬性／欄位、值／覆寫、重疊專案及搬移 | [資料模型](FOLDER_PROJECT_MODEL.md) |
-| 可恢復寫入、損壞／副本、可攜圖片、清理與遷移 | [儲存安全](STORAGE_OPTIONS.md) |
-| 拖放／尺寸／座標編輯、方案與 CELL | [編輯器](EDITOR_DESIGN.md)、[CELL](CELL_CATALOG.md) |
-| 專案範圍查詢、語法、分頁與常用搜尋 | [搜尋](SEARCH_DESIGN.md) |
-| 不固定高度圖片／列表、檢視器 | [圖片／相簿](ALBUM_VIEWER_DESIGN.md) |
-| 漫畫資訊／圖庫、GIF、全畫面閱讀器及手動閱讀設定 | [漫畫](MANGA_VIEWER_DESIGN.md) |
-| 三區遊戲內容、自訂動作、引擎偵測與邊界 | [遊戲](GAME_VIEWER_DESIGN.md)、[引擎偵測](GAME_ENGINE_DETECTION.md) |
-| 影片＋檔案列、續播、SRT／VTT 匯入與字幕設定 | [影片](VIDEO_VIEWER_DESIGN.md) |
-| 手動預覽／套用的外部資料，首個來源 E-Hentai | [來源匯入](METADATA_ENRICHMENT.md) |
+| 側欄群組／收藏／未分類、拖曳排序、專案建立與重連、模式／導覽、左右獨立窗格 | [工作區](specs/WORKSPACE_REVISION.md) |
+| 統一媒體瀏覽、右側檔案、應用內大視窗、圖片／文件來源清單及跨專案影音佇列 | [統一媒體工作區](specs/MEDIA_WORKSPACE.md#統一媒體工作區) |
+| 焦點、ESC、草稿、錯誤及無障礙共用規則 | [共用 UI](specs/UI_RULES.md) |
+| 屬性／欄位、值／覆寫、重疊專案及搬移 | [資料模型](architecture/FOLDER_PROJECT_MODEL.md) |
+| 可恢復寫入、損壞／副本、可攜圖片、清理與遷移 | [儲存安全](architecture/STORAGE_OPTIONS.md) |
+| 拖放／尺寸／座標編輯、方案與 CELL | [編輯器](specs/EDITOR_DESIGN.md)、[CELL](specs/CELL_CATALOG.md) |
+| 專案範圍查詢、語法、分頁與常用搜尋 | [搜尋](specs/SEARCH_DESIGN.md) |
+| 不固定高度圖片／列表、檢視器 | [圖片／相簿](specs/ALBUM_VIEWER_DESIGN.md) |
+| 漫畫資訊／圖庫、GIF、全畫面閱讀器及手動閱讀設定 | [漫畫](specs/MANGA_VIEWER_DESIGN.md) |
+| 三區遊戲內容、自訂動作、引擎偵測與邊界 | [遊戲](specs/GAME_VIEWER_DESIGN.md)、[引擎偵測](specs/GAME_ENGINE_DETECTION.md) |
+| 影片＋檔案列、續播、SRT／VTT 匯入與字幕設定 | [影片](specs/VIDEO_VIEWER_DESIGN.md) |
+| 手動預覽／套用的外部資料，首個來源 E-Hentai | [來源匯入](specs/METADATA_ENRICHMENT.md) |
 
-目前實作入口見 [架構](ARCHITECTURE.md)，待查收與已知限制見 [工作清單](WORK_ITEMS.md)。本頁不複製交付清單或測試結果。
+目前實作入口見 [架構](architecture/ARCHITECTURE.md)，待查收與已知限制見 [工作清單](WORK_ITEMS.md)。本頁不複製交付清單或測試結果。
 
 ## 範圍之外／後續
 
-音樂與跨專案影音播放已有實作，未完成互動見 [工作清單](WORK_ITEMS.md#已交付)；PDF／ZIP／CBZ 已有唯讀能力，限制見 [文件檢視器](DOCUMENT_VIEWER_DESIGN.md)。無專案通用檢視、更多解碼器與來源等，依 [OPEN_DECISIONS](OPEN_DECISIONS.md) 另行授權。不要把設計候選、自動執行任意腳本、雲端同步或批量網路抓取推定為當前需求。原始決策理由按 ID 查 [DECISIONS](DECISIONS.md)。
+音樂與跨專案影音播放已有實作，未完成互動見 [工作清單](WORK_ITEMS.md#已交付)；PDF／ZIP／CBZ 已有唯讀能力，限制見 [文件檢視器](specs/DOCUMENT_VIEWER_DESIGN.md)。無專案通用檢視、更多解碼器與來源等，依 [OPEN_DECISIONS](OPEN_DECISIONS.md) 另行授權。不要把設計候選、自動執行任意腳本、雲端同步或批量網路抓取推定為當前需求。原始決策理由按 ID 查 [DECISIONS](DECISIONS.md)。
