@@ -1,16 +1,19 @@
-import { fmt } from '../shared/message'
+import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { randomUUID } from 'node:crypto'
+
+import { fmt } from '../shared/message'
 import {
-  DATA_DIR,
-  validateFolder,
-  validateProject,
-  type Project,
-  type FolderRecord,
   type CleanupPreview,
   type CleanupResult,
+  DATA_DIR,
+  type FolderRecord,
+  type Project,
+  validateFolder,
+  validateProject,
 } from '../shared/model'
+import { isNewerFormat } from '../shared/upgrade'
+
 import {
   atomicJson,
   exists,
@@ -30,25 +33,26 @@ import {
   within,
 } from './files'
 import type { Library, PlanEntry } from './library'
-import { isNewerFormat } from '../shared/upgrade'
 
 export async function previewCleanup(
   ex: Library,
   rowId?: string,
   scope: 'folder' | 'private' | 'tree' | 'all' = 'folder'
 ): Promise<CleanupPreview> {
-  const dirs = new Set<string>(),
-    skipped: string[] = []
+  const dirs = new Set<string>()
+  const skipped: string[] = []
   const row = rowId ? ex.row(rowId) : undefined
   // Inside a game ROOT nothing is written: leftover records there can only be removed whole (R-245).
-  if (scope === 'private' && row && (row.readonly || (await ex.protectedAncestor(row.path))))
+  if (scope === 'private' && row && (row.readonly || (await ex.protectedAncestor(row.path)))) {
     throw new Error('這個資料夾在受保護的遊戲裡面，只能整筆刪除資訊，不能只清只在這個專案的資訊')
+  }
   if (scope === 'tree' && !row) throw new Error('請選擇要清理的資料夾')
   // The window only offers it for a writable folder; main checks again, as a whole tree is at stake.
   if (scope === 'tree' && row!.readonly) throw new Error('此資料夾為唯讀，不能清理')
   // R-464: a project's own root takes the project with it; that is the project's "remove completely".
-  if (scope === 'tree' && ex.refs.some((r) => keyPath(r.root) === keyPath(row!.path)))
+  if (scope === 'tree' && ex.refs.some((r) => keyPath(r.root) === keyPath(row!.path))) {
     throw new Error('這是專案的根目錄；要清除整個專案的資訊，請用專案的「完全移除」')
+  }
   // Every folder holding a record, below `root` (links and junctions are not followed). R-464: in a folder's tree,
   // another project's root and everything under it is left alone and listed, and a very large tree stops early.
   let visited = 0
@@ -77,20 +81,22 @@ export async function previewCleanup(
         return
       }
       if (await exists(path.join(dir, DATA_DIR))) dirs.add(dir)
-      for (const child of await fs.readdir(dir, { withFileTypes: true }))
-        if (child.isDirectory() && !child.isSymbolicLink() && child.name !== DATA_DIR)
+      for (const child of await fs.readdir(dir, { withFileTypes: true })) {
+        if (child.isDirectory() && !child.isSymbolicLink() && child.name !== DATA_DIR) {
           await walk(path.join(dir, child.name), root, others)
+        }
+      }
     } catch (e) {
       skipped.push(`${dir}: ${message(e)}`)
     }
   }
-  if (scope === 'tree')
+  if (scope === 'tree') {
     await walk(
       row!.path,
       row!.path,
       new Set(ex.refs.map((r) => keyPath(r.root)).filter((root) => root !== keyPath(row!.path)))
     )
-  else if (row) dirs.add(row.path)
+  } else if (row) dirs.add(row.path)
   else for (const root of new Set(ex.refs.map((r) => r.root))) await walk(root, root, new Set())
   const entries: PlanEntry[] = []
   for (const dir of dirs) {
@@ -101,9 +107,9 @@ export async function previewCleanup(
         skipped.push(fmt('{0}: 有遊戲／工具的判定，保留', dir))
         continue
       }
-      const files = [folderFile(dir)],
-        records = [record],
-        meta = path.join(dir, DATA_DIR)
+      const files = [folderFile(dir)]
+      const records = [record]
+      const meta = path.join(dir, DATA_DIR)
       if (await exists(`${folderFile(dir)}.bak`)) {
         await safePath(dir, `${folderFile(dir)}.bak`)
         const b = await readJson(`${folderFile(dir)}.bak`)
@@ -112,9 +118,14 @@ export async function previewCleanup(
         records.push(b)
       }
       if (scope !== 'private') {
-        for (const asset of records.flatMap((r) => [...r.assets, ...(r.details?.subtitles ?? [])]))
-          if (await exists(path.join(meta, asset.relativePath)))
+        for (const asset of records.flatMap((r) => [
+          ...r.assets,
+          ...(r.details?.subtitles ?? []),
+        ])) {
+          if (await exists(path.join(meta, asset.relativePath))) {
             files.push(path.join(meta, asset.relativePath))
+          }
+        }
         const projectDir = path.join(meta, 'projects')
         if (await exists(projectDir)) {
           await safePath(dir, projectDir)
@@ -124,8 +135,9 @@ export async function previewCleanup(
             await safePath(dir, file)
             const p = await readJson(file)
             validateProject(p)
-            if (p.rootFolderId === record.folderId && name.startsWith(`${p.projectId}.json`))
+            if (p.rootFolderId === record.folderId && name.startsWith(`${p.projectId}.json`)) {
               files.push(file)
+            }
           }
         }
       }
@@ -141,8 +153,9 @@ export async function previewCleanup(
         for (const e of await fs.readdir(folder, { withFileTypes: true })) {
           const file = path.join(folder, e.name)
           if (e.isDirectory() && !e.isSymbolicLink()) await inspect(file)
-          else if (!known.has(keyPath(file)) && scope !== 'private')
+          else if (!known.has(keyPath(file)) && scope !== 'private') {
             skipped.push(fmt('{0}: 未驗證歸屬，保留', file))
+          }
         }
       }
       await inspect(meta)
@@ -157,8 +170,12 @@ export async function previewCleanup(
     count: entries.length,
     scope,
   }
-  if (scope === 'private' && (!row || !entries[0]?.record.projectOverrides[row.projectId]?.length))
+  if (
+    scope === 'private' &&
+    (!row || !entries[0]?.record.projectOverrides[row.projectId]?.length)
+  ) {
     throw new Error('沒有只在這個專案的資訊可以清')
+  }
   ex.plans.clear()
   ex.plans.set(preview.token, { preview, entries, rowId, projectId: row?.projectId })
   return preview
@@ -172,18 +189,21 @@ export async function cleanup(
   const plan = ex.plans.get(token)
   if (!plan) throw new Error('清理預覽已過期，請重新預覽')
   ex.plans.delete(token)
-  for (const e of plan.entries)
+  for (const e of plan.entries) {
     for (const f of e.files) {
       await safePath(e.dir, f.path)
-      if ((await fingerprint(f.path)) !== f.hash)
+      if ((await fingerprint(f.path)) !== f.hash) {
         throw new Error('預覽後資料已變更，清理未執行，請重新預覽')
+      }
     }
+  }
   const result: CleanupResult = { removed: 0, failed: [], skipped: plan.preview.skipped }
   if (plan.preview.scope === 'private') {
     const e = plan.entries[0]
     // The boundary may have appeared since the preview.
-    if (await ex.protectedAncestor(e.dir))
+    if (await ex.protectedAncestor(e.dir)) {
       throw new Error('這個資料夾在受保護的遊戲裡面，只能整筆刪除資訊，不能只清只在這個專案的資訊')
+    }
     const record = await readFolder(e.dir)
     delete record.projectOverrides[plan.projectId!]
     await saveFolder(e.dir, record, record.revision)
@@ -193,7 +213,7 @@ export async function cleanup(
   }
   const roots = new Set(plan.entries.map((e) => keyPath(e.dir)))
   const retained = ex.state.projects.filter((l) => !roots.has(keyPath(l.root)))
-  if (plan.preview.scope !== 'all' && !restart)
+  if (plan.preview.scope !== 'all' && !restart) {
     for (const linked of retained) {
       const targets = plan.entries
         .filter((e) => within(linked.root, e.dir))
@@ -211,6 +231,7 @@ export async function cleanup(
         p.revision
       )
     }
+  }
   // Stop all affected roots before deleting their project definitions.
   ex.refs = plan.preview.scope === 'all' ? [] : ex.refs.filter((r) => !roots.has(keyPath(r.root)))
   await ex.persistRefs()
@@ -222,8 +243,9 @@ export async function cleanup(
       ]
       for (const f of ordered) {
         await safePath(entry.dir, f.path)
-        if ((await fingerprint(f.path)) !== f.hash)
+        if ((await fingerprint(f.path)) !== f.hash) {
           throw new Error('清理期間檔案已變更，停止此筆清理')
+        }
         await fs.unlink(f.path)
       }
       const gone = ordered.map((f) => f.path)
@@ -237,20 +259,23 @@ export async function cleanup(
       result.failed.push(`${entry.dir}: ${message(e)}`)
     }
   }
-  if (plan.preview.scope === 'all')
-    for (const file of [ex.registry, `${ex.registry}.bak`])
+  if (plan.preview.scope === 'all') {
+    for (const file of [ex.registry, `${ex.registry}.bak`]) {
       await fs.unlink(file).catch((e) => {
         if (!missing(e)) result.failed.push(`${file}: ${message(e)}`)
       })
+    }
+  }
   await ex.scan()
   return result
 }
 
 export async function restore(ex: Library, rowId: string) {
-  const row = ex.row(rowId),
-    file = folderFile(row.path)
-  if (row.readonly || (await ex.protectedAncestor(row.path)))
+  const row = ex.row(rowId)
+  const file = folderFile(row.path)
+  if (row.readonly || (await ex.protectedAncestor(row.path))) {
     throw new Error('這個資料夾在受保護的遊戲或 App 裡面')
+  }
   await restoreJson(
     ex.linked(row.projectId).root,
     file,
@@ -263,12 +288,13 @@ export async function restore(ex: Library, rowId: string) {
 export async function restoreProject(ex: Library, projectId: string) {
   const ref = ex.refs.find((r) => r.projectId === projectId)
   if (!ref) throw new Error('此專案未連結')
-  if (await ex.protectedAncestor(ref.root))
+  if (await ex.protectedAncestor(ref.root)) {
     throw new Error('專案在受保護的遊戲或 App 裡面，不能復原')
+  }
   const file = projectFile(ref.root, projectId)
-  let project: Project,
-    repairProject = false,
-    repairRoot = false
+  let project: Project
+  let repairProject = false
+  let repairRoot = false
   try {
     project = await ex.currentProject(ref)
   } catch (error) {
@@ -291,22 +317,25 @@ export async function restoreProject(ex: Library, projectId: string) {
     rootRecord = backup
     repairRoot = true
   }
-  if (rootRecord.folderId !== project.rootFolderId)
+  if (rootRecord.folderId !== project.rootFolderId) {
     throw new Error('根資料夾與專案備份身分不符，未復原')
+  }
   // Validate both candidates before repairing either file. Retry is safe after a partial failure.
-  if (repairRoot)
+  if (repairRoot) {
     await restoreJson(
       ref.root,
       folderFile(ref.root),
       validateFolder,
       (value) => value.folderId === project.rootFolderId
     )
-  if (repairProject)
+  }
+  if (repairProject) {
     await restoreJson(
       ref.root,
       file,
       validateProject,
       (value) => value.projectId === projectId && value.rootFolderId === rootRecord.folderId
     )
+  }
   return ex.scan()
 }

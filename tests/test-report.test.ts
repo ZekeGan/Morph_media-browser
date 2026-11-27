@@ -1,5 +1,6 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 // @ts-expect-error - a plain .mjs tooling module without type declarations
 import { failureSummary } from '../scripts/test-report.mjs'
 

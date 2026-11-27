@@ -1,14 +1,15 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
+
 import { Library } from '../electron/library'
-import { closeApp, launchApp, reportFailure, removeTestRoot } from './support/app'
+import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'settings-dock-ui-')),
-  media = path.join(root, 'Dock'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'settings-dock-ui-'))
+const media = path.join(root, 'Dock')
+const local = path.join(root, 'local')
 await fs.mkdir(path.join(media, 'Child'), { recursive: true })
 await fs.writeFile(path.join(media, 'original.txt'), 'PRESERVE ORIGINAL')
 const lib = new Library(local, undefined, false)

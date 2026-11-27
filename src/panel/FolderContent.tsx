@@ -1,30 +1,33 @@
-import { MediaBrowser } from '../media/MediaBrowser'
-import { BookShelf, FilePage } from './FilePage'
-import { MediaViewer } from '../media/MediaViewer'
-import { isGameFolder, visibleFile } from '../../shared/media'
-import { effectiveKind, sampleOf, templateKind } from '../../shared/kind'
-import { savedPlace, sortVolumes } from '../../shared/reader'
-import { PanelSkeleton } from './PanelSkeleton'
-import { cacheFolderStats } from '../browse/folderStats'
-import { useParentKind } from '../browse/folderKind'
-import { GamePage } from '../game/GamePage'
-import { t as tr, useLocale } from '../i18n'
-import { useRefreshNonce } from '../browse/refresh'
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@mantine/core'
-import { PanelCard } from '../cells/PanelContent'
-import { FolderPage, folderPageKind } from './FolderPage'
-import { Gallery } from '../gallery/Gallery'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+
 import {
   builtinPanel,
-  withBookCard,
   type ContentResult,
   type ExplorerRequest,
   type ExplorerResponse,
   type MediaPrefs,
   type ReadingPrefs,
+  withBookCard,
 } from '../../shared/explorer'
+import { effectiveKind, sampleOf, templateKind } from '../../shared/kind'
+import { isGameFolder, visibleFile } from '../../shared/media'
 import { type FolderRow, type Project, type Request, type Response } from '../../shared/model'
+import { savedPlace, sortVolumes } from '../../shared/reader'
+
+import { useParentKind } from '../browse/folderKind'
+import { cacheFolderStats } from '../browse/folderStats'
+import { useRefreshNonce } from '../browse/refresh'
+import { PanelCard } from '../cells/PanelContent'
+import { Gallery } from '../gallery/Gallery'
+import { GamePage } from '../game/GamePage'
+import { t as tr, useLocale } from '../i18n'
+import { MediaBrowser } from '../media/MediaBrowser'
+import { MediaViewer } from '../media/MediaViewer'
+import { BookShelf, FilePage } from './FilePage'
+import { FolderPage, folderPageKind } from './FolderPage'
+import { PanelSkeleton } from './PanelSkeleton'
+
 const Reader = lazy(() => import('../reader/Reader').then((module) => ({ default: module.Reader })))
 // R-503: the document viewer comes with the first document opened (it was bundled here although lazy elsewhere).
 const DocumentViewer = lazy(() =>
@@ -87,20 +90,20 @@ export function FolderContent({
   useLocale()
   const parentKind = useParentKind(row)
   const contentRow = useRef(row.rowId)
-  const [galleryFile, setGalleryFile] = useState<ContentResult['entries'][number]>(),
-    // R-517: true when the reader was opened by "繼續閱讀" (continue at the saved page), false for a picked picture.
-    [galleryResume, setGalleryResume] = useState(false),
-    [galleryImmersive, setGalleryImmersive] = useState(false)
+  const [galleryFile, setGalleryFile] = useState<ContentResult['entries'][number]>()
+  // R-517: true when the reader was opened by "繼續閱讀" (continue at the saved page), false for a picked picture.
+  const [galleryResume, setGalleryResume] = useState(false)
+  const [galleryImmersive, setGalleryImmersive] = useState(false)
 
   const [content, setContent] = useState<ContentResult | undefined>(() =>
-      contentCache.get(row.rowId)
-    ),
-    [error, setError] = useState(''),
-    [reload, setReload] = useState(0),
-    refresh = useRefreshNonce(),
-    [, setReader] = useState(false),
-    [fileReader, setFileReader] = useState(false),
-    [documentFile, setDocumentFile] = useState<ContentResult['entries'][number]>()
+    contentCache.get(row.rowId)
+  )
+  const [error, setError] = useState('')
+  const [reload, setReload] = useState(0)
+  const refresh = useRefreshNonce()
+  const [, setReader] = useState(false)
+  const [fileReader, setFileReader] = useState(false)
+  const [documentFile, setDocumentFile] = useState<ContentResult['entries'][number]>()
   // What the folder holds decides its kind; counted once per listing, not on every render (R-479 reads names).
   // R-494: the main process counts the whole folder with the first batch, so the kind does not change as the rest
   // comes in.
@@ -114,8 +117,8 @@ export function FolderContent({
   // R-282: after the last page of a text book, the next text book in this folder. R-415: a comic archive (CBZ) goes on
   // to the next archive the same way.
   const nextText = (file: ContentResult['entries'][number]) => {
-    const books = sortVolumes((content?.entries ?? []).filter((entry) => entry.kind === file.kind)),
-      following = books[books.findIndex((entry) => entry.id === file.id) + 1]
+    const books = sortVolumes((content?.entries ?? []).filter((entry) => entry.kind === file.kind))
+    const following = books[books.findIndex((entry) => entry.id === file.id) + 1]
     return following && following.id !== file.id
       ? { name: following.name, open: () => setDocumentFile(following) }
       : undefined
@@ -127,22 +130,22 @@ export function FolderContent({
       contentRow.current = row.rowId
     }
     setError('')
-    const paged = !isGameFolder(row),
-      // A folder listed before keeps showing that complete list while it is read again; the new list replaces it once,
-      // when it is complete. Swapping in each part would shrink the list to its first part and re-sort it as the rest
-      // comes in, so the page visibly jumps (a first visit still shows the parts as they come).
-      quiet = !!contentCache.get(row.rowId)
+    const paged = !isGameFolder(row)
+    // A folder listed before keeps showing that complete list while it is read again; the new list replaces it once,
+    // when it is complete. Swapping in each part would shrink the list to its first part and re-sort it as the rest
+    // comes in, so the page visibly jumps (a first visit still shows the parts as they come).
+    const quiet = !!contentCache.get(row.rowId)
     // Whether the folder opens as the file list, guessed from what the scan counted (or the last listing) and checked
     // against the whole folder once the first batch is in.
-    const { sort, parentKind: parent } = listOrder.current,
-      isList = (counts?: ContentResult['sample']) =>
-        folderPageKind(templateKind(effectiveKind(row, counts, parent)), row) === 'media'
+    const { sort, parentKind: parent } = listOrder.current
+    const isList = (counts?: ContentResult['sample']) =>
+      folderPageKind(templateKind(effectiveKind(row, counts, parent)), row) === 'media'
     let sorted = !!sort && isList(contentCache.get(row.rowId)?.sample ?? row.contents)
     void (async () => {
       let cursor: string | undefined
       const counted: ContentResult['entries'] = []
-      let accumulated: ContentResult | undefined,
-        again = false
+      let accumulated: ContentResult | undefined
+      let again = false
       do {
         again = false
         const response = await window.explorer.request({
@@ -192,8 +195,8 @@ export function FolderContent({
   }, [row.rowId, selectedFileId])
   // Opened as the next book: go straight to reading from its first image. Remembered from the first render, since
   // the workspace drops the request as soon as the panel has switched.
-  const readFirst = useRef(autoRead),
-    inherited = useRef(autoReadSettings)
+  const readFirst = useRef(autoRead)
+  const inherited = useRef(autoReadSettings)
   useEffect(() => {
     if (!readFirst.current || !content) return
     const first = content.entries.find((entry) => entry.kind === 'image' && visibleFile(entry))
@@ -203,11 +206,12 @@ export function FolderContent({
       setGalleryImmersive(immersive)
       setGalleryResume(false)
       setGalleryFile(first)
-    } else if (immersive && document.fullscreenElement)
+    } else if (immersive && document.fullscreenElement) {
       void document.exitFullscreen().catch(() => {})
+    }
     onAutoRead?.()
   }, [content])
-  if (error && !content)
+  if (error && !content) {
     return (
       <p role="alert" className="media-content-error">
         {error}
@@ -216,16 +220,17 @@ export function FolderContent({
         </Button>
       </p>
     )
+  }
   if (!content) return <PanelSkeleton />
   const visibleEntries = content.entries.filter((entry) => visibleFile(entry))
   const selectedFile = visibleEntries.find((entry) => entry.id === selectedFileId) ?? selectedEntry
   // Music and video folders share one page and one content template (R-387).
-  const folderKind = effectiveKind(row, sample, parentKind),
-    kind = templateKind(folderKind)
+  const folderKind = effectiveKind(row, sample, parentKind)
+  const kind = templateKind(folderKind)
   // R-389: every kind is drawn by the same skeleton (FolderPage); the kind only picks its page. Everything that is
   // not a game main folder or a book uses the unified file page.
   const page = folderPageKind(kind, row)
-  if (page === 'media' && (!selectedFile || ['audio', 'video'].includes(selectedFile.kind)))
+  if (page === 'media' && (!selectedFile || ['audio', 'video'].includes(selectedFile.kind))) {
     return (
       <MediaBrowser
         prefs={mediaPrefs}
@@ -248,7 +253,8 @@ export function FolderContent({
         onSource={onSource}
       />
     )
-  if (selectedFile && selectedFile.kind !== 'video')
+  }
+  if (selectedFile && selectedFile.kind !== 'video') {
     return (
       <FilePage
         row={row}
@@ -287,20 +293,22 @@ export function FolderContent({
               prefs={row.record?.details?.reading}
               close={() => setFileReader(false)}
               save={(prefs) => {
-                if (row.record && !row.readonly && !row.stopped && !row.error)
+                if (row.record && !row.readonly && !row.stopped && !row.error) {
                   void run({
                     action: 'reading',
                     rowId: row.rowId,
                     revision: row.record.revision,
                     prefs,
                   })
+                }
               }}
             />
           </Suspense>
         )}
       </FilePage>
     )
-  if (selectedFile?.kind === 'video')
+  }
+  if (selectedFile?.kind === 'video') {
     return (
       <Suspense fallback={<p>{tr('載入播放器…')}</p>}>
         <VideoViewer
@@ -317,25 +325,29 @@ export function FolderContent({
         />
       </Suspense>
     )
-  if (page === 'game')
+  }
+  if (page === 'game') {
     return (
       <GamePage row={row} project={project} run={run} act={act} busy={busy} configure={configure} />
     )
+  }
   // The pictures the reader will show, and the saved place among them once the whole folder is listed.
-  const pages = visibleEntries.filter((entry) => entry.kind === 'image'),
-    firstPage = pages[0],
-    place = content.nextCursor ? undefined : savedPlace(row.record?.details?.reading, pages.length)
+  const pages = visibleEntries.filter((entry) => entry.kind === 'image')
+  const firstPage = pages[0]
+  const place = content.nextCursor
+    ? undefined
+    : savedPlace(row.record?.details?.reading, pages.length)
   // R-390: a folder of text books: one EPUB gets a book card; 繼續閱讀 goes back to the book read most recently.
-  const books = content.entries.filter((entry) => entry.kind === 'text'),
-    epubs = books.filter((entry) => /\.epub$/i.test(entry.name)),
-    bookCard = !firstPage && epubs.length === 1 ? epubs[0] : undefined,
-    novels = row.record?.details?.novels ?? {},
-    lastRead = books
-      .filter((entry) => {
-        const saved = novels[entry.name]
-        return saved && saved.percent > 0 && saved.percent < 1
-      })
-      .sort((a, b) => (novels[b.name]!.updated > novels[a.name]!.updated ? 1 : -1))[0]
+  const books = content.entries.filter((entry) => entry.kind === 'text')
+  const epubs = books.filter((entry) => /\.epub$/i.test(entry.name))
+  const bookCard = !firstPage && epubs.length === 1 ? epubs[0] : undefined
+  const novels = row.record?.details?.novels ?? {}
+  const lastRead = books
+    .filter((entry) => {
+      const saved = novels[entry.name]
+      return saved && saved.percent > 0 && saved.percent < 1
+    })
+    .sort((a, b) => (novels[b.name]!.updated > novels[a.name]!.updated ? 1 : -1))[0]
   // The book page (R-389: the fill-ins of the shared folder page).
   return (
     <FolderPage
@@ -497,13 +509,14 @@ export function FolderContent({
                   setGalleryFile(entry)
                 }}
                 save={(prefs) => {
-                  if (row.record && !row.readonly && !row.stopped && !row.error)
+                  if (row.record && !row.readonly && !row.stopped && !row.error) {
                     void run({
                       action: 'reading',
                       rowId: row.rowId,
                       revision: row.record.revision,
                       prefs,
                     })
+                  }
                 }}
               />
             )

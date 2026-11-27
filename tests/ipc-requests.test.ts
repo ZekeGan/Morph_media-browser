@@ -1,5 +1,6 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import { isExplorerRequest, isLibraryRequest, isWorkspaceCommand } from '../electron/ipc-requests'
 
 test('library requests: known actions with the right field types pass', () => {
@@ -38,8 +39,9 @@ test('library requests: unknown actions, missing fields and wrong types are refu
     { action: 'create', input: { name: 'A', depth: 1 } },
     { action: 'restoreBackup', token: 't', settings: true, projects: [1] },
     { action: 'open', rowId: 'a\0b' },
-  ])
+  ]) {
     assert.equal(isLibraryRequest(bad), false, JSON.stringify(bad))
+  }
 })
 
 test('explorer requests check field types, including nested batch rows', () => {

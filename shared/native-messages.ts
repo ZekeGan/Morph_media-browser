@@ -1,4 +1,5 @@
 import type { LocaleId } from './locales'
+
 const messages = {
   選擇備份位置: {
     ja: 'バックアップの保存先を選択',
@@ -66,6 +67,7 @@ const messages = {
     es: 'Error al iniciar',
   },
 } as const
+
 export function nativeText(source: keyof typeof messages, locale: LocaleId) {
   return locale === 'zh-TW' ? source : messages[source][locale]
 }

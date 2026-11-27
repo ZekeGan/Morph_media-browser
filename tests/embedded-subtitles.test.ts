@@ -1,16 +1,18 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { execFile } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { execFile } from 'node:child_process'
+import { test } from 'node:test'
 import { promisify } from 'node:util'
 import { deflateSync } from 'node:zlib'
-import { Library } from '../electron/library'
-import { Explorer, type DesktopOperations } from '../electron/explorer'
-import { LIMITS, readMkvSubtitles, readPicturePackets } from '../electron/mkv-subtitles'
-import { isExplorerRequest } from '../electron/ipc-requests'
-import { decodeVobsub, parseVobsubHeader, vobsubTiming } from '../shared/vobsub'
+
 import { assText, cuesToSrt, parseSubtitles } from '../shared/subtitles'
+import { decodeVobsub, parseVobsubHeader, vobsubTiming } from '../shared/vobsub'
+
+import { type DesktopOperations, Explorer } from '../electron/explorer'
+import { isExplorerRequest } from '../electron/ipc-requests'
+import { Library } from '../electron/library'
+import { LIMITS, readMkvSubtitles, readPicturePackets } from '../electron/mkv-subtitles'
 
 // R-412: subtitle tracks inside MKV files. The files here are built byte by byte (and, when ffmpeg is installed, by
 // ffmpeg), so the reader is checked against real structure and against damaged and hostile input.
@@ -281,8 +283,8 @@ test('a video made by ffmpeg: its text and ASS tracks are read, the video track 
 
 test('the explorer lists and returns embedded tracks through a cache that follows the file', async (t) => {
   const { root, closers } = await fixture(t)
-  const media = path.join(root, 'media'),
-    local = path.join(root, 'local')
+  const media = path.join(root, 'media')
+  const local = path.join(root, 'local')
   await fs.mkdir(media)
   await fs.writeFile(path.join(media, 'film.mkv'), sample())
   await fs.writeFile(path.join(media, 'clip.mp4'), 'not matroska')
@@ -298,11 +300,11 @@ test('the explorer lists and returns embedded tracks through a cache that follow
   }
   const explorer = new Explorer(library, local, desktop)
   closers.push(() => explorer.close())
-  const snapshot = await library.create(media, { name: 'P', depth: { mode: 'through', level: 1 } }),
-    row = snapshot.rows[0],
-    content = await explorer.content(row.rowId),
-    film = content.entries.find((entry) => entry.name === 'film.mkv')!,
-    clip = content.entries.find((entry) => entry.name === 'clip.mp4')!
+  const snapshot = await library.create(media, { name: 'P', depth: { mode: 'through', level: 1 } })
+  const row = snapshot.rows[0]
+  const content = await explorer.content(row.rowId)
+  const film = content.entries.find((entry) => entry.name === 'film.mkv')!
+  const clip = content.entries.find((entry) => entry.name === 'clip.mp4')!
   const list = await explorer.request({
     action: 'embeddedSubtitles',
     rowId: row.rowId,
@@ -365,12 +367,14 @@ test('the explorer lists and returns embedded tracks through a cache that follow
 // Segment's data; every element here has a 4-byte size, so they are known before the bytes are joined.
 const u32 = (n: number) =>
   Buffer.from([(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255])
+
 interface IndexedCluster {
   time: number
   children: Buffer[]
   // duration: the CueDuration written in the index (ms), as mkvmerge writes for subtitle blocks.
   subs: { track: number; at: number; duration?: number }[]
 }
+
 function indexed(options: { lie?: boolean; list?: Buffer; clusters?: IndexedCluster[] } = {}) {
   const info = el(0x1549a966, el(0x2ad7b1, [0x0f, 0x42, 0x40]))
   const list =
@@ -401,11 +405,11 @@ function indexed(options: { lie?: boolean; list?: Buffer; clusters?: IndexedClus
       el(0x4dbb, Buffer.concat([el(0x53ab, idBytes(0x1c53bb6b)), el(0x53ac, u32(cues))]))
     )
   let position = seekHead(0).length + info.length + list.length
-  const built: Buffer[] = [],
-    points: Buffer[] = []
+  const built: Buffer[] = []
+  const points: Buffer[] = []
   for (const item of clusters) {
-    const time = num(0xe7, item.time),
-      body = [time, ...item.children]
+    const time = num(0xe7, item.time)
+    const body = [time, ...item.children]
     for (const sub of item.subs) {
       const relative = body.slice(0, sub.at + 1).reduce((sum, part) => sum + part.length, 0)
       points.push(
@@ -462,9 +466,9 @@ test('a file with a cue index: only the indexed blocks are read, nearest the pla
     'stripped header bytes are put back'
   )
   // Reading from 65 s: the first cue read is the one at 65 s, and the track list was known before any cue.
-  let live: { cues: { text: string }[] }[] = [],
-    firstRead: string | undefined,
-    cuesWhenListed = -1
+  let live: { cues: { text: string }[] }[] = []
+  let firstRead: string | undefined
+  let cuesWhenListed = -1
   await readMkvSubtitles(file, {
     focus: () => 65,
     onTracks: (found) => {
@@ -491,8 +495,8 @@ test('a file with a cue index: only the indexed blocks are read, nearest the pla
 
 test('the explorer answers early with the track list and the cues read so far', async (t) => {
   const { root, closers } = await fixture(t)
-  const media = path.join(root, 'media'),
-    local = path.join(root, 'local')
+  const media = path.join(root, 'media')
+  const local = path.join(root, 'local')
   await fs.mkdir(media)
   await fs.writeFile(path.join(media, 'film.mkv'), indexed())
   const library = new Library(local, undefined, false)
@@ -505,9 +509,11 @@ test('the explorer answers early with the track list and the cues read so far', 
   }
   const explorer = new Explorer(library, local, desktop)
   closers.push(() => explorer.close())
-  const snapshot = await library.create(media, { name: 'P', depth: { mode: 'through', level: 1 } }),
-    row = snapshot.rows[0],
-    film = (await explorer.content(row.rowId)).entries.find((entry) => entry.name === 'film.mkv')!
+  const snapshot = await library.create(media, { name: 'P', depth: { mode: 'through', level: 1 } })
+  const row = snapshot.rows[0]
+  const film = (await explorer.content(row.rowId)).entries.find(
+    (entry) => entry.name === 'film.mkv'
+  )!
   const early = await explorer.request({
     action: 'embeddedSubtitles',
     rowId: row.rowId,
@@ -555,12 +561,13 @@ test('the explorer answers early with the track list and the cues read so far', 
 // R-421: VobSub picture subtitles. A packet is built here from rows of 2-bit pixel values: two interlaced fields of
 // run-length codes, then the control sequences (colours, opacity, area, field offsets, start and stop).
 const palette16 = Array.from({ length: 16 }, (_, index) => index * 0x101010 + (15 - index))
+
 function spu(
   rows: number[][],
   options: { x?: number; y?: number; colours?: number[]; alpha?: number[]; stop?: number } = {}
 ) {
-  const width = rows[0].length,
-    { x = 0, y = 0, colours = [0, 1, 2, 3], alpha = [0, 15, 15, 15] } = options
+  const width = rows[0].length
+  const { x = 0, y = 0, colours = [0, 1, 2, 3], alpha = [0, 15, 15, 15] } = options
   const encode = (lines: number[][]) => {
     const nibbles: number[] = []
     for (const line of lines) {
@@ -571,8 +578,8 @@ function spu(
         // A long run that reaches the end of the line is written as "to the end" (count 0, four nibbles).
         const toEnd = at + run === width && run > 3
         if (!toEnd) run = Math.min(run, 255)
-        const code = toEnd ? line[at] : (run << 2) | line[at],
-          digits = toEnd ? 4 : run < 4 ? 1 : run < 16 ? 2 : run < 64 ? 3 : 4
+        const code = toEnd ? line[at] : (run << 2) | line[at]
+        const digits = toEnd ? 4 : run < 4 ? 1 : run < 16 ? 2 : run < 64 ? 3 : 4
         for (let digit = digits - 1; digit >= 0; digit--) nibbles.push((code >> (4 * digit)) & 15)
         at += run
       }
@@ -582,27 +589,28 @@ function spu(
     for (let i = 0; i < nibbles.length; i += 2) bytes.push((nibbles[i] << 4) | nibbles[i + 1])
     return bytes
   }
-  const top = encode(rows.filter((_, index) => index % 2 === 0)),
-    bottom = encode(rows.filter((_, index) => index % 2 === 1)),
-    control = 4 + top.length + bottom.length,
-    x2 = x + width - 1,
-    y2 = y + rows.length - 1,
-    two = (value: number) => [value >> 8, value & 255],
-    four = (values: number[]) => [(values[3] << 4) | values[2], (values[1] << 4) | values[0]]
+  const top = encode(rows.filter((_, index) => index % 2 === 0))
+  const bottom = encode(rows.filter((_, index) => index % 2 === 1))
+  const control = 4 + top.length + bottom.length
+  const x2 = x + width - 1
+  const y2 = y + rows.length - 1
+  const two = (value: number) => [value >> 8, value & 255]
+  const four = (values: number[]) => [(values[3] << 4) | values[2], (values[1] << 4) | values[0]]
   const commands = [
     ...[0x03, ...four(colours), 0x04, ...four(alpha)],
     ...[0x05, x >> 4, ((x & 15) << 4) | (x2 >> 8), x2 & 255],
     ...[y >> 4, ((y & 15) << 4) | (y2 >> 8), y2 & 255],
     ...[0x06, ...two(4), ...two(4 + top.length), 0x01, 0xff],
   ]
-  const second = control + 4 + commands.length,
-    sequences = [
-      ...[0, 0, ...two(options.stop === undefined ? control : second), ...commands],
-      ...(options.stop === undefined ? [] : [...two(options.stop), ...two(second), 0x02, 0xff]),
-    ],
-    size = control + sequences.length
+  const second = control + 4 + commands.length
+  const sequences = [
+    ...[0, 0, ...two(options.stop === undefined ? control : second), ...commands],
+    ...(options.stop === undefined ? [] : [...two(options.stop), ...two(second), 0x02, 0xff]),
+  ]
+  const size = control + sequences.length
   return Buffer.from([...two(size), ...two(control), ...top, ...bottom, ...sequences])
 }
+
 const pictureRows = () => {
   const rows: number[][] = []
   for (let line = 0; line < 9; line++) {
@@ -619,11 +627,11 @@ const pictureRows = () => {
 }
 
 test('a VobSub packet decodes to its exact pixels, place and timing', () => {
-  const rows = pictureRows(),
-    colours = [4, 9, 2, 15],
-    alpha = [0, 15, 8, 3],
-    packet = spu(rows, { x: 300, y: 400, colours, alpha, stop: 176 }),
-    image = decodeVobsub(packet, palette16)
+  const rows = pictureRows()
+  const colours = [4, 9, 2, 15]
+  const alpha = [0, 15, 8, 3]
+  const packet = spu(rows, { x: 300, y: 400, colours, alpha, stop: 176 })
+  const image = decodeVobsub(packet, palette16)
   assert.ok(image)
   assert.deepEqual(
     [image.x, image.y, image.width, image.height, image.forced, image.start],
@@ -657,13 +665,13 @@ test('a VobSub packet decodes to its exact pixels, place and timing', () => {
 })
 
 test('hostile VobSub packets give undefined quickly, never a read outside the packet', () => {
-  const good = spu(pictureRows(), { stop: 100 }),
-    control = good.readUInt16BE(2),
-    changed = (edit: (copy: Buffer) => void) => {
-      const copy = Buffer.from(good)
-      edit(copy)
-      return decodeVobsub(copy, palette16)
-    }
+  const good = spu(pictureRows(), { stop: 100 })
+  const control = good.readUInt16BE(2)
+  const changed = (edit: (copy: Buffer) => void) => {
+    const copy = Buffer.from(good)
+    edit(copy)
+    return decodeVobsub(copy, palette16)
+  }
   const began = Date.now()
   assert.equal(decodeVobsub(Buffer.alloc(0), palette16), undefined)
   assert.equal(decodeVobsub(Buffer.from([0, 4, 0, 4]), palette16), undefined)
@@ -736,8 +744,9 @@ test('hostile VobSub packets give undefined quickly, never a read outside the pa
       round % 2
         ? Buffer.from(Array.from({ length: 8 + Math.floor(random() * 300) }, () => random() * 256))
         : Buffer.from(good)
-    if (round % 2 === 0)
+    if (round % 2 === 0) {
       for (let i = 0; i < 4; i++) packet[Math.floor(random() * packet.length)] = random() * 256
+    }
     const image = decodeVobsub(packet, palette16)
     if (image) {
       assert.ok(
@@ -764,8 +773,8 @@ const pictureTracks = () =>
     entry(5, 0x11, 'S_VOBSUB', 'jpn', 'No palette', [el(0x63a2, 'size: 720x480\n')]),
     entry(6, 0x11, 'S_HDMV/PGS', 'kor', 'PGS')
   )
-const firstPicture = () => spu(pictureRows(), { x: 100, y: 380, stop: 176 }),
-  secondPicture = () => spu(pictureRows().reverse(), { x: 120, y: 400 })
+const firstPicture = () => spu(pictureRows(), { x: 100, y: 380, stop: 176 })
+const secondPicture = () => spu(pictureRows().reverse(), { x: 120, y: 400 })
 const pictureClusters = (): IndexedCluster[] => [
   {
     time: 0,
@@ -801,16 +810,16 @@ const pictureClusters = (): IndexedCluster[] => [
 test('a VobSub track is read with and without the index; its packets are read from their place in the file', async (t) => {
   const { write } = await fixture(t)
   const withIndex = await write(
-      'pictures.mkv',
-      indexed({ list: pictureTracks(), clusters: pictureClusters() })
-    ),
-    walked = await write(
-      'walked.mkv',
-      matroska(
-        pictureTracks(),
-        ...pictureClusters().map((item) => cluster(item.time, ...item.children))
-      )
+    'pictures.mkv',
+    indexed({ list: pictureTracks(), clusters: pictureClusters() })
+  )
+  const walked = await write(
+    'walked.mkv',
+    matroska(
+      pictureTracks(),
+      ...pictureClusters().map((item) => cluster(item.time, ...item.children))
     )
+  )
   for (const file of [withIndex, walked]) {
     const found = await readMkvSubtitles(file)
     assert.deepEqual(
@@ -850,8 +859,8 @@ test('a VobSub track is read with and without the index; its packets are read fr
     )
   }
   // Reading from 30 s with the index: the picture there is read before the one at the start.
-  let live: { pictures?: { start: number }[] }[] = [],
-    firstRead: number | undefined
+  let live: { pictures?: { start: number }[] }[] = []
+  let firstRead: number | undefined
   await readMkvSubtitles(withIndex, {
     focus: () => 30,
     onTracks: (found) => (live = found),
@@ -864,8 +873,8 @@ test('a VobSub track is read with and without the index; its packets are read fr
 
 test('the explorer answers with the picture cues around a time, from a cache that holds no packets', async (t) => {
   const { root, closers } = await fixture(t)
-  const media = path.join(root, 'media'),
-    local = path.join(root, 'local')
+  const media = path.join(root, 'media')
+  const local = path.join(root, 'local')
   await fs.mkdir(media)
   await fs.writeFile(
     path.join(media, 'film.mkv'),
@@ -895,11 +904,11 @@ test('the explorer answers with the picture cues around a time, from a cache tha
   }
   const explorer = new Explorer(library, local, desktop)
   closers.push(() => explorer.close())
-  const snapshot = await library.create(media, { name: 'P', depth: { mode: 'through', level: 1 } }),
-    row = snapshot.rows[0],
-    entries = (await explorer.content(row.rowId)).entries,
-    film = entries.find((entry) => entry.name === 'film.mkv')!,
-    many = entries.find((entry) => entry.name === 'many.mkv')!
+  const snapshot = await library.create(media, { name: 'P', depth: { mode: 'through', level: 1 } })
+  const row = snapshot.rows[0]
+  const entries = (await explorer.content(row.rowId)).entries
+  const film = entries.find((entry) => entry.name === 'film.mkv')!
+  const many = entries.find((entry) => entry.name === 'many.mkv')!
   const ask = (fileId: string, track: number, time?: number) =>
     explorer.request({ action: 'embeddedPictures', rowId: row.rowId, fileId, track, time })
   const check = async () => {
@@ -962,8 +971,8 @@ test('the explorer answers with the picture cues around a time, from a cache tha
   )
   assert.equal(later.pictures?.until, undefined)
   // The cache file holds times and places only, and a later session answers from it without reading the tracks.
-  const cacheDir = path.join(local, 'subtitle-cache'),
-    cacheFiles = (await fs.readdir(cacheDir)).filter((name) => name.endsWith('.json'))
+  const cacheDir = path.join(local, 'subtitle-cache')
+  const cacheFiles = (await fs.readdir(cacheDir)).filter((name) => name.endsWith('.json'))
   assert.equal(cacheFiles.length, 2)
   for (const name of cacheFiles) {
     const text = await fs.readFile(path.join(cacheDir, name), 'utf8')
@@ -1045,8 +1054,8 @@ test('with no subtitle places in the index the clusters are read from the playba
       ],
     })
   )
-  let live: { cues: { text: string }[] }[] = [],
-    firstRead: string | undefined
+  let live: { cues: { text: string }[] }[] = []
+  let firstRead: string | undefined
   const found = await readMkvSubtitles(file, {
     focus: () => 40,
     onTracks: (list) => (live = list),
@@ -1070,8 +1079,8 @@ test('a read can be stopped, and opening another video stops the one before', as
     /取消/
   )
   // A file that cannot be read keeps failing from the cache, without reading it again.
-  const media = path.join(root, 'media'),
-    local = path.join(root, 'local')
+  const media = path.join(root, 'media')
+  const local = path.join(root, 'local')
   await fs.mkdir(media)
   await fs.writeFile(path.join(media, 'bad.mkv'), Buffer.from('not a video at all'))
   const library = new Library(local, undefined, false)
@@ -1085,9 +1094,9 @@ test('a read can be stopped, and opening another video stops the one before', as
     subtitleProgress: (value) => progress.push(value.fraction),
   })
   closers.push(() => explorer.close())
-  const snapshot = await library.create(media, { name: 'P', depth: { mode: 'through', level: 1 } }),
-    row = snapshot.rows[0],
-    bad = (await explorer.content(row.rowId)).entries.find((entry) => entry.name === 'bad.mkv')!
+  const snapshot = await library.create(media, { name: 'P', depth: { mode: 'through', level: 1 } })
+  const row = snapshot.rows[0]
+  const bad = (await explorer.content(row.rowId)).entries.find((entry) => entry.name === 'bad.mkv')!
   await assert.rejects(
     explorer.request({ action: 'embeddedSubtitles', rowId: row.rowId, fileId: bad.id }),
     /不是 Matroska/

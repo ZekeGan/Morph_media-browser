@@ -1,5 +1,5 @@
-import type { FolderRow, Project } from './model'
 import { effectiveKind, type FolderKind } from './kind'
+import type { FolderRow, Project } from './model'
 
 // R-413: which layout a folder shows, for its card and for the right panel, from one set of rules per project.
 // A folder's own choice wins; a work (album, video, game, book…) takes the layout of its kind, so the same kind looks
@@ -13,11 +13,14 @@ export interface LayoutRule {
   // folderId → layout id.
   folders?: Record<string, string>
 }
+
 export interface LayoutRules {
   card?: LayoutRule
   panel?: LayoutRule
 }
+
 export type LayoutSource = 'folder' | 'type' | 'level' | 'default'
+
 export interface LayoutChoice {
   id: string
   source: LayoutSource
@@ -37,8 +40,8 @@ export function chooseLayout(
 ): LayoutChoice {
   const pick = (id: string | undefined, source: LayoutSource): LayoutChoice | undefined =>
     id && known(id) ? { id, source } : undefined
-  const folderId = row.record?.folderId,
-    level = layoutLevel(row)
+  const folderId = row.record?.folderId
+  const level = layoutLevel(row)
   return (
     pick(folderId ? rule?.folders?.[folderId] : undefined, 'folder') ??
     (work
@@ -62,8 +65,8 @@ export function choosePanel(
 ): LayoutChoice | undefined {
   const pick = (id: string | undefined, source: LayoutSource): LayoutChoice | undefined =>
     id && known(id) ? { id, source } : undefined
-  const folderId = row.record?.folderId,
-    level = layoutLevel(row)
+  const folderId = row.record?.folderId
+  const level = layoutLevel(row)
   return (
     pick(folderId ? rule?.folders?.[folderId] : undefined, 'folder') ??
     pick(rule?.types?.[kind], 'type') ??
@@ -77,8 +80,8 @@ export function editLayoutRules<P extends Pick<Project, 'layoutRules'>>(
   project: P,
   change: (rules: { card: LayoutRule; panel: LayoutRule }) => void
 ): P {
-  const base = structuredClone(project.layoutRules ?? {}),
-    rules = { card: base.card ?? {}, panel: base.panel ?? {} }
+  const base = structuredClone(project.layoutRules ?? {})
+  const rules = { card: base.card ?? {}, panel: base.panel ?? {} }
   change(rules)
   const tidy = (rule: LayoutRule) => {
     const out: LayoutRule = {}
@@ -89,8 +92,8 @@ export function editLayoutRules<P extends Pick<Project, 'layoutRules'>>(
     if (rule.folders && Object.keys(rule.folders).length) out.folders = rule.folders
     return Object.keys(out).length ? out : undefined
   }
-  const card = tidy(rules.card),
-    panel = tidy(rules.panel)
+  const card = tidy(rules.card)
+  const panel = tidy(rules.panel)
   return {
     ...project,
     layoutRules: { ...(card ? { card } : {}), ...(panel ? { panel } : {}) },
@@ -100,9 +103,9 @@ export function editLayoutRules<P extends Pick<Project, 'layoutRules'>>(
 // A layout that was deleted is dropped from every rule that pointed at it (its folders then fall back).
 export function dropLayout(rule: LayoutRule | undefined, id: string): LayoutRule | undefined {
   if (!rule) return rule
-  const types = Object.fromEntries(Object.entries(rule.types ?? {}).filter(([, v]) => v !== id)),
-    folders = Object.fromEntries(Object.entries(rule.folders ?? {}).filter(([, v]) => v !== id)),
-    levels = rule.levels?.map((v) => (v === id ? '' : v))
+  const types = Object.fromEntries(Object.entries(rule.types ?? {}).filter(([, v]) => v !== id))
+  const folders = Object.fromEntries(Object.entries(rule.folders ?? {}).filter(([, v]) => v !== id))
+  const levels = rule.levels?.map((v) => (v === id ? '' : v))
   while (levels?.length && !levels[levels.length - 1]) levels.pop()
   return {
     ...(Object.keys(types).length ? { types } : {}),

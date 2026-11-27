@@ -1,12 +1,13 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { test } from 'node:test'
+
 import {
-  openArchive,
-  readArchiveImage,
   foreignDispose,
+  openArchive,
   parseListing,
+  readArchiveImage,
 } from '../electron/archive-foreign'
 import { rarFixture, sevenZipFixture, tinyPng, zipFixture } from './support/archive-fixture'
 
@@ -18,6 +19,7 @@ async function folder(t: { after: (fn: () => Promise<void>) => void }) {
   t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }))
   return root
 }
+
 const pages = [
   { name: '10.png', bytes: tinyPng },
   { name: '2.png', bytes: tinyPng },
@@ -33,8 +35,9 @@ test('a RAR archive lists its pictures in natural order and gives each one back 
     index.images.map((entry) => entry.name),
     ['2.png', '10.png', 'sub/漫畫 01.png']
   )
-  for (const entry of index.images)
+  for (const entry of index.images) {
     assert.deepEqual(await readArchiveImage(file, index, entry), tinyPng)
+  }
   await foreignDispose(index)
 })
 test('a 7z archive lists and reads pictures, including names outside ASCII', async (t) => {
@@ -46,8 +49,9 @@ test('a 7z archive lists and reads pictures, including names outside ASCII', asy
     index.images.map((entry) => entry.name),
     ['2.png', '10.png', 'sub/漫畫 01.png']
   )
-  for (const entry of index.images)
+  for (const entry of index.images) {
     assert.deepEqual(await readArchiveImage(file, index, entry), tinyPng)
+  }
   await foreignDispose(index)
 })
 test('the content, not the extension, decides: a ZIP named .cbr opens as ZIP', async (t) => {

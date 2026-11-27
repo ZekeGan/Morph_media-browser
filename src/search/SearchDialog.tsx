@@ -1,7 +1,3 @@
-import { stabilizeQuery, type StableQuery } from '../../shared/query'
-import { t as tr, useLocale } from '../i18n'
-import { Icon } from '../common/icons'
-import { useEffect, useRef, useState } from 'react'
 import {
   ActionIcon,
   Alert,
@@ -17,9 +13,17 @@ import {
   Text,
   TextInput,
 } from '@mantine/core'
-import type { LinkedProject, Snapshot } from '../../shared/model'
+import { useEffect, useRef, useState } from 'react'
+
 import type { SearchHit, SearchResult } from '../../shared/explorer'
+import type { LinkedProject, Snapshot } from '../../shared/model'
+import { stabilizeQuery, type StableQuery } from '../../shared/query'
+
+import { Icon } from '../common/icons'
+import { t as tr, useLocale } from '../i18n'
+
 import './search-dialog.css'
+
 export function SearchDialog({
   opened,
   close,
@@ -39,30 +43,30 @@ export function SearchDialog({
 }) {
   useLocale()
 
-  const [scope, setScope] = useState('all'),
-    [query, setQuery] = useState(''),
-    [page, setPage] = useState(1),
-    [result, setResult] = useState<SearchResult>(),
-    [error, setError] = useState(''),
-    [busy, setBusy] = useState(false),
-    [saveName, setSaveName] = useState(''),
-    [hit, setHit] = useState<SearchHit>()
+  const [scope, setScope] = useState('all')
+  const [query, setQuery] = useState('')
+  const [page, setPage] = useState(1)
+  const [result, setResult] = useState<SearchResult>()
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [saveName, setSaveName] = useState('')
+  const [hit, setHit] = useState<SearchHit>()
   const [queryAst, setQueryAst] = useState<StableQuery>()
-  const [savedOpen, setSavedOpen] = useState(false),
-    [saveOpen, setSaveOpen] = useState(false),
-    [saving, setSaving] = useState(false),
-    [saveError, setSaveError] = useState('')
-  const queryInput = useRef<HTMLInputElement>(null),
-    nameInput = useRef<HTMLInputElement>(null)
+  const [savedOpen, setSavedOpen] = useState(false)
+  const [saveOpen, setSaveOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const queryInput = useRef<HTMLInputElement>(null)
+  const nameInput = useRef<HTMLInputElement>(null)
   const project = projects.find((p) => p.projectId === selected)?.project
-  const savedSearches = project?.savedSearches ?? [],
-    match = query.trim().toLocaleLowerCase(),
-    savedMatches = savedSearches.filter(
-      (s) =>
-        !match ||
-        s.name.toLocaleLowerCase().includes(match) ||
-        s.query.toLocaleLowerCase().includes(match)
-    )
+  const savedSearches = project?.savedSearches ?? []
+  const match = query.trim().toLocaleLowerCase()
+  const savedMatches = savedSearches.filter(
+    (s) =>
+      !match ||
+      s.name.toLocaleLowerCase().includes(match) ||
+      s.query.toLocaleLowerCase().includes(match)
+  )
   const canSave =
     !!project &&
     !dirty &&
@@ -154,8 +158,9 @@ export function SearchDialog({
   const open = (target = hit) => {
     // A folder that sits in several projects opens in the current one when it is among them.
     const place = target?.projects.find((p) => p.projectId === selected) ?? target?.projects[0]
-    if (target && place && !busy && !saving && !error && onSelect(place.projectId, place.rowId))
+    if (target && place && !busy && !saving && !error && onSelect(place.projectId, place.rowId)) {
       close()
+    }
   }
   const cancelSave = () => {
     setSaveOpen(false)

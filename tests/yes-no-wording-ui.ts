@@ -1,17 +1,18 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
+
 import { folderFile, readFolder } from '../electron/files'
-import { closeApp, launchApp, removeTestRoot, reportFailure, openLayoutEditor } from './support/app'
+import { Library } from '../electron/library'
+import { closeApp, launchApp, openLayoutEditor, removeTestRoot, reportFailure } from './support/app'
 
 // A yes/no field's own wording (R-234), set in the editor's field details, shows on the canvas, in the field list
 // preview, on the card and in the folder settings.
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'yes-no-wording-ui-')),
-  media = path.join(root, 'Library'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'yes-no-wording-ui-'))
+const media = path.join(root, 'Library')
+const local = path.join(root, 'local')
 await fs.mkdir(media, { recursive: true })
 const library = new Library(local, undefined, false)
 await library.init()

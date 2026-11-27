@@ -1,18 +1,19 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
+
 import { readFolder, saveFolder } from '../electron/files'
+import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
 // R-339: the Data tab shows your own fields first (empty ones as "fill in" chips) and each website's imported values
 // read-only, with "change by hand" per field and "remove this site's data" per site.
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'field-sources-ui-')),
-  media = path.join(root, 'Library'),
-  work = path.join(media, 'Work'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'field-sources-ui-'))
+const media = path.join(root, 'Library')
+const work = path.join(media, 'Work')
+const local = path.join(root, 'local')
 await fs.mkdir(work, { recursive: true })
 const library = new Library(local, undefined, false)
 await library.init()
@@ -21,9 +22,9 @@ const created = await library.create(media, {
   scanAll: true,
   depth: { mode: 'through', level: 2 },
 })
-const project = created.projects[0].project!,
-  note = crypto.randomUUID(),
-  rating = crypto.randomUUID()
+const project = created.projects[0].project!
+const note = crypto.randomUUID()
+const rating = crypto.randomUUID()
 await library.saveProject({
   ...project,
   fieldBindings: [

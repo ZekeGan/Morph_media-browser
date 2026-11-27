@@ -1,7 +1,9 @@
 import type { ActionTemplate, FolderDetails } from './explorer'
 import type { Notice } from './notifications'
 import type { StableQuery } from './query'
+
 export const DATA_DIR = '.media-viewer'
+
 export type CellKind =
   | 'name'
   | 'path'
@@ -25,6 +27,7 @@ export type CellKind =
   | 'book-continue'
   // R-409 (provisional): one of a game's extra buttons (`gameExtra`).
   | 'game-extra'
+
 export interface Cell {
   cellId: string
   kind: CellKind
@@ -121,14 +124,17 @@ export interface Cell {
   // Layout text only (R-239): the first rule whose condition holds gives the text; otherwise `text` is shown.
   textRules?: { when: CellCondition; text: string }[]
 }
+
 // "within" / "older": a date or date-and-time field compared with today, `value` in days (R-239).
 export interface CellCondition {
   attributeId: string
   operator: 'set' | 'unset' | 'equals' | 'not-equals' | 'gt' | 'lt' | 'within' | 'older'
   value?: string | number | boolean
 }
+
 export const MAX_MORE_CONDITIONS = 4
 export const MAX_TEXT_RULES = 10
+
 // Every condition a cell reads: its display conditions and its text rules.
 export function cellConditions(cell: Cell): CellCondition[] {
   return [
@@ -137,11 +143,13 @@ export function cellConditions(cell: Cell): CellCondition[] {
     ...(cell.textRules ?? []).map((rule) => rule.when),
   ]
 }
+
 export interface SourceRecord {
   provider: string
   url: string
   fetchedAt: string
 }
+
 export interface Attribute {
   attributeId: string
   key: string
@@ -150,8 +158,10 @@ export interface Attribute {
   source: string
   sourceRecord?: SourceRecord
 }
+
 // R-422 (provisional): what a source-imported picture is for. Only stored; no page uses it yet.
 export type AssetRole = 'screenshot' | 'hero' | 'logo' | 'icon'
+
 export interface Asset {
   assetId: string
   relativePath: string
@@ -159,6 +169,7 @@ export interface Asset {
   mediaType: string
   role?: AssetRole
 }
+
 export interface FolderRecord {
   kind: 'media-viewer.folder'
   schemaVersion: 2
@@ -169,6 +180,7 @@ export interface FolderRecord {
   assets: Asset[]
   details?: FolderDetails
 }
+
 export interface Project {
   kind: 'media-viewer.project'
   schemaVersion: 4
@@ -214,18 +226,22 @@ export interface Project {
   // A folder's chosen member per group (folder ID → group ID → attribute ID); this project only.
   groupSources?: Record<string, Record<string, string>>
 }
+
 export interface FieldGroup {
   groupId: string
   name: string
   memberIds: string[]
 }
+
 export const MAX_GROUP_MEMBERS = 20
+
 export interface LinkedProject {
   projectId: string
   root: string
   project?: Project
   error?: string
 }
+
 export interface FolderRow {
   rowId: string
   path: string
@@ -243,6 +259,7 @@ export interface FolderRow {
   // R-340: the files directly inside, counted while scanning (not saved); absent where the scan did not look inside.
   contents?: Required<import('./kind').KindSample>
 }
+
 export interface ScanProgress {
   visited: number
   created: number
@@ -250,6 +267,7 @@ export interface ScanProgress {
   active: boolean
   cancelled: boolean
 }
+
 export interface Snapshot {
   projects: LinkedProject[]
   rows: FolderRow[]
@@ -260,6 +278,7 @@ export interface Snapshot {
   // window never takes in one older than what it shows.
   generation?: number
 }
+
 export interface CleanupPreview {
   token: string
   paths: string[]
@@ -267,11 +286,13 @@ export interface CleanupPreview {
   count: number
   scope: 'folder' | 'private' | 'tree' | 'all'
 }
+
 export interface CleanupResult {
   removed: number
   failed: string[]
   skipped: string[]
 }
+
 export interface ProjectRemovalPreview {
   token: string
   projectId: string
@@ -282,6 +303,7 @@ export interface ProjectRemovalPreview {
   rootCleanup?: boolean
   recoveryPath?: string
 }
+
 export interface FullRemovalPreview {
   token: string
   projectId: string
@@ -292,6 +314,7 @@ export interface FullRemovalPreview {
   affectedProjects: { projectId: string; name: string; root: string }[]
   recoveryPath: string
 }
+
 // R-364: what unifying a field's text values to its date type would change.
 export interface FieldUnifyPreview {
   token: string
@@ -303,6 +326,7 @@ export interface FieldUnifyPreview {
   unreadable: { path: string; value: string }[]
   recoveryPath: string
 }
+
 export interface FieldDeletionPreview {
   token: string
   attributeId: string
@@ -321,11 +345,13 @@ export interface FieldDeletionPreview {
   skipped: string[]
   recoveryPath: string
 }
+
 export interface ProjectInput {
   name: string
   depth: Project['depth']
   scanAll?: boolean
 }
+
 export type Request =
   | {
       action: 'snapshot' | 'scan' | 'cancelScan' | 'chooseRoot'
@@ -355,6 +381,7 @@ export type Request =
   | { action: 'previewBackup'; id?: string }
   | { action: 'locateBackup'; token: string; projectId: string }
   | { action: 'restoreBackup'; token: string; settings: boolean; projects: string[] }
+
 export interface Response {
   snapshot: Snapshot
   preview?: CleanupPreview
@@ -372,14 +399,17 @@ export interface Response {
   cancelled?: boolean
   rootSelection?: RootSelection
 }
+
 // A folder picked in the native dialog; `existing` lists projects whose definitions already live in it.
 export interface RootSelection {
   token: string
   path: string
   existing?: { projectId: string; name: string; linked: boolean }[]
 }
+
 export interface MediaApi {
   request(request: Request): Promise<Response>
   onProgress(callback: (progress: ScanProgress) => void): () => void
 }
+
 export const MAX_FALLBACKS = 5

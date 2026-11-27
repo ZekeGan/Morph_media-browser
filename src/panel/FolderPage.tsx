@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
-import type { FolderRow, Project } from '../../shared/model'
+
 import type { TemplateKind } from '../../shared/kind'
 import { isGameFolder } from '../../shared/media'
+import type { FolderRow, Project } from '../../shared/model'
+
 import { FolderDetails, SubfolderList } from './FolderParts'
 
 // R-389: every folder page in the right panel is the same skeleton of blocks, always in this order:
@@ -10,6 +12,7 @@ import { FolderDetails, SubfolderList } from './FolderParts'
 // A page only says which blocks it shows (the table below) and what fills them (the props of FolderPage), so a
 // kind's defaults change here and in its fill-ins, without another code path.
 export type FolderPageKind = 'game' | 'book' | 'media' | 'music'
+
 export interface FolderPageSpec {
   // The class of the page's frame; styles and UI tests go by it.
   className: string
@@ -24,6 +27,7 @@ export interface FolderPageSpec {
   // Viewers that open over the page are kept at its start or its end.
   overlay: 'first' | 'last'
 }
+
 export const folderPages: Record<FolderPageKind, FolderPageSpec> = {
   // A game main folder: its inside is protected, so no subfolders or files are offered; its fields are all in the
   // details (R-390).
@@ -73,6 +77,7 @@ export const folderPages: Record<FolderPageKind, FolderPageSpec> = {
     overlay: 'last',
   },
 }
+
 // The page a folder gets. Only a game main folder (or a possible one) has the game page; a folder merely set to
 // the game kind is browsed as files.
 export const folderPageKind = (kind: TemplateKind, row: FolderRow): FolderPageKind =>

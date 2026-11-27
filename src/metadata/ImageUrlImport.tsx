@@ -1,7 +1,9 @@
-import { useRef, useState } from 'react'
 import { Button, Group, Text, TextInput } from '@mantine/core'
+import { useRef, useState } from 'react'
+
 import type { ExplorerRequest, ExplorerResponse } from '../../shared/explorer'
 import type { FolderRow } from '../../shared/model'
+
 import { t as tr, useLocale } from '../i18n'
 
 type Preview = NonNullable<ExplorerResponse['imagePreview']>
@@ -17,10 +19,10 @@ export function ImageUrlImport({
   disabled: boolean
 }) {
   useLocale()
-  const [url, setUrl] = useState(''),
-    [preview, setPreview] = useState<Preview>(),
-    [busy, setBusy] = useState<'preview' | 'save'>(),
-    [error, setError] = useState('')
+  const [url, setUrl] = useState('')
+  const [preview, setPreview] = useState<Preview>()
+  const [busy, setBusy] = useState<'preview' | 'save'>()
+  const [error, setError] = useState('')
   const latest = useRef(0)
   const load = async () => {
     const token = ++latest.current

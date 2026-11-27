@@ -5,6 +5,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { _electron as electron } from 'playwright-core'
+
 import { closeApp, testEnv } from './app'
 
 const version = JSON.parse(await fs.readFile('package.json', 'utf8')).version as string
@@ -27,8 +28,9 @@ try {
   page.on('pageerror', (error) => errors.push(error.message))
   await page.getByRole('heading', { name: '你的資料夾，你的瀏覽方式' }).waitFor({ timeout: 20000 })
   const status = (await page.locator('.statusbar').textContent()) ?? ''
-  if (!status.includes('v' + version))
+  if (!status.includes('v' + version)) {
     throw new Error(`Status bar shows "${status}", expected v${version}`)
+  }
   if (errors.length) throw new Error('Window errors: ' + errors.join(' | '))
   console.log(
     `Packaged ${version} starts: home page shown, v${version} in the status bar, no window errors.`

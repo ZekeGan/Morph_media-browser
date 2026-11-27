@@ -1,4 +1,5 @@
 import { Tooltip } from '@mantine/core'
+
 import { Icon, type IconName } from './icons'
 
 // Label for an icon-only segment: the icon is what shows, the name appears as a tooltip and stays in the page

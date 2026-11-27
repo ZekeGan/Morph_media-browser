@@ -1,8 +1,9 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import { metadata } from '../electron/metadata'
-import { searchSources } from '../electron/sources/search'
 import { TMDB_EPISODES_MAX, TMDB_SEASONS_MAX } from '../electron/sources/keyed'
+import { searchSources } from '../electron/sources/search'
 
 // R-419: TMDB in the name search (only with a key), TMDB series seasons and episodes; SteamGridDB
 // no longer asks for hero/logo/icon (R-511).
@@ -18,8 +19,8 @@ test('R-419: TMDB joins the name search only with a key, and its failure is note
   const seen: { url: string; auth: string | null }[] = []
   const fetcher = ((fail: boolean) =>
     (async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input),
-        host = new URL(url).hostname
+      const url = String(input)
+      const host = new URL(url).hostname
       seen.push({ url, auth: new Headers(init?.headers).get('Authorization') })
       if (host !== 'api.themoviedb.org') return json({})
       if (fail) return json({}, 401)
@@ -77,7 +78,7 @@ test('R-419: a TMDB series lists its seasons and episodes; a failed season is sk
     asked.push(url)
     assert.equal(new URL(url).hostname, 'api.themoviedb.org')
     const season = /\/season\/(\d+)\?/.exec(url)?.[1]
-    if (!season)
+    if (!season) {
       return json({
         id: 7,
         name: 'Show',
@@ -85,8 +86,9 @@ test('R-419: a TMDB series lists its seasons and episodes; a failed season is sk
         number_of_episodes: 9,
         seasons: seasonList,
       })
+    }
     if (season === '2') return json({}, 500)
-    if (season === '1')
+    if (season === '1') {
       return json({
         episodes: [
           { episode_number: 1, name: 'Pilot' },
@@ -94,6 +96,7 @@ test('R-419: a TMDB series lists its seasons and episodes; a failed season is sk
           { episode_number: 'x', name: 'Skipped' },
         ],
       })
+    }
     // Every other season is long enough to pass the cap on its own.
     return json({
       episodes: Array.from({ length: 100 }, (_, i) => ({ episode_number: i + 1, name: 'E' + i })),
@@ -131,8 +134,8 @@ test('R-419: a TMDB series lists its seasons and episodes; a failed season is sk
 })
 
 test('R-511: SteamGridDB no longer asks for a hero, logo or icon', async () => {
-  const host = 'https://cdn2.steamgriddb.com/',
-    asked: string[] = []
+  const host = 'https://cdn2.steamgriddb.com/'
+  const asked: string[] = []
   const fetcher = ((answers: Record<string, unknown>) =>
     (async (input: RequestInfo | URL) => {
       const url = String(input)
@@ -150,8 +153,9 @@ test('R-511: SteamGridDB no longer asks for a hero, logo or icon', async () => {
   const result = await metadata('https://www.steamgriddb.com/game/5', fetcher, undefined, {
     keyFor: async () => ({ apiKey: 'k' }),
   })
-  for (const key of ['HERO_URL', 'LOGO_URL', 'ICON_URL'])
+  for (const key of ['HERO_URL', 'LOGO_URL', 'ICON_URL']) {
     assert.equal(value(result, key), undefined, key)
+  }
   assert.ok(!asked.some((url) => /\/(heroes|logos|icons)\//.test(url)))
   assert.equal(result.preview.title, 'Game')
 })

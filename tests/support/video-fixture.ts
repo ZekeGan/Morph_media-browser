@@ -72,8 +72,9 @@ export async function videoFixture(): Promise<string> {
     try {
       await fs.rename(staging, cached)
     } catch (error) {
-      if (!['EEXIST', 'ENOTEMPTY', 'EPERM'].includes((error as NodeJS.ErrnoException).code ?? ''))
+      if (!['EEXIST', 'ENOTEMPTY', 'EPERM'].includes((error as NodeJS.ErrnoException).code ?? '')) {
         throw error
+      }
 
       await read()
       // Accept a concurrent winner only if its bytes pass validation.

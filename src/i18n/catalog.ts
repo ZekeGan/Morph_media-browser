@@ -1,5 +1,7 @@
-import messages from './messages.json'
 import type { LocaleId } from '../../shared/locales'
+
+import messages from './messages.json'
+
 const terminology: Record<LocaleId, Record<string, string>> = {
   'zh-TW': {
     CARD: '卡片',
@@ -65,6 +67,7 @@ const build = (locale: LocaleId) =>
       ),
     ])
   )
+
 export const catalog = Object.defineProperties(
   {},
   Object.fromEntries(

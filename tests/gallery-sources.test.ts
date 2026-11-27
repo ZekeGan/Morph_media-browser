@@ -1,7 +1,9 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { metadata } from '../electron/metadata'
+import { test } from 'node:test'
+
 import { sourceForUrl } from '../shared/sources'
+
+import { metadata } from '../electron/metadata'
 import { tinyPng } from './support/archive-fixture'
 
 const network = (replies: Record<string, string | Buffer | object | number>, seen: string[] = []) =>

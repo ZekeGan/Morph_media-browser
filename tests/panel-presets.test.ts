@@ -1,5 +1,7 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
+import { createGroup, dissolveGroup } from '../shared/fieldGroups'
 import {
   addPreset,
   fromPanelEditor,
@@ -7,10 +9,10 @@ import {
   panelEditorProject,
   selectPreset,
 } from '../shared/layouts'
-import { validateProject, type Cell, type FolderRow, type Project } from '../shared/model'
-import { modelProject } from './support/model-fixtures'
-import { createGroup, dissolveGroup } from '../shared/fieldGroups'
+import { type Cell, type FolderRow, type Project, validateProject } from '../shared/model'
+
 import { withoutField } from '../electron/maintenance'
+import { modelProject } from './support/model-fixtures'
 
 // R-409: the right-panel layouts (book templates before), edited with the editor's layout tools.
 const style = { textColor: '#e4e6e8', backgroundColor: 'transparent' }

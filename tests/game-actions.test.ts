@@ -1,11 +1,13 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
-import { Explorer, type DesktopOperations } from '../electron/explorer'
-import { folderFile, readFolder } from '../electron/files'
+import { test } from 'node:test'
+
 import { gameActionTemplates, launchGap } from '../shared/explorer'
+
+import { type DesktopOperations, Explorer } from '../electron/explorer'
+import { folderFile, readFolder } from '../electron/files'
+import { Library } from '../electron/library'
 
 test('implicit launch template does not overwrite explicit templates', () => {
   assert.equal(gameActionTemplates({})[0].id, 'default-launch-game')
@@ -13,8 +15,8 @@ test('implicit launch template does not overwrite explicit templates', () => {
 })
 
 test('R-397: the launch hint follows the main launch action, not the default id', () => {
-  const exe = { id: 'run', label: '開始', kind: 'exe' as const, color: '#000' },
-    open = { id: 'dir', label: '資料夾', kind: 'folder' as const, color: '#000' }
+  const exe = { id: 'run', label: '開始', kind: 'exe' as const, color: '#000' }
+  const open = { id: 'dir', label: '資料夾', kind: 'folder' as const, color: '#000' }
   // Default project: the default action has no target yet.
   assert.equal(launchGap({}, undefined), 'target')
   assert.equal(launchGap({}, { 'default-launch-game': { kind: 'exe' } }), undefined)
@@ -30,21 +32,22 @@ test('R-397: the launch hint follows the main launch action, not the default id'
 test('game targets require explicit selection, preserve arguments and leave original files unchanged', async (t) => {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'game-actions-')),
-    media = path.join(root, 'game')
+  const root = await fs.mkdtemp(path.join(base, 'game-actions-'))
+  const media = path.join(root, 'game')
   await fs.mkdir(media)
   const original = {
     'Game.exe': 'controlled fake EXE',
     'notes.txt': 'ORIGINAL FILE',
     'unsafe.cmd': 'ORIGINAL SCRIPT',
   }
-  for (const [name, value] of Object.entries(original))
+  for (const [name, value] of Object.entries(original)) {
     await fs.writeFile(path.join(media, name), value)
+  }
   const library = new Library(path.join(root, 'local'), undefined, false)
   await library.init()
-  const calls: { file: string; args: string[] }[] = [],
-    pickers: { kind: string; initialPath?: string }[] = [],
-    urls: string[] = []
+  const calls: { file: string; args: string[] }[] = []
+  const pickers: { kind: string; initialPath?: string }[] = []
+  const urls: string[] = []
   let picks: (string | undefined)[] = []
   const desktop: DesktopOperations = {
     choose: async (kind, initialPath) => {
@@ -165,7 +168,7 @@ test('game targets require explicit selection, preserve arguments and leave orig
     'file:///C:/Game.exe',
     'javascript:alert(1)',
     'https://user:pass@example.test/',
-  ])
+  ]) {
     await assert.rejects(
       explorer.request({
         action: 'bindTarget',
@@ -177,6 +180,7 @@ test('game targets require explicit selection, preserve arguments and leave orig
       }),
       /網址/
     )
+  }
   await explorer.request({
     action: 'bindTarget',
     rowId: row().rowId,
@@ -244,6 +248,7 @@ test('game targets require explicit selection, preserve arguments and leave orig
   assert.equal(await fs.readFile(path.join(outside, 'tool.exe'), 'utf8'), 'EXTERNAL ORIGINAL')
   assert.deepEqual(await readFolder(media), saved)
   assert.equal(calls.length, 2)
-  for (const [name, value] of Object.entries(original))
+  for (const [name, value] of Object.entries(original)) {
     assert.equal(await fs.readFile(path.join(media, name), 'utf8'), value)
+  }
 })

@@ -1,34 +1,38 @@
-import { t as tr, useLocale } from '../i18n'
-import { KindIcon } from './folderKind'
-import { Icon } from '../common/icons'
-import { BoundaryFlag } from '../game/BoundaryFlag'
-import { useAppTheme } from '../themes/ThemeProvider'
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import dagre from '@dagrejs/dagre'
 import {
   Background,
   ControlButton,
   Controls,
-  MiniMap,
-  ReactFlow,
   type Edge,
+  MiniMap,
   type Node,
+  ReactFlow,
   type ReactFlowInstance,
 } from '@xyflow/react'
-import dagre from '@dagrejs/dagre'
-import '@xyflow/react/dist/style.css'
+import { type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react'
+
 import {
   defaultTreeCollapsed,
-  pathKey,
   parentPath,
+  pathKey,
   treeStructure,
   visibleTreeRows,
 } from '../../shared/browse'
 import type { FolderRow, Project } from '../../shared/model'
-import { TreeCardNode, TREE_CARD_WIDTH, treeCardHeight } from './TreeCardNode'
+
+import { Icon } from '../common/icons'
+import { BoundaryFlag } from '../game/BoundaryFlag'
+import { t as tr, useLocale } from '../i18n'
+import { useAppTheme } from '../themes/ThemeProvider'
+import { KindIcon } from './folderKind'
+import { TREE_CARD_WIDTH, treeCardHeight, TreeCardNode } from './TreeCardNode'
+
+import '@xyflow/react/dist/style.css'
 
 // R-466: the custom node type for card nodes (defined once, so React Flow does not re-create it each render).
 const nodeTypes = { card: TreeCardNode }
 import type { BrowseState } from '../../shared/explorer'
+
 interface Props {
   rows: FolderRow[]
   selected?: string
@@ -49,6 +53,7 @@ interface Props {
     card: (row: FolderRow, open: () => void) => ReactNode
   }
 }
+
 export default function Tree({
   rows,
   selected,
@@ -65,22 +70,22 @@ export default function Tree({
   const locale = useLocale()
 
   const { theme } = useAppTheme()
-  const defaults = useMemo(() => defaultTreeCollapsed(rows), [rows]),
-    closed = collapsed ?? defaults
-  const structure = useMemo(() => treeStructure(rows), [rows]),
-    visible = useMemo(() => visibleTreeRows(rows, closed), [rows, closed])
+  const defaults = useMemo(() => defaultTreeCollapsed(rows), [rows])
+  const closed = collapsed ?? defaults
+  const structure = useMemo(() => treeStructure(rows), [rows])
+  const visible = useMemo(() => visibleTreeRows(rows, closed), [rows, closed])
   const actions = useRef({ onOpen, onConfigure, onCollapsed, closed })
   actions.current = { onOpen, onConfigure, onCollapsed, closed }
-  const canvas = useRef<HTMLDivElement>(null),
-    [initialView, setInitialView] = useState(viewport),
-    [flow, setFlow] = useState<ReactFlowInstance>(),
-    lastFocus = useRef<string | undefined>(undefined)
+  const canvas = useRef<HTMLDivElement>(null)
+  const [initialView, setInitialView] = useState(viewport)
+  const [flow, setFlow] = useState<ReactFlowInstance>()
+  const lastFocus = useRef<string | undefined>(undefined)
   const { nodes, edges } = useMemo(() => {
     const graph = new dagre.graphlib.Graph()
-        .setGraph({ rankdir: 'LR', ranksep: 80, nodesep: 22 })
-        .setDefaultEdgeLabel(() => ({})),
-      byPath = new Map(visible.map((r) => [pathKey(r.path), r.rowId])),
-      edges: Edge[] = []
+      .setGraph({ rankdir: 'LR', ranksep: 80, nodesep: 22 })
+      .setDefaultEdgeLabel(() => ({}))
+    const byPath = new Map(visible.map((r) => [pathKey(r.path), r.rowId]))
+    const edges: Edge[] = []
     // Each node's size: the fixed label, or the card's width and the height of its card layout.
     const sizes = new Map(
       visible.map((row) => [
@@ -108,10 +113,10 @@ export default function Tree({
     }
     dagre.layout(graph)
     const nodes: Node[] = visible.map((r) => {
-      const pos = graph.node(r.rowId),
-        size = sizes.get(r.rowId)!,
-        count = structure.children.get(r.rowId)?.length ?? 0,
-        isClosed = closed.includes(r.rowId)
+      const pos = graph.node(r.rowId)
+      const size = sizes.get(r.rowId)!
+      const count = structure.children.get(r.rowId)?.length ?? 0
+      const isClosed = closed.includes(r.rowId)
       // The branch toggle, on the label and (R-466) on a card node.
       const toggle = count > 0 && (
         <button
@@ -184,7 +189,7 @@ export default function Tree({
         style: { width: size.width, height: size.height, opacity: r.structural ? 0.4 : 1 },
       }
     })
-    if (cards)
+    if (cards) {
       nodes.forEach((node, i) => {
         node.type = 'card'
         node.data = {
@@ -193,17 +198,16 @@ export default function Tree({
           toggle: node.data.toggle,
         }
       })
+    }
     return { nodes, edges }
   }, [visible, structure, closed, locale, cards])
   useLayoutEffect(() => {
     const focus = rows.find((r) => r.rowId === focusId)
     if (!focus) return
     const ancestors = new Set(
-        rows
-          .filter((r) => pathKey(focus.path).startsWith(pathKey(r.path) + '/'))
-          .map((r) => r.rowId)
-      ),
-      next = closed.filter((id) => !ancestors.has(id))
+      rows.filter((r) => pathKey(focus.path).startsWith(pathKey(r.path) + '/')).map((r) => r.rowId)
+    )
+    const next = closed.filter((id) => !ancestors.has(id))
     if (next.length !== closed.length) onCollapsed(next)
   }, [focusId])
   useLayoutEffect(() => {
@@ -227,13 +231,13 @@ export default function Tree({
   useLayoutEffect(() => {
     if (initialView || !canvas.current) return
     const initialize = () => {
-      const width = canvas.current!.clientWidth,
-        height = canvas.current!.clientHeight
+      const width = canvas.current!.clientWidth
+      const height = canvas.current!.clientHeight
       if (!width || !height) return
-      let minX = 0,
-        minY = 0,
-        maxX = 240,
-        maxY = 76
+      let minX = 0
+      let minY = 0
+      let maxX = 240
+      let maxY = 76
       for (const node of nodes) {
         minX = Math.min(minX, node.position.x)
         minY = Math.min(minY, node.position.y)
@@ -241,14 +245,14 @@ export default function Tree({
         maxY = Math.max(maxY, node.position.y + (node.initialHeight ?? 76))
       }
       const zoom = Math.max(
-          0.05,
-          Math.min(1, width / (maxX - minX + 80), height / (maxY - minY + 80))
-        ),
-        next = {
-          x: (width - (maxX - minX) * zoom) / 2 - minX * zoom,
-          y: (height - (maxY - minY) * zoom) / 2 - minY * zoom,
-          zoom,
-        }
+        0.05,
+        Math.min(1, width / (maxX - minX + 80), height / (maxY - minY + 80))
+      )
+      const next = {
+        x: (width - (maxX - minX) * zoom) / 2 - minX * zoom,
+        y: (height - (maxY - minY) * zoom) / 2 - minY * zoom,
+        zoom,
+      }
       setInitialView(next)
       save(next)
     }

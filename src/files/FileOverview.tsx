@@ -1,6 +1,3 @@
-import { visibleFile } from '../../shared/media'
-import { createPortal } from 'react-dom'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   Button,
@@ -11,21 +8,28 @@ import {
   Select,
   Text,
 } from '@mantine/core'
-import type { FolderRow, Project } from '../../shared/model'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+
 import type { OverviewEntry } from '../../shared/explorer'
-import { Icon } from '../common/icons'
-import { iconLabel } from '../common/IconLabel'
+import { visibleFile } from '../../shared/media'
+import type { FolderRow, Project } from '../../shared/model'
+
 import { useRefreshNonce } from '../browse/refresh'
-import { usePlayback } from '../media/Playback'
-import { FileMenu } from '../media/FileMenu'
+import { iconLabel } from '../common/IconLabel'
+import { Icon } from '../common/icons'
 import { t as tr, useLocale } from '../i18n'
+import { FileMenu } from '../media/FileMenu'
+import { usePlayback } from '../media/Playback'
 
 type Presentation = 'tiles' | 'groups' | 'list'
+
 const presentations = [
   { value: 'tiles', icon: 'image', label: '縮圖' },
   { value: 'groups', icon: 'layers', label: '分組' },
   { value: 'list', icon: 'list', label: '清單' },
 ] as const
+
 export function FileOverview({
   toolbarTarget,
   scopeTarget,
@@ -53,13 +57,13 @@ export function FileOverview({
   project: Project
 }) {
   const locale = useLocale()
-  const [entries, setEntries] = useState<OverviewEntry[]>([]),
-    [notices, setNotices] = useState<string[]>([]),
-    [loading, setLoading] = useState(false),
-    reload = useRefreshNonce(),
-    [filter, setFilter] = useState('all')
-  const [view, setView] = useState({ top: 0, height: 500, width: 600 }),
-    viewport = useRef<HTMLDivElement>(null)
+  const [entries, setEntries] = useState<OverviewEntry[]>([])
+  const [notices, setNotices] = useState<string[]>([])
+  const [loading, setLoading] = useState(false)
+  const reload = useRefreshNonce()
+  const [filter, setFilter] = useState('all')
+  const [view, setView] = useState({ top: 0, height: 500, width: 600 })
+  const viewport = useRef<HTMLDivElement>(null)
   useEffect(() => {
     let alive = true
     setEntries([])
@@ -119,16 +123,16 @@ export function FileOverview({
   // Ctrl/Shift+click marks music and videos; right-click adds the marked ones to the play queue in list order,
   // without interrupting what is playing (R-295). Escape clears the marks.
   const playback = usePlayback()
-  const fileKey = (entry: OverviewEntry) => entry.rowId + '/' + entry.id,
-    playable = (entry: OverviewEntry) => ['audio', 'video'].includes(entry.kind)
-  const [picked, setPicked] = useState<Set<string>>(new Set()),
-    pickAnchor = useRef<string | undefined>(undefined),
-    [menu, setMenu] = useState<{ x: number; y: number }>()
+  const fileKey = (entry: OverviewEntry) => entry.rowId + '/' + entry.id
+  const playable = (entry: OverviewEntry) => ['audio', 'video'].includes(entry.kind)
+  const [picked, setPicked] = useState<Set<string>>(new Set())
+  const pickAnchor = useRef<string | undefined>(undefined)
+  const [menu, setMenu] = useState<{ x: number; y: number }>()
   useEffect(() => setPicked(new Set()), [root.rowId, scope, filter])
   const pick = (entry: OverviewEntry, range: boolean) => {
-    const id = fileKey(entry),
-      from = visibleEntries.findIndex((item) => fileKey(item) === pickAnchor.current),
-      to = visibleEntries.indexOf(entry)
+    const id = fileKey(entry)
+    const from = visibleEntries.findIndex((item) => fileKey(item) === pickAnchor.current)
+    const to = visibleEntries.indexOf(entry)
     if (range && from >= 0) {
       setPicked(
         new Set(
@@ -155,11 +159,12 @@ export function FileOverview({
     if (!playback) return
     for (const row of rows) {
       const group = pickedFiles.filter((entry) => entry.rowId === row.rowId)
-      if (group.length)
+      if (group.length) {
         playback.add(
           { row, project, entries: entries.filter((entry) => entry.rowId === row.rowId) },
           group
         )
+      }
     }
     setPicked(new Set())
     setMenu(undefined)
@@ -345,9 +350,9 @@ export function FileOverview({
                       playback && playable(entry) ? picked.has(fileKey(entry)) : undefined
                     }
                     onClick={(event) => {
-                      if (playback && playable(entry) && (event.ctrlKey || event.metaKey))
+                      if (playback && playable(entry) && (event.ctrlKey || event.metaKey)) {
                         pick(entry, false)
-                      else if (playback && playable(entry) && event.shiftKey) pick(entry, true)
+                      } else if (playback && playable(entry) && event.shiftKey) pick(entry, true)
                       else open(entry)
                     }}
                     onContextMenu={(event) => {

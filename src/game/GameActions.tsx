@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import {
   ActionIcon,
   Alert,
@@ -7,23 +6,27 @@ import {
   Select,
   Stack,
   Text,
-  TextInput,
   Textarea,
+  TextInput,
   Tooltip,
 } from '@mantine/core'
+import { useEffect, useState } from 'react'
+
 import {
-  gameActionTemplates,
   type ActionKind,
   type ActionTemplate,
   type ExplorerRequest,
   type ExplorerResponse,
+  gameActionTemplates,
 } from '../../shared/explorer'
-import type { FolderRow, Project } from '../../shared/model'
-import { t as tr } from '../i18n'
-import { Icon } from '../common/icons'
-import { describeError } from '../notices/errors'
 import { parseLaunchArgs } from '../../shared/launchArgs'
+import type { FolderRow, Project } from '../../shared/model'
+
+import { Icon } from '../common/icons'
+import { t as tr } from '../i18n'
+import { describeError } from '../notices/errors'
 import { useGameExtras } from './useGameExtras'
+
 import './game-actions.css'
 
 export const kindLabel = (kind: ActionKind) =>
@@ -37,12 +40,14 @@ export const kindLabel = (kind: ActionKind) =>
   })[kind]
 
 const exampleArgs = '["-run","D:\\\\Games\\\\Title\\\\game.exe"]'
+
 function parseArgs(text: string): string[] {
   const parsed = parseLaunchArgs(text)
-  if (!parsed)
+  if (!parsed) {
     throw new Error(
       tr('啟動參數格式不正確。請用 JSON 字串陣列，每一項各用雙引號，例如：') + ' ' + exampleArgs
     )
+  }
   return parsed
 }
 
@@ -59,13 +64,13 @@ export function GameActionTargets({
   run: (request: ExplorerRequest) => Promise<ExplorerResponse | undefined>
   onDirty: (dirty: boolean) => void
 }) {
-  const [drafts, setDrafts] = useState<Record<string, { args: string; url: string }>>({}),
-    [error, setError] = useState(''),
-    [shortcuts, setShortcuts] = useState<string[]>(),
-    [choice, setChoice] = useState<Record<string, string>>({})
+  const [drafts, setDrafts] = useState<Record<string, { args: string; url: string }>>({})
+  const [error, setError] = useState('')
+  const [shortcuts, setShortcuts] = useState<string[]>()
+  const [choice, setChoice] = useState<Record<string, string>>({})
   const templates = gameActionTemplates(project)
-  const extras = useGameExtras(row),
-    localeReady = extras?.localeEmulator
+  const extras = useGameExtras(row)
+  const localeReady = extras?.localeEmulator
   const wantsShortcuts = templates.some((t) => t.kind === 'shortcut')
   // The folder's own shortcuts (.lnk/.url), e.g. one made by Locale Emulator, are listed for picking.
   useEffect(() => {
@@ -109,8 +114,8 @@ export function GameActionTargets({
     })
   const bind = async (template: ActionTemplate) => {
     try {
-      const draft = drafts[template.id] ?? original(template.id),
-        args = ['exe', 'file-app'].includes(template.kind) ? parseArgs(draft.args) : []
+      const draft = drafts[template.id] ?? original(template.id)
+      const args = ['exe', 'file-app'].includes(template.kind) ? parseArgs(draft.args) : []
       const response = await run({
         action: 'bindTarget',
         rowId: row.rowId,
@@ -134,11 +139,11 @@ export function GameActionTargets({
         </Alert>
       )}
       {templates.map((template) => {
-        const target = row.record?.details?.targets?.[template.id],
-          draft = drafts[template.id] ?? original(template.id),
-          changed = JSON.stringify(draft) !== JSON.stringify(original(template.id)),
-          bound = target?.kind === template.kind,
-          hiddenHere = !!row.record?.details?.hiddenActions?.includes(template.id)
+        const target = row.record?.details?.targets?.[template.id]
+        const draft = drafts[template.id] ?? original(template.id)
+        const changed = JSON.stringify(draft) !== JSON.stringify(original(template.id))
+        const bound = target?.kind === template.kind
+        const hiddenHere = !!row.record?.details?.hiddenActions?.includes(template.id)
         return (
           <section
             className={'settings-section game-target' + (bound ? '' : ' unbound')}
@@ -159,8 +164,9 @@ export function GameActionTargets({
                       if (
                         ['exe', 'file-app', 'shortcut'].includes(template.kind) &&
                         !window.confirm(tr('啟動「{0}」？', tr(template.label)))
-                      )
+                      ) {
                         return
+                      }
                       void run({
                         action: 'runTarget',
                         rowId: row.rowId,
@@ -339,8 +345,8 @@ export function NewGameAction({
   disabled: boolean
   onAdd: (template: ActionTemplate) => void
 }) {
-  const [label, setLabel] = useState(''),
-    [kind, setKind] = useState<ActionKind>('exe')
+  const [label, setLabel] = useState('')
+  const [kind, setKind] = useState<ActionKind>('exe')
   return (
     <Stack gap={6} className="new-game-action">
       <TextInput

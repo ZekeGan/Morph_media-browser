@@ -1,7 +1,9 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { settleGrid } from '../src/editor/settleGrid'
+import { test } from 'node:test'
+
 import type { Cell } from '../shared/model'
+
+import { settleGrid } from '../src/editor/settleGrid'
 
 const cell = (cellId: string, y: number, kind = 'field', h = 1, x = 0, w = 12) =>
   ({ cellId, kind, grid: { x, y, w, h } }) as Cell

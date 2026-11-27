@@ -1,8 +1,7 @@
-import { t as tr, useLocale } from '../i18n'
-import { Icon } from '../common/icons'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Accordion, Button } from '@mantine/core'
 import { Video, VideoPlayer } from '@videojs/react/video'
-import type { FolderRow } from '../../shared/model'
+import { useCallback, useEffect, useRef, useState } from 'react'
+
 import {
   defaultSubtitle,
   type EmbeddedPictures,
@@ -12,24 +11,28 @@ import {
   type MediaEntry,
   type SubtitlePrefs,
 } from '../../shared/explorer'
-import { parseSubtitles, type Cue } from '../../shared/subtitles'
-import { VideoControls } from './VideoControls'
-import { Accordion, Button } from '@mantine/core'
-import { VideoSubtitleSettings, type EmbeddedState } from './VideoSubtitleSettings'
-import { embeddedLabel } from './embeddedLabel'
+import type { FolderRow } from '../../shared/model'
+import { type Cue, parseSubtitles } from '../../shared/subtitles'
 import { chooseSubtitleTrack, trackPreference } from '../../shared/subtitleTrack'
-import { VideoPictureSubtitle } from './VideoPictureSubtitle'
-import { describeError } from '../notices/errors'
-import { useVideoAudio } from '../media/useVideoAudio'
-import { podcastFolder } from '../media/podcast'
+
+import { Icon } from '../common/icons'
 import { keyboardNavigation } from '../common/inputModality'
+import { t as tr, useLocale } from '../i18n'
+import { podcastFolder } from '../media/podcast'
+import { useVideoAudio } from '../media/useVideoAudio'
 import { clockText, resumeAt, saveVideoPlace, videoPlace } from '../media/videoPlace'
+import { describeError } from '../notices/errors'
+import { embeddedLabel } from './embeddedLabel'
+import { VideoControls } from './VideoControls'
+import { VideoPictureSubtitle } from './VideoPictureSubtitle'
+import { type EmbeddedState, VideoSubtitleSettings } from './VideoSubtitleSettings'
 
 type UpNext = {
   fileId: string
   nextId: string
   remaining: number
 }
+
 export function VideoViewer({
   background = false,
   row,
@@ -60,85 +63,85 @@ export function VideoViewer({
 }) {
   useLocale()
 
-  const videos = entries.filter((entry) => entry.kind === 'video'),
-    subtitles = entries.filter((entry) => entry.kind === 'subtitle')
+  const videos = entries.filter((entry) => entry.kind === 'video')
+  const subtitles = entries.filter((entry) => entry.kind === 'subtitle')
 
-  const [fileId, setFileId] = useState(initialFileId ?? videos[0]?.id),
-    [subtitle, setSubtitle] = useState<ExplorerResponse['subtitle']>(),
-    [cues, setCues] = useState<Cue[]>([]),
-    // R-412: the subtitle tracks inside the playing MKV/WebM, read when the subtitle settings are opened.
-    [embedded, setEmbedded] = useState<EmbeddedState>(),
-    // R-417: the embedded track shown while its cues are still being read, and when it was last fetched again.
-    partialTrack = useRef<EmbeddedSubtitleInfo | undefined>(undefined),
-    partialRefreshed = useRef(0),
-    // R-421: the chosen picture (VobSub) track: the stretch of cues around the playback time, the track it is
-    // from, and the time last asked for.
-    [pictures, setPictures] = useState<EmbeddedPictures>(),
-    pictureTrack = useRef<EmbeddedSubtitleInfo | undefined>(undefined),
-    pictureAsked = useRef(0),
-    offsetLive = useRef(0),
-    subtitleLive = useRef<ExplorerResponse['subtitle']>(undefined)
+  const [fileId, setFileId] = useState(initialFileId ?? videos[0]?.id)
+  const [subtitle, setSubtitle] = useState<ExplorerResponse['subtitle']>()
+  const [cues, setCues] = useState<Cue[]>([])
+  // R-412: the subtitle tracks inside the playing MKV/WebM, read when the subtitle settings are opened.
+  const [embedded, setEmbedded] = useState<EmbeddedState>()
+  // R-417: the embedded track shown while its cues are still being read, and when it was last fetched again.
+  const partialTrack = useRef<EmbeddedSubtitleInfo | undefined>(undefined)
+  const partialRefreshed = useRef(0)
+  // R-421: the chosen picture (VobSub) track: the stretch of cues around the playback time, the track it is
+  // from, and the time last asked for.
+  const [pictures, setPictures] = useState<EmbeddedPictures>()
+  const pictureTrack = useRef<EmbeddedSubtitleInfo | undefined>(undefined)
+  const pictureAsked = useRef(0)
+  const offsetLive = useRef(0)
+  const subtitleLive = useRef<ExplorerResponse['subtitle']>(undefined)
 
-  const [settings, setSettings] = useState(defaultSubtitle),
-    [error, setError] = useState(''),
-    [failure, setFailure] = useState<{ fileId: string; probe?: string }>(),
-    [files, setFiles] = useState<File[]>([]),
-    [captions, setCaptions] = useState(true)
+  const [settings, setSettings] = useState(defaultSubtitle)
+  const [error, setError] = useState('')
+  const [failure, setFailure] = useState<{ fileId: string; probe?: string }>()
+  const [files, setFiles] = useState<File[]>([])
+  const [captions, setCaptions] = useState(true)
 
-  const [subtitleSection, setSubtitleSection] = useState<string | null>(null),
-    [audioDragging, setAudioDragging] = useState(false),
-    [menuOpen, setMenuOpen] = useState(false),
-    [subtitleExpanded, setSubtitleExpanded] = useState(false),
-    // R-405: the second this video resumed from, shown briefly with a way back to the start.
-    [resumed, setResumed] = useState<number>()
+  const [subtitleSection, setSubtitleSection] = useState<string | null>(null)
+  const [audioDragging, setAudioDragging] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [subtitleExpanded, setSubtitleExpanded] = useState(false)
+  // R-405: the second this video resumed from, shown briefly with a way back to the start.
+  const [resumed, setResumed] = useState<number>()
 
-  const [paused, setPaused] = useState(true),
-    [time, setTime] = useState(0),
-    [duration, setDuration] = useState(0),
-    [buffered, setBuffered] = useState(0),
-    [rate, setRate] = useState(1),
-    [waiting, setWaiting] = useState(false)
+  const [paused, setPaused] = useState(true)
+  const [time, setTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const [buffered, setBuffered] = useState(0)
+  const [rate, setRate] = useState(1)
+  const [waiting, setWaiting] = useState(false)
 
-  const [active, setActive] = useState(true),
-    [fullscreen, setFullscreen] = useState(false),
-    [upNext, setUpNext] = useState<UpNext>()
+  const [active, setActive] = useState(true)
+  const [fullscreen, setFullscreen] = useState(false)
+  const [upNext, setUpNext] = useState<UpNext>()
 
-  const [box, setBox] = useState({ bottom: 0, left: 0, width: 0, height: 0 }),
-    [controlHeight, setControlHeight] = useState(80),
-    [stageSize, setStageSize] = useState({ width: 360, height: 480 })
+  const [box, setBox] = useState({ bottom: 0, left: 0, width: 0, height: 0 })
+  const [controlHeight, setControlHeight] = useState(80)
+  const [stageSize, setStageSize] = useState({ width: 360, height: 480 })
 
-  const viewer = useRef<HTMLDivElement>(null),
-    stage = useRef<HTMLDivElement>(null),
-    controls = useRef<HTMLDivElement>(null),
-    strip = useRef<HTMLDivElement>(null)
+  const viewer = useRef<HTMLDivElement>(null)
+  const stage = useRef<HTMLDivElement>(null)
+  const controls = useRef<HTMLDivElement>(null)
+  const strip = useRef<HTMLDivElement>(null)
 
-  const video = useRef<HTMLVideoElement | null>(null),
-    latest = useRef(row),
-    mounted = useRef(false),
-    saving = useRef(false),
-    wantsPlayback = useRef(initialFileId ? true : autoplay),
-    pendingStart = useRef(false),
-    // R-405: the latest place of the playing video and when it was last written; kept on this computer only.
-    lastPlace = useRef<
-      { folder: string; fileId: string; time: number; duration: number } | undefined
-    >(undefined),
-    savedAt = useRef(-1)
+  const video = useRef<HTMLVideoElement | null>(null)
+  const latest = useRef(row)
+  const mounted = useRef(false)
+  const saving = useRef(false)
+  const wantsPlayback = useRef(initialFileId ? true : autoplay)
+  const pendingStart = useRef(false)
+  // R-405: the latest place of the playing video and when it was last written; kept on this computer only.
+  const lastPlace = useRef<
+    { folder: string; fileId: string; time: number; duration: number } | undefined
+  >(undefined)
+  const savedAt = useRef(-1)
 
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined),
-    clickTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined),
-    nextRef = useRef<UpNext | undefined>(undefined)
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const clickTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const nextRef = useRef<UpNext | undefined>(undefined)
 
   const windowVisible = useRef(true)
 
-  const audio = useVideoAudio(),
-    audioLive = useRef(audio),
-    speed = useRef(rate),
-    filesLive = useRef(videos),
-    currentFile = useRef<string | undefined>(undefined),
-    wantedUrl = useRef<string | undefined>(undefined)
+  const audio = useVideoAudio()
+  const audioLive = useRef(audio)
+  const speed = useRef(rate)
+  const filesLive = useRef(videos)
+  const currentFile = useRef<string | undefined>(undefined)
+  const wantedUrl = useRef<string | undefined>(undefined)
 
-  const file = videos.find((entry) => entry.id === fileId) ?? videos[0],
-    index = videos.findIndex((entry) => entry.id === file?.id)
+  const file = videos.find((entry) => entry.id === fileId) ?? videos[0]
+  const index = videos.findIndex((entry) => entry.id === file?.id)
 
   latest.current = row
   // R-432: whether a subtitle is already loaded now, read when the embedded track list arrives.
@@ -152,8 +155,8 @@ export function VideoViewer({
   // R-405: remembers where this video is; written at most every 10 seconds, and when it pauses or ends. The latest
   // place is also written when the video is switched or the player closes.
   const remember = (node: HTMLVideoElement, write: boolean) => {
-    const target = currentFile.current,
-      duration = Number.isFinite(node.duration) ? node.duration : 0
+    const target = currentFile.current
+    const duration = Number.isFinite(node.duration) ? node.duration : 0
     if (node !== video.current || !target || !duration) return
     const time = node.ended ? duration : node.currentTime
     lastPlace.current = { folder: podcastFolder(latest.current), fileId: target, time, duration }
@@ -203,8 +206,9 @@ export function VideoViewer({
         // R-447: only a control reached with Tab keeps them shown; one clicked with the mouse does not.
         !(keyboardNavigation() && controls.current?.querySelector(':focus-visible')) &&
         !controls.current?.matches(':hover')
-      )
+      ) {
         setActive(false)
+      }
     }, 2500)
   }
 
@@ -225,18 +229,19 @@ export function VideoViewer({
         !node.isConnected ||
         (!background && document.hidden) ||
         !windowVisible.current
-      )
+      ) {
         node.pause()
-      else if (mounted.current) setError('')
+      } else if (mounted.current) setError('')
     } catch (reason) {
       if (
         mounted.current &&
         node === video.current &&
         node.isConnected &&
         (reason as Error).name !== 'AbortError'
-      )
+      ) {
         if (node.error || (reason as Error).name === 'NotSupportedError') reportDecodeFailure()
         else setError(tr('無法自動播放，請按播放器的播放按鈕。'))
+      }
     }
   }
 
@@ -251,8 +256,9 @@ export function VideoViewer({
     if (!target) return
     setFailure({ fileId: target })
     void run({ action: 'fileProbe', rowId: row.rowId, fileId: target }).then((result) => {
-      if (mounted.current && currentFile.current === target)
+      if (mounted.current && currentFile.current === target) {
         setFailure({ fileId: target, probe: result?.probe?.kind })
+      }
     })
   }
   const failureCause = (kind?: string) =>
@@ -321,8 +327,8 @@ export function VideoViewer({
   // R-431: the external player (app settings; the system default without one) starts at the current position. Only
   // the row and file ids travel; main resolves the file and the program. The built-in player pauses once it started.
   const openExternal = async (entry: MediaEntry) => {
-    const node = video.current,
-      at = node && Number.isFinite(node.currentTime) ? node.currentTime : undefined
+    const node = video.current
+    const at = node && Number.isFinite(node.currentTime) ? node.currentTime : undefined
     const result = await run({
       action: 'openExternalPlayer',
       rowId: row.rowId,
@@ -374,8 +380,9 @@ export function VideoViewer({
       if (document.fullscreenElement === target) await document.exitFullscreen()
       else if (!document.fullscreenElement) {
         await target.requestFullscreen()
-        if (!target.isConnected && document.fullscreenElement === target)
+        if (!target.isConnected && document.fullscreenElement === target) {
           await document.exitFullscreen()
+        }
       }
 
       if (mounted.current) showControls()
@@ -481,14 +488,14 @@ export function VideoViewer({
   const loadPictures = async (track: EmbeddedSubtitleInfo, refresh = false) => {
     const target = currentFile.current
     if (!target) return
-    const token = 'emb-' + track.number,
-      saved =
-        latest.current.record?.details?.playback?.[target]?.settings?.[token] ?? defaultSubtitle(),
-      // The cues that show now are the ones timed before the subtitle delay.
-      asked = Math.max(
-        0,
-        (video.current?.currentTime ?? 0) - (refresh ? offsetLive.current : saved.offset)
-      )
+    const token = 'emb-' + track.number
+    const saved =
+      latest.current.record?.details?.playback?.[target]?.settings?.[token] ?? defaultSubtitle()
+    // The cues that show now are the ones timed before the subtitle delay.
+    const asked = Math.max(
+      0,
+      (video.current?.currentTime ?? 0) - (refresh ? offsetLive.current : saved.offset)
+    )
     pictureAsked.current = asked
     try {
       const result = await window.explorer.request({
@@ -553,11 +560,11 @@ export function VideoViewer({
   useEffect(() => {
     mounted.current = true
 
-    const target = viewer.current,
-      changed = () => {
-        setFullscreen(document.fullscreenElement === target)
-        setActive(true)
-      }
+    const target = viewer.current
+    const changed = () => {
+      setFullscreen(document.fullscreenElement === target)
+      setActive(true)
+    }
 
     document.addEventListener('fullscreenchange', changed)
 
@@ -571,8 +578,9 @@ export function VideoViewer({
 
       document.removeEventListener('fullscreenchange', changed)
 
-      if (target && document.fullscreenElement === target)
+      if (target && document.fullscreenElement === target) {
         void document.exitFullscreen().catch(() => {})
+      }
     }
   }, [])
 
@@ -622,21 +630,22 @@ export function VideoViewer({
   }
   // The user picked a track by hand: the folder remembers its name and language for the other videos.
   const pickEmbedded = async (track: EmbeddedSubtitleInfo) => {
-    const wanted = trackPreference(track),
-      record = latest.current.record,
-      known = record?.details?.subtitleTrack
+    const wanted = trackPreference(track)
+    const record = latest.current.record
+    const known = record?.details?.subtitleTrack
     if (
       wanted &&
       record &&
       !row.readonly &&
       (known?.name !== wanted.name || known?.language !== wanted.language)
-    )
+    ) {
       void run({
         action: 'subtitleTrack',
         rowId: row.rowId,
         revision: record.revision,
         ...wanted,
       })
+    }
     return loadEmbedded(track)
   }
   useEffect(() => {
@@ -651,7 +660,7 @@ export function VideoViewer({
         if (partialTrack.current) void loadEmbedded(partialTrack.current, true)
       })
       .catch((reason) => {
-        if (mounted.current && currentFile.current === target)
+        if (mounted.current && currentFile.current === target) {
           setEmbedded({
             fileId: target,
             status: 'error',
@@ -659,6 +668,7 @@ export function VideoViewer({
             tracks: [],
             error: describeError(reason).message,
           })
+        }
       })
   }, [matroska, file?.id])
   useEffect(
@@ -689,8 +699,9 @@ export function VideoViewer({
     if (
       (at < pictures.from || (pictures.until !== undefined && at > pictures.until - 15)) &&
       Math.abs(Math.max(0, at) - pictureAsked.current) > 5
-    )
+    ) {
       void loadPictures(track, true)
+    }
   }, [time, pictures, settings.offset])
 
   useEffect(() => {
@@ -744,8 +755,8 @@ export function VideoViewer({
   }, [])
 
   useEffect(() => {
-    let alive = true,
-      observed = false
+    let alive = true
+    let observed = false
 
     const apply = (visible: boolean | undefined) => {
       windowVisible.current = background || visible !== false
@@ -778,14 +789,14 @@ export function VideoViewer({
 
   useEffect(() => {
     const update = () => {
-      const node = video.current,
-        container = stage.current
+      const node = video.current
+      const container = stage.current
       if (!node || !container) return
 
-      const bounds = container.getBoundingClientRect(),
-        ratio = (node.videoWidth || 16) / (node.videoHeight || 9),
-        width = Math.min(bounds.width, bounds.height * ratio),
-        height = width / ratio
+      const bounds = container.getBoundingClientRect()
+      const ratio = (node.videoWidth || 16) / (node.videoHeight || 9)
+      const width = Math.min(bounds.width, bounds.height * ratio)
+      const height = width / ratio
 
       setStageSize({ width: bounds.width, height: bounds.height })
       setBox({
@@ -797,8 +808,8 @@ export function VideoViewer({
       setControlHeight(controls.current?.getBoundingClientRect().height ?? 80)
     }
 
-    const node = video.current,
-      observer = new ResizeObserver(update)
+    const node = video.current
+    const observer = new ResizeObserver(update)
 
     if (stage.current) observer.observe(stage.current)
     if (controls.current) observer.observe(controls.current)
@@ -827,8 +838,8 @@ export function VideoViewer({
     if (!upNext || !autoNext) return
 
     const timer = setInterval(() => {
-      const current = nextRef.current,
-        list = filesLive.current
+      const current = nextRef.current
+      const list = filesLive.current
 
       if (
         !current ||
@@ -865,12 +876,12 @@ export function VideoViewer({
       if (event.ctrlKey || element.scrollWidth <= element.clientWidth) return
 
       const delta =
-          (Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY) *
-          (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? element.clientWidth : 1),
-        next = Math.max(
-          0,
-          Math.min(element.scrollWidth - element.clientWidth, element.scrollLeft + delta)
-        )
+        (Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY) *
+        (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? element.clientWidth : 1)
+      const next = Math.max(
+        0,
+        Math.min(element.scrollWidth - element.clientWidth, element.scrollLeft + delta)
+      )
 
       if (next !== element.scrollLeft) {
         event.preventDefault()
@@ -883,15 +894,22 @@ export function VideoViewer({
   }, [entries])
 
   const keyboard = (event: React.KeyboardEvent) => {
-    if (event.ctrlKey || event.altKey || event.metaKey || event.nativeEvent.isComposing || menuOpen)
+    if (
+      event.ctrlKey ||
+      event.altKey ||
+      event.metaKey ||
+      event.nativeEvent.isComposing ||
+      menuOpen
+    ) {
       return
+    }
 
     const target = event.target as HTMLElement
 
     if (target.closest('input,select,textarea,[contenteditable="true"]')) return
 
-    const key = event.key.toLowerCase(),
-      node = video.current
+    const key = event.key.toLowerCase()
+    const node = video.current
     if (!node) return
 
     if (event.repeat && ['k', ' ', 'm', 'f', 'c'].includes(key)) return
@@ -918,20 +936,21 @@ export function VideoViewer({
       showControls()
 
       if (key === 'k' || key === ' ') togglePlay()
-      else if (key === 'm')
+      else if (key === 'm') {
         changeAudio(audio.volume || 0.5, audio.volume === 0 ? false : !audio.muted)
-      else if (key === 'f') void toggleFullscreen()
+      } else if (key === 'f') void toggleFullscreen()
       else if (key === 'c') toggleCaptions()
-      else if (['j', 'l', 'arrowleft', 'arrowright'].includes(key))
+      else if (['j', 'l', 'arrowleft', 'arrowright'].includes(key)) {
         seek(
           node.currentTime +
             (['j', 'arrowleft'].includes(key) ? -1 : 1) * (['j', 'l'].includes(key) ? 10 : 5)
         )
-      else
+      } else {
         changeAudio(
           Math.max(0, Math.min(1, audio.volume + (key === 'arrowup' ? 0.05 : -0.05))),
           false
         )
+      }
     }
   }
 
@@ -977,8 +996,9 @@ export function VideoViewer({
           if (
             event.dataTransfer.types.includes('Files') ||
             event.dataTransfer.types.includes('application/x-media-subtitle')
-          )
+          ) {
             event.preventDefault()
+          }
         }}
         onDrop={(event) => {
           event.preventDefault()
@@ -1014,9 +1034,9 @@ export function VideoViewer({
                 !event.currentTarget.isConnected ||
                 (!background && document.hidden) ||
                 !windowVisible.current
-              )
+              ) {
                 event.currentTarget.pause()
-              else {
+              } else {
                 setPaused(false)
                 countdown()
                 showControls()
@@ -1050,16 +1070,18 @@ export function VideoViewer({
             }}
 
             onDurationChange={(event) => {
-              if (event.currentTarget === video.current)
+              if (event.currentTarget === video.current) {
                 setDuration(
                   Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0
                 )
+              }
             }}
 
             onProgress={(event) => {
               const node = event.currentTarget
-              if (node === video.current && node.buffered.length)
+              if (node === video.current && node.buffered.length) {
                 setBuffered(node.buffered.end(node.buffered.length - 1))
+              }
             }}
 
             onWaiting={() => setWaiting(true)}
@@ -1078,8 +1100,9 @@ export function VideoViewer({
                 !(!background && document.hidden) &&
                 windowVisible.current &&
                 next
-              )
+              ) {
                 countdown({ fileId: file.id, nextId: next.id, remaining: 5 })
+              }
             }}
 
             onError={(event) => {

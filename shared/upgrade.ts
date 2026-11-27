@@ -1,5 +1,6 @@
-import { fmt } from './message'
 import { mapRawCellLists } from './cellLists'
+import { fmt } from './message'
+
 // Every stored format carries its own `schemaVersion`. A newer app reads older data by running the steps below in
 // order (v1 -> v2 -> ...) right after reading; the upgraded value is written back only when that record is saved for
 // another reason. Data written by a newer app is never treated as damaged: it raises NewerFormatError, stays read-only
@@ -15,7 +16,9 @@ export const FORMAT_VERSION: Record<FormatKind, number> = {
   workspace: 1,
   settings: 1,
 }
+
 type Step = (value: Record<string, unknown>) => Record<string, unknown>
+
 // UPGRADE_STEPS[kind][n] turns version n into version n + 1.
 export const UPGRADE_STEPS: Record<FormatKind, Partial<Record<number, Step>>> = {
   folder: {
@@ -49,6 +52,7 @@ const NAMES: Record<FormatKind, string> = {
   workspace: '應用程式設定',
   settings: '設定包',
 }
+
 export class NewerFormatError extends Error {
   constructor(
     readonly format: FormatKind,
@@ -64,6 +68,7 @@ export class NewerFormatError extends Error {
     )
   }
 }
+
 // Errors cross the IPC boundary as text, so the window recognises the case by its wording.
 export const isNewerFormat = (error: unknown) =>
   error instanceof NewerFormatError || /來自較新版本的 M:orph/.test(String(error))
@@ -74,8 +79,13 @@ const plain = (value: unknown): value is Record<string, unknown> =>
 // Throws NewerFormatError when the value was written by a newer app; anything else is left to the validators.
 export function checkNotNewer(format: FormatKind, value: unknown) {
   const version = plain(value) ? value.schemaVersion : undefined
-  if (typeof version === 'number' && Number.isInteger(version) && version > FORMAT_VERSION[format])
+  if (
+    typeof version === 'number' &&
+    Number.isInteger(version) &&
+    version > FORMAT_VERSION[format]
+  ) {
     throw new NewerFormatError(format, version)
+  }
 }
 
 export function upgradeFormat(format: FormatKind, value: unknown): unknown {
@@ -86,10 +96,11 @@ export function upgradeFormat(format: FormatKind, value: unknown): unknown {
   let out = value
   for (let version = from; version < FORMAT_VERSION[format]; version++) {
     const step = UPGRADE_STEPS[format][version]
-    if (!step)
+    if (!step) {
       throw new Error(
         fmt('缺少{0}格式 v{1} → v{2} 的升級步驟', NAMES[format], version, version + 1)
       )
+    }
     out = { ...step(structuredClone(out)), schemaVersion: version + 1 }
   }
   return out
@@ -98,16 +109,18 @@ export function upgradeFormat(format: FormatKind, value: unknown): unknown {
 // A folder record carries its details as a nested format of their own.
 export function upgradeFolderRecord(value: unknown): unknown {
   const folder = upgradeFormat('folder', value)
-  if (plain(folder) && folder.details !== undefined)
+  if (plain(folder) && folder.details !== undefined) {
     return { ...folder, details: upgradeFormat('details', folder.details) }
+  }
   return folder
 }
 
 // Stored records name their kind; this picks the format for a raw value read from a .json or .json.bak file.
 export function upgradeStored(value: unknown): unknown {
   if (plain(value) && value.kind === 'media-viewer.folder') return upgradeFolderRecord(value)
-  if (plain(value) && value.kind === 'media-viewer.project')
+  if (plain(value) && value.kind === 'media-viewer.project') {
     return settleFieldGroups(upgradeFormat('project', value))
+  }
   return value
 }
 
@@ -135,19 +148,22 @@ export function settleFieldGroups(value: unknown): unknown {
   const groups = value.fieldGroups.filter(plain).flatMap((group) => {
     if (!Array.isArray(group.memberIds) || typeof group.name !== 'string') return [group]
     const members: string[] = []
-    for (const id of group.memberIds)
+    for (const id of group.memberIds) {
       if (
         typeof id === 'string' &&
         types.has(id) &&
         !used.has(id) &&
         (!members.length || fits(types.get(members[0]), types.get(id)))
-      )
+      ) {
         members.push(id)
+      }
+    }
     if (!members.length) return []
     members.forEach((id) => used.add(id))
     let name = group.name.trim().slice(0, 95) || 'Group'
-    for (let n = 2; taken.has(name.toLocaleLowerCase()); n++)
+    for (let n = 2; taken.has(name.toLocaleLowerCase()); n++) {
       name = `${group.name.trim().slice(0, 95) || 'Group'} ${n}`
+    }
     taken.add(name.toLocaleLowerCase())
     return [{ ...group, name, memberIds: members }]
   })
@@ -200,6 +216,7 @@ const factLines: Record<string, string[][]> = {
 // A list holds at most 50 components (see validateProject): when the split ones would not fit, each old component
 // becomes only its first small component, over its whole box. New ids stay within the 100 characters an id may have.
 const MAX_LIST_CELLS = 50
+
 function projectV3(value: Record<string, unknown>): Record<string, unknown> {
   const convert = (list: unknown) => {
     if (!Array.isArray(list)) return list
@@ -275,8 +292,9 @@ function projectV2(value: Record<string, unknown>): Record<string, unknown> {
     }
     return list.flatMap((cell): unknown[] => {
       if (!plain(cell) || !plain(cell.grid)) return [cell]
-      if (cell.kind === 'game-cover')
+      if (cell.kind === 'game-cover') {
         return [{ ...cell, kind: 'image', imageCover: true, imageFit: cell.imageFit ?? 'blur' }]
+      }
       if (cell.kind !== 'album-info' && cell.kind !== 'video-info') return [cell]
       const { x, w } = cell.grid as { x: number; w: number }
       const facts = { ...cell, kind: cell.kind === 'album-info' ? 'album-facts' : 'video-facts' }
@@ -311,6 +329,7 @@ const panelKinds: [string, string[], string][] = [
   ['general', ['general'], '一般'],
 ]
 const cardKinds = ['game', 'book', 'music', 'video', 'general']
+
 function projectV1(value: Record<string, unknown>): Record<string, unknown> {
   const {
     contentCells,
@@ -327,11 +346,12 @@ function projectV1(value: Record<string, unknown>): Record<string, unknown> {
     : {}
   if (!plain(rest.layoutRules)) {
     const types: Record<string, unknown> = {}
-    if (plain(kindLayouts))
+    if (plain(kindLayouts)) {
       for (const kind of cardKinds) {
         const id = kindLayouts[kind === 'music' || kind === 'video' ? 'media' : kind]
         if (id !== undefined) types[kind] = id
       }
+    }
     const card: Record<string, unknown> = {
       ...(Object.keys(types).length ? { types } : {}),
       ...(plain(folderLayouts) && Object.keys(folderLayouts).length
@@ -339,14 +359,15 @@ function projectV1(value: Record<string, unknown>): Record<string, unknown> {
         : {}),
     }
     if (Object.keys(card).length) rules.card = card
-    if (plain(folderBookPresets) && Object.keys(folderBookPresets).length)
+    if (plain(folderBookPresets) && Object.keys(folderBookPresets).length) {
       rules.panel = { folders: { ...folderBookPresets } }
+    }
   }
-  const panel: Record<string, unknown> = plain(rules.panel) ? { ...rules.panel } : {},
-    types: Record<string, unknown> = plain(panel.types) ? { ...panel.types } : {}
-  const presets: unknown[] = [],
-    ids = new Set<string>(),
-    names = new Set<string>()
+  const panel: Record<string, unknown> = plain(rules.panel) ? { ...rules.panel } : {}
+  const types: Record<string, unknown> = plain(panel.types) ? { ...panel.types } : {}
+  const presets: unknown[] = []
+  const ids = new Set<string>()
+  const names = new Set<string>()
   const keep = (preset: unknown) => {
     presets.push(preset)
     if (plain(preset)) {
@@ -392,6 +413,7 @@ function projectV1(value: Record<string, unknown>): Record<string, unknown> {
     ...(presets.length ? { panelPresets: presets } : {}),
   }
 }
+
 // A book template from before R-362 had the cover drawn beside it: the cover becomes a component on the left and the
 // rest moves into the remaining two thirds, components that would meet moving down. When that does not fit the
 // 100 rows (or the list is not as expected), the template is kept as it was, without the cover.
@@ -405,8 +427,9 @@ function withCover(cells: unknown[]): unknown[] {
         plain(cell.grid) &&
         ['x', 'y', 'w', 'h'].every((k) => inside((cell.grid as Record<string, unknown>)[k]))
     )
-  )
+  ) {
     return cells
+  }
   const list = cells as {
     kind?: unknown
     cellId?: unknown
@@ -414,20 +437,20 @@ function withCover(cells: unknown[]): unknown[] {
   }[]
   if (list.some((cell) => cell.kind === 'image' || cell.cellId === 'book-cover')) return cells
   const moved = list.map((cell) => {
-    const x = Math.min(11, 4 + Math.round((cell.grid.x * 8) / 12)),
-      end = 4 + Math.round(((cell.grid.x + cell.grid.w) * 8) / 12)
+    const x = Math.min(11, 4 + Math.round((cell.grid.x * 8) / 12))
+    const end = 4 + Math.round(((cell.grid.x + cell.grid.w) * 8) / 12)
     return { ...cell, grid: { ...cell.grid, x, w: Math.max(1, Math.min(12, end) - x) } }
   })
-  const bottom = Math.max(4, ...list.map((cell) => cell.grid.y + cell.grid.h)),
-    // The same component as shared/layouts.ts bookCover (not imported: the format code stays free of layout code).
-    cover = {
-      cellId: 'book-cover',
-      kind: 'image',
-      imageCover: true,
-      grid: { x: 0, y: 0, w: 4, h: Math.min(8, bottom) },
-      style: { textColor: '#e4e6e8', backgroundColor: 'transparent' },
-    },
-    placed: { x: number; y: number; w: number; h: number }[] = [cover.grid]
+  const bottom = Math.max(4, ...list.map((cell) => cell.grid.y + cell.grid.h))
+  // The same component as shared/layouts.ts bookCover (not imported: the format code stays free of layout code).
+  const cover = {
+    cellId: 'book-cover',
+    kind: 'image',
+    imageCover: true,
+    grid: { x: 0, y: 0, w: 4, h: Math.min(8, bottom) },
+    style: { textColor: '#e4e6e8', backgroundColor: 'transparent' },
+  }
+  const placed: { x: number; y: number; w: number; h: number }[] = [cover.grid]
   const meets = (a: (typeof placed)[number], b: (typeof placed)[number]) =>
     a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h
   for (const cell of [...moved].sort((a, b) => a.grid.y - b.grid.y || a.grid.x - b.grid.x)) {

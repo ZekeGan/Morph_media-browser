@@ -1,10 +1,13 @@
-import { memo, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react'
-import { KindBadge } from './folderKind'
+import { type CSSProperties, type KeyboardEvent, memo, type MouseEvent } from 'react'
+
 import type { FolderRow, Project, Request, Response } from '../../shared/model'
+
 import { Card } from '../cells/Card'
 import { t as tr } from '../i18n'
+import { KindBadge } from './folderKind'
 
 type Act = (request: Request) => Promise<Response | undefined>
+
 export type Gestures = (id: string) => {
   onClick: (e: MouseEvent) => void
   onDoubleClick: () => void

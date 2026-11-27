@@ -1,9 +1,11 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
-import { projectFile } from '../electron/files'
+
 import type { Cell } from '../shared/model'
+
+import { projectFile } from '../electron/files'
+import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
 // R-413: the layout configuration window. A folder that is not a work takes its level's layout, a work its kind's;
@@ -11,21 +13,21 @@ import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/ap
 // layout rules and shown on its card.
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'layout-config-ui-')),
-  media = path.join(root, 'Library'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'layout-config-ui-'))
+const media = path.join(root, 'Library')
+const local = path.join(root, 'local')
 const album = path.join(media, 'Artist', 'Album')
 await fs.mkdir(album, { recursive: true })
 for (const name of ['01.mp3', '02.mp3']) await fs.writeFile(path.join(album, name), 'not audio')
 const lib = new Library(local, undefined, false)
 await lib.init()
 await lib.create(media, { name: 'Layouts', scanAll: true, depth: { mode: 'through', level: 3 } })
-const project = lib.snapshot().projects[0].project!,
-  style = { textColor: '#e4e6e8', backgroundColor: 'transparent' },
-  layout = (text: string): Cell[] => [
-    { cellId: 'name', kind: 'name', grid: { x: 0, y: 0, w: 12, h: 1 }, style },
-    { cellId: 'tag', kind: 'static-text', text, grid: { x: 0, y: 1, w: 12, h: 1 }, style },
-  ]
+const project = lib.snapshot().projects[0].project!
+const style = { textColor: '#e4e6e8', backgroundColor: 'transparent' }
+const layout = (text: string): Cell[] => [
+  { cellId: 'name', kind: 'name', grid: { x: 0, y: 0, w: 12, h: 1 }, style },
+  { cellId: 'tag', kind: 'static-text', text, grid: { x: 0, y: 1, w: 12, h: 1 }, style },
+]
 await lib.saveProject({
   ...project,
   cells: layout('LAYOUT-0'),
@@ -133,8 +135,8 @@ try {
   await dialog.getByRole('button', { name: '保存', exact: true }).click()
   await dialog.waitFor({ state: 'hidden' })
   await card.getByText('LAYOUT-A').waitFor()
-  const file = JSON.parse(await fs.readFile(projectFile(media, project.projectId), 'utf8')),
-    saved = file.project ?? file
+  const file = JSON.parse(await fs.readFile(projectFile(media, project.projectId), 'utf8'))
+  const saved = file.project ?? file
   const artist = lib.snapshot().rows.find((r) => r.name === 'Artist')
   assert.equal(saved.layoutRules?.card?.folders?.[artist?.record?.folderId ?? ''], 'albums')
   assert.deepEqual(saved.layoutRules?.card?.levels, ['top'])

@@ -1,25 +1,27 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { execFile } from 'node:child_process'
+import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
-import { randomUUID } from 'node:crypto'
+import { test } from 'node:test'
+import { promisify } from 'node:util'
+
+import { DATA_DIR, defaultCells, type Project, validateFolder } from '../shared/model'
+
 import {
   atomicJson,
+  ensureFolder,
   exists,
   folderFile,
+  projectFile,
   readFolder,
   readJson,
+  restoreJson,
   safePath,
   saveFolder,
-  projectFile,
-  ensureFolder,
-  restoreJson,
 } from '../electron/files'
-import { DATA_DIR, defaultCells, validateFolder, type Project } from '../shared/model'
 import { hideDirectories } from '../electron/hidden'
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
+import { Library } from '../electron/library'
 
 async function fixture(t: { after: (fn: () => Promise<void>) => void }) {
   const base = path.resolve('.test-output')
@@ -29,8 +31,8 @@ async function fixture(t: { after: (fn: () => Promise<void>) => void }) {
     if (!root.startsWith(base + path.sep)) throw new Error('Unsafe fixture')
     await fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
-  const p1 = path.join(root, 'P1'),
-    p2 = path.join(root, 'P2')
+  const p1 = path.join(root, 'P1')
+  const p2 = path.join(root, 'P2')
   await fs.mkdir(path.join(p1, 'A'), { recursive: true })
   await fs.mkdir(path.join(p1, 'B', 'C'), { recursive: true })
   await fs.mkdir(p2)
@@ -38,19 +40,20 @@ async function fixture(t: { after: (fn: () => Promise<void>) => void }) {
   await lib.init()
   return { root, p1, p2, lib }
 }
+
 const input = {
   name: '漫畫',
   depth: { mode: 'through' as const, level: 2 },
 }
 test('project removal previews are read-only; stale plans fail before writes; shared data and archived backups survive', async (t) => {
   const { p1, p2, lib } = await fixture(t)
-  let state = await lib.create(p1, input),
-    first = state.projects[0].project!
+  let state = await lib.create(p1, input)
+  let first = state.projects[0].project!
   state = await lib.create(p1, { ...input, name: 'Other' })
   const other = state.projects[1].project!
   await lib.create(p2, input)
-  const dir = path.join(p1, 'A'),
-    record = await readFolder(dir)
+  const dir = path.join(p1, 'A')
+  const record = await readFolder(dir)
   record.attributes = [
     { attributeId: 'common', key: 'shared', type: 'string', value: 'COMMON', source: 'manual' },
   ]
@@ -65,17 +68,17 @@ test('project removal previews are read-only; stale plans fail before writes; sh
   await saveFolder(dir, record, record.revision)
   await fs.writeFile(path.join(dir, 'original.txt'), 'MEDIA')
   await fs.writeFile(path.join(dir, DATA_DIR, 'unknown.bin'), 'UNKNOWN')
-  const before = await fs.readFile(folderFile(dir)),
-    definition = await fs.readFile(projectFile(p1, first.projectId))
+  const before = await fs.readFile(folderFile(dir))
+  const definition = await fs.readFile(projectFile(p1, first.projectId))
   const cancelled = await lib.previewRemoveProject(first.projectId)
   assert.equal(cancelled.privateCount, 1)
   assert.deepEqual(await fs.readFile(folderFile(dir)), before)
   await lib.saveProject({ ...first, name: 'Changed' })
   await assert.rejects(lib.removeProject(cancelled.token), /預覽後資料已變更/)
   assert.deepEqual(await fs.readFile(folderFile(dir)), before)
-  const preview = await lib.previewRemoveProject(first.projectId),
-    currentDefinition = await fs.readFile(projectFile(p1, first.projectId)),
-    result = await lib.removeProject(preview.token)
+  const preview = await lib.previewRemoveProject(first.projectId)
+  const currentDefinition = await fs.readFile(projectFile(p1, first.projectId))
+  const result = await lib.removeProject(preview.token)
   assert.deepEqual(result.failed, [])
   assert.equal(lib.snapshot().projects.length, 2)
   assert.ok(lib.snapshot().projects.some((p) => p.projectId === other.projectId))
@@ -104,24 +107,25 @@ test('project removal previews are read-only; stale plans fail before writes; sh
   assert.ok(definition.length)
 })
 test('project removal stops on private-write failure, keeps active settings and can retry with backups', async (t) => {
-  const { p1, lib } = await fixture(t),
-    state = await lib.create(p1, input),
-    project = state.projects[0].project!,
-    dir = path.join(p1, 'A'),
-    record = await readFolder(dir)
+  const { p1, lib } = await fixture(t)
+  const state = await lib.create(p1, input)
+  const project = state.projects[0].project!
+  const dir = path.join(p1, 'A')
+  const record = await readFolder(dir)
   record.projectOverrides[project.projectId] = [
     { attributeId: 'mine', key: 'private', type: 'string', value: 'PRIVATE', source: 'manual' },
   ]
   await saveFolder(dir, record, record.revision)
-  const before = await fs.readFile(folderFile(dir)),
-    preview = await lib.previewRemoveProject(project.projectId),
-    rename = fs.rename.bind(fs)
+  const before = await fs.readFile(folderFile(dir))
+  const preview = await lib.previewRemoveProject(project.projectId)
+  const rename = fs.rename.bind(fs)
   t.mock.method(
     fs,
     'rename',
     async (source: Parameters<typeof fs.rename>[0], target: Parameters<typeof fs.rename>[1]) => {
-      if (String(target) === folderFile(dir))
+      if (String(target) === folderFile(dir)) {
         throw Object.assign(new Error('simulated write denied'), { code: 'EACCES' })
+      }
       return rename(source, target)
     }
   )
@@ -135,10 +139,11 @@ test('project removal stops on private-write failure, keeps active settings and 
   assert.deepEqual((await lib.removeProject(retry.token)).failed, [])
   assert.deepEqual(await fs.readFile(folderFile(dir) + '.bak'), before)
 })
+
 async function createTextProject(lib: Library, root: string, options = input) {
-  const state = await lib.create(root, options),
-    project = state.projects.find((p) => p.root === root)!.project!,
-    attributeId = randomUUID()
+  const state = await lib.create(root, options)
+  const project = state.projects.find((p) => p.root === root)!.project!
+  const attributeId = randomUUID()
   return lib.saveProject({
     ...project,
     fieldBindings: [{ alias: 'title', attributeId, type: 'string' }],
@@ -147,10 +152,10 @@ async function createTextProject(lib: Library, root: string, options = input) {
 }
 
 test('creating again after cleanup tolerates preserved project archives without reviving an old root identity', async (t) => {
-  const { p1, lib } = await fixture(t),
-    state = await lib.create(p1, input),
-    old = state.projects[0].project!,
-    childBytes = await fs.readFile(folderFile(path.join(p1, 'A')))
+  const { p1, lib } = await fixture(t)
+  const state = await lib.create(p1, input)
+  const old = state.projects[0].project!
+  const childBytes = await fs.readFile(folderFile(path.join(p1, 'A')))
   const common = await readFolder(p1)
   common.attributes = [
     { attributeId: 'common', key: 'shared', type: 'string', value: 'KEEP', source: 'manual' },
@@ -158,32 +163,33 @@ test('creating again after cleanup tolerates preserved project archives without 
   await saveFolder(p1, common, common.revision)
   const preview = await lib.previewRemoveProject(old.projectId)
   assert.deepEqual((await lib.removeProject(preview.token)).failed, [])
-  const dir = path.join(p1, DATA_DIR, 'projects'),
-    archives = new Map(
-      await Promise.all(
-        (await fs.readdir(dir)).map(
-          async (name) => [name, await fs.readFile(path.join(dir, name))] as const
-        )
+  const dir = path.join(p1, DATA_DIR, 'projects')
+  const archives = new Map(
+    await Promise.all(
+      (await fs.readdir(dir)).map(
+        async (name) => [name, await fs.readFile(path.join(dir, name))] as const
       )
     )
+  )
   await fs.unlink(folderFile(p1))
   await fs.unlink(folderFile(p1) + '.bak')
   await assert.rejects(lib.link(p1), /請重新新增專案/)
   assert.equal(await exists(folderFile(p1)), false)
-  const next = await lib.create(p1, { ...input, name: 'New' }),
-    project = next.projects[0].project!
+  const next = await lib.create(p1, { ...input, name: 'New' })
+  const project = next.projects[0].project!
   assert.notEqual(project.rootFolderId, old.rootFolderId)
   assert.notEqual(project.projectId, old.projectId)
   assert.equal(next.projects.length, 1)
-  for (const [name, bytes] of archives)
+  for (const [name, bytes] of archives) {
     assert.deepEqual(await fs.readFile(path.join(dir, name)), bytes)
+  }
   assert.deepEqual(await fs.readFile(folderFile(path.join(p1, 'A'))), childBytes)
   assert.equal((await lib.link(p1)).projects.length, 1)
 })
 test('only empty metadata or verified removed-project archives allow missing-record initialization', async (t) => {
-  const { root, p1, p2, lib } = await fixture(t),
-    state = await lib.create(p1, input),
-    project = state.projects[0].project!
+  const { root, p1, p2, lib } = await fixture(t)
+  const state = await lib.create(p1, input)
+  const project = state.projects[0].project!
   await fs.mkdir(path.join(p2, DATA_DIR, 'projects'), { recursive: true })
   const fresh = await ensureFolder(p2, false)
   assert.ok(fresh.created)
@@ -204,16 +210,16 @@ test('only empty metadata or verified removed-project archives allow missing-rec
     { name: 'assets', file: 'assets/picture.png', bytes: 'IMAGE' },
   ]
   for (const sample of cases) {
-    const dir = path.join(root, 'unsafe-' + sample.name),
-      file = path.join(dir, DATA_DIR, sample.file)
+    const dir = path.join(root, 'unsafe-' + sample.name)
+    const file = path.join(dir, DATA_DIR, sample.file)
     await fs.mkdir(path.dirname(file), { recursive: true })
     await fs.writeFile(file, sample.bytes)
     await assert.rejects(ensureFolder(dir, false), /原檔保留/)
     assert.equal(await exists(folderFile(dir)), false)
     assert.equal(await fs.readFile(file, 'utf8'), sample.bytes)
   }
-  const linked = path.join(root, 'linked'),
-    outside = path.join(root, 'outside-archives')
+  const linked = path.join(root, 'linked')
+  const outside = path.join(root, 'outside-archives')
   await fs.mkdir(path.join(linked, DATA_DIR), { recursive: true })
   await fs.mkdir(outside)
   await fs.symlink(
@@ -225,11 +231,11 @@ test('only empty metadata or verified removed-project archives allow missing-rec
   assert.deepEqual(await fs.readdir(outside), [])
 })
 test('a missing root with a valid backup requires explicit recovery and preserves identity', async (t) => {
-  const { root, p1, lib } = await fixture(t),
-    state = await lib.create(p1, input),
-    project = state.projects[0].project!,
-    backup = await fs.readFile(folderFile(p1) + '.bak'),
-    registry = await fs.readFile(path.join(lib.userData, 'poc-projects.json'))
+  const { root, p1, lib } = await fixture(t)
+  const state = await lib.create(p1, input)
+  const project = state.projects[0].project!
+  const backup = await fs.readFile(folderFile(p1) + '.bak')
+  const registry = await fs.readFile(path.join(lib.userData, 'poc-projects.json'))
   await fs.unlink(folderFile(p1))
   await assert.rejects(lib.create(p1, input), /備份.*復原/)
   assert.equal(await exists(folderFile(p1)), false)
@@ -244,9 +250,9 @@ test('a missing root with a valid backup requires explicit recovery and preserve
   assert.deepEqual(await fs.readFile(folderFile(p1) + '.bak'), backup)
 })
 test('failed initialization beside archives preserves them and leaves a recoverable backup', async (t) => {
-  const { p1, lib } = await fixture(t),
-    state = await lib.create(p1, input),
-    project = state.projects[0].project!
+  const { p1, lib } = await fixture(t)
+  const state = await lib.create(p1, input)
+  const project = state.projects[0].project!
   const common = await readFolder(p1)
   common.attributes = [
     { attributeId: 'common', key: 'shared', type: 'string', value: 'KEEP', source: 'manual' },
@@ -256,15 +262,16 @@ test('failed initialization beside archives preserves them and leaves a recovera
   await lib.removeProject(retained.token)
   await fs.unlink(folderFile(p1))
   await fs.unlink(folderFile(p1) + '.bak')
-  const archive = projectFile(p1, project.projectId) + '.removed-' + retained.token,
-    bytes = await fs.readFile(archive),
-    rename = fs.rename.bind(fs)
+  const archive = projectFile(p1, project.projectId) + '.removed-' + retained.token
+  const bytes = await fs.readFile(archive)
+  const rename = fs.rename.bind(fs)
   t.mock.method(
     fs,
     'rename',
     async (source: Parameters<typeof fs.rename>[0], target: Parameters<typeof fs.rename>[1]) => {
-      if (String(target) === folderFile(p1))
+      if (String(target) === folderFile(p1)) {
         throw Object.assign(new Error('simulated disk full'), { code: 'ENOSPC' })
+      }
       return rename(source, target)
     }
   )
@@ -286,8 +293,8 @@ test('failed initialization beside archives preserves them and leaves a recovera
 
 test('root and project corruption can reconnect and recover without replacing good backups', async (t) => {
   const { root, p1, lib } = await fixture(t)
-  const s = await lib.create(p1, input),
-    project = s.projects[0].project!
+  const s = await lib.create(p1, input)
+  const project = s.projects[0].project!
   const file = path.join(p1, DATA_DIR, 'projects', `${project.projectId}.json`)
   const backup = await fs.readFile(`${file}.bak`)
   await fs.writeFile(file, 'broken project')
@@ -308,13 +315,14 @@ test('root and project corruption can reconnect and recover without replacing go
 
 test('failed atomic replacement leaves original readable and retry succeeds', async (t) => {
   const { p1, lib } = await fixture(t)
-  const s = await createTextProject(lib, p1),
-    row = s.rows.find((r) => r.name === 'A')!
-  const original = await fs.readFile(folderFile(row.path)),
-    rename = fs.rename
+  const s = await createTextProject(lib, p1)
+  const row = s.rows.find((r) => r.name === 'A')!
+  const original = await fs.readFile(folderFile(row.path))
+  const rename = fs.rename
   const injected = t.mock.method(fs, 'rename', async (source: any, target: any) => {
-    if (String(target) === folderFile(row.path))
+    if (String(target) === folderFile(row.path)) {
       throw Object.assign(new Error('simulated disk full'), { code: 'ENOSPC' })
+    }
     return rename(source, target)
   })
   await assert.rejects(
@@ -351,8 +359,9 @@ test('cancelled scanning preserves completed records and can resume', async (t) 
   cancel = false
   const complete = await lib.scan()
   assert.equal(complete.rows.length, 43)
-  for (const row of complete.rows)
+  for (const row of complete.rows) {
     if (identities.has(row.path)) assert.equal(row.record!.folderId, identities.get(row.path))
+  }
 })
 
 test(
@@ -389,12 +398,12 @@ test(
   'Windows denied-write ACL reports the row and scan continues',
   { skip: process.platform !== 'win32' },
   async (t) => {
-    const { p1, lib } = await fixture(t),
-      target = path.join(p1, 'A'),
-      exec = promisify(execFile)
+    const { p1, lib } = await fixture(t)
+    const target = path.join(p1, 'A')
+    const exec = promisify(execFile)
     // Absolute paths: a Unix-style whoami earlier in PATH (Git for Windows) does not understand these options.
-    const system32 = path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32'),
-      icacls = path.join(system32, 'icacls.exe')
+    const system32 = path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32')
+    const icacls = path.join(system32, 'icacls.exe')
     const { stdout } = await exec(path.join(system32, 'whoami.exe'), ['/user', '/fo', 'csv', '/nh'])
     const sid = stdout.match(/S-1-[\d-]+/)?.[0]
     assert.ok(sid)
@@ -413,8 +422,8 @@ test(
 
 test('depth modes, portable values, templates, fresh-device reconnect and images', async (t) => {
   const { root, p1, p2, lib } = await fixture(t)
-  let s = await createTextProject(lib, p1),
-    p = s.projects[0].project!
+  let s = await createTextProject(lib, p1)
+  let p = s.projects[0].project!
   assert.deepEqual(s.rows.map((r) => r.name).sort(), ['A', 'B', 'P1'])
   s = await lib.saveProject({ ...p, depth: { mode: 'exact', level: 3 } })
   assert.deepEqual(
@@ -425,12 +434,12 @@ test('depth modes, portable values, templates, fresh-device reconnect and images
   p = s.projects[0].project!
   s = await lib.saveProject({ ...p, depth: input.depth })
   p = s.projects[0].project!
-  let a = s.rows.find((r) => r.name === 'A')!,
-    field = p.fieldBindings[0].attributeId
+  let a = s.rows.find((r) => r.name === 'A')!
+  let field = p.fieldBindings[0].attributeId
   s = await lib.saveValues(a.rowId, a.record!.revision, { [field]: '可攜作品 A' })
   a = s.rows.find((r) => r.name === 'A')!
-  const image = path.join(root, 'cover.png'),
-    bytes = Buffer.from('89504e470d0a1a0a00000000', 'hex')
+  const image = path.join(root, 'cover.png')
+  const bytes = Buffer.from('89504e470d0a1a0a00000000', 'hex')
   await fs.writeFile(image, bytes)
   s = await lib.addImage(a.rowId, a.record!.revision, image)
   a = s.rows.find((r) => r.name === 'A')!
@@ -453,9 +462,9 @@ test('depth modes, portable values, templates, fresh-device reconnect and images
 
 test('revision conflicts and interrupted writes preserve saved record; backup restores corrupt data', async (t) => {
   const { p1, lib } = await fixture(t)
-  let s = await createTextProject(lib, p1),
-    a = s.rows.find((r) => r.name === 'A')!,
-    field = s.projects[0].project!.fieldBindings[0].attributeId
+  let s = await createTextProject(lib, p1)
+  let a = s.rows.find((r) => r.name === 'A')!
+  let field = s.projects[0].project!.fieldBindings[0].attributeId
   const revision = a.record!.revision
   s = await lib.saveValues(a.rowId, revision, { [field]: '已保存' })
   a = s.rows.find((r) => r.name === 'A')!
@@ -481,8 +490,8 @@ test('O80 cleanup excludes overlapping projects, portable exclusions and moved f
   await lib.create(p1, input)
   await lib.create(p1, { ...input, name: '同根第二專案' })
   let s = await lib.create(p2, input)
-  const a = s.rows.find((r) => r.name === 'A')!,
-    oldId = a.record!.folderId
+  const a = s.rows.find((r) => r.name === 'A')!
+  const oldId = a.record!.folderId
   const preview = await lib.previewCleanup(a.rowId)
   assert.equal(preview.count, 1)
   await lib.cleanup(preview.token, false)
@@ -506,8 +515,8 @@ test('O80 cleanup excludes overlapping projects, portable exclusions and moved f
 
 test('cleanup preview refuses changed data and never deletes unknown files or originals', async (t) => {
   const { p1, lib } = await fixture(t)
-  let s = await createTextProject(lib, p1),
-    a = s.rows.find((r) => r.name === 'A')!
+  let s = await createTextProject(lib, p1)
+  let a = s.rows.find((r) => r.name === 'A')!
   const preview = await lib.previewCleanup(a.rowId)
   await lib.saveValues(a.rowId, a.record!.revision, {
     [s.projects[0].project!.fieldBindings[0].attributeId]: 'changed',
@@ -529,8 +538,8 @@ test('duplicate IDs block writes until explicit copy resolution', async (t) => {
   const { p1, lib } = await fixture(t)
   await lib.create(p1, input)
   await fs.cp(path.join(p1, 'A'), path.join(p1, 'copy'), { recursive: true })
-  let s = await lib.scan(),
-    copies = s.rows.filter((r) => r.duplicate)
+  let s = await lib.scan()
+  let copies = s.rows.filter((r) => r.duplicate)
   assert.equal(copies.length, 2)
   await assert.rejects(lib.saveValues(copies[0].rowId, copies[0].record!.revision, {}))
   s = await lib.copyIdentity(copies.find((r) => r.name === 'copy')!.rowId)
@@ -561,8 +570,8 @@ test('foreign metadata and junctions are not followed or overwritten', async (t)
 
 test('project writes reject overlapping cells and preserve external revision changes', async (t) => {
   const { p1, lib } = await fixture(t)
-  const s = await lib.create(p1, input),
-    p = s.projects[0].project!
+  const s = await lib.create(p1, input)
+  const p = s.projects[0].project!
   const bad = structuredClone(p)
   bad.cells[1].grid = { ...bad.cells[0].grid }
   await assert.rejects(lib.saveProject(bad), /重疊/)
@@ -573,15 +582,15 @@ test('project writes reject overlapping cells and preserve external revision cha
 })
 
 test('removing an unused empty root retires all root metadata to verified local recovery and recreates cleanly', async (t) => {
-  const { p1, lib } = await fixture(t),
-    state = await lib.create(p1, input),
-    project = state.projects[0].project!,
-    child = await fs.readFile(folderFile(path.join(p1, 'A')))
+  const { p1, lib } = await fixture(t)
+  const state = await lib.create(p1, input)
+  const project = state.projects[0].project!
+  const child = await fs.readFile(folderFile(path.join(p1, 'A')))
   await fs.writeFile(path.join(p1, 'original.txt'), 'MEDIA')
-  const primary = await fs.readFile(folderFile(p1)),
-    backup = await fs.readFile(folderFile(p1) + '.bak'),
-    definition = await fs.readFile(projectFile(p1, project.projectId)),
-    preview = await lib.previewRemoveProject(project.projectId)
+  const primary = await fs.readFile(folderFile(p1))
+  const backup = await fs.readFile(folderFile(p1) + '.bak')
+  const definition = await fs.readFile(projectFile(p1, project.projectId))
+  const preview = await lib.previewRemoveProject(project.projectId)
   assert.equal(preview.rootCleanup, true)
   assert.equal(await exists(folderFile(p1)), true)
   assert.deepEqual((await lib.removeProject(preview.token)).failed, [])
@@ -603,19 +612,19 @@ test('removing an unused empty root retires all root metadata to verified local 
   assert.equal(((await readJson(path.join(recovery, 'manifest.json'))) as any).root, p1)
   assert.equal(await fs.readFile(path.join(p1, 'original.txt'), 'utf8'), 'MEDIA')
   assert.deepEqual(await fs.readFile(folderFile(path.join(p1, 'A'))), child)
-  const next = await lib.create(p1, { ...input, name: 'Recreated' }),
-    created = next.projects[0].project!
+  const next = await lib.create(p1, { ...input, name: 'Recreated' })
+  const created = next.projects[0].project!
   assert.notEqual(created.projectId, project.projectId)
   assert.notEqual(created.rootFolderId, project.rootFolderId)
   assert.equal(next.problems.length, 0)
   assert.equal((await lib.link(p1)).projects.length, 1)
 })
 test('root retirement keeps unknown/shared/overlapping data and rejects additions after preview', async (t) => {
-  const { p1, lib } = await fixture(t),
-    state = await lib.create(p1, input),
-    project = state.projects[0].project!,
-    preview = await lib.previewRemoveProject(project.projectId),
-    unknown = path.join(p1, DATA_DIR, 'unknown.txt')
+  const { p1, lib } = await fixture(t)
+  const state = await lib.create(p1, input)
+  const project = state.projects[0].project!
+  const preview = await lib.previewRemoveProject(project.projectId)
+  const unknown = path.join(p1, DATA_DIR, 'unknown.txt')
   await fs.writeFile(unknown, 'UNKNOWN')
   await assert.rejects(lib.removeProject(preview.token), /根資料夾內容或歸屬已變更/)
   assert.equal(lib.snapshot().projects.length, 1)
@@ -626,48 +635,52 @@ test('root retirement keeps unknown/shared/overlapping data and rejects addition
   assert.ok(await readFolder(p1))
   const next = await lib.create(p1, input)
   assert.equal(next.problems.length, 0)
-  const childState = await lib.create(path.join(p1, 'A'), input),
-    parent = childState.projects.find((p) => p.root === p1)!.project!
+  const childState = await lib.create(path.join(p1, 'A'), input)
+  const parent = childState.projects.find((p) => p.root === p1)!.project!
   await fs.unlink(unknown)
   assert.equal((await lib.previewRemoveProject(parent.projectId)).rootCleanup, false)
 })
 test('recovery copy or root cleanup failure keeps readable primary identity and recoverable media', async (t) => {
   for (const failure of ['copy', 'unlink', 'rmdir']) {
-    const { p1, lib } = await fixture(t),
-      state = await lib.create(p1, input),
-      project = state.projects[0].project!,
-      primary = await fs.readFile(folderFile(p1)),
-      preview = await lib.previewRemoveProject(project.projectId)
+    const { p1, lib } = await fixture(t)
+    const state = await lib.create(p1, input)
+    const project = state.projects[0].project!
+    const primary = await fs.readFile(folderFile(p1))
+    const preview = await lib.previewRemoveProject(project.projectId)
     await fs.writeFile(path.join(p1, 'media.bin'), 'ORIGINAL')
-    const open = fs.open.bind(fs),
-      unlink = fs.unlink.bind(fs),
-      rmdir = fs.rmdir.bind(fs)
-    if (failure === 'copy')
+    const open = fs.open.bind(fs)
+    const unlink = fs.unlink.bind(fs)
+    const rmdir = fs.rmdir.bind(fs)
+    if (failure === 'copy') {
       t.mock.method(fs, 'open', async (...args: Parameters<typeof fs.open>) => {
-        if (String(args[0]).startsWith(preview.recoveryPath!))
+        if (String(args[0]).startsWith(preview.recoveryPath!)) {
           throw new Error('simulated recovery disk full')
+        }
         return open(...args)
       })
-    else if (failure === 'unlink')
+    } else if (failure === 'unlink') {
       t.mock.method(fs, 'unlink', async (file: Parameters<typeof fs.unlink>[0]) => {
         if (String(file) === folderFile(p1) + '.bak') throw new Error('simulated cleanup denied')
         return unlink(file)
       })
-    else
+    } else {
       t.mock.method(fs, 'rmdir', async (...args: Parameters<typeof fs.rmdir>) => {
-        if (String(args[0]) === path.join(p1, DATA_DIR))
+        if (String(args[0]) === path.join(p1, DATA_DIR)) {
           throw new Error('simulated final directory denied')
+        }
         return rmdir(...args)
       })
+    }
     const result = await lib.removeProject(preview.token)
     assert.equal(result.failed.length, 1)
     assert.deepEqual(await fs.readFile(folderFile(p1)), primary)
     assert.equal(await fs.readFile(path.join(p1, 'media.bin'), 'utf8'), 'ORIGINAL')
-    if (failure === 'unlink')
+    if (failure === 'unlink') {
       assert.deepEqual(
         await fs.readFile(path.join(preview.recoveryPath!, DATA_DIR, 'folder.json')),
         primary
       )
+    }
     t.mock.restoreAll()
     assert.equal((await lib.create(p1, input)).projects[0].error, undefined)
   }
@@ -694,8 +707,9 @@ test('R-464: a folder and every folder below it are cleared together; another pr
   await saveFolder(path.join(p1, 'B', 'D'), d, d.revision)
   s = await lib.scan()
   const b = s.rows.find((r) => r.path === path.join(p1, 'B'))!
-  for (const dir of ['B', 'B/C', 'B/D', 'B/D/E'])
+  for (const dir of ['B', 'B/C', 'B/D', 'B/D/E']) {
     assert.equal(await exists(folderFile(path.join(p1, dir))), true, dir)
+  }
   // The project's own root is refused: that is the project's "remove completely".
   const top = s.rows.find((r) => r.path === p1)!
   await assert.rejects(lib.previewCleanup(top.rowId, 'tree'), /完全移除/)
@@ -703,7 +717,7 @@ test('R-464: a folder and every folder below it are cleared together; another pr
   assert.equal(preview.scope, 'tree')
   assert.equal(preview.count, 3, 'B, C and E (D keeps its tool decision)')
   // Skip lines are messages carrying the folder as a JSON value.
-  for (const kept of ['Inner', 'Gone', path.join('B', 'D')])
+  for (const kept of ['Inner', 'Gone', path.join('B', 'D')]) {
     assert.ok(
       preview.skipped.some((line) =>
         line.includes(
@@ -712,10 +726,12 @@ test('R-464: a folder and every folder below it are cleared together; another pr
       ),
       kept + ' is listed as kept'
     )
+  }
   assert.ok(!preview.paths.some((p) => p.includes(path.join('B', 'Inner'))))
   await lib.cleanup(preview.token, false)
-  for (const dir of ['B', 'B/C', 'B/D/E'])
+  for (const dir of ['B', 'B/C', 'B/D/E']) {
     assert.equal(await exists(path.join(p1, dir, DATA_DIR)), false, dir + ' is cleared')
+  }
   assert.equal((await readFolder(path.join(p1, 'B', 'D'))).details?.boundary?.role, 'tool')
   assert.equal(await exists(path.join(p1, 'B', 'Gone', DATA_DIR, 'projects')), true)
   assert.equal(

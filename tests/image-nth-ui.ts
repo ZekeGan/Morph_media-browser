@@ -1,18 +1,20 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
-import type { Cell } from '../shared/model'
 import { deflateSync } from 'node:zlib'
+
+import type { Cell } from '../shared/model'
+
 import { crc32 } from '../electron/archive'
+import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
 // A small solid RGB picture that the browser's image decoder accepts.
 function png(width: number, height: number) {
   const chunk = (type: string, data: Buffer) => {
-    const body = Buffer.concat([Buffer.from(type), data]),
-      head = Buffer.alloc(4),
-      tail = Buffer.alloc(4)
+    const body = Buffer.concat([Buffer.from(type), data])
+    const head = Buffer.alloc(4)
+    const tail = Buffer.alloc(4)
     head.writeUInt32BE(data.length)
     tail.writeUInt32BE(crc32(body) >>> 0)
     return Buffer.concat([head, body, tail])
@@ -29,17 +31,19 @@ function png(width: number, height: number) {
     chunk('IEND', Buffer.alloc(0)),
   ])
 }
+
 // An image cell without a hand-picked picture shows the folder's n-th image file, and stays empty when there is none.
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'image-nth-ui-')),
-  media = path.join(root, 'Library'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'image-nth-ui-'))
+const media = path.join(root, 'Library')
+const local = path.join(root, 'local')
 await fs.mkdir(path.join(media, 'Pictures'), { recursive: true })
 await fs.mkdir(path.join(media, 'Empty'), { recursive: true })
 await fs.writeFile(path.join(media, 'Empty', 'notes.txt'), 'no images')
-for (const name of ['2.png', '1.png'])
+for (const name of ['2.png', '1.png']) {
   await fs.writeFile(path.join(media, 'Pictures', name), png(16, 16))
+}
 const lib = new Library(local, undefined, false)
 await lib.init()
 await lib.create(media, {
@@ -47,36 +51,36 @@ await lib.create(media, {
   scanAll: true,
   depth: { mode: 'through', level: 2 },
 })
-const project = lib.snapshot().projects[0].project!,
-  style = { textColor: '#e4e6e8', backgroundColor: 'transparent' },
-  cells: Cell[] = [
-    { cellId: 'name', kind: 'name', grid: { x: 0, y: 0, w: 12, h: 1 }, style },
-    {
-      cellId: 'second',
-      kind: 'image',
-      attributeId: 'pic',
-      imageIndex: 2,
-      grid: { x: 0, y: 1, w: 6, h: 3 },
-      style,
-    },
-    {
-      cellId: 'third',
-      kind: 'image',
-      attributeId: 'pic3',
-      imageIndex: 3,
-      grid: { x: 6, y: 1, w: 6, h: 3 },
-      style,
-    },
-    // R-409: the folder cover; without a chosen cover, the first image file.
-    {
-      cellId: 'cover',
-      kind: 'image',
-      attributeId: 'pic4',
-      imageCover: true,
-      grid: { x: 0, y: 4, w: 6, h: 3 },
-      style,
-    },
-  ]
+const project = lib.snapshot().projects[0].project!
+const style = { textColor: '#e4e6e8', backgroundColor: 'transparent' }
+const cells: Cell[] = [
+  { cellId: 'name', kind: 'name', grid: { x: 0, y: 0, w: 12, h: 1 }, style },
+  {
+    cellId: 'second',
+    kind: 'image',
+    attributeId: 'pic',
+    imageIndex: 2,
+    grid: { x: 0, y: 1, w: 6, h: 3 },
+    style,
+  },
+  {
+    cellId: 'third',
+    kind: 'image',
+    attributeId: 'pic3',
+    imageIndex: 3,
+    grid: { x: 6, y: 1, w: 6, h: 3 },
+    style,
+  },
+  // R-409: the folder cover; without a chosen cover, the first image file.
+  {
+    cellId: 'cover',
+    kind: 'image',
+    attributeId: 'pic4',
+    imageCover: true,
+    grid: { x: 0, y: 4, w: 6, h: 3 },
+    style,
+  },
+]
 await lib.saveProject({
   ...project,
   cells,

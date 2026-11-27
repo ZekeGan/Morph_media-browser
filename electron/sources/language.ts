@@ -9,8 +9,10 @@ const tags: Record<string, string[]> = {
   en: ['en'],
   es: ['es'],
 }
+
 export const normalizeTag = (value: unknown) =>
   typeof value === 'string' ? value.toLowerCase().replaceAll('_', '-') : ''
+
 // The codes that count as this locale, best match first.
 export const languageTags = (locale: string) => tags[locale] ?? [normalizeTag(locale)]
 
@@ -22,11 +24,12 @@ export function pickByLanguage<T>(
   codeOf: (item: T) => unknown,
   languages: readonly string[]
 ): T | undefined {
-  for (const locale of languages)
+  for (const locale of languages) {
     for (const tag of languageTags(locale)) {
       const found = items.find((item) => normalizeTag(codeOf(item)) === tag)
       if (found !== undefined) return found
     }
+  }
   return undefined
 }
 
@@ -51,6 +54,7 @@ export const tmdbLanguage = (locale: string | undefined) =>
 // DLsite's `locale` and iTunes's `l` values for the first preferred language; none = the site's own default.
 export const dlsiteLocale = (locale: string | undefined) =>
   ({ 'zh-TW': 'zh_TW', 'zh-CN': 'zh_CN', ja: 'ja_JP', en: 'en_US', es: 'es_ES' })[locale ?? '']
+
 // R-418: Steam's `l` value for the first preferred language (the store falls back to English where it has no text).
 export const steamLanguage = (locale: string | undefined) =>
   ({
@@ -60,12 +64,14 @@ export const steamLanguage = (locale: string | undefined) =>
     en: 'english',
     es: 'spanish',
   })[locale ?? ''] ?? 'english'
+
 export const itunesLanguage = (locale: string | undefined) =>
   ({ 'zh-TW': 'zh_tw', 'zh-CN': 'zh_cn', ja: 'ja_jp', en: 'en_us', es: 'es_es' })[locale ?? '']
 
 // R-420: the script a text is written in. Kana is Japanese, Hangul Korean, Han alone Chinese (a Japanese title in
 // kanji only looks the same); Latin letters count only for a description, because a Latin title is often a name.
 export type Script = 'ja' | 'ko' | 'zh' | 'latin'
+
 export function detectScript(text: string, allowLatin: boolean): Script | undefined {
   if (/[぀-ヿ]/.test(text)) return 'ja'
   if (/[가-힯]/.test(text)) return 'ko'
@@ -73,6 +79,7 @@ export function detectScript(text: string, allowLatin: boolean): Script | undefi
   if (allowLatin && /[A-Za-zÀ-ɏ]{3}/.test(text)) return 'latin'
   return undefined
 }
+
 // Whether a text in this script is in one of the preferred languages (Han-only text also passes for Japanese).
 export const scriptAccepted = (script: Script, languages: readonly string[]) =>
   languages.some(

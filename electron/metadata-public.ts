@@ -1,30 +1,8 @@
 import type { MetadataPreview } from '../shared/explorer'
 import { KEY_MISSING, KEY_REJECTED } from '../shared/keys'
-import {
-  imageType,
-  limitedBytes,
-  SourceError,
-  sourceJson,
-  SourceRedirect,
-  sourceRequest,
-} from './metadata-common'
-import { sourceConfig, userAgent, type PublicSourceId } from './sources/config'
-import { detectScript, scriptAccepted } from './sources/language'
-import { clean, tags, type Adapter, type RequestExtra, type Site } from './sources/site'
+
 import { anilist } from './sources/anilist'
 import { bangumi } from './sources/bangumi'
-import { commons } from './sources/commons'
-import { dlsite } from './sources/dlsite'
-import { hitomi } from './sources/hitomi'
-import { musicbrainz } from './sources/musicbrainz'
-import { openlibrary } from './sources/openlibrary'
-import { pixiv } from './sources/pixiv'
-import { vndb } from './sources/vndb'
-import { wikidata } from './sources/wikidata'
-import { booth, kakuyomu } from './sources/pages'
-import { itch } from './sources/itch'
-import { nhentai } from './sources/nhentai'
-import { fanza, steamgriddb, tmdb } from './sources/keyed'
 import {
   danbooru,
   deezer,
@@ -35,6 +13,29 @@ import {
   mangaupdates,
   narou,
 } from './sources/batch1'
+import { commons } from './sources/commons'
+import { type PublicSourceId, sourceConfig, userAgent } from './sources/config'
+import { dlsite } from './sources/dlsite'
+import { hitomi } from './sources/hitomi'
+import { itch } from './sources/itch'
+import { fanza, steamgriddb, tmdb } from './sources/keyed'
+import { detectScript, scriptAccepted } from './sources/language'
+import { musicbrainz } from './sources/musicbrainz'
+import { nhentai } from './sources/nhentai'
+import { openlibrary } from './sources/openlibrary'
+import { booth, kakuyomu } from './sources/pages'
+import { pixiv } from './sources/pixiv'
+import { type Adapter, clean, type RequestExtra, type Site, tags } from './sources/site'
+import { vndb } from './sources/vndb'
+import { wikidata } from './sources/wikidata'
+import {
+  imageType,
+  limitedBytes,
+  SourceError,
+  sourceJson,
+  SourceRedirect,
+  sourceRequest,
+} from './metadata-common'
 
 // A cover request. Redirects are refused unless the site names the hosts they may go to (the Cover Art Archive
 // hands out its images from archive.org); each hop is checked the same way as the first address.
@@ -52,8 +53,9 @@ export async function coverResponse(
       headers,
     })
     const location = response.headers.get('location')
-    if (!allowed || ![301, 302, 303, 307, 308].includes(response.status) || !location)
+    if (!allowed || ![301, 302, 303, 307, 308].includes(response.status) || !location) {
       return response
+    }
     const next = new URL(location, url)
     if (
       hop >= 3 ||
@@ -62,8 +64,9 @@ export async function coverResponse(
       next.username ||
       next.password ||
       !allowed.test(next.hostname)
-    )
+    ) {
       throw new Error('封面來源未允許')
+    }
     url = next
   }
 }
@@ -73,6 +76,7 @@ type Result = {
   cover?: { bytes: Buffer; mime: string; ext: string }
   albumCover?: { bytes: Buffer; mime: string; ext: string }
 }
+
 // One adapter per site in electron/sources/; their hosts, headers and cover hosts are in sources/config.ts.
 const adapters: Record<PublicSourceId, Adapter> = {
   bangumi,
@@ -120,11 +124,13 @@ export async function publicMetadata(
   const values: MetadataPreview['values'] = []
   // R-285: the user's own key for this site, read by main only. A required key that is missing stops here.
   const keys = config.keySite ? ((await options.keyFor?.(config.keySite)) ?? {}) : {}
-  if (config.keySite && config.keyNeed === 'required' && !Object.keys(keys).length)
+  if (config.keySite && config.keyNeed === 'required' && !Object.keys(keys).length) {
     throw new Error(KEY_MISSING)
+  }
   // R-293: a DMM/FANZA address without the user's key is looked up through VNDB (games only).
-  if (provider === 'fanza' && !Object.keys(keys).length)
+  if (provider === 'fanza' && !Object.keys(keys).length) {
     return publicMetadata('vndb', source, fetcher, options)
+  }
   const allowed = (target: URL) => {
     if (
       target.protocol !== 'https:' ||
@@ -135,8 +141,9 @@ export async function publicMetadata(
         config.requestHosts.includes(target.hostname) ||
         config.requestHostPattern?.test(target.hostname)
       )
-    )
+    ) {
       throw new Error('Request host not allowed for this source: ' + target.hostname)
+    }
   }
   const request = async (url: string, body?: unknown, extra: RequestExtra = {}) => {
     let target = new URL(url)
@@ -161,8 +168,8 @@ export async function publicMetadata(
     extra: RequestExtra,
     redirect: 'manual' | 'error'
   ) => {
-    const raw = typeof extra.raw === 'string',
-      form = typeof extra.form === 'string'
+    const raw = typeof extra.raw === 'string'
+    const form = typeof extra.form === 'string'
     try {
       const bytes = await sourceRequest(fetcher, target, {
         method: body !== undefined || raw || form ? 'POST' : (extra.method ?? 'GET'),
@@ -188,8 +195,9 @@ export async function publicMetadata(
       return bytes.toString('utf8')
     } catch (error) {
       // A refused key says so, instead of the general "needs access".
-      if (error instanceof SourceError && error.kind === 'restricted' && Object.keys(keys).length)
+      if (error instanceof SourceError && error.kind === 'restricted' && Object.keys(keys).length) {
         throw new Error(KEY_REJECTED)
+      }
       throw error
     }
   }
@@ -217,8 +225,9 @@ export async function publicMetadata(
       if (result.length) values.push({ key, type: 'tags', value: result })
     },
     number(key, value) {
-      if (typeof value === 'number' && Number.isFinite(value) && value >= 0)
+      if (typeof value === 'number' && Number.isFinite(value) && value >= 0) {
         values.push({ key, type: 'number', value })
+      }
     },
   }
   const { title, canonical, image, albumImage, related, versions, version, versionPick } =
@@ -234,12 +243,13 @@ export async function publicMetadata(
     const description = values.find((v) => v.key === 'DESCRIPTION')
     const text = description?.type === 'string' ? String(description.value) : title
     const script = detectScript(text, description !== undefined)
-    if (script && !scriptAccepted(script, site.languages))
+    if (script && !scriptAccepted(script, site.languages)) {
       values.push({
         key: 'LANGUAGE_NOTICE',
         type: 'string',
         value: site.languages.join(',') + '|' + script,
       })
+    }
   }
   const result: Result = {
     preview: {
@@ -260,8 +270,9 @@ export async function publicMetadata(
         url.username ||
         url.password ||
         !config.coverHosts.includes(url.hostname)
-      )
+      ) {
         throw new Error('封面來源未允許')
+      }
       const bytes = await limitedBytes(
         await coverResponse(fetcher, url, config.coverRedirectHosts, {
           'User-Agent': userAgent,
@@ -278,9 +289,9 @@ export async function publicMetadata(
   }
   const dataUrl = (cover: { bytes: Buffer; mime: string }) =>
     'data:' + cover.mime + ';base64,' + cover.bytes.toString('base64')
-  const cover = typeof image === 'string' ? await download(image) : undefined,
-    // R-449: a MusicBrainz version's cover and the album's own; either may be missing.
-    album = typeof albumImage === 'string' ? await download(albumImage) : undefined
+  const cover = typeof image === 'string' ? await download(image) : undefined
+  // R-449: a MusicBrainz version's cover and the album's own; either may be missing.
+  const album = typeof albumImage === 'string' ? await download(albumImage) : undefined
   if (cover) {
     result.cover = cover
     result.preview.image = dataUrl(cover)
@@ -289,7 +300,8 @@ export async function publicMetadata(
     result.albumCover = album
     result.preview.albumImage = dataUrl(album)
   }
-  if ((typeof image === 'string' || typeof albumImage === 'string') && !cover && !album)
+  if ((typeof image === 'string' || typeof albumImage === 'string') && !cover && !album) {
     values.push({ key: 'COVER_STATUS', type: 'string', value: '封面無法取得；可略過或手動匯入' })
+  }
   return result
 }

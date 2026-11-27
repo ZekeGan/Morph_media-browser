@@ -1,7 +1,3 @@
-import { Icon } from '../common/icons'
-import { t as tr } from '../i18n'
-import { HelpLabel } from '../common/HelpTip'
-import { useEffect, useState } from 'react'
 import {
   Button,
   Checkbox,
@@ -15,26 +11,32 @@ import {
   Textarea,
   TextInput,
 } from '@mantine/core'
+import { useEffect, useState } from 'react'
+
+import { GROW_KINDS, MAX_GROW_ROWS } from '../../shared/cardGrid'
+import { gameActionTemplates, isFieldKind } from '../../shared/explorer'
 import {
-  MAX_MORE_CONDITIONS,
-  MAX_TEXT_RULES,
   type Attribute,
   type Cell,
   type CellCondition,
   type CellKind,
   type FolderRow,
+  MAX_MORE_CONDITIONS,
+  MAX_TEXT_RULES,
   type Project,
 } from '../../shared/model'
-import { gameActionTemplates, isFieldKind } from '../../shared/explorer'
-import { GROW_KINDS, MAX_GROW_ROWS } from '../../shared/cardGrid'
-import { DisplaySource } from './DisplaySource'
-import { yesNo } from './fieldTypes'
-import { ConditionEditor } from './ConditionEditor'
+
 import { CellStyleEditor } from '../cells/CellStyleEditor'
 import { EnumColors } from '../cells/EnumColors'
 import { FallbackActions } from '../cells/FallbackActions'
 import { gameExtraLabels } from '../cells/GameExtraCell'
+import { HelpLabel } from '../common/HelpTip'
+import { Icon } from '../common/icons'
 import { NewGameAction } from '../game/GameActions'
+import { t as tr } from '../i18n'
+import { ConditionEditor } from './ConditionEditor'
+import { DisplaySource } from './DisplaySource'
+import { yesNo } from './fieldTypes'
 
 export type InspectorTab = 'content' | 'style'
 

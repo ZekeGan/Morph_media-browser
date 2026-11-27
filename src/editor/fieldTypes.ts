@@ -1,7 +1,8 @@
 import { cellLists as allCellLists, mapCellLists } from '../../shared/cellLists'
-import { cellConditions, type Cell, type CellCondition, type Project } from '../../shared/model'
 import { isFilled } from '../../shared/cells'
 import { readDate } from '../../shared/fields'
+import { type Cell, type CellCondition, cellConditions, type Project } from '../../shared/model'
+
 import { t as tr } from '../i18n'
 
 // R-223: a field is chosen by what it is for, each purpose with an example. Underneath they stay the existing
@@ -18,17 +19,21 @@ export const fieldPurposes = () =>
     { type: 'boolean', glyph: '✓', label: tr('是／否'), example: tr('已收藏') },
     { type: 'url', glyph: '↗', label: tr('網址'), example: tr('官網') },
   ] as const
+
 // One short name per purpose, used on the cards, in lists, menus and messages alike (R-228).
 export const purposeLabel = (type: string) =>
   fieldPurposes().find((p) => p.type === type)?.label ?? type
+
 // The text for a yes/no value: the field's own wording when set, otherwise the usual yes/no (R-234).
 export const yesNo = (value: boolean, binding?: { trueLabel?: string; falseLabel?: string }) =>
   value ? binding?.trueLabel || tr('是') : binding?.falseLabel || tr('否')
+
 export const purposeGlyph = (type: string) =>
   fieldPurposes().find((p) => p.type === type)?.glyph ?? '·'
 
 export const textTypes = ['string', 'tags', 'enum'] as const
 export type TextType = (typeof textTypes)[number]
+
 export const isTextType = (type: string): type is TextType =>
   (textTypes as readonly string[]).includes(type)
 
@@ -64,6 +69,7 @@ export type FieldUse = {
   role: 'main' | 'fallback' | 'condition' | 'group'
   cell: Cell
 }
+
 // Where a field is used. In the card editor the active layout's saved copy is the draft itself; a content template
 // editor has its own list as the draft, so that list's saved copy is not counted a second time.
 export function fieldUses(project: Project, attributeId: string, cardEditor: boolean): FieldUse[] {
@@ -81,10 +87,12 @@ export function fieldUses(project: Project, attributeId: string, cardEditor: boo
             : undefined
   return cellUses(project, cardEditor, role)
 }
+
 // Where a group is shown (components bound to it), in the same places fieldUses looks.
 export function groupUseList(project: Project, groupId: string, cardEditor: boolean) {
   return cellUses(project, cardEditor, (cell) => (cell.groupId === groupId ? 'group' : undefined))
 }
+
 function cellUses(
   project: Project,
   cardEditor: boolean,
@@ -98,10 +106,11 @@ function cellUses(
   return allCellLists(project).flatMap((list) => {
     if (list.where === 'card') return from('current', list.cells)
     // In the card editor the active layout's saved copy is the draft itself, counted as "current" above.
-    if (list.where === 'layout')
+    if (list.where === 'layout') {
       return cardEditor && list.id === project.activeLayoutId
         ? []
         : from('preset', list.cells, list.name)
+    }
     // A content template editor has its own list as the draft, so that list's saved copy is not counted again.
     return from(
       'content',
@@ -112,6 +121,7 @@ function cellUses(
     )
   })
 }
+
 // Components that show a field itself (alone or as a fallback); group components count for the group, conditions
 // only read the field.
 export function shownUses(project: Project, attributeId: string, cardEditor: boolean) {
@@ -119,6 +129,7 @@ export function shownUses(project: Project, attributeId: string, cardEditor: boo
     ['main', 'fallback'].includes(use.role)
   )
 }
+
 // Where uses are, counted per layout: "Current layout 2, Game info layout 1".
 export function usesSummary(uses: FieldUse[]) {
   const counts = new Map<string, number>()
@@ -145,6 +156,7 @@ export function usesSummary(uses: FieldUse[]) {
   }
   return [...counts].map(([where, n]) => `${where} ${n}`).join(tr('、'))
 }
+
 // How many components change their display when a field changes purpose (text and tags keep theirs).
 export function purposeChangeImpact(project: Project, attributeId: string, next: TextType) {
   const binding = project.fieldBindings.find((field) => field.attributeId === attributeId)
@@ -154,18 +166,21 @@ export function purposeChangeImpact(project: Project, attributeId: string, next:
 }
 
 export type DateType = 'date' | 'datetime'
+
 export function switchDateType(
   project: Project,
   attributeId: string,
   next: DateType
 ): SwitchResult {
   const binding = project.fieldBindings.find((field) => field.attributeId === attributeId)
-  if (!binding || !['date', 'datetime'].includes(binding.type) || binding.type === next)
+  if (!binding || !['date', 'datetime'].includes(binding.type) || binding.type === next) {
     return { project }
+  }
   if (
     (project.fieldGroups?.find((g) => g.memberIds.includes(attributeId))?.memberIds.length ?? 0) > 1
-  )
+  ) {
     return { error: 'group' }
+  }
   if (
     cellLists(project)
       .flat()
@@ -174,14 +189,19 @@ export function switchDateType(
           cell.fallbackIds?.includes(attributeId) ||
           (cell.attributeId === attributeId && cell.fallbackIds?.length)
       )
-  )
+  ) {
     return { error: 'fallback' }
+  }
   const kind: Cell['kind'] = next === 'date' ? 'field-date-only' : 'field-date'
   const cells = (list: Cell[]) =>
     list.map((cell) => {
       let next2 = cell
-      if (cell.attributeId === attributeId && ['field-date', 'field-date-only'].includes(cell.kind))
+      if (
+        cell.attributeId === attributeId &&
+        ['field-date', 'field-date-only'].includes(cell.kind)
+      ) {
         next2 = { ...next2, kind }
+      }
       // Comparison values on this field keep only their date (every condition: display ones and text rules).
       const trim = (c: CellCondition): CellCondition =>
         c.attributeId === attributeId && next === 'date' && typeof c.value === 'string'
@@ -189,11 +209,12 @@ export function switchDateType(
           : c
       if (next2.condition) next2 = { ...next2, condition: trim(next2.condition) }
       if (next2.moreConditions) next2 = { ...next2, moreConditions: next2.moreConditions.map(trim) }
-      if (next2.textRules)
+      if (next2.textRules) {
         next2 = {
           ...next2,
           textRules: next2.textRules.map((rule) => ({ ...rule, when: trim(rule.when) })),
         }
+      }
       return next2
     })
   return {
@@ -214,13 +235,15 @@ export type SwitchResult =
 function mapCells(project: Project, map: (cell: Cell) => Cell): Project {
   return mapCellLists(project, (cells) => cells.map(map))
 }
+
 // A date field in a group with other fields, or in a fallback chain, cannot change between date and text: the
 // fields shown together must keep matching types.
 function sharedDisplay(project: Project, attributeId: string): 'group' | 'fallback' | undefined {
   if (
     (project.fieldGroups?.find((g) => g.memberIds.includes(attributeId))?.memberIds.length ?? 0) > 1
-  )
+  ) {
     return 'group'
+  }
   if (
     cellLists(project)
       .flat()
@@ -229,9 +252,11 @@ function sharedDisplay(project: Project, attributeId: string): 'group' | 'fallba
           cell.fallbackIds?.includes(attributeId) ||
           (cell.attributeId === attributeId && cell.fallbackIds?.length)
       )
-  )
+  ) {
     return 'fallback'
+  }
 }
+
 function withType(project: Project, attributeId: string, type: string): Project {
   return {
     ...project,
@@ -242,6 +267,7 @@ function withType(project: Project, attributeId: string, type: string): Project 
 }
 
 const dateComparisons = ['gt', 'lt', 'within', 'older']
+
 // Comparisons with a date ("after", "before", "within N days") that read this field; they go when it becomes text.
 export function dateConditionCount(project: Project, attributeId: string) {
   // The active layout's saved copy is the card being edited; it is counted once.
@@ -251,7 +277,9 @@ export function dateConditionCount(project: Project, attributeId: string) {
     .flatMap(cellConditions)
     .filter((c) => c.attributeId === attributeId && dateComparisons.includes(c.operator)).length
 }
+
 export type DateTextResult = SwitchResult | { error: 'unreadable'; values: string[] }
+
 // A date or date-and-time field becomes text (R-240). Stored values are not rewritten; they already are text. Date
 // components become text components, and conditions comparing this field as a date are removed.
 export function switchDateToText(project: Project, attributeId: string): DateTextResult {
@@ -293,6 +321,7 @@ export function switchDateToText(project: Project, attributeId: string): DateTex
     }),
   }
 }
+
 // A text field becomes a date or date-and-time field (R-240) only when every stored value reads as a date; the
 // values that do not are listed. Folder records keep the text; it is read as a date wherever it is shown.
 export function switchTextToDate(
@@ -325,14 +354,16 @@ export function switchTextToDate(
           ['equals', 'not-equals'].includes(c.operator) &&
           readDate(c.value, next) !== c.value
       )
-  )
+  ) {
     return { error: 'condition' }
+  }
   const kind: Cell['kind'] = next === 'date' ? 'field-date-only' : 'field-date'
   return {
     project: mapCells(withType(project, attributeId, next), (cell) => {
       // Text and tag components can both show a text field; either becomes a date component.
-      if (cell.attributeId !== attributeId || !['field-text', 'field-tags'].includes(cell.kind))
+      if (cell.attributeId !== attributeId || !['field-text', 'field-tags'].includes(cell.kind)) {
         return cell
+      }
       const {
         wrap: _wrap,
         scroll: _scroll,
@@ -363,14 +394,16 @@ export function switchTextType(
         (cell.attributeId === attributeId && cell.fallbackIds?.length) ||
         cell.fallbackIds?.includes(attributeId)
     )
-  )
+  ) {
     return { error: 'fallback' }
+  }
   // Nor can it share a group with them.
   if (
     (binding.type === 'enum' || next === 'enum') &&
     (project.fieldGroups?.find((g) => g.memberIds.includes(attributeId))?.memberIds.length ?? 0) > 1
-  )
+  ) {
     return { error: 'group' }
+  }
   // "Equals" conditions are not offered for tag lists.
   if (
     next === 'tags' &&
@@ -379,8 +412,9 @@ export function switchTextType(
         (c) => c.attributeId === attributeId && ['equals', 'not-equals'].includes(c.operator)
       )
     )
-  )
+  ) {
     return { error: 'condition' }
+  }
   let options = binding.options
   if (next === 'enum') {
     // Options kept from an earlier switch come first, then values folders gained since.
@@ -399,8 +433,9 @@ export function switchTextType(
             !options!.includes(String(c.value ?? ''))
         )
       )
-    )
+    ) {
       return { error: 'condition-option' }
+    }
   }
   const { optionColors: _colors, ...rest } = binding
   const updated: Project['fieldBindings'][number] =
@@ -409,8 +444,9 @@ export function switchTextType(
   // other's values already, so those components keep the display the user chose.
   const convert = (list: Cell[]) =>
     list.map((cell) => {
-      if (cell.attributeId !== attributeId || !(binding.type === 'enum' || next === 'enum'))
+      if (cell.attributeId !== attributeId || !(binding.type === 'enum' || next === 'enum')) {
         return cell
+      }
       const {
         wrap: _wrap,
         scroll: _scroll,

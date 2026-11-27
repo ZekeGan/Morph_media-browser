@@ -1,11 +1,12 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import {
   listenState,
-  trimStore,
   PODCAST_EPISODES,
   PODCAST_FOLDERS,
   type PodcastStore,
+  trimStore,
 } from '../src/media/podcast'
 
 test('an episode is new, started after five seconds, finished with under a minute left (R-390)', () => {

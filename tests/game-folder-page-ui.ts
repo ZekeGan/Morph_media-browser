@@ -1,17 +1,18 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
+
 import { Library } from '../electron/library'
+import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 import { tinyPng } from './support/archive-fixture'
-import { closeApp, launchApp, reportFailure, removeTestRoot } from './support/app'
 
 // A folder in a game project that is not a game ROOT must show the shared folder page:
 // details, subfolders and files, not a bare name/path card.
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'game-folder-page-ui-')),
-  media = path.join(root, 'Games'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'game-folder-page-ui-'))
+const media = path.join(root, 'Games')
+const local = path.join(root, 'local')
 await fs.mkdir(path.join(media, 'Sub'), { recursive: true })
 await fs.writeFile(path.join(media, 'pic.png'), tinyPng)
 const lib = new Library(local, undefined, false)

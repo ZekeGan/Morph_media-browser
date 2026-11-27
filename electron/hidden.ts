@@ -1,7 +1,9 @@
-import { fmt } from '../shared/message'
 import { spawn } from 'node:child_process'
 import path from 'node:path'
+
+import { fmt } from '../shared/message'
 import { DATA_DIR } from '../shared/model'
+
 import { message, safePath } from './files'
 
 // Reading attributes needs PowerShell, whose start-up alone costs about half a second. One long-lived helper answers
@@ -19,12 +21,15 @@ while ($true) {
     [Console]::Out.WriteLine((ConvertTo-Json -InputObject $names -Compress))
   } catch { [Console]::Out.WriteLine((ConvertTo-Json -InputObject @{ error = $_.Exception.Message } -Compress)) }
 }`
+
 type Pending = {
   resolve: (line: string) => void
   reject: (error: Error) => void
   timer: NodeJS.Timeout
 }
+
 let helper: { child: ReturnType<typeof spawn>; queue: Pending[]; buffer: string } | undefined
+
 function startHelper() {
   const executable = path.join(
     process.env.SystemRoot ?? 'C:\\Windows',
@@ -79,10 +84,12 @@ function startHelper() {
   ;(child.stderr as unknown as { unref?: () => void }).unref?.()
   return state
 }
+
 // Start the helper ahead of the first folder listing, so that listing does not pay the start-up time.
 export function warmHiddenHelper() {
   if (process.platform === 'win32') helper ??= startHelper()
 }
+
 export async function hiddenFileNames(directory: string): Promise<Set<string>> {
   if (process.platform !== 'win32') return new Set()
   const state = (helper ??= startHelper())
@@ -96,10 +103,12 @@ export async function hiddenFileNames(directory: string): Promise<Set<string>> {
     state.child.stdin!.write(JSON.stringify(directory) + '\n')
   })
   const names: unknown = JSON.parse(output)
-  if (names && typeof names === 'object' && !Array.isArray(names) && 'error' in names)
+  if (names && typeof names === 'object' && !Array.isArray(names) && 'error' in names) {
     throw new Error(String((names as { error: unknown }).error))
-  if (!Array.isArray(names) || !names.every((name) => typeof name === 'string'))
+  }
+  if (!Array.isArray(names) || !names.every((name) => typeof name === 'string')) {
     throw new Error('隱藏屬性結果不合法')
+  }
   return new Set(names)
 }
 
@@ -126,8 +135,8 @@ ConvertTo-Json -InputObject @($failures) -Compress
 
 export async function hideDirectories(dirs: string[]): Promise<{ dir: string; error: string }[]> {
   if (process.platform !== 'win32' || !dirs.length) return []
-  const failures: { dir: string; error: string }[] = [],
-    paths: string[] = []
+  const failures: { dir: string; error: string }[] = []
+  const paths: string[] = []
   for (const dir of dirs) {
     try {
       const meta = path.join(dir, DATA_DIR)
@@ -158,8 +167,8 @@ export async function hideDirectories(dirs: string[]): Promise<{ dir: string; er
         ],
         { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] }
       )
-      let stdout = '',
-        stderr = ''
+      let stdout = ''
+      let stderr = ''
       const timer = setTimeout(() => {
         child.kill()
         reject(new Error('設定隱藏屬性逾時'))

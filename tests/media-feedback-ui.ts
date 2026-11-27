@@ -1,21 +1,22 @@
-import { _electron as electron } from 'playwright-core'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { _electron as electron } from 'playwright-core'
+
+import { folderFile, projectFile } from '../electron/files'
 import { Library } from '../electron/library'
 import { WorkspaceStore } from '../electron/workspace'
-import { folderFile, projectFile } from '../electron/files'
+import { closeApp } from './support/app'
 import { tinyPng } from './support/archive-fixture'
 import { videoFixture } from './support/video-fixture'
-import { closeApp } from './support/app'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'media-feedback-')),
-  media = path.join(root, 'Media'),
-  manga = path.join(root, 'Manga'),
-  single = path.join(media, 'Single'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'media-feedback-'))
+const media = path.join(root, 'Media')
+const manga = path.join(root, 'Manga')
+const single = path.join(media, 'Single')
+const local = path.join(root, 'local')
 await fs.mkdir(single, { recursive: true })
 await fs.mkdir(manga)
 await fs.writeFile(path.join(single, 'COVER.png'), tinyPng)
@@ -39,8 +40,9 @@ wav.write('data', 36)
 wav.writeUInt32LE(2, 40)
 await fs.writeFile(path.join(media, 'track.wav'), wav)
 await fs.writeFile(path.join(single, 'track.wav'), wav)
-for (const name of ['first.mp4', 'second.mp4'])
+for (const name of ['first.mp4', 'second.mp4']) {
   await fs.copyFile(await videoFixture(), path.join(media, name))
+}
 const library = new Library(local, undefined, false)
 await library.init()
 await library.create(media, {
@@ -53,10 +55,10 @@ await library.create(manga, {
   scanAll: true,
   depth: { mode: 'through', level: 1 },
 })
-const snapshot = library.snapshot(),
-  projects = snapshot.projects.map((entry) => entry.project!),
-  rootOf = (projectId: string) => snapshot.projects.find((e) => e.projectId === projectId)!.root,
-  mangaProject = snapshot.projects.find((entry) => entry.root === manga)!.project!
+const snapshot = library.snapshot()
+const projects = snapshot.projects.map((entry) => entry.project!)
+const rootOf = (projectId: string) => snapshot.projects.find((e) => e.projectId === projectId)!.root
+const mangaProject = snapshot.projects.find((entry) => entry.root === manga)!.project!
 const store = new WorkspaceStore(local, ['zh-TW'])
 await store.init()
 await store.update(
@@ -79,19 +81,20 @@ for (const dir of [media, manga, single]) {
   }
   originals.set(folderFile(dir), await fs.readFile(folderFile(dir)))
 }
-for (const project of projects)
+for (const project of projects) {
   originals.set(
     projectFile(rootOf(project.projectId), project.projectId),
     await fs.readFile(projectFile(rootOf(project.projectId), project.projectId))
   )
+}
 const env = Object.fromEntries(
   Object.entries({ ...process.env, MEDIA_VIEWER_TEST_DATA: local }).filter(
     (entry): entry is [string, string] => entry[1] !== undefined
   )
 )
 delete env.ELECTRON_RUN_AS_NODE
-const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
-  page = await app.firstWindow()
+const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
+const page = await app.firstWindow()
 page.setDefaultTimeout(12000)
 await page.evaluate('window.__name=(target)=>target')
 const errors: string[] = []
@@ -109,8 +112,9 @@ const open = async (name: string) => {
     .filter({ has: page.getByText(name, { exact: true }) })
     .click()
   await page.locator('.media-viewer-shell').waitFor()
-  if ((await button('切換媒體佇列').getAttribute('aria-pressed')) !== 'true')
+  if ((await button('切換媒體佇列').getAttribute('aria-pressed')) !== 'true') {
     await button('切換媒體佇列').click()
+  }
   await page.locator('.playback-queue-open').waitFor({ state: 'visible' })
 }
 try {

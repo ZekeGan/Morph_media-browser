@@ -1,20 +1,21 @@
-import { _electron as electron, type Locator } from 'playwright-core'
-import fs from 'node:fs/promises'
-import path from 'node:path'
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import { promisify } from 'node:util'
+import { _electron as electron, type Locator } from 'playwright-core'
+
 import { Library } from '../electron/library'
 import { closeApp } from './support/app'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'reader-ui-')),
-  comic = path.join(root, 'Comic'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'reader-ui-'))
+const comic = path.join(root, 'Comic')
+const local = path.join(root, 'local')
 await fs.mkdir(comic)
 const exec = promisify(execFile)
-for (let i = 1; i <= 3; i++)
+for (let i = 1; i <= 3; i++) {
   await exec(
     'ffmpeg',
     [
@@ -30,11 +31,13 @@ for (let i = 1; i <= 3; i++)
     ],
     { windowsHide: true }
   )
-for (let i = 4; i <= 24; i++)
+}
+for (let i = 4; i <= 24; i++) {
   await fs.copyFile(
     path.join(comic, '001.png'),
     path.join(comic, String(i).padStart(3, '0') + '.png')
   )
+}
 const library = new Library(local, undefined, false)
 await library.init()
 await library.create(comic, {
@@ -48,9 +51,9 @@ const env = Object.fromEntries(
   )
 )
 delete env.ELECTRON_RUN_AS_NODE
-const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
-  page = await app.firstWindow(),
-  errors: string[] = []
+const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
+const page = await app.firstWindow()
+const errors: string[] = []
 page.setDefaultTimeout(12000)
 page.on('pageerror', (error) => errors.push(error.message))
 await page.evaluate('window.__name=(target)=>target')
@@ -58,8 +61,8 @@ await page.evaluate('window.__name=(target)=>target')
 // scrolled and how tall the layout above them is (R-469). A page is picked by its number: the panel is scrolled
 // down from the top a screen at a time until that page's thumbnail is drawn, then it is clicked.
 const thumbnail = async (index: number) => {
-  const body = page.locator('.folder-panel-body'),
-    target = page.locator(`.manga-gallery [data-index="${index}"] .media-thumbnail`)
+  const body = page.locator('.folder-panel-body')
+  const target = page.locator(`.manga-gallery [data-index="${index}"] .media-thumbnail`)
   await body.evaluate((element) => element.scrollTo({ top: 0, behavior: 'instant' }))
   for (let step = 0; step < 20 && !(await target.count()); step++) {
     await body.evaluate((element) =>
@@ -79,18 +82,18 @@ const waitPages = async (value: string) =>
 const reader = () => page.getByRole('dialog', { name: '漫畫閱讀器', exact: true })
 // Whether an item sits inside its scrolled list's visible area.
 const isInView = async (list: Locator, item: Locator) => {
-  const outer = (await list.boundingBox())!,
-    inner = (await item.boundingBox())!
+  const outer = (await list.boundingBox())!
+  const inner = (await item.boundingBox())!
   return inner.y >= outer.y - 1 && inner.y + inner.height <= outer.y + outer.height + 1
 }
 const fit = async () =>
   page.waitForFunction(() => {
-    const stage = document.querySelector('.reader-stage')!,
-      image = document.querySelector('.is-active .reader-spread')!,
-      toolbar = document.querySelector('.reader-toolbar'),
-      info = document.querySelector('.reader-info'),
-      box = stage.getBoundingClientRect(),
-      picture = image.getBoundingClientRect()
+    const stage = document.querySelector('.reader-stage')!
+    const image = document.querySelector('.is-active .reader-spread')!
+    const toolbar = document.querySelector('.reader-toolbar')
+    const info = document.querySelector('.reader-info')
+    const box = stage.getBoundingClientRect()
+    const picture = image.getBoundingClientRect()
     return (
       Math.abs(picture.top - box.top) < 1 &&
       Math.abs(picture.bottom - box.bottom) < 1 &&
@@ -111,11 +114,12 @@ const sameBounds = (
   actual: { x: number; y: number; width: number; height: number },
   expected: typeof actual
 ) => {
-  for (const key of ['x', 'y', 'width', 'height'] as const)
+  for (const key of ['x', 'y', 'width', 'height'] as const) {
     assert.ok(
       Math.abs(actual[key] - expected[key]) <= 2,
       `${key}: ${actual[key]} versus ${expected[key]}`
     )
+  }
 }
 try {
   await page.getByRole('button', { name: '開啟專案 Reader test', exact: true }).first().click()
@@ -176,8 +180,8 @@ try {
   assert.equal(await reader().locator('.reader-frame-layer.is-active.enter-right').count(), 1)
   await reader().getByRole('button', { name: '下一頁', exact: true }).click()
   await waitPages('12')
-  const input = reader().getByRole('textbox', { name: '頁碼', exact: true }),
-    inputBox = (await input.boundingBox())!
+  const input = reader().getByRole('textbox', { name: '頁碼', exact: true })
+  const inputBox = (await input.boundingBox())!
   await page.mouse.click(inputBox.x + inputBox.width - 2, inputBox.y + inputBox.height / 2)
   await page.getByRole('listbox', { name: '頁碼', exact: true }).waitFor({ state: 'visible' })
   await page.getByRole('option', { name: '3', exact: true }).click()
@@ -207,25 +211,26 @@ try {
   await waitPages('8')
   await page.keyboard.press('ArrowLeft')
   await waitPages('9')
-  for (let i = 0; i < 3; i++)
+  for (let i = 0; i < 3; i++) {
     await reader().getByRole('button', { name: '下一頁', exact: true }).click()
+  }
   await waitPages('12')
   await reader().getByRole('button', { name: '雙頁', exact: true }).click()
   await waitPages('11–12')
   const prevPath = await reader()
-      .locator('.reader-tool-group')
-      .first()
-      .getByRole('button')
-      .first()
-      .locator('path')
-      .getAttribute('d'),
-    nextPath = await reader()
-      .locator('.reader-tool-group')
-      .first()
-      .getByRole('button')
-      .last()
-      .locator('path')
-      .getAttribute('d')
+    .locator('.reader-tool-group')
+    .first()
+    .getByRole('button')
+    .first()
+    .locator('path')
+    .getAttribute('d')
+  const nextPath = await reader()
+    .locator('.reader-tool-group')
+    .first()
+    .getByRole('button')
+    .last()
+    .locator('path')
+    .getAttribute('d')
   await reader().getByRole('button', { name: '由右至左', exact: true }).click()
   await reader().getByRole('button', { name: '由左至右', exact: true }).waitFor()
   await page.keyboard.press('ArrowRight')
@@ -299,9 +304,9 @@ try {
       document.querySelector('.reader-stage')!.getBoundingClientRect().height * 1.5
   )
   const beforePan = await reader()
-      .locator('.reader-stage')
-      .evaluate((element) => element.scrollTop),
-    stageBox = (await reader().locator('.reader-stage').boundingBox())!
+    .locator('.reader-stage')
+    .evaluate((element) => element.scrollTop)
+  const stageBox = (await reader().locator('.reader-stage').boundingBox())!
   await page.mouse.move(stageBox.x + stageBox.width / 2, stageBox.y + stageBox.height * 0.7)
   await page.mouse.down()
   await page.mouse.move(stageBox.x + stageBox.width / 2, stageBox.y + stageBox.height * 0.4)

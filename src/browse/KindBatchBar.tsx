@@ -1,9 +1,11 @@
-import { t as tr } from '../i18n'
 import { ActionIcon, Select, Text, Tooltip } from '@mantine/core'
-import { Icon } from '../common/icons'
-import { folderKinds, type FolderKind } from '../../shared/kind'
-import type { FolderRow } from '../../shared/model'
+
 import type { ExplorerRequest, ExplorerResponse } from '../../shared/explorer'
+import { type FolderKind, folderKinds } from '../../shared/kind'
+import type { FolderRow } from '../../shared/model'
+
+import { Icon } from '../common/icons'
+import { t as tr } from '../i18n'
 
 // Shown while folders are marked in the list: sets their type in one step (folders without a record or
 // protected ones are left out).
@@ -18,14 +20,14 @@ export function KindBatchBar({
   run: (request: ExplorerRequest) => Promise<ExplorerResponse | undefined>
   clear: () => void
 }) {
-  const writable = rows.filter((row) => row.record && !row.readonly && !row.stopped && !row.error),
-    labels: Record<FolderKind, string> = {
-      game: tr('遊戲'),
-      book: tr('書籍／漫畫'),
-      music: tr('音樂'),
-      video: tr('影片'),
-      general: tr('一般'),
-    }
+  const writable = rows.filter((row) => row.record && !row.readonly && !row.stopped && !row.error)
+  const labels: Record<FolderKind, string> = {
+    game: tr('遊戲'),
+    book: tr('書籍／漫畫'),
+    music: tr('音樂'),
+    video: tr('影片'),
+    general: tr('一般'),
+  }
   return (
     <div className="kind-batch-bar" role="region" aria-label={tr('批次指定資料夾類型')}>
       <Text size="sm">

@@ -1,14 +1,16 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { decodeText, isbnOf, readNovel, splitChapters } from '../electron/novel'
-import { bookPercent, latestNovel, packagePath, rubyPieces } from '../shared/novel'
+import { test } from 'node:test'
+
+import { detectFolderKind, sampleOf } from '../shared/kind'
 import { validateDetails } from '../shared/model'
-import { Library } from '../electron/library'
+import { bookPercent, latestNovel, packagePath, rubyPieces } from '../shared/novel'
+
 import { Explorer } from '../electron/explorer'
 import { readFolder } from '../electron/files'
-import { detectFolderKind, sampleOf } from '../shared/kind'
+import { Library } from '../electron/library'
+import { decodeText, isbnOf, readNovel, splitChapters } from '../electron/novel'
 import { tinyPng, zipFixture } from './support/archive-fixture'
 
 const base = path.resolve('.test-output')
@@ -138,8 +140,8 @@ test('an EPUB is read from its package, navigation and spine; scripts stay text 
 
 test('a folder of text books opens in the novel reader and keeps its place in the record', async (t) => {
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'novel-folder-')),
-    media = path.join(root, 'Novels')
+  const root = await fs.mkdtemp(path.join(base, 'novel-folder-'))
+  const media = path.join(root, 'Novels')
   await fs.mkdir(media)
   await fs.writeFile(path.join(media, 'story.txt'), '第一章\n本文\n第二章\n続き')
   const library = new Library(path.join(root, 'local'), undefined, false)
@@ -156,8 +158,8 @@ test('a folder of text books opens in the novel reader and keeps its place in th
   })
   await library.create(media, { name: 'Novels', depth: { mode: 'through', level: 1 } })
   const row = () => library.snapshot().rows.find((r) => r.path === media)!
-  const entries = (await explorer.content(row().rowId)).entries,
-    story = entries.find((e) => e.name === 'story.txt')!
+  const entries = (await explorer.content(row().rowId)).entries
+  const story = entries.find((e) => e.name === 'story.txt')!
   assert.equal(story.kind, 'text')
   assert.equal(detectFolderKind(row(), sampleOf(entries)).kind, 'book')
   const book = (await explorer.request({ action: 'novel', rowId: row().rowId, fileId: story.id }))
@@ -190,6 +192,7 @@ test('a folder of text books opens in the novel reader and keeps its place in th
     { 'a/b.txt': progress },
     { 'x.txt': { ...progress, position: 2 } },
     { 'x.txt': { ...progress, updated: 'yesterday' } },
-  ])
+  ]) {
     assert.throws(() => validateDetails({ schemaVersion: 1, novels: bad as never }))
+  }
 })

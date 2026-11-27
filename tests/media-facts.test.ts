@@ -1,13 +1,14 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { test } from 'node:test'
+
 import { lengthPause, MediaFacts } from '../electron/media-facts'
 
 // A silent mono WAV of the given length in seconds (44.1 kHz, 16 bit).
 function wav(seconds: number) {
-  const data = Buffer.alloc(44100 * 2 * seconds),
-    head = Buffer.alloc(44)
+  const data = Buffer.alloc(44100 * 2 * seconds)
+  const head = Buffer.alloc(44)
   head.write('RIFF')
   head.writeUInt32LE(36 + data.length, 4)
   head.write('WAVEfmt ', 8)
@@ -22,12 +23,14 @@ function wav(seconds: number) {
   head.writeUInt32LE(data.length, 40)
   return Buffer.concat([head, data])
 }
+
 const open: MediaFacts[] = []
 const opened = (path: string) => {
   const facts = new MediaFacts(path)
   open.push(facts)
   return facts
 }
+
 async function sandbox(t: { after: (fn: () => Promise<void>) => void }) {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
@@ -41,6 +44,7 @@ async function sandbox(t: { after: (fn: () => Promise<void>) => void }) {
   })
   return root
 }
+
 const until = async (check: () => Promise<boolean>) => {
   // Up to 15 s: with every test file running at once, reading lengths can take a while.
   for (let n = 0; n < 150; n++) {
@@ -51,9 +55,9 @@ const until = async (check: () => Promise<boolean>) => {
 }
 
 test('R-438: a folder card gets counts at once and the total length once every track has been read', async (t) => {
-  const root = await sandbox(t),
-    album = path.join(root, 'Album'),
-    local = path.join(root, 'local')
+  const root = await sandbox(t)
+  const album = path.join(root, 'Album')
+  const local = path.join(root, 'local')
   await fs.mkdir(album)
   await fs.writeFile(path.join(album, '01.wav'), wav(1))
   await fs.writeFile(path.join(album, '02.wav'), wav(2))
@@ -71,14 +75,15 @@ test('R-438: a folder card gets counts at once and the total length once every t
 })
 
 test("R-455: a folder name is read without waiting for another folder's lengths", async (t) => {
-  const root = await sandbox(t),
-    facts = opened(path.join(root, 'local', 'media-facts.sqlite'))
+  const root = await sandbox(t)
+  const facts = opened(path.join(root, 'local', 'media-facts.sqlite'))
   // A long album whose total length takes a while (each track read is slowed down here), then a second album.
-  const long = path.join(root, 'Long'),
-    next = path.join(root, 'Next')
+  const long = path.join(root, 'Long')
+  const next = path.join(root, 'Next')
   for (const folder of [long, next]) await fs.mkdir(folder)
-  for (let n = 1; n <= 40; n++)
+  for (let n = 1; n <= 40; n++) {
     await fs.writeFile(path.join(long, String(n).padStart(3, '0') + '.wav'), wav(1))
+  }
   await fs.writeFile(path.join(next, 'Track.wav'), wav(1))
   lengthPause.ms = 50
   t.after(() => {
@@ -94,9 +99,9 @@ test("R-455: a folder name is read without waiting for another folder's lengths"
 })
 
 test('R-455: a hidden file is not counted, and a damaged index is set aside and started again', async (t) => {
-  const root = await sandbox(t),
-    album = path.join(root, 'Album'),
-    file = path.join(root, 'local', 'media-facts.sqlite')
+  const root = await sandbox(t)
+  const album = path.join(root, 'Album')
+  const file = path.join(root, 'local', 'media-facts.sqlite')
   await fs.mkdir(album)
   await fs.writeFile(path.join(album, '01.wav'), wav(1))
   await fs.writeFile(path.join(album, '02.wav'), wav(1))
@@ -115,8 +120,8 @@ test('R-455: a hidden file is not counted, and a damaged index is set aside and 
 })
 
 test('R-438: the index is dropped for a folder whose files changed, and unreadable audio gives no length', async (t) => {
-  const root = await sandbox(t),
-    album = path.join(root, 'Album')
+  const root = await sandbox(t)
+  const album = path.join(root, 'Album')
   await fs.mkdir(album)
   await fs.writeFile(path.join(album, '01.wav'), wav(1))
   const facts = opened(path.join(root, 'local', 'media-facts.sqlite'))

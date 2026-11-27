@@ -1,6 +1,8 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import { metadata, steamMetadata } from '../electron/metadata'
+
 test('ExHentai keeps its gallery identity while using the no-key metadata endpoint', async () => {
   const source = 'https://exhentai.org/g/12/abcdef0123/'
   const fetcher = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -22,19 +24,19 @@ test('ExHentai keeps its gallery identity while using the no-key metadata endpoi
   await assert.rejects(metadata(source, fetcher, 'eh'), /不符/)
 })
 test('E-Hentai tags are also split into one field per namespace', async () => {
-  const source = 'https://e-hentai.org/g/12/abcdef0123/',
-    tags = [
-      'language:chinese',
-      'language:translated',
-      'artist:poriuretan',
-      'female:ahegao',
-      'female:x-ray',
-      'male:condom',
-      'other:mosaic censorship',
-      'plain',
-      'unknown:ignored',
-      'female:',
-    ]
+  const source = 'https://e-hentai.org/g/12/abcdef0123/'
+  const tags = [
+    'language:chinese',
+    'language:translated',
+    'artist:poriuretan',
+    'female:ahegao',
+    'female:x-ray',
+    'male:condom',
+    'other:mosaic censorship',
+    'plain',
+    'unknown:ignored',
+    'female:',
+  ]
   const fetcher = (async () =>
     new Response(
       JSON.stringify({ gmetadata: [{ gid: 12, token: 'abcdef0123', title: 'T', tags }] })
@@ -113,10 +115,11 @@ test('Steam rejects unavailable/mismatched/oversized replies and treats blocked 
     { '620': { success: false } },
     payload({ steam_appid: 999 }),
     payload({ name: '' }),
-  ])
+  ]) {
     await assert.rejects(
       steamMetadata('620', (async () => new Response(JSON.stringify(data))) as typeof fetch)
     )
+  }
   await assert.rejects(
     steamMetadata('620', (async () => new Response('{}', { status: 429 })) as typeof fetch),
     // R-461: too many requests is its own message (asked once more first).
@@ -150,35 +153,36 @@ test('Steam rejects unavailable/mismatched/oversized replies and treats blocked 
   assert.ok(result.preview.values.some((v) => v.key === 'COVER_STATUS'))
 })
 test('R-395: MusicBrainz recording and artist addresses read their own fixed API paths', async () => {
-  const rec = 'e65c5269-17e5-4e0f-bb89-e130990de766',
-    art = '9aed24f5-4293-4c5b-a7c9-1027c8d9d608',
-    asked: string[] = [],
-    fetcher = (async (input: RequestInfo | URL) => {
-      const url = String(input)
-      asked.push(url)
-      if (url.includes('/recording/'))
-        return new Response(
-          JSON.stringify({
-            id: rec,
-            title: 'Song',
-            length: 245000,
-            'artist-credit': [{ name: 'Singer' }],
-            releases: [{ title: 'Album', date: '2001-02-03' }],
-          })
-        )
+  const rec = 'e65c5269-17e5-4e0f-bb89-e130990de766'
+  const art = '9aed24f5-4293-4c5b-a7c9-1027c8d9d608'
+  const asked: string[] = []
+  const fetcher = (async (input: RequestInfo | URL) => {
+    const url = String(input)
+    asked.push(url)
+    if (url.includes('/recording/')) {
       return new Response(
         JSON.stringify({
-          id: art,
-          name: 'Singer',
-          type: 'Person',
-          country: 'JP',
-          'life-span': { begin: '1990-01', end: null },
-          disambiguation: 'the one',
+          id: rec,
+          title: 'Song',
+          length: 245000,
+          'artist-credit': [{ name: 'Singer' }],
+          releases: [{ title: 'Album', date: '2001-02-03' }],
         })
       )
-    }) as typeof fetch,
-    value = (r: Awaited<ReturnType<typeof metadata>>, key: string) =>
-      r.preview.values.find((v) => v.key === key)?.value
+    }
+    return new Response(
+      JSON.stringify({
+        id: art,
+        name: 'Singer',
+        type: 'Person',
+        country: 'JP',
+        'life-span': { begin: '1990-01', end: null },
+        disambiguation: 'the one',
+      })
+    )
+  }) as typeof fetch
+  const value = (r: Awaited<ReturnType<typeof metadata>>, key: string) =>
+    r.preview.values.find((v) => v.key === key)?.value
   const song = await metadata('https://musicbrainz.org/recording/' + rec.toUpperCase(), fetcher)
   assert.equal(song.preview.title, 'Song')
   assert.equal(song.preview.source, 'https://musicbrainz.org/recording/' + rec)

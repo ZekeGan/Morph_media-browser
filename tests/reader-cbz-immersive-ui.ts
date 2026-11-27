@@ -1,17 +1,18 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
+
 import { Library } from '../electron/library'
-import { tinyPng, zipFixture } from './support/archive-fixture'
 import { closeApp, launchApp, reportFailure } from './support/app'
+import { tinyPng, zipFixture } from './support/archive-fixture'
 
 // R-436: going on from one comic archive (CBZ) to the next keeps the window in fullscreen and immersive reading,
 // as moving from one image folder to the next does (R-275).
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'reader-cbz-immersive-')),
-  media = path.join(root, 'Series'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'reader-cbz-immersive-'))
+const media = path.join(root, 'Series')
+const local = path.join(root, 'local')
 await fs.mkdir(media)
 const pages = (count: number) =>
   zipFixture(

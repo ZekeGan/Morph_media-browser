@@ -1,38 +1,41 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Menu, SegmentedControl, Select, Switch, Tooltip } from '@mantine/core'
-import type {
-  ContentResult,
-  ExplorerRequest,
-  ExplorerResponse,
-  MediaPrefs,
-  MediaEntry,
-  OverviewEntry,
+import { useEffect, useMemo, useRef, useState } from 'react'
+
+import {
+  builtinPanelFor,
+  type ContentResult,
+  type ExplorerRequest,
+  type ExplorerResponse,
+  type MediaEntry,
+  type MediaPrefs,
+  type OverviewEntry,
 } from '../../shared/explorer'
-import type { FolderRow, Project, Request, Response } from '../../shared/model'
-import { builtinPanelFor } from '../../shared/explorer'
+import type { FolderKind } from '../../shared/kind'
 import {
   canPreviewMedia,
   matchesMedia,
-  mediaSortFields,
-  sortMedia,
-  visibleFile,
   type MediaFilter,
   type MediaSort,
   type MediaSortField,
+  mediaSortFields,
+  sortMedia,
+  visibleFile,
 } from '../../shared/media'
-import { Gallery } from '../gallery/Gallery'
-import { MediaViewer } from './MediaViewer'
-import { AlbumActions, AlbumTracks, useAlbum } from './AlbumView'
+import type { FolderRow, Project, Request, Response } from '../../shared/model'
+
+import { useRefreshNonce } from '../browse/refresh'
 import { PanelCard } from '../cells/PanelContent'
-import type { FolderKind } from '../../shared/kind'
+import { iconLabel } from '../common/IconLabel'
+import { Icon } from '../common/icons'
+import { Gallery } from '../gallery/Gallery'
+import { t as tr, useLocale } from '../i18n'
+import { FolderPage } from '../panel/FolderPage'
+import { AlbumActions, AlbumTracks, useAlbum } from './AlbumView'
+import { MediaViewer } from './MediaViewer'
 import { usePlayback } from './Playback'
 import { podcastFolder } from './podcast'
 import { placeProgress, useVideoPlaces, videoPlace } from './videoPlace'
-import { FolderPage } from '../panel/FolderPage'
-import { useRefreshNonce } from '../browse/refresh'
-import { Icon } from '../common/icons'
-import { iconLabel } from '../common/IconLabel'
-import { t as tr, useLocale } from '../i18n'
+
 import './media-workspace.css'
 
 export function MediaBrowser({
@@ -78,12 +81,12 @@ export function MediaBrowser({
   busy: boolean
 }) {
   useLocale()
-  const [filter, setFilter] = useState<MediaFilter>(prefs?.filter ?? 'all'),
-    [view, setView] = useState<string>(prefs?.view ?? 'masonry')
-  const [scope, setScope] = useState<'current' | 'descendants'>(prefs?.scope ?? 'current'),
-    [grouped, setGrouped] = useState(prefs?.grouped ?? false),
-    // R-486: undefined keeps the order the files are listed in (shown as name, ascending).
-    [sort, setSort] = useState<MediaSort | undefined>(prefs?.sort)
+  const [filter, setFilter] = useState<MediaFilter>(prefs?.filter ?? 'all')
+  const [view, setView] = useState<string>(prefs?.view ?? 'masonry')
+  const [scope, setScope] = useState<'current' | 'descendants'>(prefs?.scope ?? 'current')
+  const [grouped, setGrouped] = useState(prefs?.grouped ?? false)
+  // R-486: undefined keeps the order the files are listed in (shown as name, ascending).
+  const [sort, setSort] = useState<MediaSort | undefined>(prefs?.sort)
   const version = useRefreshNonce()
   const [overview, setOverview] = useState<{
     entries: OverviewEntry[]
@@ -91,13 +94,13 @@ export function MediaBrowser({
     loading: boolean
   }>({ entries: [], notices: [], loading: false })
   const [session, setSession] = useState<{
-      file: MediaEntry
-      source: FolderRow
-      filter: MediaFilter
-    }>(),
-    [opening, setOpening] = useState('')
-  const alive = useRef(true),
-    operation = useRef(0)
+    file: MediaEntry
+    source: FolderRow
+    filter: MediaFilter
+  }>()
+  const [opening, setOpening] = useState('')
+  const alive = useRef(true)
+  const operation = useRef(0)
   useEffect(() => {
     alive.current = true
     return () => {
@@ -149,12 +152,13 @@ export function MediaBrowser({
         if (cursor) await new Promise((resolve) => setTimeout(resolve, 20))
       } while (active && cursor)
     })().catch((reason) => {
-      if (active)
+      if (active) {
         setOverview((previous) => ({
           ...previous,
           notices: [...previous.notices, String(reason)],
           loading: false,
         }))
+      }
     })
     return () => {
       active = false
@@ -191,9 +195,11 @@ export function MediaBrowser({
   }
   const counts = useMemo(() => {
     const out = { all: 0, video: 0, image: 0, audio: 0, other: 0 } as Record<MediaFilter, number>
-    for (const entry of visible)
-      for (const type of ['all', 'video', 'image', 'audio', 'other'] as const)
+    for (const entry of visible) {
+      for (const type of ['all', 'video', 'image', 'audio', 'other'] as const) {
         if (matchesMedia(entry, type)) out[type]++
+      }
+    }
     return out
   }, [visible])
   const types = (['all', 'video', 'image', 'audio', 'other'] as const).filter(
@@ -205,17 +211,17 @@ export function MediaBrowser({
     size: tr('大小'),
     modified: tr('修改日期'),
   }
-  const current = sort ?? { field: 'name' as const, asc: true },
-    sortSummary = sortNames[current.field] + ' ' + (current.asc ? '↑' : '↓')
-  const folders = entries.filter((entry) => entry.kind === 'folder'),
-    pending = scope === 'descendants' ? overview.loading : loading
+  const current = sort ?? { field: 'name' as const, asc: true }
+  const sortSummary = sortNames[current.field] + ' ' + (current.asc ? '↑' : '↓')
+  const folders = entries.filter((entry) => entry.kind === 'folder')
+  const pending = scope === 'descendants' ? overview.loading : loading
   const playback = usePlayback()
   // R-405: the thin line on a video's thumbnail; places live on this computer only.
   useVideoPlaces()
   const videoProgress = (entry: MediaEntry) => {
     if (entry.kind !== 'video') return undefined
-    const owner = (entry as OverviewEntry).rowId,
-      source = (owner && sourceRows.find((item) => item.rowId === owner)) || row
+    const owner = (entry as OverviewEntry).rowId
+    const source = (owner && sourceRows.find((item) => item.rowId === owner)) || row
     return placeProgress(videoPlace(podcastFolder(source), entry.id))
   }
   useEffect(() => {
@@ -223,8 +229,8 @@ export function MediaBrowser({
   }, [row.rowId, entries, project])
   const open = async (entry: MediaEntry) => {
     if (!canPreviewMedia(entry) || busy || opening) return
-    const sourceId = (entry as OverviewEntry).rowId ?? row.rowId,
-      token = ++operation.current
+    const sourceId = (entry as OverviewEntry).rowId ?? row.rowId
+    const token = ++operation.current
     setOpening(sourceId)
     try {
       const result = await run({ action: 'visit', rowId: sourceId })
@@ -425,8 +431,9 @@ export function MediaBrowser({
                       !source.error &&
                       !source.stopped
                   )
-                )
+                ) {
                   onSource(id)
+                }
               }}
               onReader={() => {}}
               save={() => {}}
@@ -442,7 +449,7 @@ export function MediaBrowser({
                         const group = files.filter(
                           (file) => ((file as OverviewEntry).rowId ?? row.rowId) === source.rowId
                         )
-                        if (group.length)
+                        if (group.length) {
                           playback.add(
                             {
                               row: source,
@@ -451,6 +458,7 @@ export function MediaBrowser({
                             },
                             group
                           )
+                        }
                       }
                     }
                   : undefined

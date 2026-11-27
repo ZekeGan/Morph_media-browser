@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto'
+
 import { type ExplorerRequest, type OverviewResult } from '../shared/explorer'
-import { mediaNames } from './media-files'
 import { mediaSortFields } from '../shared/media'
+
 import type { Explorer } from './explorer'
+import { mediaNames } from './media-files'
 
 export async function overview(
   ex: Explorer,
@@ -16,14 +18,16 @@ export async function overview(
     !['current', 'descendants'].includes(request.scope) ||
     (request.sort !== undefined &&
       (!mediaSortFields.includes(request.sort?.field) || typeof request.sort.asc !== 'boolean'))
-  )
+  ) {
     throw new Error('檔案總覽範圍不合法')
-  const root = await ex.library.readableRow(request.rowId),
-    snapshot = ex.library.snapshot()
-  const notices: string[] = [],
-    entries: OverviewResult['entries'] = []
-  for (const [token, session] of ex.overviewPages)
+  }
+  const root = await ex.library.readableRow(request.rowId)
+  const snapshot = ex.library.snapshot()
+  const notices: string[] = []
+  const entries: OverviewResult['entries'] = []
+  for (const [token, session] of ex.overviewPages) {
     if (session.expires < Date.now()) ex.overviewPages.delete(token)
+  }
   let plan = request.cursor ? ex.overviewPages.get(request.cursor) : undefined
   if (request.cursor) {
     if (
@@ -31,8 +35,9 @@ export async function overview(
       plan.rootId !== root.rowId ||
       plan.folderId !== root.record!.folderId ||
       plan.scope !== request.scope
-    )
+    ) {
       throw new Error('檔案總覽已過期，請重新整理')
+    }
     ex.overviewPages.delete(request.cursor)
   } else {
     const base = root.path.replaceAll('\\', '/').replace(/\/$/, '').toLocaleLowerCase()
@@ -49,8 +54,9 @@ export async function overview(
     const allowed = candidates.filter(
       (row) => row.record && !row.readonly && !row.stopped && !row.error && !row.duplicate
     )
-    if (candidates.length !== allowed.length)
+    if (candidates.length !== allowed.length) {
       notices.push('只列出目前已納入且允許瀏覽的範圍；缺失記錄或保護區域未列入')
+    }
     allowed.sort((a, b) => mediaNames.compare(a.path, b.path) || a.rowId.localeCompare(b.rowId))
     plan = {
       rootId: root.rowId,
@@ -64,8 +70,8 @@ export async function overview(
   }
   let batches = 0
   while (plan!.folder < plan!.folders.length && entries.length < limit && batches++ < 8) {
-    const rowId = plan!.folders[plan!.folder],
-      row = (snapshot.structure ?? snapshot.rows).find((row) => row.rowId === rowId)
+    const rowId = plan!.folders[plan!.folder]
+    const row = (snapshot.structure ?? snapshot.rows).find((row) => row.rowId === rowId)
     try {
       if (!row) throw new Error('資料夾已離開允許範圍')
       const result = await ex.content(
@@ -94,8 +100,9 @@ export async function overview(
   if (!complete) {
     nextCursor = randomUUID()
     plan!.expires = Date.now() + 120000
-    while (ex.overviewPages.size >= 10)
+    while (ex.overviewPages.size >= 10) {
       ex.overviewPages.delete(ex.overviewPages.keys().next().value!)
+    }
     ex.overviewPages.set(nextCursor, plan!)
   }
   return {

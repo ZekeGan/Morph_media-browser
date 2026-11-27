@@ -1,19 +1,23 @@
-import { useEffect, useState } from 'react'
 import { Button, Menu, Stack, Text } from '@mantine/core'
+import { useEffect, useState } from 'react'
+
 import type { ExplorerRequest, ExplorerResponse } from '../../shared/explorer'
 import type { Asset, Cell, FolderRow, Request, Response } from '../../shared/model'
-import { t as tr } from '../i18n'
-import { Icon } from '../common/icons'
-import { ImageUrlImport } from '../metadata/ImageUrlImport'
+
 import { folderCoverPicture } from '../cells/folderCover'
+import { Icon } from '../common/icons'
+import { t as tr } from '../i18n'
+import { ImageUrlImport } from '../metadata/ImageUrlImport'
 
 type Act = (request: Request) => Promise<Response | undefined>
 type Run = (request: ExplorerRequest) => Promise<ExplorerResponse | undefined>
+
 export interface ImageCell {
   cell: Cell
   // R-509: shown on the card or in the details panel.
   where: 'card' | 'panel'
 }
+
 interface Picture {
   src: string
   alt: string
@@ -57,9 +61,9 @@ export function FolderImages({
       ),
     ])
   )
-  const manualCover = assets.find((a) => a.assetId === details?.bannerAssetId),
-    savedCover = assets.find((a) => !a.role),
-    coverAsset = manualCover ?? savedCover
+  const manualCover = assets.find((a) => a.assetId === details?.bannerAssetId)
+  const savedCover = assets.find((a) => !a.role)
+  const coverAsset = manualCover ?? savedCover
   const autoCover = folderCoverPicture(row)
   const coverSource = manualCover
     ? tr('你選的圖片')
@@ -111,8 +115,9 @@ export function FolderImages({
           '\n' +
           tr('只刪除此資料夾內保存的副本，原始檔案不受影響。')
       )
-    )
+    ) {
       return
+    }
     void run({ action: 'deleteImage', rowId: row.rowId, revision: row.record!.revision, assetId })
   }
   // One thumbnail that opens a menu: pick a saved image, import a new one, or clear the choice. With nothing chosen it
@@ -132,8 +137,8 @@ export function FolderImages({
     onImport: () => void
     onClear?: () => void
   }) => {
-    const asset = assets.find((a) => a.assetId === current),
-      auto = !asset && fallback && !missing.includes(fallback.src) ? fallback : undefined
+    const asset = assets.find((a) => a.assetId === current)
+    const auto = !asset && fallback && !missing.includes(fallback.src) ? fallback : undefined
     return (
       <Menu position="bottom-start" withinPortal>
         <Menu.Target>
@@ -215,22 +220,23 @@ export function FolderImages({
             // An imported picture becomes the cover right away (the same as picking it from the list).
             onImport: async () => {
               const result = await act({
-                  action: 'image',
-                  rowId: row.rowId,
-                  revision: row.record!.revision,
-                }),
-                next =
-                  result && !result.cancelled
-                    ? result.snapshot.structure?.find((r) => r.rowId === row.rowId)?.record
-                    : undefined,
-                asset = next?.assets.at(-1)
-              if (next && asset)
+                action: 'image',
+                rowId: row.rowId,
+                revision: row.record!.revision,
+              })
+              const next =
+                result && !result.cancelled
+                  ? result.snapshot.structure?.find((r) => r.rowId === row.rowId)?.record
+                  : undefined
+              const asset = next?.assets.at(-1)
+              if (next && asset) {
                 await run({
                   action: 'banner',
                   rowId: row.rowId,
                   revision: next.revision,
                   assetId: asset.assetId,
                 })
+              }
             },
           })}
           <ImageUrlImport row={row} run={run} disabled={disabled || locked} />

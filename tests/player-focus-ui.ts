@@ -1,6 +1,7 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
+
 import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 import { videoFixture } from './support/video-fixture'
@@ -10,9 +11,9 @@ import { videoFixture } from './support/video-fixture'
 // Moving with Tab shows the focus again.
 const base = path.resolve('.test-output')
 await fs.mkdir(path.join(base, 'shot'), { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'player-focus-ui-')),
-  media = path.join(root, 'Clips'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'player-focus-ui-'))
+const media = path.join(root, 'Clips')
+const local = path.join(root, 'local')
 await fs.mkdir(media, { recursive: true })
 await fs.copyFile(await videoFixture(), path.join(media, 'clip.mp4'))
 const library = new Library(local, undefined, false)

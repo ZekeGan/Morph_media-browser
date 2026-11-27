@@ -1,6 +1,7 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
+
 import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
@@ -8,9 +9,9 @@ import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/ap
 // the user takes it over, moves with the grip (drag or Alt+arrows), is kept on this computer, and goes back to "follow".
 const base = path.resolve('.test-output')
 await fs.mkdir(path.join(base, 'shot'), { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'source-language-ui-')),
-  media = path.join(root, 'Library'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'source-language-ui-'))
+const media = path.join(root, 'Library')
+const local = path.join(root, 'local')
 await fs.mkdir(path.join(media, 'Film'), { recursive: true })
 const library = new Library(local, undefined, false)
 await library.init()
@@ -67,8 +68,8 @@ try {
   const fire = (index: number, type: string, half: 'top' | 'bottom' | 'none') =>
     rows.nth(index).evaluate(
       (el, [type, half]) => {
-        const box = el.getBoundingClientRect(),
-          data = new DataTransfer()
+        const box = el.getBoundingClientRect()
+        const data = new DataTransfer()
         el.dispatchEvent(
           new DragEvent(type, {
             bubbles: true,

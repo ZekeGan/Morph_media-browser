@@ -1,34 +1,36 @@
+import { spawn } from 'node:child_process'
+import { existsSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import {
   app,
-  safeStorage,
   BrowserWindow,
   dialog,
   ipcMain,
   nativeImage,
   net,
   protocol,
+  safeStorage,
   screen,
   shell,
 } from 'electron'
-import { spawn } from 'node:child_process'
-import path from 'node:path'
-import { existsSync } from 'node:fs'
-import { fileURLToPath, pathToFileURL } from 'node:url'
-import { Library } from './library'
-import { safePath } from './files'
+
+import type { LocaleId } from '../shared/locales'
 import type { Response } from '../shared/model'
-import { WorkspaceStore } from './workspace'
+import { nativeText } from '../shared/native-messages'
 import type { WindowAction } from '../shared/workspace'
+
+import { searchSources } from './sources/search'
 import { Explorer } from './explorer'
-import { KeyStore } from './keys'
+import { safePath } from './files'
 import { warmHiddenHelper } from './hidden'
+import { isExplorerRequest, isLibraryRequest, isWorkspaceCommand, ref } from './ipc-requests'
+import { KeyStore } from './keys'
+import { Library } from './library'
+import { libraryDispatcher } from './library-dispatch'
 import { THUMB_EDGE } from './media-files'
 import { decodeThumbnail, SHARP_TYPES } from './thumbnail-decode'
-import type { LocaleId } from '../shared/locales'
-import { nativeText } from '../shared/native-messages'
-import { libraryDispatcher } from './library-dispatch'
-import { searchSources } from './sources/search'
-import { isExplorerRequest, isLibraryRequest, isWorkspaceCommand, ref } from './ipc-requests'
+import { WorkspaceStore } from './workspace'
 
 const directory = path.dirname(fileURLToPath(import.meta.url))
 // Taskbar and Alt+Tab icon; a build without the build/ folder simply keeps the default icon.
@@ -53,6 +55,7 @@ let pendingRequests = 0
 let nativeLocale: LocaleId = 'zh-TW'
 const nt = (source: Parameters<typeof nativeText>[0]) => nativeText(source, nativeLocale)
 const devUrl = process.env.ELECTRON_RENDERER_URL
+
 function trusted(url: string) {
   try {
     return devUrl
@@ -62,6 +65,7 @@ function trusted(url: string) {
     return false
   }
 }
+
 // Automated UI tests run the real app. Unless MEDIA_VIEWER_TEST_VISIBLE=1 their window stays out of the way:
 // fully transparent, click-through, never activated and not in the taskbar. It is still a normal visible window to
 // Chromium, so rendering and screenshots keep their normal speed (an off-screen window was ten times slower). Real use and `pnpm dev` are unaffected.
@@ -82,9 +86,9 @@ if (quietTest || watchTest) {
 // on its own: 1.0.0 has no -beta, so the sandbox is back.
 if (/-beta\.\d+$/.test(app.getVersion())) app.commandLine.appendSwitch('no-sandbox')
 // The product is called M:orph now, but its data stays in the original folder so no settings or index are lost.
-if (process.env.MEDIA_VIEWER_TEST_DATA)
+if (process.env.MEDIA_VIEWER_TEST_DATA) {
   app.setPath('userData', path.resolve(process.env.MEDIA_VIEWER_TEST_DATA))
-else app.setPath('userData', path.join(app.getPath('appData'), 'media-viewer'))
+} else app.setPath('userData', path.join(app.getPath('appData'), 'media-viewer'))
 if (!app.requestSingleInstanceLock()) app.quit()
 else {
   app.on('second-instance', () => {
@@ -114,8 +118,9 @@ else {
           event.sender !== win?.webContents ||
           event.senderFrame !== win.webContents.mainFrame ||
           !trusted(event.senderFrame.url)
-        )
+        ) {
           throw new Error('拒絕未授權的操作')
+        }
       }
       const dispatch = libraryDispatcher({
         library,
@@ -212,19 +217,21 @@ else {
           }
           // R-518: pictures are decoded here with sharp from the checked file; an audio file's embedded cover, BMP,
           // ICO and files sharp cannot read still go to the window below.
-          if (url?.startsWith('media://file/') && mime && SHARP_TYPES.has(mime))
+          if (url?.startsWith('media://file/') && mime && SHARP_TYPES.has(mime)) {
             try {
               return await decodeThumbnail(file)
             } catch {
               // The window decoder below tries the same file.
             }
+          }
           if (
             !win ||
             win.isDestroyed() ||
             !trusted(win.webContents.getURL()) ||
             !(url?.startsWith('media://file/') || url?.startsWith('media://audio-cover/'))
-          )
+          ) {
             throw new Error('圖片解碼器尚未就緒')
+          }
           // Decode asynchronously from the already-scoped stream. No original image
           // buffer/base64 crosses IPC, and full bitmap decoding stays off main.
           // R-498: the picture's size is read first (loading an <img> reads the header, it does not draw), so it is
@@ -244,11 +251,12 @@ else {
         pendingRequests++
         try {
           // R-418: a name search only asks websites; it needs neither the library nor the explorer.
-          if (request.action === 'metadataSearch')
+          if (request.action === 'metadataSearch') {
             return await searchSources(request.query, fetch, workspace.sourceLanguages(), {
               sources: request.sources,
               keyFor: (site) => explorer.desktop.keyStore?.get(site) ?? Promise.resolve(undefined),
             })
+          }
           return await library.run(() => explorer.request(request))
         } finally {
           pendingRequests--
@@ -287,8 +295,9 @@ else {
       })
       ipcMain.handle('window:action', (event, action: WindowAction) => {
         checkSender(event)
-        if (!['state', 'minimize', 'toggleMaximize', 'close'].includes(action))
+        if (!['state', 'minimize', 'toggleMaximize', 'close'].includes(action)) {
           throw new Error('不支援的視窗操作')
+        }
         if (action === 'minimize') win!.minimize()
         if (action === 'toggleMaximize') {
           if (win!.isMaximized()) win!.unmaximize()
@@ -314,8 +323,8 @@ else {
       })
       protocol.handle('media', async (request) => {
         try {
-          const url = new URL(request.url),
-            parts = url.pathname.split('/').filter(Boolean)
+          const url = new URL(request.url)
+          const parts = url.pathname.split('/').filter(Boolean)
           if (url.hostname === 'audio-cover' && parts.length === 2) {
             const response = await explorer.audioCover(parts[0], parts[1], request.signal)
             response.headers.set(
@@ -354,10 +363,12 @@ else {
             )
             return response
           }
-          if (url.hostname === 'archive' && parts.length === 4)
+          if (url.hostname === 'archive' && parts.length === 4) {
             return explorer.archiveStream(parts[0], parts[1], parts[2], parts[3])
-          if (url.hostname !== 'asset' || parts.length !== 2)
+          }
+          if (url.hostname !== 'asset' || parts.length !== 2) {
             return new Response(null, { status: 403 })
+          }
           const asset = await library.asset(parts[0], parts[1])
           return net.fetch(pathToFileURL(asset.file).toString())
         } catch {
@@ -371,11 +382,12 @@ else {
           library.cancelScan()
           return { snapshot: library.snapshot() }
         }
-        if (request.action === 'snapshot' && startupError)
+        if (request.action === 'snapshot' && startupError) {
           return {
             snapshot: library.snapshot(),
             notice: { level: 'error', message: startupError },
           } satisfies Response
+        }
         pendingRequests++
         try {
           return await library.run(() => dispatch(request))
@@ -410,9 +422,9 @@ else {
         if (command !== 'browser-backward' && command !== 'browser-forward') return
         event.preventDefault()
         if (!win?.isFocused() || !win.isVisible() || win.isMinimized()) return
-        const cursor = screen.getCursorScreenPoint(),
-          bounds = win.getContentBounds(),
-          zoom = win.webContents.getZoomFactor()
+        const cursor = screen.getCursorScreenPoint()
+        const bounds = win.getContentBounds()
+        const zoom = win.webContents.getZoomFactor()
         win.webContents.send('folder:navigate', {
           delta: command === 'browser-backward' ? -1 : 1,
           x: (cursor.x - bounds.x) / zoom,
@@ -466,12 +478,16 @@ else {
       // C-149: with the process sandbox off in Beta, a redirect of the page or a frame (the PDF viewer's media://
       // frame) may not lead to a web or file address either.
       win.webContents.on('will-redirect', (details) => {
-        if (details.isMainFrame ? !trusted(details.url) : /^(https?|file|ftp):/i.test(details.url))
+        if (
+          details.isMainFrame ? !trusted(details.url) : /^(https?|file|ftp):/i.test(details.url)
+        ) {
           details.preventDefault()
+        }
       })
       win.webContents.on('will-frame-navigate', (details) => {
-        if (!details.isMainFrame && /^(https?|file|ftp):/i.test(details.url))
+        if (!details.isMainFrame && /^(https?|file|ftp):/i.test(details.url)) {
           details.preventDefault()
+        }
       })
       const allowFullscreen = (
         contents: Electron.WebContents | null,

@@ -1,24 +1,29 @@
 import type { BrowseState } from './explorer'
-import type { ThemeId } from './themes'
-import type { LocaleId } from './locales'
 import type { FolderKind } from './kind'
+import type { LocaleId } from './locales'
 import type { SearchSourceId } from './sources'
+import type { ThemeId } from './themes'
+
 // What a player does when a track or video ends (R-268).
 export const playOrders = ['stop', 'next', 'all', 'one'] as const
 export type PlayOrder = (typeof playOrders)[number]
+
 export const isPlayOrder = (value: unknown): value is PlayOrder =>
   playOrders.includes(value as PlayOrder)
+
 // Seconds played in total, sessions counted, and when the last session ended (ISO time).
 export interface PlayRecord {
   total: number
   count: number
   last: string
 }
+
 export interface ProjectPlacement {
   groupId: string | null
   favorite: boolean
   addedOrder: number
 }
+
 export interface WorkspacePrefs {
   schemaVersion: 1
   revision: number
@@ -48,16 +53,19 @@ export interface WorkspacePrefs {
   groups: { id: string; name: string; collapsed: boolean }[]
   projects: Record<string, ProjectPlacement>
 }
+
 export interface SettingsPackage {
   kind: 'media-viewer.settings'
   schemaVersion: 1
   exportedAt: string
   prefs: Partial<WorkspacePrefs>
 }
+
 export interface SettingsImportPreview {
   token: string
   changes: { field: string; current: unknown; incoming: unknown }[]
 }
+
 export interface WorkspaceState {
   prefs: WorkspacePrefs
   error?: string
@@ -67,6 +75,7 @@ export interface WorkspaceState {
   backups?: { id: string; createdAt: string }[]
   cancelled?: boolean
 }
+
 export type WorkspaceCommand =
   | { action: 'exportPackage' }
   | { action: 'previewPackage'; value: unknown }
@@ -89,16 +98,20 @@ export type WorkspaceCommand =
   | { action: 'collapseSection'; section: 'favorites' | 'unclassified'; value: boolean }
   | { action: 'layout'; sidebarWidth?: number; sidebarHidden?: boolean }
   | { action: 'browse'; projectId: string; value: BrowseState }
+
 export type WindowAction = 'state' | 'minimize' | 'toggleMaximize' | 'close'
+
 export interface WindowState {
   maximized: boolean
   visible?: boolean
 }
+
 export interface FolderNavigation {
   delta: -1 | 1
   x: number
   y: number
 }
+
 export interface DesktopApi {
   workspace(): Promise<WorkspaceState>
   updateWorkspace(command: WorkspaceCommand): Promise<WorkspaceState>
@@ -106,6 +119,7 @@ export interface DesktopApi {
   onWindowState(callback: (state: WindowState) => void): () => void
   onFolderNavigation(callback: (navigation: FolderNavigation) => void): () => void
 }
+
 export const defaultWorkspace = (): WorkspacePrefs => ({
   schemaVersion: 1,
   revision: 0,
@@ -118,6 +132,7 @@ export const defaultWorkspace = (): WorkspacePrefs => ({
   groups: [],
   projects: {},
 })
+
 export function sectionIds(prefs: WorkspacePrefs) {
   const all = ['favorites', ...prefs.groups.map((g) => g.id), 'unclassified']
   return [
@@ -125,6 +140,7 @@ export function sectionIds(prefs: WorkspacePrefs) {
     ...all.filter((id) => !prefs.sections?.includes(id)),
   ]
 }
+
 export function sectionProjects(ids: string[], prefs: WorkspacePrefs, section: string) {
   const order = prefs.projectOrder?.[section] ?? []
   return ids

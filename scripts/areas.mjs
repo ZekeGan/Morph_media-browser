@@ -3,9 +3,9 @@
 //   node scripts/areas.mjs check            every source file belongs to an area; every named test exists
 //   node scripts/areas.mjs readme           regenerate the table between the markers in docs/README.md
 //   node scripts/areas.mjs which <file…>    which areas (and tests) a file belongs to
+import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
-import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -27,11 +27,14 @@ const slash = (file) => file.replace(/\\/g, '/')
 
 export const areasOf = (file) =>
   matchers.filter(({ patterns }) => patterns.some((p) => p.test(slash(file)))).map((m) => m.area)
+
 export const isSource = (file) => /^(src|electron|shared)\//.test(slash(file))
 const expand = (tests) => tests.flatMap((name) => (name === '@smoke' ? smoke : [name]))
+
 export const uiTestsOf = (files) => [
   ...new Set(files.flatMap((file) => areasOf(file).flatMap((area) => expand(area.ui)))),
 ]
+
 export const sourceFiles = () =>
   spawnSync(
     'git',
@@ -42,19 +45,25 @@ export const sourceFiles = () =>
     .filter(Boolean)
 
 export function problems() {
-  const out = [],
-    files = sourceFiles()
+  const out = []
+  const files = sourceFiles()
   for (const file of files) if (!areasOf(file).length) out.push(`未歸入任何領域：${file}`)
   for (const area of areas) {
-    for (const name of expand(area.ui))
-      if (!fs.existsSync(path.join(root, 'tests', name + '.ts')))
+    for (const name of expand(area.ui)) {
+      if (!fs.existsSync(path.join(root, 'tests', name + '.ts'))) {
         out.push(`${area.id}：找不到 UI 測試 tests/${name}.ts`)
-    for (const name of area.tests)
-      if (!fs.existsSync(path.join(root, 'tests', name)))
+      }
+    }
+    for (const name of area.tests) {
+      if (!fs.existsSync(path.join(root, 'tests', name))) {
         out.push(`${area.id}：找不到資料測試 tests/${name}`)
-    for (const pattern of area.code)
-      if (!files.some((file) => toRegExp(pattern).test(file)))
+      }
+    }
+    for (const pattern of area.code) {
+      if (!files.some((file) => toRegExp(pattern).test(file))) {
         out.push(`${area.id}：程式樣式沒有對到任何檔案：${pattern}`)
+      }
+    }
   }
   return out
 }
@@ -78,8 +87,10 @@ function table() {
     '\n'
   )
 }
-const START = '<!-- areas:start（由 node scripts/areas.mjs readme 產生，勿手改） -->',
-  END = '<!-- areas:end -->'
+
+const START = '<!-- areas:start（由 node scripts/areas.mjs readme 產生，勿手改） -->'
+const END = '<!-- areas:end -->'
+
 export function readmeTable() {
   return `${START}\n\n${table()}\n\n${END}`
 }
@@ -92,12 +103,12 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     if (found.length) process.exit(1)
     console.log(`${areas.length} 個領域涵蓋全部 ${sourceFiles().length} 個原始檔。`)
   } else if (command === 'readme') {
-    const file = path.join(root, 'docs/README.md'),
-      text = fs.readFileSync(file, 'utf8'),
-      crlf = text.includes('\r\n'),
-      plain = text.replace(/\r\n/g, '\n'),
-      start = plain.indexOf('<!-- areas:start'),
-      end = plain.indexOf(END)
+    const file = path.join(root, 'docs/README.md')
+    const text = fs.readFileSync(file, 'utf8')
+    const crlf = text.includes('\r\n')
+    const plain = text.replace(/\r\n/g, '\n')
+    const start = plain.indexOf('<!-- areas:start')
+    const end = plain.indexOf(END)
     if (start < 0 || end < 0) throw new Error('docs/README.md 缺少 areas 標記')
     const next = plain.slice(0, start) + readmeTable() + plain.slice(end + END.length)
     fs.writeFileSync(file, crlf ? next.replace(/\n/g, '\r\n') : next)

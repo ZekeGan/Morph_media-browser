@@ -1,15 +1,17 @@
-import { _electron as electron } from 'playwright-core'
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
-import { folderFile } from '../electron/files'
+import { _electron as electron } from 'playwright-core'
 
-import { videoFixture } from './support/video-fixture'
+import { folderFile } from '../electron/files'
+import { Library } from '../electron/library'
 import { closeApp } from './support/app'
+import { videoFixture } from './support/video-fixture'
 
 const groups = ['controls', 'subtitles', 'appearance'] as const
+
 type Group = (typeof groups)[number]
+
 function selection(): Group[] {
   const args = process.argv.slice(2)
 
@@ -27,15 +29,18 @@ function selection(): Group[] {
 
     if (arg === '--group' && args.length) requested.push(args.shift()!)
     else if (arg.startsWith('--group=')) requested.push(arg.slice('--group='.length))
-    else
+    else {
       throw new Error('使用 --list 或 --group <' + groups.join('|') + '>；不帶參數執行全部群組。')
+    }
   }
 
-  for (const group of requested)
+  for (const group of requested) {
     if (!groups.includes(group as Group)) throw new Error('未知測試群組：' + group)
+  }
 
   return [...new Set(requested)] as Group[]
 }
+
 const selectedGroups = selection()
 if (selectedGroups.length) {
   const fixture = await videoFixture()
@@ -49,18 +54,19 @@ async function runGroup(group: Group, fixture: string) {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
 
-  const root = await fs.mkdtemp(path.join(base, 'video-controls-' + group + '-')),
-    local = path.join(root, 'local'),
-    media = path.join(root, 'Videos'),
-    screens = path.join(root, 'screens')
+  const root = await fs.mkdtemp(path.join(base, 'video-controls-' + group + '-'))
+  const local = path.join(root, 'local')
+  const media = path.join(root, 'Videos')
+  const screens = path.join(root, 'screens')
 
   await fs.mkdir(media)
   await fs.mkdir(screens)
 
   await fs.copyFile(fixture, path.join(media, '01-first.mp4'))
 
-  for (const name of ['02-second.mp4', '03-last.mp4'])
+  for (const name of ['02-second.mp4', '03-last.mp4']) {
     await fs.copyFile(path.join(media, '01-first.mp4'), path.join(media, name))
+  }
 
   await fs.mkdir(path.join(media, 'Nested'))
   await fs.copyFile(
@@ -76,8 +82,9 @@ async function runGroup(group: Group, fixture: string) {
   await fs.writeFile(path.join(media, 'bad.srt'), 'not a subtitle')
 
   const originals = new Map<string, Buffer>()
-  for (const name of ['01-first.mp4', '02-second.mp4', '03-last.mp4', 'first.srt', 'bad.srt'])
+  for (const name of ['01-first.mp4', '02-second.mp4', '03-last.mp4', 'first.srt', 'bad.srt']) {
     originals.set(name, await fs.readFile(path.join(media, name)))
+  }
 
   const lib = new Library(local, undefined, false)
   await lib.init()
@@ -96,9 +103,9 @@ async function runGroup(group: Group, fixture: string) {
   )
   delete env.ELECTRON_RUN_AS_NODE
 
-  const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
-    page = await app.firstWindow(),
-    errors: string[] = []
+  const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
+  const page = await app.firstWindow()
+  const errors: string[] = []
 
   page.setDefaultTimeout(15000)
   page.on('pageerror', (error) => errors.push(error.message))
@@ -113,14 +120,15 @@ async function runGroup(group: Group, fixture: string) {
     })
   }
 
-  const stage = page.locator('.custom-video-stage'),
-    controls = page.locator('.video-controls'),
-    tool = (name: string) => controls.getByRole('button', { name, exact: true })
+  const stage = page.locator('.custom-video-stage')
+  const controls = page.locator('.video-controls')
+  const tool = (name: string) => controls.getByRole('button', { name, exact: true })
 
   const settingsPanel = page.getByRole('dialog', { name: '更多播放設定', exact: true })
   const openSettings = async () => {
-    if ((await tool('更多播放設定').getAttribute('aria-expanded')) !== 'true')
+    if ((await tool('更多播放設定').getAttribute('aria-expanded')) !== 'true') {
       await tool('更多播放設定').click()
+    }
     await settingsPanel.waitFor()
     await page.waitForFunction(
       () => getComputedStyle(document.querySelector('.player-settings')!).opacity === '1'
@@ -460,8 +468,8 @@ async function runGroup(group: Group, fixture: string) {
           () => getComputedStyle(document.querySelector('.player-settings')!).opacity === '1'
         )
         const contained = await panel.evaluate((element) => {
-          const bounds = element.getBoundingClientRect(),
-            stage = document.querySelector('.custom-video-stage')!.getBoundingClientRect()
+          const bounds = element.getBoundingClientRect()
+          const stage = document.querySelector('.custom-video-stage')!.getBoundingClientRect()
           return (
             bounds.left >= stage.left - 1 &&
             bounds.right <= stage.right + 1 &&
@@ -538,8 +546,9 @@ async function runGroup(group: Group, fixture: string) {
 
     await checks[group]()
 
-    for (const [name, bytes] of originals)
+    for (const [name, bytes] of originals) {
       assert.deepEqual(await fs.readFile(path.join(media, name)), bytes)
+    }
 
     assert.deepEqual(await fs.readFile(folderFile(media)), record)
 

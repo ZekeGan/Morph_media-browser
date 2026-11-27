@@ -1,22 +1,25 @@
-import { plainMessage } from '../shared/message'
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
-import { Explorer, type DesktopOperations } from '../electron/explorer'
-import { SearchIndex } from '../electron/search-index'
-import { ehMetadata } from '../electron/metadata'
+import { test } from 'node:test'
+
+import { plainMessage } from '../shared/message'
+import { type Attribute, DATA_DIR, validateProject } from '../shared/model'
 import { parseQuery } from '../shared/query'
 import { parseSubtitles } from '../shared/subtitles'
-import { DATA_DIR, validateProject, type Attribute } from '../shared/model'
+
+import { type DesktopOperations, Explorer } from '../electron/explorer'
 import { exists, folderFile, readFolder } from '../electron/files'
+import { Library } from '../electron/library'
+import { ehMetadata } from '../electron/metadata'
+import { SearchIndex } from '../electron/search-index'
+
 async function fixture(t: { after: (fn: () => Promise<void>) => void }) {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'explorer-')),
-    media = path.join(root, 'media'),
-    local = path.join(root, 'local')
+  const root = await fs.mkdtemp(path.join(base, 'explorer-'))
+  const media = path.join(root, 'media')
+  const local = path.join(root, 'local')
   await fs.mkdir(media)
   const lib = new Library(local, undefined, false)
   await lib.init()
@@ -51,6 +54,7 @@ async function fixture(t: { after: (fn: () => Promise<void>) => void }) {
     },
   }
 }
+
 test('game candidate boundaries protect Unity/RPGMaker/Unreal/Godot and readonly expansion', async (t) => {
   const { media, lib, explorer } = await fixture(t)
   const markers: Record<string, string[]> = {
@@ -59,12 +63,13 @@ test('game candidate boundaries protect Unity/RPGMaker/Unreal/Godot and readonly
     RPG: ['Game.exe', 'www/js/rmmz_core.js', 'www/data/file.bin'],
     Unreal: ['Game.exe', 'Engine/base.bin', 'Binaries/Win64/Game.exe', 'Content/Paks/game.pak'],
   }
-  for (const [name, files] of Object.entries(markers))
+  for (const [name, files] of Object.entries(markers)) {
     for (const rel of files) {
       const file = path.join(media, name, rel)
       await fs.mkdir(path.dirname(file), { recursive: true })
       await fs.writeFile(file, 'ORIGINAL')
     }
+  }
   let snapshot = await lib.create(media, {
     name: 'Games',
     depth: { mode: 'through', level: 5 },
@@ -103,10 +108,10 @@ test('typed attributes, explicit private override, stale revision and partial ba
   await fs.mkdir(path.join(media, 'A'))
   await fs.mkdir(path.join(media, 'B'))
   let s = await lib.create(media, {
-      name: 'Project',
-      depth: { mode: 'through', level: 2 },
-    }),
-    p = s.projects[0].project!
+    name: 'Project',
+    depth: { mode: 'through', level: 2 },
+  })
+  let p = s.projects[0].project!
   s = await lib.saveProject({
     ...p,
     fieldBindings: [
@@ -116,8 +121,8 @@ test('typed attributes, explicit private override, stale revision and partial ba
       { alias: 'date', attributeId: 'date', type: 'datetime' },
     ],
   })
-  let a = s.rows.find((r) => r.name === 'A')!,
-    b = s.rows.find((r) => r.name === 'B')!
+  let a = s.rows.find((r) => r.name === 'A')!
+  let b = s.rows.find((r) => r.name === 'B')!
   const attrs: Attribute[] = [
     { attributeId: 'tags', key: 'tag', type: 'tags', value: ['中文', 'game'], source: 'manual' },
     { attributeId: 'score', key: 'score', type: 'number', value: 4.5, source: 'manual' },
@@ -217,10 +222,10 @@ test('SQLite supports Unicode substrings, comma AND, quotes, exclusion, OR, date
   await fs.mkdir(path.join(media, '中文 game 甲'))
   await fs.mkdir(path.join(media, 'other'))
   let s = await lib.create(media, {
-      name: 'P',
-      depth: { mode: 'through', level: 2 },
-    }),
-    p = s.projects[0].project!
+    name: 'P',
+    depth: { mode: 'through', level: 2 },
+  })
+  let p = s.projects[0].project!
   s = await lib.saveProject({
     ...p,
     fieldBindings: [
@@ -247,12 +252,13 @@ test('SQLite supports Unicode substrings, comma AND, quotes, exclusion, OR, date
     'date:20251012',
     'tag:missing ~ tag:game',
     'tag:game -name:other',
-  ])
+  ]) {
     assert.equal(
       (await explorer.request({ action: 'search', query, projectId: p.projectId })).search!.total,
       1,
       query
     )
+  }
   assert.equal(
     (await explorer.request({ action: 'search', query: 'tag:game -中文' })).search!.total,
     0
@@ -302,10 +308,10 @@ test('searching a field also looks in the fallback fields its cells list, and no
   const { media, lib, explorer } = await fixture(t)
   for (const name of ['A', 'B', 'C']) await fs.mkdir(path.join(media, name))
   let s = await lib.create(media, {
-      name: 'Names',
-      depth: { mode: 'through', level: 2 },
-    }),
-    p = s.projects[0].project!
+    name: 'Names',
+    depth: { mode: 'through', level: 2 },
+  })
+  let p = s.projects[0].project!
   const style = { textColor: '#ffffff', backgroundColor: 'transparent' }
   const cells = [
     {
@@ -356,8 +362,8 @@ test('searching a field also looks in the fallback fields its cells list, and no
 test('a field group is searched by its name and any member finds the folder (R-226)', async (t) => {
   const { media, lib, explorer } = await fixture(t)
   for (const name of ['A', 'B', 'C']) await fs.mkdir(path.join(media, name))
-  let s = await lib.create(media, { name: 'Groups', depth: { mode: 'through', level: 2 } }),
-    p = s.projects[0].project!
+  let s = await lib.create(media, { name: 'Groups', depth: { mode: 'through', level: 2 } })
+  let p = s.projects[0].project!
   s = await lib.saveProject({
     ...p,
     fieldBindings: [
@@ -393,8 +399,8 @@ test('a field group is searched by its name and any member finds the folder (R-2
 test('a yes/no field is also searched by its own wording (R-234)', async (t) => {
   const { media, lib, explorer } = await fixture(t)
   for (const name of ['A', 'B']) await fs.mkdir(path.join(media, name))
-  let s = await lib.create(media, { name: 'Wording', depth: { mode: 'through', level: 2 } }),
-    p = s.projects[0].project!
+  let s = await lib.create(media, { name: 'Wording', depth: { mode: 'through', level: 2 } })
+  let p = s.projects[0].project!
   s = await lib.saveProject({
     ...p,
     fieldBindings: [
@@ -433,10 +439,10 @@ test('search sync detects same-revision values, private overrides, aliases, path
     name: 'Search sync',
     depth: { mode: 'through', level: 1 },
   })
-  const project = snapshot.projects[0].project!,
-    row = snapshot.rows[0],
-    record = row.record!,
-    index = explorer.index
+  const project = snapshot.projects[0].project!
+  const row = snapshot.rows[0]
+  const record = row.record!
+  const index = explorer.index
   project.fieldBindings = [{ alias: 'title', attributeId: 'title', type: 'string' }]
   record.attributes = [
     {
@@ -496,12 +502,12 @@ test('range streaming, traversal rejection, subtitle import/cleanup and safe lau
   await fs.writeFile(path.join(media, 'clip.mp4'), Buffer.from('0123456789'))
   await fs.writeFile(path.join(root, 'external.srt'), '1\n00:00:00,000 --> 00:00:01,500\nhello\n')
   let s = await lib.create(media, {
-      name: 'P',
-      depth: { mode: 'through', level: 1 },
-    }),
-    row = s.rows[0]
-  const contents = await explorer.content(row.rowId),
-    video = contents.entries.find((e) => e.name === 'clip.mp4')!
+    name: 'P',
+    depth: { mode: 'through', level: 1 },
+  })
+  let row = s.rows[0]
+  const contents = await explorer.content(row.rowId)
+  const video = contents.entries.find((e) => e.name === 'clip.mp4')!
   let response = await explorer.stream(
     row.rowId,
     video.id,
@@ -631,10 +637,10 @@ test('E-Hentai public API validates host/identity, namespaces and portable previ
   globalThis.fetch = mock
   try {
     const candidate = await explorer.request({
-        action: 'metadataPreview',
-        source: 'https://e-hentai.org/g/123/abcdef0123/',
-      }),
-      row = lib.snapshot().rows[0]
+      action: 'metadataPreview',
+      source: 'https://e-hentai.org/g/123/abcdef0123/',
+    })
+    const row = lib.snapshot().rows[0]
     await explorer.request({
       action: 'metadataApply',
       rowId: row.rowId,
@@ -655,10 +661,10 @@ test('E-Hentai public API validates host/identity, namespaces and portable previ
     )
     // The sister site shares the same fields: ExHentai adds the namespace field and may replace E-Hentai's tags.
     const exh = await explorer.request({
-        action: 'metadataPreview',
-        source: 'https://exhentai.org/g/123/abcdef0123/',
-      }),
-      next = lib.snapshot().rows[0]
+      action: 'metadataPreview',
+      source: 'https://exhentai.org/g/123/abcdef0123/',
+    })
+    const next = lib.snapshot().rows[0]
     await explorer.request({
       action: 'metadataApply',
       rowId: next.rowId,
@@ -699,10 +705,10 @@ test('subtitle parser is time based and malformed sources fail without inventing
 test('1000-row SQLite warm substring benchmark includes one-character Chinese queries', async (t) => {
   const { lib, media, explorer } = await fixture(t)
   const s = await lib.create(media, {
-      name: 'P',
-      depth: { mode: 'through', level: 1 },
-    }),
-    base = s.rows[0]
+    name: 'P',
+    depth: { mode: 'through', level: 1 },
+  })
+  const base = s.rows[0]
   s.rows = Array.from({ length: 1000 }, (_, i) => ({
     ...base,
     rowId: 'row' + i,
@@ -723,8 +729,8 @@ test('1000-row SQLite warm substring benchmark includes one-character Chinese qu
     },
   }))
   explorer.index.sync(s)
-  const samples: number[] = [],
-    queries = ['遊', '000', 'name:"遊戲"', 'tag:中文,game', '-name:999', 'path:media']
+  const samples: number[] = []
+  const queries = ['遊', '000', 'name:"遊戲"', 'tag:中文,game', '-name:999', 'path:media']
   for (let i = 0; i < 30; i++) {
     const start = performance.now()
     explorer.index.search(queries[i % queries.length], undefined, 0, 100)
@@ -743,27 +749,27 @@ test('multiple optional image CELL slots remain independent and survive portable
     depth: { mode: 'through', level: 1 },
   })
   let p = snapshot.projects[0].project!
-  const base = p.cells[0],
-    one = {
-      ...base,
-      cellId: 'image-one',
-      attributeId: 'slot-one',
-      kind: 'image' as const,
-      grid: { x: 0, y: 4, w: 6, h: 3 },
-    },
-    two = {
-      ...base,
-      cellId: 'image-two',
-      attributeId: 'slot-two',
-      kind: 'image' as const,
-      grid: { x: 6, y: 4, w: 6, h: 3 },
-    },
-    divider = {
-      ...base,
-      cellId: 'divider',
-      kind: 'divider' as const,
-      grid: { x: 0, y: 7, w: 12, h: 1 },
-    }
+  const base = p.cells[0]
+  const one = {
+    ...base,
+    cellId: 'image-one',
+    attributeId: 'slot-one',
+    kind: 'image' as const,
+    grid: { x: 0, y: 4, w: 6, h: 3 },
+  }
+  const two = {
+    ...base,
+    cellId: 'image-two',
+    attributeId: 'slot-two',
+    kind: 'image' as const,
+    grid: { x: 6, y: 4, w: 6, h: 3 },
+  }
+  const divider = {
+    ...base,
+    cellId: 'divider',
+    kind: 'divider' as const,
+    grid: { x: 0, y: 7, w: 12, h: 1 },
+  }
   p = { ...p, cells: [...p.cells, one, two, divider] }
   validateProject(p)
   snapshot = await lib.saveProject(p)
@@ -797,8 +803,8 @@ test('multiple optional image CELL slots remain independent and survive portable
   })
   row = lib.snapshot().rows[0]
   assert.equal(row.record!.details!.cellImages!['slot-two'], first)
-  const { folderFile } = await import('../electron/files'),
-    before = await fs.readFile(folderFile(media), 'utf8')
+  const { folderFile } = await import('../electron/files')
+  const before = await fs.readFile(folderFile(media), 'utf8')
   await assert.rejects(
     explorer.request({
       action: 'cellImage',
@@ -824,8 +830,8 @@ test('multiple optional image CELL slots remain independent and survive portable
   const restored = await reopened.link(media)
   assert.equal(restored.rows[0].record!.details!.cellImages!['slot-one'], first)
   assert.equal(restored.projects[0].project!.cells.filter((c) => c.kind === 'image').length, 2)
-  const assetDir = path.join(media, DATA_DIR, 'assets'),
-    names = await fs.readdir(assetDir)
+  const assetDir = path.join(media, DATA_DIR, 'assets')
+  const names = await fs.readdir(assetDir)
   await fs.unlink(folderFile(media) + '.bak')
   await fs.mkdir(folderFile(media) + '.bak')
   await assert.rejects(lib.addImage(row.rowId, row.record!.revision, file, 'image-one'))
@@ -857,8 +863,8 @@ test('Steam import is namespaced, preserves manual values and rejects a source c
   globalThis.fetch = (async () => new Response(JSON.stringify(payload))) as typeof fetch
   try {
     let row = lib.snapshot().rows[0]
-    const result = await explorer.request({ action: 'metadataPreview', source: '620' }),
-      preview = result.preview!
+    const result = await explorer.request({ action: 'metadataPreview', source: '620' })
+    const preview = result.preview!
     await explorer.request({
       action: 'metadataApply',
       rowId: row.rowId,
@@ -911,8 +917,8 @@ test('Steam import is namespaced, preserves manual values and rejects a source c
       'Manual'
     )
     // Replacing would overwrite it, so it is refused without writing anything.
-    const { folderFile } = await import('../electron/files'),
-      before = await fs.readFile(folderFile(media), 'utf8')
+    const { folderFile } = await import('../electron/files')
+    const before = await fs.readFile(folderFile(media), 'utf8')
     await assert.rejects(
       explorer.request({
         action: 'metadataApply',
@@ -933,18 +939,19 @@ test('Steam import is namespaced, preserves manual values and rejects a source c
 
 test('paged contents show an ordered first batch, remain row-bound and recheck changed paths', async (t) => {
   const { root, media, lib, explorer } = await fixture(t)
-  for (let start = 0; start < 450; start += 30)
+  for (let start = 0; start < 450; start += 30) {
     await Promise.all(
       Array.from({ length: Math.min(30, 450 - start) }, (_, index) =>
         fs.writeFile(path.join(media, `Image ${start + index + 1}.jpg`), 'IMAGE')
       )
     )
+  }
   const state = await lib.create(media, {
-      name: 'Many',
-      depth: { mode: 'through', level: 1 },
-    }),
-    row = state.rows[0],
-    first = await explorer.content(row.rowId, 96)
+    name: 'Many',
+    depth: { mode: 'through', level: 1 },
+  })
+  const row = state.rows[0]
+  const first = await explorer.content(row.rowId, 96)
   assert.equal(first.entries.length, 96)
   assert.equal(first.total, 450)
   assert.equal(first.entries[0].name, 'Image 1.jpg')
@@ -953,10 +960,10 @@ test('paged contents show an ordered first batch, remain row-bound and recheck c
   await assert.rejects(explorer.content(row.rowId, 0), /分批/)
   await assert.rejects(explorer.content(row.rowId, 501), /分批/)
   const other = await lib.create(media, {
-      name: 'Other',
-      depth: { mode: 'through', level: 1 },
-    }),
-    otherId = other.rows.find((r) => r.projectId !== row.projectId)!.rowId
+    name: 'Other',
+    depth: { mode: 'through', level: 1 },
+  })
+  const otherId = other.rows.find((r) => r.projectId !== row.projectId)!.rowId
   await assert.rejects(explorer.content(otherId, 96, first.nextCursor), /已過期/)
   const outside = path.join(root, 'outside')
   await fs.mkdir(outside)
@@ -968,8 +975,8 @@ test('paged contents show an ordered first batch, remain row-bound and recheck c
     process.platform === 'win32' ? 'junction' : 'dir'
   )
   let cursor: string | undefined = first.nextCursor
-  const all = [...first.entries],
-    notices: string[] = []
+  const all = [...first.entries]
+  const notices: string[] = []
   while (cursor) {
     const chunk = await explorer.content(row.rowId, 128, cursor)
     all.push(...chunk.entries)
@@ -985,23 +992,24 @@ test('paged contents show an ordered first batch, remain row-bound and recheck c
 test('R-492/R-494: batches come in the requested order and carry the whole folder count', async (t) => {
   const { media, lib, explorer } = await fixture(t)
   // Sizes run against the names, so the largest file is the last by name.
-  for (let n = 1; n <= 150; n++)
+  for (let n = 1; n <= 150; n++) {
     await fs.writeFile(path.join(media, `${String(n).padStart(3, '0')}.jpg`), 'x'.repeat(n))
+  }
   await fs.writeFile(path.join(media, 'notes.txt'), 'NOTE')
-  const state = await lib.create(media, { name: 'Sorted', depth: { mode: 'through', level: 1 } }),
-    row = state.rows[0],
-    read = async (sort?: { field: 'name' | 'kind' | 'size' | 'modified'; asc: boolean }) => {
-      let cursor: string | undefined,
-        first: Awaited<ReturnType<typeof explorer.content>> | undefined
-      const names: string[] = []
-      do {
-        const chunk = await explorer.content(row.rowId, cursor ? 64 : 40, cursor, sort)
-        first ??= chunk
-        names.push(...chunk.entries.map((entry) => entry.name))
-        cursor = chunk.nextCursor
-      } while (cursor)
-      return { first: first!, names }
-    }
+  const state = await lib.create(media, { name: 'Sorted', depth: { mode: 'through', level: 1 } })
+  const row = state.rows[0]
+  const read = async (sort?: { field: 'name' | 'kind' | 'size' | 'modified'; asc: boolean }) => {
+    let cursor: string | undefined
+    let first: Awaited<ReturnType<typeof explorer.content>> | undefined
+    const names: string[] = []
+    do {
+      const chunk = await explorer.content(row.rowId, cursor ? 64 : 40, cursor, sort)
+      first ??= chunk
+      names.push(...chunk.entries.map((entry) => entry.name))
+      cursor = chunk.nextCursor
+    } while (cursor)
+    return { first: first!, names }
+  }
   const bySize = await read({ field: 'size', asc: false })
   assert.equal(bySize.first.entries[0].name, '150.jpg')
   assert.deepEqual(
@@ -1024,8 +1032,8 @@ test('R-492/R-494: batches come in the requested order and carry the whole folde
 })
 test('R-504: size/date reads are kept a minute per folder and stopped by a newer sorted request', async (t) => {
   const { media, lib, explorer } = await fixture(t)
-  const big = path.join(media, 'big'),
-    small = path.join(media, 'small')
+  const big = path.join(media, 'big')
+  const small = path.join(media, 'small')
   await fs.mkdir(big)
   await fs.mkdir(small)
   await Promise.all(
@@ -1035,11 +1043,11 @@ test('R-504: size/date reads are kept a minute per folder and stopped by a newer
   )
   await fs.writeFile(path.join(small, 'a.jpg'), 'a')
   await fs.writeFile(path.join(small, 'b.jpg'), 'bbb')
-  const state = await lib.create(media, { name: 'Facts', depth: { mode: 'through', level: 2 } }),
-    rowOf = (name: string) => state.rows.find((row) => row.name === name)!,
-    bySize = { field: 'size', asc: false } as const,
-    first = async (rowId: string) =>
-      (await explorer.content(rowId, 40, undefined, bySize)).entries.map((entry) => entry.name)
+  const state = await lib.create(media, { name: 'Facts', depth: { mode: 'through', level: 2 } })
+  const rowOf = (name: string) => state.rows.find((row) => row.name === name)!
+  const bySize = { field: 'size', asc: false } as const
+  const first = async (rowId: string) =>
+    (await explorer.content(rowId, 40, undefined, bySize)).entries.map((entry) => entry.name)
   // Cache: a file growing does not change the folder's time, so the order read a moment ago is reused...
   assert.deepEqual(await first(rowOf('small').rowId), ['b.jpg', 'a.jpg'])
   await fs.writeFile(path.join(small, 'a.jpg'), 'aaaaa')
@@ -1049,8 +1057,8 @@ test('R-504: size/date reads are kept a minute per folder and stopped by a newer
   assert.deepEqual(await first(rowOf('small').rowId), ['a.jpg', 'b.jpg', 'c.jpg'])
   // The big folder's file reads wait at a gate, so the next request surely comes while it is still reading.
   const lstat = fs.lstat
-  let open = () => {},
-    reached = () => {}
+  let open = () => {}
+  let reached = () => {}
   const gate = new Promise<void>((done) => (open = done))
   fs.lstat = (async (file: Parameters<typeof lstat>[0]) => {
     if (/[\\/]big[\\/]\d+\.jpg$/.test(String(file))) {
@@ -1094,16 +1102,17 @@ test('R-504: size/date reads are kept a minute per folder and stopped by a newer
 })
 test('the n-th image of a folder is chosen by natural file order, direct files only', async (t) => {
   const { media, lib, explorer } = await fixture(t)
-  for (const name of ['10.jpg', '2.jpg', '1.png', 'notes.txt'])
+  for (const name of ['10.jpg', '2.jpg', '1.png', 'notes.txt']) {
     await fs.writeFile(path.join(media, name), 'IMAGE')
+  }
   await fs.mkdir(path.join(media, 'sub'))
   await fs.writeFile(path.join(media, 'sub', '0.jpg'), 'IMAGE')
   const state = await lib.create(media, {
-      name: 'Nth',
-      depth: { mode: 'through', level: 1 },
-    }),
-    row = state.rows[0],
-    desktop = (explorer as any).desktop as DesktopOperations
+    name: 'Nth',
+    depth: { mode: 'through', level: 1 },
+  })
+  const row = state.rows[0]
+  const desktop = (explorer as any).desktop as DesktopOperations
   // A valid JPEG frame around the file name, so the response shows which file was chosen.
   desktop.thumbnail = async (file) =>
     Buffer.concat([
@@ -1132,12 +1141,12 @@ test('R-474: saving the same reading place again does not rewrite the record', a
   const { media, lib, explorer } = await fixture(t)
   await fs.writeFile(path.join(media, '001.png'), 'IMAGE')
   const row = (await lib.create(media, { name: 'Read', depth: { mode: 'through', level: 1 } }))
-      .rows[0],
-    file = folderFile(media),
-    save = async (prefs: Record<string, unknown>) => {
-      const revision = (await readFolder(media)).revision
-      await explorer.request({ action: 'reading', rowId: row.rowId, revision, prefs })
-    }
+    .rows[0]
+  const file = folderFile(media)
+  const save = async (prefs: Record<string, unknown>) => {
+    const revision = (await readFolder(media)).revision
+    await explorer.request({ action: 'reading', rowId: row.rowId, revision, prefs })
+  }
   await save({ page: 3, rtl: true })
   const saved = await fs.readFile(file, 'utf8')
   // The same place, its keys in another order: nothing is written, the revision stays.
@@ -1150,8 +1159,9 @@ test('R-474: saving the same reading place again does not rewrite the record', a
 })
 test('R-505: idle warm-up makes the listed folders’ thumbnails once, stops on an empty list', async (t) => {
   const { root, media, lib, explorer } = await fixture(t)
-  for (const name of ['a.jpg', 'b.png', 'c.jpg', 'notes.txt'])
+  for (const name of ['a.jpg', 'b.png', 'c.jpg', 'notes.txt']) {
     await fs.writeFile(path.join(media, name), 'IMAGE')
+  }
   const row = (await lib.create(media, { name: 'Warm', depth: { mode: 'through', level: 1 } }))
     .rows[0]
   const made: string[] = []
@@ -1160,8 +1170,9 @@ test('R-505: idle warm-up makes the listed folders’ thumbnails once, stops on 
     return Buffer.from([255, 216, 255, 0, 255, 217])
   }
   const settle = async () => {
-    for (let i = 0; i < 100 && explorer.warming; i++)
+    for (let i = 0; i < 100 && explorer.warming; i++) {
       await new Promise((resolve) => setTimeout(resolve, 20))
+    }
   }
   explorer.warmThumbnails([row.rowId])
   await settle()
@@ -1183,36 +1194,38 @@ test('R-502: a thumbnail served from the cache counts as recently used', async (
   const { root, media, lib, explorer } = await fixture(t)
   await fs.writeFile(path.join(media, 'used.jpg'), 'IMAGE')
   const row = (await lib.create(media, { name: 'Used', depth: { mode: 'through', level: 1 } }))
-      .rows[0],
-    entry = (await explorer.content(row.rowId)).entries.find((e) => e.name === 'used.jpg')!
+    .rows[0]
+  const entry = (await explorer.content(row.rowId)).entries.find((e) => e.name === 'used.jpg')!
   ;((explorer as any).desktop as DesktopOperations).thumbnail = async () =>
     Buffer.from([255, 216, 255, 0, 255, 217])
   const thumb = () => explorer.stream(row.rowId, entry.id, new Request(entry.thumb!), true)
   assert.equal((await thumb()).status, 200)
-  const cache = path.join(root, 'local', 'thumbnails'),
-    [file] = (await fs.readdir(cache)).filter((name) => name.endsWith('.jpg')),
-    old = new Date('2020-01-01')
+  const cache = path.join(root, 'local', 'thumbnails')
+  const [file] = (await fs.readdir(cache)).filter((name) => name.endsWith('.jpg'))
+  const old = new Date('2020-01-01')
   await fs.utimes(path.join(cache, file), old, old)
   assert.equal((await thumb()).status, 200)
   await new Promise((resolve) => setTimeout(resolve, 100))
   assert.ok((await fs.stat(path.join(cache, file))).mtimeMs > old.getTime() + 1000)
 })
 test('warm thumbnails bypass cold work; cancelled queued work is skipped and shared requests decode once', async (t) => {
-  const { media, lib, explorer } = await fixture(t),
-    jpeg = Buffer.from([255, 216, 255, 0, 255, 217])
-  for (const name of ['warm.jpg', 'slow.jpg', 'cancel.jpg', 'shared.jpg'])
+  const { media, lib, explorer } = await fixture(t)
+  const jpeg = Buffer.from([255, 216, 255, 0, 255, 217])
+  for (const name of ['warm.jpg', 'slow.jpg', 'cancel.jpg', 'shared.jpg']) {
     await fs.writeFile(path.join(media, name), 'IMAGE')
+  }
   const state = await lib.create(media, {
-      name: 'Thumbnails',
-      depth: { mode: 'through', level: 1 },
-    }),
-    row = state.rows[0],
-    content = await explorer.content(row.rowId)
-  const calls: string[] = [],
-    desktop = (explorer as any).desktop as DesktopOperations
-  let release!: () => void, started!: () => void
-  const gate = new Promise<void>((resolve) => (release = resolve)),
-    active = new Promise<void>((resolve) => (started = resolve))
+    name: 'Thumbnails',
+    depth: { mode: 'through', level: 1 },
+  })
+  const row = state.rows[0]
+  const content = await explorer.content(row.rowId)
+  const calls: string[] = []
+  const desktop = (explorer as any).desktop as DesktopOperations
+  let release!: () => void
+  let started!: () => void
+  const gate = new Promise<void>((resolve) => (release = resolve))
+  const active = new Promise<void>((resolve) => (started = resolve))
   desktop.thumbnail = async (file) => {
     const name = path.basename(file)
     calls.push(name)
@@ -1247,10 +1260,10 @@ test('warm thumbnails bypass cold work; cancelled queued work is skipped and sha
   } finally {
     clearTimeout(timeout)
   }
-  const controller = new AbortController(),
-    cancel = stream('cancel.jpg', controller.signal),
-    shared1 = stream('shared.jpg'),
-    shared2 = stream('shared.jpg')
+  const controller = new AbortController()
+  const cancel = stream('cancel.jpg', controller.signal)
+  const shared1 = stream('shared.jpg')
+  const shared2 = stream('shared.jpg')
   await new Promise((resolve) => setTimeout(resolve, 30))
   controller.abort()
   release()

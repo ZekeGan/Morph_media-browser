@@ -3,6 +3,7 @@
 //   pnpm status --short    one line, for replies that changed nothing
 import fs from 'node:fs'
 import path from 'node:path'
+
 import { root } from './areas.mjs'
 
 const text = fs.readFileSync(path.join(root, 'docs/WORK_ITEMS.md'), 'utf8').replace(/\r\n/g, '\n')
@@ -23,12 +24,12 @@ for (const line of text.split('\n')) {
   }
 }
 const list = (name) => sections.get(name) ?? []
-const decide = list('待你決定'),
-  review = list('待查收'),
-  doing = list('進行中'),
-  approved = list('已核定（未做）'),
-  logged = list('已登記（未核定）'),
-  parked = list('擱置')
+const decide = list('待你決定')
+const review = list('待查收')
+const doing = list('進行中')
+const approved = list('已核定（未做）')
+const logged = list('已登記（未核定）')
+const parked = list('擱置')
 const names = (items) => items.map((item) => `${item.id} ${item.title}`).join('、')
 
 if (process.argv.includes('--short')) {

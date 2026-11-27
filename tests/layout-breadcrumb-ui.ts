@@ -1,6 +1,7 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
+
 import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
@@ -8,11 +9,12 @@ import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/ap
 // list moves the start up to any folder above it without closing the window.
 const base = path.resolve('.test-output')
 await fs.mkdir(path.join(base, 'shot'), { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'layout-breadcrumb-ui-')),
-  media = path.join(root, 'Library'),
-  local = path.join(root, 'local')
-for (const dir of ['Artist/Album', 'Other/Single'])
+const root = await fs.mkdtemp(path.join(base, 'layout-breadcrumb-ui-'))
+const media = path.join(root, 'Library')
+const local = path.join(root, 'local')
+for (const dir of ['Artist/Album', 'Other/Single']) {
   await fs.mkdir(path.join(media, dir), { recursive: true })
+}
 await fs.writeFile(path.join(media, 'Artist', 'Album', '01.mp3'), 'not audio')
 const lib = new Library(local, undefined, false)
 await lib.init()

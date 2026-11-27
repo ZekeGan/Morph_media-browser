@@ -1,5 +1,6 @@
-import { version } from '../../package.json'
 import type { MetadataSourceId } from '../../shared/sources'
+
+import { version } from '../../package.json'
 
 export type PublicSourceId = Exclude<MetadataSourceId, 'eh' | 'exh' | 'steam' | 'web'>
 

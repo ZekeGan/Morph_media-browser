@@ -1,25 +1,31 @@
-import { fmt } from '../shared/message'
+import { execFile } from 'node:child_process'
+import { createHash, randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { randomUUID, createHash } from 'node:crypto'
-import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+
+import { fmt } from '../shared/message'
 import { DATA_DIR, type FolderRecord, validateFolder, validateProject } from '../shared/model'
 import { upgradeStored } from '../shared/upgrade'
 
 export const missing = (e: unknown) => (e as NodeJS.ErrnoException)?.code === 'ENOENT'
 export const message = (e: unknown) => (e instanceof Error ? e.message : String(e))
 export const folderFile = (dir: string) => path.join(dir, DATA_DIR, 'folder.json')
+
 export const projectFile = (root: string, id: string) =>
   path.join(root, DATA_DIR, 'projects', `${id}.json`)
+
 export const keyPath = (p: string) =>
   process.platform === 'win32' ? path.resolve(p).toLowerCase() : path.resolve(p)
+
 export function within(root: string, target: string) {
   const rel = path.relative(keyPath(root), keyPath(target))
   return rel === '' || (!rel.startsWith(`..${path.sep}`) && rel !== '..' && !path.isAbsolute(rel))
 }
+
 export const relPath = (root: string, target: string) =>
   path.relative(root, target).split(path.sep).join('/')
+
 // Removes a folder this operation has just emptied. On Windows a deleted file stays in its folder until every handle
 // on it closes (an antivirus scan, the search indexer), so the folder can briefly report ENOTEMPTY. Retry only while
 // everything still listed is something this operation itself deleted; anything else is real content and the original
@@ -48,6 +54,7 @@ export async function removeEmptiedDir(
     }
   }
 }
+
 export async function exists(file: string) {
   try {
     await fs.lstat(file)
@@ -57,6 +64,7 @@ export async function exists(file: string) {
     throw e
   }
 }
+
 // Every path segment below the trusted root is checked, including metadata/assets.
 export async function safePath(root: string, target: string) {
   if (!within(root, target)) throw new Error('路徑超出受管範圍')
@@ -73,18 +81,21 @@ export async function safePath(root: string, target: string) {
     }
   }
 }
+
 // Folder and project records (and their .bak copies) come back upgraded to the current format, so every reader
 // validates the current shape; a record from a newer version throws NewerFormatError. Other JSON is returned as is.
 export async function readJson(file: string): Promise<unknown> {
   return upgradeStored(JSON.parse(await fs.readFile(file, 'utf8')))
 }
+
 export async function atomicJson(file: string, value: unknown, expected?: number) {
   const old = await fs.readFile(file).catch((e) => {
     if (missing(e)) return undefined
     throw e
   })
-  if (expected !== undefined && (!old || JSON.parse(old.toString()).revision !== expected))
+  if (expected !== undefined && (!old || JSON.parse(old.toString()).revision !== expected)) {
     throw new Error('版本衝突：資料已在別處改變，你還沒保存的修改保留，請重新載入後比較')
+  }
   const tmp = `${file}.${randomUUID()}.tmp`
   const handle = await fs.open(tmp, 'wx')
   try {
@@ -98,11 +109,12 @@ export async function atomicJson(file: string, value: unknown, expected?: number
       if (missing(e)) return undefined
       throw e
     })
-    if ((old && (!now || !old.equals(now))) || (!old && now))
+    if ((old && (!now || !old.equals(now))) || (!old && now)) {
       throw new Error('版本衝突：寫入期間檔案已改變')
+    }
     {
-      const backup = `${file}.bak`,
-        backupTmp = `${tmp}.bak`
+      const backup = `${file}.bak`
+      const backupTmp = `${tmp}.bak`
       const stat = await fs.lstat(backup).catch((e) => {
         if (missing(e)) return undefined
         throw e
@@ -116,6 +128,7 @@ export async function atomicJson(file: string, value: unknown, expected?: number
     await fs.unlink(tmp).catch(() => {})
   }
 }
+
 export async function readFolder(dir: string): Promise<FolderRecord> {
   await safePath(dir, folderFile(dir))
   // An older record is upgraded in memory only; it is written in the new format when it is next saved.
@@ -123,14 +136,16 @@ export async function readFolder(dir: string): Promise<FolderRecord> {
   validateFolder(record)
   return record
 }
+
 // A directory can remain after cleanup because removed-project archives are kept.
 // Only empty metadata or verified archives are safe to pair with a fresh identity.
 async function reusableMetadata(dir: string): Promise<boolean> {
   const meta = path.join(dir, DATA_DIR)
   await safePath(dir, meta)
   for (const entry of await fs.readdir(meta, { withFileTypes: true })) {
-    if (entry.isSymbolicLink() || !entry.isDirectory() || entry.name.toLowerCase() !== 'projects')
+    if (entry.isSymbolicLink() || !entry.isDirectory() || entry.name.toLowerCase() !== 'projects') {
       return false
+    }
     const projects = path.join(meta, entry.name)
     await safePath(dir, projects)
     for (const archive of await fs.readdir(projects, { withFileTypes: true })) {
@@ -155,6 +170,7 @@ async function reusableMetadata(dir: string): Promise<boolean> {
   }
   return true
 }
+
 export async function ensureFolder(
   dir: string,
   hide = true
@@ -167,12 +183,14 @@ export async function ensureFolder(
     } catch (error) {
       if (!missing(error)) throw error
     }
-    if (await exists(`${folderFile(dir)}.bak`))
+    if (await exists(`${folderFile(dir)}.bak`)) {
       throw new Error('資料夾記錄遺失，但復原備份仍存在；請重新連結並從備份復原，未建立新身分')
-    if (!(await reusableMetadata(dir)))
+    }
+    if (!(await reusableMetadata(dir))) {
       throw new Error(
         '資料夾資訊不見了，但還有專案、圖片或認不得的資料；原檔保留，請先復原資料夾資訊再試'
       )
+    }
     // Recheck after inspecting archives; never intentionally replace a new record.
     if (await exists(folderFile(dir))) return { record: await readFolder(dir), created: false }
   }
@@ -186,23 +204,27 @@ export async function ensureFolder(
     assets: [],
   }
   await safePath(dir, meta)
-  if (!reuse)
+  if (!reuse) {
     try {
       await fs.mkdir(meta)
     } catch (e) {
-      if ((e as NodeJS.ErrnoException).code === 'EEXIST')
+      if ((e as NodeJS.ErrnoException).code === 'EEXIST') {
         return { record: await readFolder(dir), created: false }
+      }
       throw e
     }
+  }
   try {
     await atomicJson(folderFile(dir), record)
-    if (hide && process.platform === 'win32')
+    if (hide && process.platform === 'win32') {
       await promisify(execFile)('attrib.exe', ['+H', meta], { windowsHide: true })
+    }
   } catch (e) {
     throw new Error(fmt('建立資料夾資訊失敗：{0}', message(e)))
   }
   return { record, created: true }
 }
+
 export async function fingerprint(file: string) {
   return createHash('sha256')
     .update(await fs.readFile(file))
@@ -218,8 +240,8 @@ export async function restoreJson<T extends { revision: number }>(
 ) {
   await safePath(root, file)
   await safePath(root, `${file}.bak`)
-  const backupBytes = await fs.readFile(`${file}.bak`),
-    backup: unknown = upgradeStored(JSON.parse(backupBytes.toString()))
+  const backupBytes = await fs.readFile(`${file}.bak`)
+  const backup: unknown = upgradeStored(JSON.parse(backupBytes.toString()))
   validate(backup)
   if (!identity(backup)) throw new Error('備份身分與目前專案不符，未復原')
   const original = await fs.readFile(file).catch((error) => {
@@ -254,18 +276,21 @@ export async function restoreJson<T extends { revision: number }>(
     if (
       (original ? !current?.equals(original) : !!current) ||
       !(await fs.readFile(`${file}.bak`)).equals(backupBytes)
-    )
+    ) {
       throw new Error('復原期間資料已變更，請重新檢查')
+    }
     await fs.rename(temp, file)
   } finally {
     await fs.unlink(temp).catch(() => {})
   }
 }
+
 export async function saveFolder(dir: string, next: FolderRecord, revision: number) {
   validateFolder(next)
   await safePath(dir, folderFile(dir))
   const current = await readFolder(dir)
-  if (current.folderId !== next.folderId || current.revision !== revision)
+  if (current.folderId !== next.folderId || current.revision !== revision) {
     throw new Error('資料夾身分或版本已改變，請重新掃描')
+  }
   await atomicJson(folderFile(dir), { ...next, revision: revision + 1 }, revision)
 }

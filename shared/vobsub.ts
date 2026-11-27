@@ -21,18 +21,20 @@ export interface VobsubHeader {
 // The track's header (the text of a .idx file, kept in the Matroska CodecPrivate): the frame size the pictures are
 // placed in and the palette. Without a palette there are no colours to draw with.
 export function parseVobsubHeader(text: string): VobsubHeader | undefined {
-  const size = /^[ \t]*size:[ \t]*(\d{1,5})[ \t]*x[ \t]*(\d{1,5})/im.exec(text),
-    colours = /^[ \t]*palette:[ \t]*([0-9a-f, \t]{1,400})/im
-      .exec(text)?.[1]
-      .split(',')
-      .map((colour) => colour.trim())
-      .slice(0, 16)
-  if (colours?.length !== 16 || !colours.every((colour) => /^[0-9a-f]{6}$/i.test(colour)))
+  const size = /^[ \t]*size:[ \t]*(\d{1,5})[ \t]*x[ \t]*(\d{1,5})/im.exec(text)
+  const colours = /^[ \t]*palette:[ \t]*([0-9a-f, \t]{1,400})/im
+    .exec(text)?.[1]
+    .split(',')
+    .map((colour) => colour.trim())
+    .slice(0, 16)
+  if (colours?.length !== 16 || !colours.every((colour) => /^[0-9a-f]{6}$/i.test(colour))) {
     return undefined
-  const width = size ? Number(size[1]) : 720,
-    height = size ? Number(size[2]) : 480
-  if (width < 1 || height < 1 || width > VOBSUB_LIMITS.width || height > VOBSUB_LIMITS.height)
+  }
+  const width = size ? Number(size[1]) : 720
+  const height = size ? Number(size[2]) : 480
+  if (width < 1 || height < 1 || width > VOBSUB_LIMITS.width || height > VOBSUB_LIMITS.height) {
     return undefined
+  }
   return { width, height, palette: colours.map((colour) => parseInt(colour, 16)) }
 }
 
@@ -61,11 +63,11 @@ function controls(data: Uint8Array): Controls | undefined {
   if (first < 4 || first + 4 > length) return undefined
   const found: Controls = { start: 0, forced: false, end: first }
   const four = (at: number) => [data[at + 1] & 15, data[at + 1] >> 4, data[at] & 15, data[at] >> 4]
-  let at = first,
-    started = false
+  let at = first
+  let started = false
   for (let sequence = 0; sequence < VOBSUB_LIMITS.sequences; sequence++) {
-    const delay = (u16(at) * 1024) / 90000,
-      next = u16(at + 2)
+    const delay = (u16(at) * 1024) / 90000
+    const next = u16(at + 2)
     let p = at + 4
     commands: while (p < length) {
       const command = data[p++]
@@ -152,19 +154,20 @@ export function decodeVobsub(
   const found = controls(data)
   if (!found?.area || found.top === undefined || found.bottom === undefined) return undefined
   if (palette.length < 16) return undefined
-  const { x1, x2, y1, y2 } = found.area,
-    width = x2 - x1 + 1,
-    height = y2 - y1 + 1,
-    end = found.end
-  if (width < 1 || height < 1 || width > VOBSUB_LIMITS.width || height > VOBSUB_LIMITS.height)
+  const { x1, x2, y1, y2 } = found.area
+  const width = x2 - x1 + 1
+  const height = y2 - y1 + 1
+  const end = found.end
+  if (width < 1 || height < 1 || width > VOBSUB_LIMITS.width || height > VOBSUB_LIMITS.height) {
     return undefined
+  }
   if (found.top < 4 || found.top >= end || found.bottom < 4 || found.bottom >= end) return undefined
-  const indexes = found.colours ?? [0, 1, 2, 3],
-    alpha = found.alpha ?? [0, 15, 15, 15],
-    colour = indexes.map((index, value) => {
-      const rgb = palette[index] ?? 0
-      return [(rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255, alpha[value] * 17]
-    })
+  const indexes = found.colours ?? [0, 1, 2, 3]
+  const alpha = found.alpha ?? [0, 15, 15, 15]
+  const colour = indexes.map((index, value) => {
+    const rgb = palette[index] ?? 0
+    return [(rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255, alpha[value] * 17]
+  })
   const rgba = new Uint8ClampedArray(width * height * 4)
   // One field: every second line from firstLine. Each line is a row of runs (a count and a 2-bit pixel value in 1–4
   // nibbles) and ends on a whole byte. Data that runs out leaves the rest of the picture transparent. The work is
@@ -175,8 +178,8 @@ export function decodeVobsub(
     for (let line = firstLine; line < height; line += 2) {
       let x = 0
       while (x < width) {
-        let value = 0,
-          digits = 0
+        let value = 0
+        let digits = 0
         // 1 nibble: 1–3 pixels; 2: 4–15; 3: 16–63; 4: 64–255, or 0 = to the end of the line.
         do {
           if (nibble >= limit) return

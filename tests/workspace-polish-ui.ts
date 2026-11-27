@@ -1,30 +1,33 @@
-import { _electron as electron } from 'playwright-core'
-import fs from 'node:fs/promises'
-import path from 'node:path'
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import { promisify } from 'node:util'
+import { _electron as electron } from 'playwright-core'
+
+import type { LocaleId } from '../shared/locales'
+
+import { folderFile, projectFile, readFolder, saveFolder } from '../electron/files'
 import { Library } from '../electron/library'
 import { WorkspaceStore } from '../electron/workspace'
-import { folderFile, projectFile, readFolder, saveFolder } from '../electron/files'
 import { catalog } from '../src/i18n/catalog'
-import type { LocaleId } from '../shared/locales'
 import { closeApp, withoutFlush } from './support/app'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'workspace-polish-')),
-  local = path.join(root, 'local'),
-  album = path.join(root, 'Album'),
-  game = path.join(root, 'Games'),
-  screens = path.join(root, 'screens')
+const root = await fs.mkdtemp(path.join(base, 'workspace-polish-'))
+const local = path.join(root, 'local')
+const album = path.join(root, 'Album')
+const game = path.join(root, 'Games')
+const screens = path.join(root, 'screens')
 await fs.mkdir(album)
 await fs.mkdir(screens)
 await fs.mkdir(path.join(game, 'Game', 'Game_Data'), { recursive: true })
-for (const name of ['Game.exe', 'UnityPlayer.dll'])
+for (const name of ['Game.exe', 'UnityPlayer.dll']) {
   await fs.writeFile(path.join(game, 'Game', name), 'CONTROLLED')
+}
 const exec = promisify(execFile)
-for (const [index, size] of ['800x1200', '1600x800', '300x3000'].entries())
+for (const [index, size] of ['800x1200', '1600x800', '300x3000'].entries()) {
   await exec(
     'ffmpeg',
     [
@@ -40,7 +43,8 @@ for (const [index, size] of ['800x1200', '1600x800', '300x3000'].entries())
     ],
     { windowsHide: true }
   )
-for (let i = 0; i < 140; i++)
+}
+for (let i = 0; i < 140; i++) {
   await fs.mkdir(
     path.join(
       album,
@@ -49,6 +53,7 @@ for (let i = 0; i < 140; i++)
     ),
     { recursive: true }
   )
+}
 const library = new Library(local, undefined, false)
 await library.init()
 await withoutFlush(() =>
@@ -109,17 +114,18 @@ for (const file of [
   path.join(game, 'Game', 'Game.exe'),
   folderFile(path.join(game, 'Game')),
   ...snapshot.projects.map((linked) => projectFile(linked.root, linked.projectId)),
-])
+]) {
   originals.set(file, await fs.readFile(file))
+}
 const env: Record<string, string> = Object.fromEntries(
   Object.entries({ ...process.env, MEDIA_VIEWER_TEST_DATA: local }).filter(
     (entry): entry is [string, string] => entry[1] !== undefined
   )
 )
 delete env.ELECTRON_RUN_AS_NODE
-const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
-  page = await app.firstWindow(),
-  errors: string[] = []
+const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
+const page = await app.firstWindow()
+const errors: string[] = []
 page.on('pageerror', (error) => errors.push(error.message))
 page.setDefaultTimeout(15000)
 let locale: LocaleId = 'zh-TW'
@@ -147,8 +153,8 @@ const open = async (name: string) => {
 }
 const fit = async (axis: 'width' | 'height') =>
   page.waitForFunction((axis) => {
-    const stage = document.querySelector('.reader-stage')!.getBoundingClientRect(),
-      image = document.querySelector('.is-active .reader-spread')!.getBoundingClientRect()
+    const stage = document.querySelector('.reader-stage')!.getBoundingClientRect()
+    const image = document.querySelector('.is-active .reader-spread')!.getBoundingClientRect()
     return axis === 'width'
       ? Math.abs(image.left - stage.left) < 1 && Math.abs(image.right - stage.right) < 1
       : Math.abs(image.top - stage.top) < 1 && Math.abs(image.bottom - stage.bottom) < 1
@@ -191,7 +197,7 @@ try {
       // zooms).
       await page.locator('.reader-stage').evaluate((element) => {
         const box = element.getBoundingClientRect()
-        for (let i = 0; i < 12; i++)
+        for (let i = 0; i < 12; i++) {
           element.dispatchEvent(
             new WheelEvent('wheel', {
               deltaY: -60,
@@ -202,14 +208,15 @@ try {
               cancelable: true,
             })
           )
+        }
       })
       await page.waitForFunction(
         () =>
           Number(document.querySelector('.reader-zoom-value')?.textContent?.replace('%', '')) > 250
       )
       const geometry = await page.locator('.reader-stage').evaluate((element) => {
-        const stage = element.getBoundingClientRect(),
-          image = element.querySelector('.is-active .reader-spread')!.getBoundingClientRect()
+        const stage = element.getBoundingClientRect()
+        const image = element.querySelector('.is-active .reader-spread')!.getBoundingClientRect()
         return {
           width: stage.width,
           height: stage.height,
@@ -221,8 +228,8 @@ try {
       await page.waitForTimeout(250)
       assert.deepEqual(
         await page.locator('.reader-stage').evaluate((element) => {
-          const stage = element.getBoundingClientRect(),
-            image = element.querySelector('.is-active .reader-spread')!.getBoundingClientRect()
+          const stage = element.getBoundingClientRect()
+          const image = element.querySelector('.is-active .reader-spread')!.getBoundingClientRect()
           return {
             width: stage.width,
             height: stage.height,
@@ -236,8 +243,8 @@ try {
       )
       assert.ok(
         await page.locator('.reader-stage').evaluate((element) => {
-          const stage = element.getBoundingClientRect(),
-            image = element.querySelector('.is-active .reader-spread')!.getBoundingClientRect()
+          const stage = element.getBoundingClientRect()
+          const image = element.querySelector('.is-active .reader-spread')!.getBoundingClientRect()
           return (
             Math.abs((image.top + image.bottom - stage.top - stage.bottom) / 2) < 1 &&
             Math.abs((image.left + image.right - stage.left - stage.right) / 2) < 1

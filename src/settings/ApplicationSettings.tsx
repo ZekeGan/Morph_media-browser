@@ -18,20 +18,22 @@ const writeUndo = (value?: { id: string; at: string }) => {
     // Without storage the way back is simply not offered.
   }
 }
+import { Alert, Button, Checkbox, Group, Modal, Select, Stack, Tabs, Text } from '@mantine/core'
+import { useEffect, useState } from 'react'
+import { flushSync } from 'react-dom'
+
+import { type LocaleId, localeOptions } from '../../shared/locales'
 import type { Request, Response } from '../../shared/model'
-import { t as tr, useLocale } from '../i18n'
-import { SourceLanguageSetting } from './SourceLanguageSetting'
-import { LocaleEmulatorSetting } from '../game/LocaleEmulatorSetting'
+import type { ThemeId } from '../../shared/themes'
+
+import { Icon } from '../common/icons'
 import { FlashPlayerSetting } from '../game/FlashPlayerSetting'
+import { LocaleEmulatorSetting } from '../game/LocaleEmulatorSetting'
+import { t as tr, useLocale } from '../i18n'
+import { themes, useAppTheme } from '../themes/ThemeProvider'
 import { VideoPlayerSetting } from '../video/VideoPlayerSetting'
 import { SiteKeys } from './SiteKeys'
-import { useEffect, useState } from 'react'
-import { Alert, Button, Checkbox, Group, Modal, Select, Stack, Tabs, Text } from '@mantine/core'
-import { localeOptions, type LocaleId } from '../../shared/locales'
-import { themes, useAppTheme } from '../themes/ThemeProvider'
-import type { ThemeId } from '../../shared/themes'
-import { flushSync } from 'react-dom'
-import { Icon } from '../common/icons'
+import { SourceLanguageSetting } from './SourceLanguageSetting'
 
 export function ApplicationSettings({
   opened,
@@ -55,14 +57,14 @@ export function ApplicationSettings({
   }, [opened, start])
   useLocale()
 
-  const appearance = useAppTheme(),
-    [saving, setSaving] = useState(false),
-    [error, setError] = useState('')
-  const [restorePreview, setRestorePreview] = useState<BackupPreview>(),
-    [restoreSettings, setRestoreSettings] = useState(true),
-    [restoreProjects, setRestoreProjects] = useState<string[]>([]),
-    [backups, setBackups] = useState<BackupEntry[]>([]),
-    [undo, setUndo] = useState(readUndo)
+  const appearance = useAppTheme()
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [restorePreview, setRestorePreview] = useState<BackupPreview>()
+  const [restoreSettings, setRestoreSettings] = useState(true)
+  const [restoreProjects, setRestoreProjects] = useState<string[]>([])
+  const [backups, setBackups] = useState<BackupEntry[]>([])
+  const [undo, setUndo] = useState(readUndo)
   const [applied, setApplied] = useState(false)
   useEffect(() => {
     onDirty(opened && !!restorePreview)
@@ -129,8 +131,9 @@ export function ApplicationSettings({
     const result = await act({ action: 'locateBackup', token: restorePreview.token, projectId })
     if (!result?.backup) return
     setRestorePreview(result.backup)
-    if (result.backup.projects.find((p) => p.projectId === projectId)?.state === 'ready')
+    if (result.backup.projects.find((p) => p.projectId === projectId)?.state === 'ready') {
       setRestoreProjects((list) => [...new Set([...list, projectId])])
+    }
   }
   const applyRestore = async () => {
     if (!restorePreview) return

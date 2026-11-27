@@ -1,10 +1,11 @@
-import type { FolderRow } from './model'
 import { isGameFolder } from './media'
+import type { FolderRow } from './model'
 
 // What a folder is decides how it is shown and what it offers; the project only arranges folders.
 // "general" is the safe default: anything we are not sure about is browsed as plain files.
 export type FolderKind = 'game' | 'book' | 'music' | 'video' | 'general'
 export const folderKinds: FolderKind[] = ['game', 'book', 'music', 'video', 'general']
+
 export const isFolderKind = (value: unknown): value is FolderKind =>
   typeof value === 'string' && (folderKinds as string[]).includes(value)
 
@@ -12,6 +13,7 @@ export const isFolderKind = (value: unknown): value is FolderKind =>
 // `media`, so the project format did not change when the folder kinds were split (R-387).
 export type TemplateKind = 'game' | 'book' | 'media' | 'general'
 export const templateKinds: TemplateKind[] = ['game', 'book', 'media', 'general']
+
 export const templateKind = (kind: FolderKind): TemplateKind =>
   kind === 'music' || kind === 'video' ? 'media' : kind
 
@@ -32,8 +34,10 @@ export interface KindSample {
   pages?: number
   total: number
 }
-const comicTypes = ['.cbz', '.cbr', '.cb7'],
-  sidecarTypes = ['.cue', '.lrc', '.m3u', '.m3u8', '.log']
+
+const comicTypes = ['.cbz', '.cbr', '.cb7']
+const sidecarTypes = ['.cue', '.lrc', '.m3u', '.m3u8', '.log']
+
 export const emptySample = (): Required<KindSample> => ({
   images: 0,
   videos: 0,
@@ -45,11 +49,12 @@ export const emptySample = (): Required<KindSample> => ({
   pages: 0,
   total: 0,
 })
+
 // One file added to a sample. `kind` is what the listing calls the file; the name only gives the extension, so the
 // scan and an opened folder count the same way and nothing is opened.
 export function countFile(sample: Required<KindSample>, kind: string, name = '') {
-  const dot = name.lastIndexOf('.'),
-    ext = dot > 0 ? name.slice(dot).toLowerCase() : ''
+  const dot = name.lastIndexOf('.')
+  const ext = dot > 0 ? name.slice(dot).toLowerCase() : ''
   sample.total++
   if (kind === 'image') sample.images++
   else if (kind === 'video') sample.videos++
@@ -61,14 +66,16 @@ export function countFile(sample: Required<KindSample>, kind: string, name = '')
   else if (sidecarTypes.includes(ext)) sample.sidecars++
   return sample
 }
+
 export const sampleOf = (entries: { kind: string; name?: string }[]): KindSample => {
-  const sample = emptySample(),
-    pictures: string[] = []
-  for (const entry of entries)
+  const sample = emptySample()
+  const pictures: string[] = []
+  for (const entry of entries) {
     if (entry.kind !== 'folder' && entry.kind !== 'subtitle') {
       countFile(sample, entry.kind, entry.name)
       if (entry.kind === 'image' && entry.name) pictures.push(entry.name)
     }
+  }
   sample.pages = pageNumbered(pictures)
   return sample
 }
@@ -79,10 +86,11 @@ export const sampleOf = (entries: { kind: string; name?: string }[]): KindSample
 // and camera names (danbooru_…, IMG_0001, DSCN0001, a date) are not pages. At least 80% of the pictures must follow the same
 // pattern, the smallest page is 0 or 1, and the numbers run mostly without gaps.
 const attachmentName =
-    /^(cover|covers|credits?|info|colophon|end|ending|back|front|toc|thumbs?|thumbnail|folder|omake|bonus|extra)$/i,
-  notPagePrefix =
-    /^(danbooru|yande[._ ]?re|konachan|gelbooru|img_|dsc[_nf]?|pxl_|(19|20)\d{2}[-_.]?\d{2}[-_.]?\d{2})/i,
-  pageName = /^(.*?)(\d+)([a-z])?(?:-(\d+))?$/i
+  /^(cover|covers|credits?|info|colophon|end|ending|back|front|toc|thumbs?|thumbnail|folder|omake|bonus|extra)$/i
+const notPagePrefix =
+  /^(danbooru|yande[._ ]?re|konachan|gelbooru|img_|dsc[_nf]?|pxl_|(19|20)\d{2}[-_.]?\d{2}[-_.]?\d{2})/i
+const pageName = /^(.*?)(\d+)([a-z])?(?:-(\d+))?$/i
+
 export function pageNumbered(names: string[]): number {
   const stems = names
     .map((name) => (name.lastIndexOf('.') > 0 ? name.slice(0, name.lastIndexOf('.')) : name).trim())
@@ -94,10 +102,10 @@ export function pageNumbered(names: string[]): number {
     // A page number is at most 9999; padding may make the digits longer (00200) but not past six.
     // R-493: the whole name is tested, so a date whose day is the last number (2024-01-02) is not page 2.
     if (!m || m[2].length > 6 || Number(m[2]) > 9999 || notPagePrefix.test(stem)) continue
-    const prefix = m[1].toLowerCase().replace(/[\s_-]+$/, ''),
-      key = /^(p|pg|page)$/.test(prefix) ? 'p' : prefix,
-      from = Number(m[2]),
-      to = m[4] === undefined ? from : Number(m[4])
+    const prefix = m[1].toLowerCase().replace(/[\s_-]+$/, '')
+    const key = /^(p|pg|page)$/.test(prefix) ? 'p' : prefix
+    const from = Number(m[2])
+    const to = m[4] === undefined ? from : Number(m[4])
     const group = groups.get(key) ?? []
     group.push([from, Math.max(from, to)])
     groups.set(key, group)
@@ -105,10 +113,11 @@ export function pageNumbered(names: string[]): number {
   const best = [...groups.values()].sort((a, b) => b.length - a.length)[0]
   if (!best || best.length * 5 < stems.length * 4) return 0
   const covered = new Set<number>()
-  for (const [from, to] of best)
+  for (const [from, to] of best) {
     for (let n = from; n <= Math.min(to, from + 9999); n++) covered.add(n)
-  const first = Math.min(...covered),
-    last = Math.max(...covered)
+  }
+  const first = Math.min(...covered)
+  const last = Math.max(...covered)
   return first <= 1 && covered.size * 5 >= (last - first + 1) * 4 ? best.length : 0
 }
 
@@ -124,14 +133,17 @@ const readAsManga = (row: FolderRow) =>
   )
 
 export type KindSource = 'manual' | 'game' | 'content' | 'default'
+
 export interface DetectedKind {
   kind: FolderKind
   source: KindSource
 }
+
 // Order: what you set by hand, then a detected game (its boundary protection applies in any project), then what the files look like: video, music, text book, manga. Unsure means general.
 // PDF and plain ZIP files never decide a kind. Rules: docs/UI_RULES.md (資料夾類型).
 // R-404: folders that only hold an album's or release's extras. The whole name (a number may follow) decides.
 const extrasName = /^(scans?|booklet|artworks?|covers?|bk|ジャケット|特典|スキャン)[\s_]*\d*$/i
+
 export const isExtrasFolderName = (name: string | undefined) =>
   !!name && extrasName.test(name.trim())
 
@@ -146,17 +158,18 @@ export function detectFolderKind(
   if (manual) return { kind: manual, source: 'manual' }
   if (isGameFolder(row)) return { kind: 'game', source: 'game' }
   if (sample && sample.total > 0) {
-    const { images, videos, audio, total } = sample,
-      texts = sample.texts ?? 0,
-      epubs = sample.epubs ?? 0
+    const { images, videos, audio, total } = sample
+    const texts = sample.texts ?? 0
+    const epubs = sample.epubs ?? 0
     if (videos >= 1 && videos >= images) return { kind: 'video', source: 'content' }
     // Music: more than half of the files, not counting what comes with an album (cue sheets, lyrics, playlists)
     // and its cover pictures. Pictures count once there are more of them than tracks.
     const beside = (sample.sidecars ?? 0) + (images <= audio ? images : 0)
     if (audio >= 1 && audio * 2 > total - beside) return { kind: 'music', source: 'content' }
     // Text books: any EPUB, or TXT files making up at least half.
-    if (epubs >= 1 || (texts - epubs >= 1 && (texts - epubs) * 2 >= total))
+    if (epubs >= 1 || (texts - epubs >= 1 && (texts - epubs) * 2 >= total)) {
       return { kind: 'book', source: 'content' }
+    }
     // Manga: mostly pictures, or a comic archive. Videos or music among them make it undecidable (an album with
     // many scans, a book with drama tracks), and an undecidable folder is general. Pictures alone do not decide it
     // inside a music or video folder, or in a folder named like album extras (R-404).
@@ -164,8 +177,9 @@ export function detectFolderKind(
     // R-479: pictures alone make a manga only when their names are page numbers (or it was read or imported as one).
     const pictures =
       images >= 3 && images * 2 > total && !extras && ((sample.pages ?? 0) > 0 || readAsManga(row))
-    if (videos === 0 && audio === 0 && (pictures || (sample.comics ?? 0) >= 1))
+    if (videos === 0 && audio === 0 && (pictures || (sample.comics ?? 0) >= 1)) {
       return { kind: 'book', source: 'content' }
+    }
   }
   return { kind: 'general', source: 'default' }
 }

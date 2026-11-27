@@ -1,13 +1,15 @@
-import { Fragment, useEffect, useRef, useState } from 'react'
 import { ActionIcon, Button, Tooltip } from '@mantine/core'
-import { fieldValue, type FolderRow, type Project } from '../../shared/model'
-import { Icon } from '../common/icons'
-import { importSources } from '../metadata/importSource'
+import { Fragment, useEffect, useRef, useState } from 'react'
+
 import { isFilled } from '../../shared/cells'
+import { fieldValue, type FolderRow, type Project } from '../../shared/model'
+
+import { Icon } from '../common/icons'
 import { fieldSourceGroups, rowFieldAttributes } from '../editor/fieldSources'
-import { t as tr, useLocale } from '../i18n'
 import { yesNo } from '../editor/fieldTypes'
 import { importedFieldLabels } from '../editor/importedFieldLabels'
+import { t as tr, useLocale } from '../i18n'
+import { importSources } from '../metadata/importSource'
 
 // Filled values only; 0 and false are real values, empty strings and arrays are not.
 const shown = (value: unknown, binding?: { trueLabel?: string; falseLabel?: string }) =>
@@ -35,51 +37,51 @@ export function FolderDetails({
   all?: boolean
 }) {
   useLocale()
-  const [copied, setCopied] = useState(false),
-    [copyError, setCopyError] = useState(''),
-    timer = useRef(0)
+  const [copied, setCopied] = useState(false)
+  const [copyError, setCopyError] = useState('')
+  const timer = useRef(0)
   useEffect(() => () => window.clearTimeout(timer.current), [])
   // Only the last two folders are shown (with an ellipsis in front); the copy button still copies the whole path.
-  const parts = row.path.split(/[\\/]+/).filter(Boolean),
-    separator = row.path.includes('\\') ? '\\' : '/',
-    shortPath = (parts.length > 2 ? '…' + separator : '') + parts.slice(-2).join(separator),
-    sources = importSources(row),
-    stored = [
-      ...(row.record?.projectOverrides[row.projectId] ?? []),
-      ...(row.record?.attributes ?? []),
-    ],
-    bound = new Set(project.fieldBindings.map((field) => field.attributeId)),
-    plain = importedFieldLabels(),
-    fields = [
-      ...project.fieldBindings.map((field) => ({
-        attributeId: field.attributeId,
-        label: field.alias,
-        binding: field as { trueLabel?: string; falseLabel?: string } | undefined,
-      })),
-      ...(all
-        ? [...new Map(stored.map((a) => [a.attributeId, a])).values()]
-            .filter((a) => !bound.has(a.attributeId))
-            .map((a) => ({
-              attributeId: a.attributeId,
-              label: plain[a.key] ?? a.key,
-              binding: undefined,
-            }))
-        : []),
-    ].flatMap((field) => {
-      const text = shown(fieldValue(row, field.attributeId), field.binding)
-      return text === undefined
-        ? []
-        : [
-            {
-              attributeId: field.attributeId,
-              label: field.label,
-              text,
-              // A website value the user changed afterwards.
-              edited:
-                all && stored.find((a) => a.attributeId === field.attributeId)?.source === 'manual',
-            },
-          ]
-    })
+  const parts = row.path.split(/[\\/]+/).filter(Boolean)
+  const separator = row.path.includes('\\') ? '\\' : '/'
+  const shortPath = (parts.length > 2 ? '…' + separator : '') + parts.slice(-2).join(separator)
+  const sources = importSources(row)
+  const stored = [
+    ...(row.record?.projectOverrides[row.projectId] ?? []),
+    ...(row.record?.attributes ?? []),
+  ]
+  const bound = new Set(project.fieldBindings.map((field) => field.attributeId))
+  const plain = importedFieldLabels()
+  const fields = [
+    ...project.fieldBindings.map((field) => ({
+      attributeId: field.attributeId,
+      label: field.alias,
+      binding: field as { trueLabel?: string; falseLabel?: string } | undefined,
+    })),
+    ...(all
+      ? [...new Map(stored.map((a) => [a.attributeId, a])).values()]
+          .filter((a) => !bound.has(a.attributeId))
+          .map((a) => ({
+            attributeId: a.attributeId,
+            label: plain[a.key] ?? a.key,
+            binding: undefined,
+          }))
+      : []),
+  ].flatMap((field) => {
+    const text = shown(fieldValue(row, field.attributeId), field.binding)
+    return text === undefined
+      ? []
+      : [
+          {
+            attributeId: field.attributeId,
+            label: field.label,
+            text,
+            // A website value the user changed afterwards.
+            edited:
+              all && stored.find((a) => a.attributeId === field.attributeId)?.source === 'manual',
+          },
+        ]
+  })
   return (
     <details className={'folder-details' + (all ? ' folder-details-full' : '')}>
       <summary>{tr('資料夾詳情')}</summary>

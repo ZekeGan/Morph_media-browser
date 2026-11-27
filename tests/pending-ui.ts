@@ -1,21 +1,24 @@
-import { _electron as electron } from 'playwright-core'
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
-import { presetDraft, addPreset, syncPresetDraft } from '../shared/layouts'
+import { _electron as electron } from 'playwright-core'
+
+import { addPreset, presetDraft, syncPresetDraft } from '../shared/layouts'
+
 import { folderFile, readFolder, saveFolder } from '../electron/files'
+import { Library } from '../electron/library'
 import { WorkspaceStore } from '../electron/workspace'
 import { closeApp, openLayoutEditor } from './support/app'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'pending-ui-')),
-  media = path.join(root, 'Album'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'pending-ui-'))
+const media = path.join(root, 'Album')
+const local = path.join(root, 'local')
 await fs.mkdir(media)
-for (const name of ['a', 'A', '2', '10'])
+for (const name of ['a', 'A', '2', '10']) {
   await fs.mkdir(path.join(media, name, 'child'), { recursive: true })
+}
 const pixel = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jB5kAAAAASUVORK5CYII=',
   'base64'
@@ -61,9 +64,9 @@ const env = Object.fromEntries(
   )
 )
 delete env.ELECTRON_RUN_AS_NODE
-const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
-  page = await app.firstWindow(),
-  errors: string[] = []
+const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
+const page = await app.firstWindow()
+const errors: string[] = []
 page.on('pageerror', (error) => errors.push(error.message))
 page.setDefaultTimeout(15000)
 await page.evaluate('window.__name=(target)=>target')
@@ -75,14 +78,15 @@ try {
   await page.locator('.section-toggle').filter({ hasText: 'Two' }).waitFor()
   const groups = (await workspace.read(lib.snapshot().projects.map((p) => p.projectId))).prefs
     .groups
-  const one = page.locator(`[data-group-id="${groups[0].id}"] .section-toggle`),
-    two = page.locator(`[data-group-id="${groups[1].id}"] .section-toggle`)
+  const one = page.locator(`[data-group-id="${groups[0].id}"] .section-toggle`)
+  const two = page.locator(`[data-group-id="${groups[1].id}"] .section-toggle`)
   await page.evaluate(() => {
     const original = Element.prototype.animate
     ;(window as unknown as { groupMoves: number }).groupMoves = 0
     Element.prototype.animate = function (...args) {
-      if (this.matches('.sidebar-section'))
-        (window as unknown as { groupMoves: number }).groupMoves++
+      if (this.matches('.sidebar-section')) {
+        ;(window as unknown as { groupMoves: number }).groupMoves++
+      }
       return original.apply(this, args)
     }
   })
@@ -110,8 +114,8 @@ try {
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await button('開啟專案 Pending Album').first().click()
   await button('目前資料夾設定').click()
-  const drawer = page.locator('.folder-panel-dock-settings'),
-    layouts = drawer.getByRole('group', { name: '此資料夾的版面', exact: true })
+  const drawer = page.locator('.folder-panel-dock-settings')
+  const layouts = drawer.getByRole('group', { name: '此資料夾的版面', exact: true })
   // Pending Manga shows the same folder, so the shared / this-project switch is offered here.
   await drawer.locator('label').filter({ hasText: '僅目前專案' }).waitFor()
   assert.equal(await drawer.locator('.mantine-Divider-root').count(), 1)
@@ -144,20 +148,21 @@ try {
   await page.waitForFunction(() => document.querySelector('.folder-panel-body')?.scrollTop === 0)
   await button('返回頂部').waitFor({ state: 'detached' })
   await body.evaluate((element) => element.querySelector('#controlled-scroll-content')?.remove())
-  const toolbar = page.locator('.workspace-toolbar'),
-    mode = toolbar.locator('.center-mode'),
-    // R-413: the layout picker became the button that opens the layout setup window.
-    preset = toolbar.getByRole('button', { name: /^版面配置：/ })
-  const modeBox = (await mode.boundingBox())!,
-    presetBox = (await preset.boundingBox())!
+  const toolbar = page.locator('.workspace-toolbar')
+  const mode = toolbar.locator('.center-mode')
+  // R-413: the layout picker became the button that opens the layout setup window.
+  const preset = toolbar.getByRole('button', { name: /^版面配置：/ })
+  const modeBox = (await mode.boundingBox())!
+  const presetBox = (await preset.boundingBox())!
   assert.ok(Math.abs(modeBox.y - presetBox.y) < 12)
   const toggle = toolbar.locator('[aria-label="展示內容"]')
   const before = await toggle.boundingBox()
   await toolbar.getByText('檔案', { exact: true }).click()
   assert.equal(await button('卡片顯示設定').count(), 0)
   assert.equal(await preset.count(), 0)
-  if (before)
+  if (before) {
     assert.equal(Math.round((await toggle.boundingBox())!.width), Math.round(before.width))
+  }
   await page.locator('.file-overview-item').first().waitFor()
   await page.locator('.file-overview-item').filter({ hasText: 'cover.png' }).click()
   const preview = page.locator('.file-page')
@@ -178,8 +183,8 @@ try {
   await toolbar.getByText('資料夾', { exact: true }).click()
   await openLayoutEditor(page)
   await page.locator('.editor-toolbar').waitFor()
-  const saveBox = (await button('儲存').boundingBox())!,
-    undoBox = (await button('復原').boundingBox())!
+  const saveBox = (await button('儲存').boundingBox())!
+  const undoBox = (await button('復原').boundingBox())!
   assert.ok(Math.abs(saveBox.y - undoBox.y) < 12)
   await page.screenshot({ path: path.join(root, 'editor.png') })
   await page.getByRole('button', { name: /^(放棄變更|關閉)$/ }).click()

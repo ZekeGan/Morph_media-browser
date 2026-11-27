@@ -1,14 +1,16 @@
+import { MantineProvider, Menu, Modal, Popover } from '@mantine/core'
 import {
   createContext,
+  type ReactNode,
   useContext,
   useEffect,
   useLayoutEffect,
   useState,
-  type ReactNode,
 } from 'react'
-import { MantineProvider, Menu, Modal, Popover } from '@mantine/core'
-import type { ThemeId } from '../../shared/themes'
+
 import type { LocaleId } from '../../shared/locales'
+import type { ThemeId } from '../../shared/themes'
+
 import { setLocale, useLocale } from '../i18n'
 
 export const themes = [
@@ -31,6 +33,7 @@ export const themes = [
     accent: 'orange',
   },
 ] as const
+
 const ThemeContext = createContext<
   | {
       theme: ThemeId
@@ -45,6 +48,7 @@ const ThemeContext = createContext<
     }
   | undefined
 >(undefined)
+
 export function useAppTheme() {
   const value = useContext(ThemeContext)
   // i18n-ignore: a programming error seen only by developers
@@ -53,20 +57,20 @@ export function useAppTheme() {
 }
 
 export function AppThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<ThemeId>('dark'),
-    [saved, setSaved] = useState<ThemeId>('dark'),
-    [ready, setReady] = useState(false),
-    [error, setError] = useState('')
-  const locale = useLocale(),
-    [savedLocale, setSavedLocale] = useState<LocaleId>('en')
+  const [theme, setTheme] = useState<ThemeId>('dark')
+  const [saved, setSaved] = useState<ThemeId>('dark')
+  const [ready, setReady] = useState(false)
+  const [error, setError] = useState('')
+  const locale = useLocale()
+  const [savedLocale, setSavedLocale] = useState<LocaleId>('en')
   useEffect(() => {
     let alive = true
     window.desktop
       .workspace()
       .then((state) => {
         if (alive) {
-          const id = state.prefs.theme ?? 'dark',
-            locale = state.prefs.locale ?? 'en'
+          const id = state.prefs.theme ?? 'dark'
+          const locale = state.prefs.locale ?? 'en'
           setTheme(id)
           setSaved(id)
           setLocale(locale)

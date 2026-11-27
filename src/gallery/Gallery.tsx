@@ -1,4 +1,4 @@
-import { t as tr, useLocale, currentLocale } from '../i18n'
+import { ActionIcon, Center, Group, Modal, SegmentedControl, Stack, Tooltip } from '@mantine/core'
 import {
   lazy,
   memo,
@@ -10,20 +10,23 @@ import {
   useRef,
   useState,
 } from 'react'
-import { Icon } from '../common/icons'
-import { FileMenu } from '../media/FileMenu'
-import { audioCover } from '../media/MediaThumb'
-import { fileSize, friendlyType } from '../media/fileLabels'
-import { ActionIcon, Center, Group, Modal, SegmentedControl, Stack, Tooltip } from '@mantine/core'
-import { canPreviewMedia, mediaIdentity } from '../../shared/media'
+
 import type { MediaEntry, OverviewEntry, ReadingPrefs } from '../../shared/explorer'
 import {
   galleryLayout,
-  groupedGalleryLayout,
-  galleryWindow,
   type GalleryMode,
   type GalleryTile,
+  galleryWindow,
+  groupedGalleryLayout,
 } from '../../shared/gallery'
+import { canPreviewMedia, mediaIdentity } from '../../shared/media'
+
+import { Icon } from '../common/icons'
+import { currentLocale, t as tr, useLocale } from '../i18n'
+import { fileSize, friendlyType } from '../media/fileLabels'
+import { FileMenu } from '../media/FileMenu'
+import { audioCover } from '../media/MediaThumb'
+
 const Reader = lazy(() => import('../reader/Reader').then((module) => ({ default: module.Reader })))
 const PAGE_SIZE = 200
 const Tile = memo(
@@ -61,10 +64,10 @@ const Tile = memo(
   }) {
     useLocale()
 
-    const [error, setError] = useState(false),
-      [fallback, setFallback] = useState(false),
-      [visible, setVisible] = useState(false),
-      [cover, setCover] = useState<string>()
+    const [error, setError] = useState(false)
+    const [fallback, setFallback] = useState(false)
+    const [visible, setVisible] = useState(false)
+    const [cover, setCover] = useState<string>()
     // R-317: music shows its embedded cover; a file without one keeps the note icon.
     useEffect(() => {
       setCover(undefined)
@@ -75,8 +78,8 @@ const Tile = memo(
         active = false
       }
     }, [entry.kind, entry.url])
-    const image = useRef<HTMLImageElement | null>(null),
-      wanted = useRef<string | undefined>(undefined)
+    const image = useRef<HTMLImageElement | null>(null)
+    const wanted = useRef<string | undefined>(undefined)
     const bindImage = useCallback((node: HTMLImageElement | null) => {
       const previous = image.current
       image.current = node
@@ -84,14 +87,14 @@ const Tile = memo(
       // StrictMode detaches and re-attaches the same node; React does not set the cleared src again.
       if (node && wanted.current && !node.getAttribute('src')) node.src = wanted.current
     }, [])
-    const animated = entry.mime === 'image/gif',
-      animate = animated && playing && visible,
-      source =
-        animated && !animate && (!entry.thumb || fallback)
-          ? undefined
-          : animate || fallback
-            ? entry.url
-            : (entry.thumb ?? entry.url)
+    const animated = entry.mime === 'image/gif'
+    const animate = animated && playing && visible
+    const source =
+      animated && !animate && (!entry.thumb || fallback)
+        ? undefined
+        : animate || fallback
+          ? entry.url
+          : (entry.thumb ?? entry.url)
     const still = entry.kind === 'image' ? source : (entry.thumb ?? cover)
     wanted.current = still
     useEffect(() => {
@@ -107,8 +110,9 @@ const Tile = memo(
     }, [animated])
     useEffect(() => {
       const node = image.current
-      if (mode === 'masonry' && node?.complete && node.naturalHeight)
+      if (mode === 'masonry' && node?.complete && node.naturalHeight) {
         ratio(mediaIdentity(entry), node.naturalWidth / node.naturalHeight)
+      }
     }, [mode, entry, ratio])
     const playable = ['audio', 'video'].includes(entry.kind)
     const supported = canPreviewMedia(entry)
@@ -173,8 +177,9 @@ const Tile = memo(
               alt={entry.name}
               onLoad={(event) => {
                 const node = event.currentTarget
-                if (mode === 'masonry' && node.naturalHeight)
+                if (mode === 'masonry' && node.naturalHeight) {
                   ratio(mediaIdentity(entry), node.naturalWidth / node.naturalHeight)
+                }
               }}
               onError={() => {
                 if (entry.kind === 'image' && !fallback && entry.thumb) setFallback(true)
@@ -245,6 +250,7 @@ const Tile = memo(
     before.tile.width === after.tile.width &&
     before.tile.height === after.tile.height
 )
+
 export function Gallery({
   entries,
   manga,
@@ -282,37 +288,40 @@ export function Gallery({
 }) {
   useLocale()
 
-  const [mode, setMode] = useState('masonry'),
-    [page, setPage] = useState(0),
-    [reader, setReader] = useState<number>(),
-    [selected, setSelected] = useState<number>(),
-    [focused, setFocused] = useState(-1),
-    [version, setVersion] = useState(0),
-    [picked, setPicked] = useState<Set<string>>(new Set()),
-    [menu, setMenu] = useState<{ x: number; y: number; entry: MediaEntry }>(),
-    [info, setInfo] = useState<MediaEntry>()
-  const [view, setView] = useState({ top: 0, height: 700, width: 0 }),
-    actualTop = useRef(0),
-    grid = useRef<HTMLDivElement>(null),
-    scroll = useRef<HTMLElement | null>(null),
-    ratios = useRef(new Map<string, number>()),
-    frame = useRef(0),
-    ratioFrame = useRef(0),
-    anchor = useRef<{ index: number; y: number; scrollTop: number } | undefined>(undefined),
-    focusNext = useRef<number | undefined>(undefined),
-    modeAnchor = useRef<{ index: number; origin: number } | undefined>(undefined),
-    pickAnchor = useRef<number | undefined>(undefined)
+  const [mode, setMode] = useState('masonry')
+  const [page, setPage] = useState(0)
+  const [reader, setReader] = useState<number>()
+  const [selected, setSelected] = useState<number>()
+  const [focused, setFocused] = useState(-1)
+  const [version, setVersion] = useState(0)
+  const [picked, setPicked] = useState<Set<string>>(new Set())
+  const [menu, setMenu] = useState<{ x: number; y: number; entry: MediaEntry }>()
+  const [info, setInfo] = useState<MediaEntry>()
+  const [view, setView] = useState({ top: 0, height: 700, width: 0 })
+  const actualTop = useRef(0)
+  const grid = useRef<HTMLDivElement>(null)
+  const scroll = useRef<HTMLElement | null>(null)
+  const ratios = useRef(new Map<string, number>())
+  const frame = useRef(0)
+  const ratioFrame = useRef(0)
+  const anchor = useRef<{ index: number; y: number; scrollTop: number } | undefined>(undefined)
+  const focusNext = useRef<number | undefined>(undefined)
+  const modeAnchor = useRef<{ index: number; origin: number } | undefined>(undefined)
+  const pickAnchor = useRef<number | undefined>(undefined)
   const images = useMemo(
-      () => entries.filter((entry) => (mixed ? entry.kind !== 'folder' : entry.kind === 'image')),
-      [entries, mixed]
-    ),
-    items = useMemo(() => images.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), [images, page]),
-    kind: GalleryMode =
-      manga || presentation === 'tiles'
-        ? 'manga'
-        : (presentation ?? mode) === 'list'
-          ? 'list'
-          : 'masonry'
+    () => entries.filter((entry) => (mixed ? entry.kind !== 'folder' : entry.kind === 'image')),
+    [entries, mixed]
+  )
+  const items = useMemo(
+    () => images.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE),
+    [images, page]
+  )
+  const kind: GalleryMode =
+    manga || presentation === 'tiles'
+      ? 'manga'
+      : (presentation ?? mode) === 'list'
+        ? 'list'
+        : 'masonry'
   useEffect(() => {
     if (!loading) {
       const last = Math.max(0, Math.ceil(images.length / PAGE_SIZE) - 1)
@@ -341,12 +350,13 @@ export function Gallery({
       { id: string; name: string; path: string; count: number; indices: number[] }
     >()
     const counts = new Map<string, number>()
-    if (groupBySource)
+    if (groupBySource) {
       for (const item of images) {
         const id = (item as OverviewEntry).rowId
         counts.set(id, (counts.get(id) ?? 0) + 1)
       }
-    if (groupBySource)
+    }
+    if (groupBySource) {
       items.forEach((item, index) => {
         const source = item as OverviewEntry
         const group = groups.get(source.rowId) ?? {
@@ -359,6 +369,7 @@ export function Gallery({
         group.indices.push(index)
         groups.set(source.rowId, group)
       })
+    }
     return [...groups.values()]
   }, [items, images, groupBySource])
   const layout = useMemo(
@@ -371,11 +382,11 @@ export function Gallery({
   const current = useRef({ layout, view, page })
   current.current = { layout, view, page }
   const measure = useCallback(() => {
-    const element = grid.current,
-      root = scroll.current
+    const element = grid.current
+    const root = scroll.current
     if (!element || !root) return
-    const bounds = element.getBoundingClientRect(),
-      port = root.getBoundingClientRect()
+    const bounds = element.getBoundingClientRect()
+    const port = root.getBoundingClientRect()
     actualTop.current = port.top + root.clientTop - bounds.top
     const next = {
       top: Math.floor(actualTop.current / 120) * 120,
@@ -389,26 +400,28 @@ export function Gallery({
     )
   }, [])
   useLayoutEffect(() => {
-    const element = grid.current,
-      root = element?.closest<HTMLElement>('.folder-panel-body')
+    const element = grid.current
+    const root = element?.closest<HTMLElement>('.folder-panel-body')
     if (!element || !root) return
     scroll.current = root
-    const previous = root.style.overflowAnchor,
-      previousGutter = root.style.scrollbarGutter
+    const previous = root.style.overflowAnchor
+    const previousGutter = root.style.scrollbarGutter
     root.style.overflowAnchor = 'none'
     // The layout follows the measured width, and its height decides whether the scrollbar shows. Without a reserved
     // gutter a width near the edge flips the scrollbar on and off and the re-measure never settles (React #185).
     root.style.scrollbarGutter = 'stable'
     const update = () => {
-        if (anchor.current && Math.abs(root.scrollTop - anchor.current.scrollTop) > 1)
-          anchor.current = undefined
-        if (!frame.current)
-          frame.current = requestAnimationFrame(() => {
-            frame.current = 0
-            measure()
-          })
-      },
-      observer = new ResizeObserver(update)
+      if (anchor.current && Math.abs(root.scrollTop - anchor.current.scrollTop) > 1) {
+        anchor.current = undefined
+      }
+      if (!frame.current) {
+        frame.current = requestAnimationFrame(() => {
+          frame.current = 0
+          measure()
+        })
+      }
+    }
+    const observer = new ResizeObserver(update)
     root.addEventListener('scroll', update, { passive: true })
     observer.observe(root)
     observer.observe(element)
@@ -435,8 +448,8 @@ export function Gallery({
       if (tile) root.scrollTop = saved.scrollTop + tile.y - saved.y
     }
     if (modeAnchor.current !== undefined) {
-      const tile = layout.tiles.find((tile) => tile.index === modeAnchor.current!.index),
-        origin = modeAnchor.current.origin
+      const tile = layout.tiles.find((tile) => tile.index === modeAnchor.current!.index)
+      const origin = modeAnchor.current.origin
       modeAnchor.current = undefined
       if (tile) root.scrollTop = origin + tile.y
     }
@@ -446,23 +459,25 @@ export function Gallery({
     const state = current.current
     if (!Number.isFinite(value) || value <= 0 || ratios.current.has(key)) return
     if (!anchor.current) {
-      const top = actualTop.current,
-        visible = state.layout.tiles
-          .filter((tile) => tile.y >= top && tile.y < top + state.view.height)
-          .sort((a, b) => a.y - b.y)[0]
-      if (visible)
+      const top = actualTop.current
+      const visible = state.layout.tiles
+        .filter((tile) => tile.y >= top && tile.y < top + state.view.height)
+        .sort((a, b) => a.y - b.y)[0]
+      if (visible) {
         anchor.current = {
           index: visible.index,
           y: visible.y,
           scrollTop: scroll.current?.scrollTop ?? 0,
         }
+      }
     }
     ratios.current.set(key, value)
-    if (!ratioFrame.current)
+    if (!ratioFrame.current) {
       ratioFrame.current = requestAnimationFrame(() => {
         ratioFrame.current = 0
         setVersion((value) => value + 1)
       })
+    }
   }, [])
   useLayoutEffect(() => {
     const index = focusNext.current
@@ -509,8 +524,8 @@ export function Gallery({
       }
       pickAnchor.current = at
       setPicked((previous) => {
-        const next = new Set(previous),
-          id = mediaIdentity(images[at])
+        const next = new Set(previous)
+        const id = mediaIdentity(images[at])
         if (next.has(id)) next.delete(id)
         else next.add(id)
         return next
@@ -575,11 +590,12 @@ export function Gallery({
                 const tile = layout.tiles
                   .filter((tile) => tile.y + tile.height > actualTop.current)
                   .sort((a, b) => a.y - b.y)[0]
-                if (tile)
+                if (tile) {
                   modeAnchor.current = {
                     index: tile.index,
                     origin: (scroll.current?.scrollTop ?? 0) - actualTop.current,
                   }
+                }
                 setMode(value)
               }}
               data={[
@@ -616,25 +632,25 @@ export function Gallery({
           if (event.altKey || event.ctrlKey || event.metaKey) return
           const tile = (event.target as HTMLElement).closest<HTMLElement>('[data-index]')
           if (!tile) return
-          const index = Number(tile.dataset.index),
-            delta =
-              event.key === 'ArrowLeft'
-                ? -1
-                : event.key === 'ArrowRight'
-                  ? 1
-                  : event.key === 'ArrowUp'
-                    ? -layout.columns
-                    : event.key === 'ArrowDown'
-                      ? layout.columns
-                      : 0,
-            visible = layout.tiles.map((tile) => tile.index),
-            position = visible.indexOf(index),
-            next =
-              event.key === 'Home'
-                ? visible[0]
-                : event.key === 'End'
-                  ? visible.at(-1)
-                  : visible[position + delta]
+          const index = Number(tile.dataset.index)
+          const delta =
+            event.key === 'ArrowLeft'
+              ? -1
+              : event.key === 'ArrowRight'
+                ? 1
+                : event.key === 'ArrowUp'
+                  ? -layout.columns
+                  : event.key === 'ArrowDown'
+                    ? layout.columns
+                    : 0
+          const visible = layout.tiles.map((tile) => tile.index)
+          const position = visible.indexOf(index)
+          const next =
+            event.key === 'Home'
+              ? visible[0]
+              : event.key === 'End'
+                ? visible.at(-1)
+                : visible[position + delta]
           if ((!delta && !['Home', 'End'].includes(event.key)) || next === undefined) return
           event.preventDefault()
           if (event.shiftKey && onEnqueue) {
@@ -643,8 +659,8 @@ export function Gallery({
           }
           focusNext.current = next
           setFocused(next)
-          const target = layout.tiles.find((tile) => tile.index === next)!,
-            root = scroll.current
+          const target = layout.tiles.find((tile) => tile.index === next)!
+          const root = scroll.current
           if (root) root.scrollTop += target.y - actualTop.current
           measure()
         }}

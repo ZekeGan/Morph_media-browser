@@ -1,5 +1,6 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import { metadata } from '../electron/metadata'
 import { pickByLanguage, pickFromMap, tmdbLanguage } from '../electron/sources/language'
 import { VN_FIRST_WORK } from '../electron/sources/vndb'
@@ -8,6 +9,7 @@ import { tinyPng } from './support/archive-fixture'
 // R-381 / R-393: external sources by preferred language, VNDB releases, MusicBrainz albums and covers. Every request
 // is answered by a fixed reply; nothing touches the network.
 type Reply = { status?: number; headers?: Record<string, string>; body?: unknown }
+
 function mock(handler: (url: string, body: any) => Reply | undefined, seen: string[] = []) {
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
@@ -16,11 +18,12 @@ function mock(handler: (url: string, body: any) => Reply | undefined, seen: stri
     assert.doesNotMatch(String(new Headers(init?.headers).get('User-Agent')), /@|\\|[A-Z]:\//)
     const reply = handler(url, init?.body ? JSON.parse(String(init.body)) : undefined)
     if (!reply) return new Response('', { status: 404 })
-    if (Buffer.isBuffer(reply.body))
+    if (Buffer.isBuffer(reply.body)) {
       return new Response(new Uint8Array(reply.body), {
         status: reply.status ?? 200,
         headers: reply.headers,
       })
+    }
     const body = reply.body
     return new Response(typeof body === 'string' ? body : JSON.stringify(body ?? ''), {
       status: reply.status ?? 200,
@@ -28,6 +31,7 @@ function mock(handler: (url: string, body: any) => Reply | undefined, seen: stri
     })
   }) as typeof fetch
 }
+
 const value = (item: { preview: { values: { key: string; value: unknown }[] } }, key: string) =>
   item.preview.values.find((v) => v.key === key)?.value
 
@@ -166,8 +170,8 @@ test('R-393: a VNDB release address uses the release for title, date, platforms 
 })
 
 test('R-393: MusicBrainz release-group (type, first release, genres) with the Cover Art Archive cover through archive.org', async () => {
-  const id = '11111111-2222-3333-4444-555555555555',
-    seen: string[] = []
+  const id = '11111111-2222-3333-4444-555555555555'
+  const seen: string[] = []
   const fetcher = mock((url) => {
     if (url.startsWith('https://musicbrainz.org/ws/2/release-group/' + id)) {
       assert.match(url, /inc=artist-credits\+aliases\+genres\+tags/)
@@ -188,10 +192,12 @@ test('R-393: MusicBrainz release-group (type, first release, genres) with the Co
         },
       }
     }
-    if (url === `https://coverartarchive.org/release-group/${id}/front-500`)
+    if (url === `https://coverartarchive.org/release-group/${id}/front-500`) {
       return { status: 307, headers: { location: 'https://archive.org/download/x/y.png' } }
-    if (url === 'https://archive.org/download/x/y.png')
+    }
+    if (url === 'https://archive.org/download/x/y.png') {
       return { status: 302, headers: { location: 'https://ia800000.us.archive.org/1/y.png' } }
+    }
     if (url === 'https://ia800000.us.archive.org/1/y.png') return { body: tinyPng }
   }, seen)
   const ja = await metadata('https://musicbrainz.org/release-group/' + id, fetcher, undefined, {
@@ -216,8 +222,9 @@ test('R-393: a Cover Art Archive redirect to any other host, or a missing cover,
   const to = (location: string) =>
     mock((url) => {
       if (url.startsWith('https://musicbrainz.org/ws/2/release-group/')) return { body: data }
-      if (url.startsWith('https://coverartarchive.org/'))
+      if (url.startsWith('https://coverartarchive.org/')) {
         return { status: 307, headers: { location } }
+      }
       assert.fail('the redirect target must not be requested: ' + url)
     })
   for (const location of [
@@ -339,8 +346,9 @@ test('R-381: Bangumi, AniList and MangaDex follow the preferred language and kee
 test('R-420: DLsite and iTunes follow the first preferred language; a text in none of them gets a notice', async () => {
   const seen: string[] = []
   const dl = mock((url) => {
-    if (url.includes('product.json'))
+    if (url.includes('product.json')) {
       return { body: [{ workno: 'RJ173356', work_name: 'タイトル', intro_s: 'これは説明です' }] }
+    }
     return { body: {} }
   }, seen)
   const address = 'https://www.dlsite.com/maniax/work/=/product_id/RJ173356.html'
@@ -358,12 +366,13 @@ test('R-420: DLsite and iTunes follow the first preferred language; a text in no
   assert.equal(noticeOf(none), undefined, 'no preference: no notice')
 
   const apple = mock((url) => {
-    if (url.startsWith('https://itunes.apple.com/lookup'))
+    if (url.startsWith('https://itunes.apple.com/lookup')) {
       return {
         body: {
           results: [{ wrapperType: 'collection', collectionId: 5, collectionName: 'Album' }],
         },
       }
+    }
   }, seen)
   seen.length = 0
   await metadata('https://music.apple.com/jp/album/x/id5', apple, undefined, { languages: ['ja'] })

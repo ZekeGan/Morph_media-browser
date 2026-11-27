@@ -1,12 +1,14 @@
-import { test } from 'node:test'
-import { NewerFormatError } from '../shared/upgrade'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
+import { test } from 'node:test'
+
 import { DATA_DIR } from '../shared/model'
 import { migrateRecord } from '../shared/project-export'
+import { NewerFormatError } from '../shared/upgrade'
+
 import { ensureFolder, exists, folderFile, readFolder, saveFolder } from '../electron/files'
+import { Library } from '../electron/library'
 
 const png = Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.alloc(64, 7)])
 
@@ -21,10 +23,11 @@ async function workspace(t: { after: (fn: () => Promise<void>) => void }, name: 
   })
   return root
 }
+
 // A small source project: folders A and B, one value on A and one saved image on A.
 async function source(root: string) {
-  const media = path.join(root, 'src'),
-    local = path.join(root, 'local-src')
+  const media = path.join(root, 'src')
+  const local = path.join(root, 'local-src')
   for (const name of ['A', 'B']) await fs.mkdir(path.join(media, name), { recursive: true })
   const lib = new Library(local, undefined, false)
   await lib.init()
@@ -34,8 +37,8 @@ async function source(root: string) {
   })
   const row = () => lib.snapshot().rows.find((r) => r.name === 'A')!
   await lib.addImage(row().rowId, row().record!.revision, await image(root))
-  const dir = row().path,
-    record = await readFolder(dir)
+  const dir = row().path
+  const record = await readFolder(dir)
   await saveFolder(
     dir,
     {
@@ -48,11 +51,13 @@ async function source(root: string) {
   )
   return { lib, media, dir, projectId: lib.snapshot().projects[0].projectId }
 }
+
 async function image(root: string) {
   const file = path.join(root, 'cover.png')
   await fs.writeFile(file, png)
   return file
 }
+
 async function target(root: string, name: string, folders = ['A', 'B']) {
   const media = path.join(root, name)
   for (const folder of folders) await fs.mkdir(path.join(media, folder), { recursive: true })
@@ -63,8 +68,8 @@ async function target(root: string, name: string, folders = ['A', 'B']) {
 
 test('a project exports to a folder with a verified manifest and imports into another tree', async (t) => {
   const root = await workspace(t, 'project-export')
-  const src = await source(root),
-    out = path.join(root, 'out')
+  const src = await source(root)
+  const out = path.join(root, 'out')
   await fs.mkdir(out)
   const result = await src.lib.exportProject(src.projectId, out, 'test')
   const manifest = JSON.parse(await fs.readFile(path.join(result.dir, 'manifest.json'), 'utf8'))
@@ -100,8 +105,8 @@ test('a project exports to a folder with a verified manifest and imports into an
 
 test('import keeps existing records; overwrite replaces only a different project file, after a backup', async (t) => {
   const root = await workspace(t, 'project-export-conflict')
-  const src = await source(root),
-    out = path.join(root, 'out')
+  const src = await source(root)
+  const out = path.join(root, 'out')
   await fs.mkdir(out)
   const { dir } = await src.lib.exportProject(src.projectId, out, 'test')
   const dst = await target(root, 'dst')
@@ -141,8 +146,8 @@ test('import keeps existing records; overwrite replaces only a different project
 
 test('a preview with a blocker cannot be applied', async (t) => {
   const root = await workspace(t, 'project-export-blocked')
-  const src = await source(root),
-    out = path.join(root, 'out')
+  const src = await source(root)
+  const out = path.join(root, 'out')
   await fs.mkdir(out)
   const { dir } = await src.lib.exportProject(src.projectId, out, 'test')
   const dst = await target(root, 'dst')
@@ -154,8 +159,8 @@ test('a preview with a blocker cannot be applied', async (t) => {
 
 test('a damaged or hostile export is refused before anything is written', async (t) => {
   const root = await workspace(t, 'project-export-bad')
-  const src = await source(root),
-    out = path.join(root, 'out')
+  const src = await source(root)
+  const out = path.join(root, 'out')
   await fs.mkdir(out)
   const { dir } = await src.lib.exportProject(src.projectId, out, 'test')
   const dst = await target(root, 'dst')
@@ -183,8 +188,8 @@ test('a damaged or hostile export is refused before anything is written', async 
 
 test('export refuses a destination inside the project; import warns when the project is still linked elsewhere', async (t) => {
   const root = await workspace(t, 'project-export-guards')
-  const src = await source(root),
-    out = path.join(root, 'out')
+  const src = await source(root)
+  const out = path.join(root, 'out')
   await fs.mkdir(out)
   await assert.rejects(
     src.lib.exportProject(src.projectId, path.join(src.media, 'A'), 'test'),
@@ -221,8 +226,8 @@ test('an export from before folder types is upgraded: categories dropped, templa
 
 test('import never overwrites a project record a newer version wrote, even with overwrite', async (t) => {
   const root = await workspace(t, 'project-export-newer')
-  const src = await source(root),
-    out = path.join(root, 'out')
+  const src = await source(root)
+  const out = path.join(root, 'out')
   await fs.mkdir(out)
   const { dir } = await src.lib.exportProject(src.projectId, out, 'test')
   const dst = await target(root, 'dst')

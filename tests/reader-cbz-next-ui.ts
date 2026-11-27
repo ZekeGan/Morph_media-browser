@@ -1,17 +1,18 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
+
 import { Library } from '../electron/library'
-import { tinyPng, zipFixture } from './support/archive-fixture'
 import { closeApp, launchApp, reportFailure } from './support/app'
+import { tinyPng, zipFixture } from './support/archive-fixture'
 
 // R-415: a comic archive (CBZ) opened from a book folder goes on to the next archive of the folder, in file name
 // order, the same way a text book does: the last page says which book comes next and the next press opens it.
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'reader-cbz-next-')),
-  media = path.join(root, 'Series'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'reader-cbz-next-'))
+const media = path.join(root, 'Series')
+const local = path.join(root, 'local')
 await fs.mkdir(media)
 const pages = (count: number) =>
   zipFixture(

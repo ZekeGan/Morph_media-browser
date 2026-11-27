@@ -1,9 +1,11 @@
-import type { ReactNode } from 'react'
 import { Accordion, Alert, Badge, Button, Group, Modal, Stack, Text } from '@mantine/core'
-import { t as tr, useLocale } from '../i18n'
-import type { FolderRow, LinkedProject, Request, Response, Snapshot } from '../../shared/model'
+import type { ReactNode } from 'react'
+
 import type { ExplorerRequest, ExplorerResponse } from '../../shared/explorer'
+import type { FolderRow, LinkedProject, Request, Response, Snapshot } from '../../shared/model'
 import { isNewerFormat } from '../../shared/upgrade'
+
+import { t as tr, useLocale } from '../i18n'
 
 type Overview = Pick<Snapshot, 'projects' | 'rows' | 'problems'>
 
@@ -21,20 +23,24 @@ export const problemItems = (snapshot: Overview) => ({
     (r) => r.boundary && r.boundary.state !== 'root' && r.boundary.state !== 'not-game' && r.record
   ),
 })
+
 // Scan messages that only say a game folder is being protected are notes, not problems.
 const isNote = (text: string) => /內部不寫入|唯讀且不深入/.test(text)
+
 export const splitMessages = (messages: string[]) => ({
   notes: messages.filter(isNote),
   others: messages.filter((text) => !isNote(text)),
 })
+
 export const problemCount = (snapshot: Overview) => {
   const { roots, duplicates, broken, stopped } = problemItems(snapshot)
   const structured = roots.length + duplicates.length + broken.length + stopped.length
   return structured || splitMessages(snapshot.problems).others.length
 }
+
 const shortPath = (path: string) => {
-  const parts = path.split(/[\\/]+/).filter(Boolean),
-    separator = path.includes('\\') ? '\\' : '/'
+  const parts = path.split(/[\\/]+/).filter(Boolean)
+  const separator = path.includes('\\') ? '\\' : '/'
   return (parts.length > 2 ? '…' + separator : '') + parts.slice(-2).join(separator)
 }
 
@@ -59,16 +65,16 @@ export function ProblemsDialog({
 }) {
   useLocale()
   const { roots, newerProjects, newer, duplicates, broken, stopped, candidates } =
-      problemItems(snapshot),
-    count =
-      roots.length +
-      newerProjects.length +
-      newer.length +
-      duplicates.length +
-      broken.length +
-      stopped.length +
-      candidates.length,
-    { notes, others } = splitMessages(snapshot.problems)
+    problemItems(snapshot)
+  const count =
+    roots.length +
+    newerProjects.length +
+    newer.length +
+    duplicates.length +
+    broken.length +
+    stopped.length +
+    candidates.length
+  const { notes, others } = splitMessages(snapshot.problems)
   const entry = (
     key: string,
     title: string,
@@ -168,8 +174,9 @@ export function ProblemsDialog({
                 onClick={() => {
                   if (
                     window.confirm(tr('確定這是複製出來的資料夾？兩邊的資料都保留，之後各自獨立。'))
-                  )
+                  ) {
                     void act({ action: 'copyIdentity', rowId: row.rowId })
+                  }
                 }}
               >
                 {tr('這筆是副本，另配新 ID')}
@@ -188,8 +195,9 @@ export function ProblemsDialog({
                 variant="default"
                 disabled={busy}
                 onClick={() => {
-                  if (window.confirm(tr('從上一個有效備份恢復？原檔會保留。')))
+                  if (window.confirm(tr('從上一個有效備份恢復？原檔會保留。'))) {
                     void act({ action: 'restore', rowId: row.rowId })
+                  }
                 }}
               >
                 {tr('從上一版備份恢復')}

@@ -1,5 +1,5 @@
 import { SourceError } from '../metadata-common'
-import { clean, type Adapter } from './site'
+import { type Adapter, clean } from './site'
 
 // R-381: AniList has the romaji, English and native titles; only English and Japanese are languages.
 const titleFor = (title: Record<string, unknown> | undefined, languages: readonly string[]) => {
@@ -10,8 +10,8 @@ const titleFor = (title: Record<string, unknown> | undefined, languages: readonl
 }
 
 export const anilist: Adapter = async (site) => {
-  const parts = site.match(/^\/(anime|manga)\/([1-9]\d{0,11})(?:\/[^/]*)?\/?$/),
-    id = Number(parts[2])
+  const parts = site.match(/^\/(anime|manga)\/([1-9]\d{0,11})(?:\/[^/]*)?\/?$/)
+  const id = Number(parts[2])
   const data = (
     await site.json('https://graphql.anilist.co', {
       query:
@@ -27,7 +27,7 @@ export const anilist: Adapter = async (site) => {
   site.number('EPISODE_COUNT', data.episodes)
   site.number('CHAPTER_COUNT', data.chapters)
   const date = data.startDate
-  if (date?.year)
+  if (date?.year) {
     site.text(
       'RELEASE_DATE',
       [
@@ -40,6 +40,7 @@ export const anilist: Adapter = async (site) => {
           : []),
       ].join('-')
     )
+  }
   return {
     title: clean(
       titleFor(data.title, site.languages) ||

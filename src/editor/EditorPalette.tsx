@@ -1,13 +1,8 @@
-import { useEffect, useState, type ReactNode } from 'react'
-import type { FolderKind } from '../../shared/kind'
-import { Icon, type IconName } from '../common/icons'
-import { OptionTagsInput } from './OptionTagsInput'
-import { t as tr } from '../i18n'
 import {
   ActionIcon,
   Badge,
-  Checkbox,
   Button,
+  Checkbox,
   Group,
   Menu,
   Modal,
@@ -16,37 +11,43 @@ import {
   Tooltip,
   UnstyledButton,
 } from '@mantine/core'
+import { type ReactNode, useEffect, useState } from 'react'
 import type { Layout } from 'react-grid-layout'
-import { fieldValue } from '../../shared/model'
-import type {
-  Cell,
-  Attribute,
-  CellKind,
-  FieldDeletionPreview,
-  FolderRow,
-  Project,
-  Request,
-  Response,
-} from '../../shared/model'
+
+import { groupValue, isFilled } from '../../shared/cells'
+import { groupOfField, groupType } from '../../shared/fieldGroups'
+import type { FolderKind } from '../../shared/kind'
 import { addCommonFields, editorFields } from '../../shared/layouts'
+import {
+  type Attribute,
+  type Cell,
+  type CellKind,
+  type FieldDeletionPreview,
+  fieldValue,
+  type FolderRow,
+  type Project,
+  type Request,
+  type Response,
+} from '../../shared/model'
+
+import { Icon, type IconName } from '../common/icons'
+import { t as tr } from '../i18n'
 import { commonFieldNames } from './commonFields'
 import { typeKinds } from './editorKinds'
-import { isFilled } from '../../shared/cells'
-import { fieldSource, orderedFieldSourceGroups, useSourceFolding } from './fieldSources'
-import { FieldManager } from './FieldManager'
-import { fieldPurposes, purposeGlyph, purposeLabel } from './fieldTypes'
-import { groupValue } from '../../shared/cells'
-import { groupOfField, groupType } from '../../shared/fieldGroups'
 import {
   dropHandlers,
+  type DropState,
   fieldDrag,
-  refusalText,
   FieldValuePreview,
   GroupRow,
   GroupView,
+  refusalText,
   useGroupActions,
-  type DropState,
 } from './FieldGroupPalette'
+import { FieldManager } from './FieldManager'
+import { fieldSource, orderedFieldSourceGroups, useSourceFolding } from './fieldSources'
+import { fieldPurposes, purposeGlyph, purposeLabel } from './fieldTypes'
+import { OptionTagsInput } from './OptionTagsInput'
 
 type Binding = Project['fieldBindings'][number]
 // A component kind, or a system-info component with its setting chosen (R-409).
@@ -265,8 +266,8 @@ export function EditorPalette(props: EditorPaletteProps) {
     if (result?.fieldDeletionPreview) setFieldDeletion(result.fieldDeletionPreview)
   }
   const [adding, setAdding] = useState(false)
-  const [search, setSearch] = useState(''),
-    [onlyFilled, setOnlyFilled] = useState(false)
+  const [search, setSearch] = useState('')
+  const [onlyFilled, setOnlyFilled] = useState(false)
   const [closed, setClosed] = useState<string[]>([])
   const toggle = (id: string) =>
     setClosed((now) => (now.includes(id) ? now.filter((x) => x !== id) : [...now, id]))
@@ -313,12 +314,12 @@ export function EditorPalette(props: EditorPaletteProps) {
     setAdding(true)
   }
   const fieldRow = (binding: Binding) => {
-    const source = sources.find((f) => f.attributeId === binding.attributeId),
-      kind = typeKinds[binding.type],
-      added = bound(binding.attributeId)
+    const source = sources.find((f) => f.attributeId === binding.attributeId)
+    const kind = typeKinds[binding.type]
+    const added = bound(binding.attributeId)
     if (!kind) return null
-    const isPicked = picked.includes(binding.attributeId),
-      over = dropOver?.id === binding.attributeId ? dropOver.state : undefined
+    const isPicked = picked.includes(binding.attributeId)
+    const over = dropOver?.id === binding.attributeId ? dropOver.state : undefined
     const name = binding.alias || tr('未命名欄位')
     const origin = fieldSource(binding.attributeId, attributes)
     const scope = source?.shared === false && source.private ? tr('專案私有') : tr('共用')
@@ -364,8 +365,9 @@ export function EditorPalette(props: EditorPaletteProps) {
             else setChosen(binding.attributeId)
           }}
           onDoubleClick={(event) => {
-            if (!event.ctrlKey && !event.metaKey && !picked.length)
+            if (!event.ctrlKey && !event.metaKey && !picked.length) {
               add(kind, undefined, undefined, binding)
+            }
           }}
         >
           <span className="palette-row-icon is-glyph" aria-hidden>
@@ -506,9 +508,9 @@ export function EditorPalette(props: EditorPaletteProps) {
     'system-info:pages': [tr('頁數'), tr('詳情：漫畫的頁數'), 'book'],
     'system-info:readPage': [tr('讀到第幾頁'), tr('詳情：漫畫讀到的頁'), 'book'],
   }
-  const labelOf = (key: PaletteKey) => presetLabels[key]?.[0] ?? labels[key as CellKind],
-    hintOf = (key: PaletteKey) => presetLabels[key]?.[1] ?? hints[key as CellKind],
-    iconOf = (key: PaletteKey) => presetLabels[key]?.[2] ?? kindIcons[key as CellKind] ?? 'grid'
+  const labelOf = (key: PaletteKey) => presetLabels[key]?.[0] ?? labels[key as CellKind]
+  const hintOf = (key: PaletteKey) => presetLabels[key]?.[1] ?? hints[key as CellKind]
+  const iconOf = (key: PaletteKey) => presetLabels[key]?.[2] ?? kindIcons[key as CellKind] ?? 'grid'
   const componentRow = (kind: PaletteKey) => (
     <div
       key={kind}
@@ -711,8 +713,8 @@ export function EditorPalette(props: EditorPaletteProps) {
               </div>
             )}
             {orderedFieldSourceGroups(shownFields, attributes).map(({ source, fields }) => {
-              const addedFields = fields.filter((f) => bound(f.attributeId)),
-                unadded = fields.filter((f) => !bound(f.attributeId))
+              const addedFields = fields.filter((f) => bound(f.attributeId))
+              const unadded = fields.filter((f) => !bound(f.attributeId))
               return (
                 <details
                   key={source}

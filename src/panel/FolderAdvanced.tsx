@@ -1,7 +1,6 @@
-import { useState } from 'react'
 import { Alert, Button, Checkbox, Group, Stack, Tabs, Text, Tooltip } from '@mantine/core'
-import { t as tr } from '../i18n'
-import { HelpTip } from '../common/HelpTip'
+import { useState } from 'react'
+
 import type {
   CleanupPreview,
   CleanupResult,
@@ -10,7 +9,10 @@ import type {
   Response,
 } from '../../shared/model'
 import { isNewerFormat } from '../../shared/upgrade'
+
+import { HelpTip } from '../common/HelpTip'
 import { evidenceText } from '../game/BoundaryFlag'
+import { t as tr } from '../i18n'
 
 // The scan boundary section: shown in the game tab for games, and in Advanced when a game was detected but the folder is not one by type.
 export function FolderBoundary({
@@ -23,9 +25,9 @@ export function FolderBoundary({
   boundary: (state: 'root' | 'not-game' | 'candidate', tool?: boolean) => void
 }) {
   // R-508: a confirmed ROOT (game, or a tool, R-457) only shows what it is and the way back, no confirming again.
-  const saved = row.record?.details?.boundary,
-    confirmed = saved?.state === 'root',
-    tool = confirmed && saved?.role === 'tool'
+  const saved = row.record?.details?.boundary
+  const confirmed = saved?.state === 'root'
+  const tool = confirmed && saved?.role === 'tool'
   const toolButton = (
     <Tooltip
       multiline
@@ -129,6 +131,7 @@ export function FolderBoundary({
     </section>
   )
 }
+
 // R-457: a folder nothing was detected in can still be made a tool by hand from its settings.
 function ToolMark({
   disabled,
@@ -181,9 +184,9 @@ export function FolderAdvanced({
   error: string
   setError: (message: string) => void
 }) {
-  const [cleanup, setCleanup] = useState<CleanupPreview>(),
-    [cleanupResult, setCleanupResult] = useState<CleanupResult>(),
-    [restart, setRestart] = useState(false)
+  const [cleanup, setCleanup] = useState<CleanupPreview>()
+  const [cleanupResult, setCleanupResult] = useState<CleanupResult>()
+  const [restart, setRestart] = useState(false)
   const previewCleanup = async (scope: 'folder' | 'private' | 'tree') => {
     setCleanupResult(undefined)
     setRestart(false)

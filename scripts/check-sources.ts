@@ -4,9 +4,10 @@
 //   pnpm check:sources                  every source
 //   pnpm check:sources hitomi steam     only these sources
 //   pnpm check:sources hitomi=<url>     another work for a source (for example when the sample was taken down)
+import { type MetadataSourceId, metadataSources } from '../shared/sources'
+
 import { metadata } from '../electron/metadata'
 import { SourceError } from '../electron/metadata-common'
-import { metadataSources, type MetadataSourceId } from '../shared/sources'
 
 // One public, long-lived work per source (ExHentai galleries are read through the same public API as E-Hentai).
 // Sources that need the user's own key (R-285–R-290) are listed as skipped: this check runs without keys.
@@ -57,8 +58,8 @@ for (const id of ids) {
     console.log(`${name.padEnd(18)} SKIP    needs your own key; not checked`)
     continue
   }
-  const url = overrides.get(id) ?? samples[id as keyof typeof samples],
-    started = Date.now()
+  const url = overrides.get(id) ?? samples[id as keyof typeof samples]
+  const started = Date.now()
   let line: string
   try {
     const result = await metadata(url, fetch, id)

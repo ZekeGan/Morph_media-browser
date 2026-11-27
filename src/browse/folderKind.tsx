@@ -1,10 +1,12 @@
-import { createContext, useContext } from 'react'
 import { Tooltip } from '@mantine/core'
-import type { FolderRow } from '../../shared/model'
+import { createContext, useContext } from 'react'
+
 import { parentPath, pathKey } from '../../shared/browse'
 import { detectFolderKind, type FolderKind, type KindSample } from '../../shared/kind'
-import { t as tr, useLocale } from '../i18n'
+import type { FolderRow } from '../../shared/model'
+
 import { Icon, type IconName } from '../common/icons'
+import { t as tr, useLocale } from '../i18n'
 import { cachedFolderSample, useFolderSample } from './folderStats'
 
 // R-343: what a folder is, shown as its icon in the tree, table and panel title, and as a small badge on its card.
@@ -24,12 +26,15 @@ export const KindRowsContext = createContext<Map<string, FolderRow> | undefined>
 // folder takes its kind's layout or its level's. A folder not in it (outside a workspace, or not in the structure
 // the workspace knows) is taken as a work, as the older kind layouts were applied to every folder.
 export const LayoutWorksContext = createContext<Map<string, boolean> | undefined>(undefined)
+
 export const isLayoutWork = (works: Map<string, boolean> | undefined, rowId: string) =>
   works?.get(rowId) ?? true
+
 export function useIsWork(row: FolderRow | undefined) {
   const works = useContext(LayoutWorksContext)
   return !row || isLayoutWork(works, row.rowId)
 }
+
 // The kind of the folder directly above, from its own files only (one level, never its parent). Undefined if unknown.
 export function useParentKind(row: FolderRow | undefined): FolderKind | undefined {
   const rows = useContext(KindRowsContext)
@@ -37,6 +42,7 @@ export function useParentKind(row: FolderRow | undefined): FolderKind | undefine
   if (!parent || parent.rowId === row.rowId) return undefined
   return detectFolderKind(parent, cachedFolderSample(parent.rowId) ?? parent.contents).kind
 }
+
 export function kindLook(row: FolderRow, sample?: KindSample, parentKind?: FolderKind) {
   const detected = detectFolderKind(row, sample, parentKind)
   const look: KindLook =
@@ -51,6 +57,7 @@ export function kindLook(row: FolderRow, sample?: KindSample, parentKind?: Folde
     row.boundary?.state === 'candidate' || row.record?.details?.boundary?.state === 'candidate'
   return { look, manual: detected.source === 'manual', candidate }
 }
+
 // What the scan counted (R-340) is enough for folders never opened; an opened folder's content sample is more exact.
 export function useKindLook(row: FolderRow) {
   const parentKind = useParentKind(row)
@@ -77,12 +84,12 @@ export function KindBadge({ row, show }: { row: FolderRow; show: () => void }) {
   useLocale()
   const { look, manual, candidate } = useKindLook(row)
   const typed = look !== 'general' || candidate
-  const shown: KindLook = !typed ? 'general' : look === 'general' ? 'game' : look,
-    unconfirmed = typed && candidate && look !== 'game',
-    kind = unconfirmed
-      ? tr('疑似遊戲 · 尚未確認')
-      : tr(looks[shown].label) + ' · ' + (manual ? tr('你指定的') : tr('自動判斷')),
-    label = kind + ' — ' + tr('顯示資料夾內容')
+  const shown: KindLook = !typed ? 'general' : look === 'general' ? 'game' : look
+  const unconfirmed = typed && candidate && look !== 'game'
+  const kind = unconfirmed
+    ? tr('疑似遊戲 · 尚未確認')
+    : tr(looks[shown].label) + ' · ' + (manual ? tr('你指定的') : tr('自動判斷'))
+  const label = kind + ' — ' + tr('顯示資料夾內容')
   return (
     <Tooltip label={label} withArrow>
       <button

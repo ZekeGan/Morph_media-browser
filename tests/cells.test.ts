@@ -1,14 +1,16 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { cellVisible, copyableValue, numericDisplay } from '../shared/cells'
-import { localDragPosition } from '../src/editor/editorDrag'
-import { validateProject, type Cell, type FolderRow } from '../shared/model'
-import { withoutField } from '../electron/maintenance'
-import { modelFolder, modelProject } from './support/model-fixtures'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
+import { test } from 'node:test'
+
+import { cellVisible, copyableValue, numericDisplay } from '../shared/cells'
+import { type Cell, type FolderRow, validateProject } from '../shared/model'
+
 import { folderFile } from '../electron/files'
+import { Library } from '../electron/library'
+import { withoutField } from '../electron/maintenance'
+import { localDragPosition } from '../src/editor/editorDrag'
+import { modelFolder, modelProject } from './support/model-fixtures'
 
 const row: FolderRow = {
   rowId: 'row',
@@ -20,9 +22,11 @@ const row: FolderRow = {
   duplicate: false,
   record: modelFolder(),
 }
+
 function cell(extra: Partial<Cell> = {}): Cell {
   return { ...modelProject().cells[0], ...extra }
 }
+
 test('conditional cells preserve unknown, zero, false and explicit private override semantics', () => {
   const condition = { attributeId: 'flag', operator: 'set' as const }
   assert.equal(cellVisible(cell({ condition }), row), false)
@@ -50,8 +54,9 @@ test('copy values retain falsy values, reject missing/malformed values and numer
   assert.equal(copyableValue(false), 'false')
   assert.equal(copyableValue(0), '0')
   assert.equal(copyableValue(['a', 'b']), 'a, b')
-  for (const value of [null, undefined, '', [], {}, NaN])
+  for (const value of [null, undefined, '', [], {}, NaN]) {
     assert.equal(copyableValue(value), undefined)
+  }
   assert.deepEqual(numericDisplay(0, 5), { value: 0, maximum: 5, percent: 0 })
   assert.deepEqual(numericDisplay(120, 100), { value: 120, maximum: 100, percent: 100 })
   assert.equal(numericDisplay(undefined, 5), undefined)
@@ -86,11 +91,11 @@ test('optional CELL capabilities validate and roundtrip without changing schema 
   }
 })
 test('field deletion removes condition references from all template scopes without changing unrelated cells', () => {
-  const project = modelProject(),
-    conditional = cell({
-      cellId: 'conditional',
-      condition: { attributeId: 'flag', operator: 'set' },
-    })
+  const project = modelProject()
+  const conditional = cell({
+    cellId: 'conditional',
+    condition: { attributeId: 'flag', operator: 'set' },
+  })
   project.cells.push(conditional)
   project.layoutPresets![0].cells.push(conditional)
   project.panelPresets![0].cells.push(conditional)
@@ -116,9 +121,9 @@ test('canvas drag uses local coordinates after scroll and scaling', () => {
 test('conditional templates persist across reopening and field removal previews and cleans every template scope', async () => {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'cells-')),
-    media = path.join(root, 'controlled'),
-    local = path.join(root, 'local')
+  const root = await fs.mkdtemp(path.join(base, 'cells-'))
+  const media = path.join(root, 'controlled')
+  const local = path.join(root, 'local')
   await fs.mkdir(media)
   await fs.writeFile(path.join(media, 'original.txt'), 'ORIGINAL')
   const lib = new Library(local, undefined, false)
@@ -127,13 +132,13 @@ test('conditional templates persist across reopening and field removal previews 
     name: 'Cells',
     depth: { mode: 'through', level: 1 },
   })
-  const project = lib.snapshot().projects[0].project!,
-    conditional = cell({
-      kind: 'static-text',
-      text: 'When set',
-      condition: { attributeId: 'flag', operator: 'set' },
-    }),
-    record = await fs.readFile(folderFile(media))
+  const project = lib.snapshot().projects[0].project!
+  const conditional = cell({
+    kind: 'static-text',
+    text: 'When set',
+    condition: { attributeId: 'flag', operator: 'set' },
+  })
+  const record = await fs.readFile(folderFile(media))
   await lib.saveProject({
     ...project,
     fieldBindings: [{ attributeId: 'flag', alias: 'Flag', type: 'boolean' }],

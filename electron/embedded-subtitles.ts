@@ -1,16 +1,18 @@
+import { createHash, randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { createHash, randomUUID } from 'node:crypto'
+
+import type { EmbeddedSubtitleInfo, ExplorerResponse } from '../shared/explorer'
+import { cuesToSrt } from '../shared/subtitles'
+
 import type { Explorer } from './explorer'
 import {
   CANCELLED,
+  type EmbeddedTrack,
   LIMITS,
   readMkvSubtitles,
   readPicturePackets,
-  type EmbeddedTrack,
 } from './mkv-subtitles'
-import { cuesToSrt } from '../shared/subtitles'
-import type { EmbeddedSubtitleInfo, ExplorerResponse } from '../shared/explorer'
 
 // R-412: the subtitle tracks inside a video, read by main (mkv-subtitles.ts) and kept in a local cache beside the
 // thumbnails: a rebuildable copy of what the file says, never part of the folder record. A cached result is used
@@ -75,16 +77,17 @@ const valid = (value: unknown): value is EmbeddedTrack[] =>
   )
 
 async function trim(dir: string) {
-  const names = (await fs.readdir(dir)).filter((name) => /^[0-9a-f]{64}\.json$/.test(name)),
-    files = await Promise.all(
-      names.map(async (name) => ({ name, stat: await fs.stat(path.join(dir, name)) }))
-    )
+  const names = (await fs.readdir(dir)).filter((name) => /^[0-9a-f]{64}\.json$/.test(name))
+  const files = await Promise.all(
+    names.map(async (name) => ({ name, stat: await fs.stat(path.join(dir, name)) }))
+  )
   files.sort((a, b) => b.stat.mtimeMs - a.stat.mtimeMs)
   let bytes = 0
   for (const [index, file] of files.entries()) {
     bytes += file.stat.size
-    if (index >= CACHE_FILES || bytes > CACHE_BYTES)
+    if (index >= CACHE_FILES || bytes > CACHE_BYTES) {
       await fs.unlink(path.join(dir, file.name)).catch(() => {})
+    }
   }
 }
 
@@ -118,8 +121,9 @@ async function cached(
     if (stat.isFile() && stat.size <= CACHE_BYTES) {
       const saved = JSON.parse(await fs.readFile(cache, 'utf8'))
       if (saved?.version === CACHE_VERSION && saved.size === size && saved.mtimeMs === mtimeMs) {
-        if (typeof saved.error === 'string' && saved.error.length <= 200)
+        if (typeof saved.error === 'string' && saved.error.length <= 200) {
           return { error: saved.error }
+        }
         if (valid(saved.tracks)) return saved.tracks as EmbeddedTrack[]
       }
     }
@@ -128,6 +132,7 @@ async function cached(
   }
   return undefined
 }
+
 async function save(dir: string, cache: string, content: object) {
   try {
     await fs.mkdir(dir, { recursive: true })
@@ -148,18 +153,19 @@ async function embeddedJob(
 ): Promise<({ tracks: EmbeddedTrack[] } | { job: EmbeddedJob }) & { file: string }> {
   // The file comes from the folder's own content list; the window never names a path.
   const found = await ex.file(rowId, fileId)
-  if (!/\.(mkv|webm|mka)$/i.test(found.file))
+  if (!/\.(mkv|webm|mka)$/i.test(found.file)) {
     throw new Error('只有 Matroska（MKV／WebM）影片能讀內嵌字幕')
+  }
   const key = createHash('sha256')
-      .update(`${CACHE_VERSION}|${found.file}|${found.stat.size}|${found.stat.mtimeMs}`)
-      .digest('hex'),
-    kept = ex.embeddedSubtitles.get(key)
+    .update(`${CACHE_VERSION}|${found.file}|${found.stat.size}|${found.stat.mtimeMs}`)
+    .digest('hex')
+  const kept = ex.embeddedSubtitles.get(key)
   if (kept) return { tracks: kept, file: found.file }
   const running = ex.embeddedJobs.get(key)
   // A read that was stopped (another video opened) but has not noticed yet is not handed back; it starts again.
   if (running && !running.controller.signal.aborted) return { job: running, file: found.file }
-  const dir = path.join(ex.root, 'subtitle-cache'),
-    cache = path.join(dir, key + '.json')
+  const dir = path.join(ex.root, 'subtitle-cache')
+  const cache = path.join(dir, key + '.json')
   // R-425: the reads of other videos stop; reading two films at once on one disk slows both and the playback.
   for (const other of ex.embeddedJobs.values()) other.controller.abort()
   let listed: (tracks: EmbeddedTrack[]) => void = () => {}
@@ -203,8 +209,9 @@ async function embeddedJob(
   ex.embeddedJobs.set(key, job)
   void job.done
     .then((tracks) => {
-      while (ex.embeddedSubtitles.size >= KEPT)
+      while (ex.embeddedSubtitles.size >= KEPT) {
         ex.embeddedSubtitles.delete(ex.embeddedSubtitles.keys().next().value!)
+      }
       ex.embeddedSubtitles.set(key, tracks)
     })
     .catch(() => {})
@@ -261,8 +268,8 @@ export async function embeddedText(
   time?: number
 ): Promise<ExplorerResponse> {
   const found = await embeddedJob(ex, rowId, fileId)
-  let tracks: EmbeddedTrack[],
-    partial = false
+  let tracks: EmbeddedTrack[]
+  let partial = false
   if ('tracks' in found) tracks = found.tracks
   else if (early) {
     if (typeof time === 'number' && time >= 0) found.job.focus = time
@@ -300,8 +307,8 @@ export async function embeddedPictures(
   time = 0
 ): Promise<ExplorerResponse> {
   const found = await embeddedJob(ex, rowId, fileId)
-  let tracks: EmbeddedTrack[],
-    partial = false
+  let tracks: EmbeddedTrack[]
+  let partial = false
   if ('tracks' in found) tracks = found.tracks
   else if (early) {
     if (time >= 0) found.job.focus = time
@@ -316,12 +323,12 @@ export async function embeddedPictures(
   }
   if (!track.pictures.length && !partial) throw new Error('這個字幕軌沒有可顯示的圖片')
   const all = partial
-      ? track.pictures.slice().sort((a, b) => a.start - b.start || a.at - b.at)
-      : track.pictures,
-    from = Math.max(0, time - PICTURE_BACK),
-    chosen: typeof all = []
-  let until: number | undefined,
-    bytes = 0
+    ? track.pictures.slice().sort((a, b) => a.start - b.start || a.at - b.at)
+    : track.pictures
+  const from = Math.max(0, time - PICTURE_BACK)
+  const chosen: typeof all = []
+  let until: number | undefined
+  let bytes = 0
   for (const cue of all) {
     if (cue.end <= from) continue
     if (chosen.length >= PICTURE_CUES || bytes > PICTURE_BYTES) {

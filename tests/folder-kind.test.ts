@@ -1,13 +1,15 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
-import { Explorer, type DesktopOperations } from '../electron/explorer'
+import { test } from 'node:test'
+
 import { detectFolderKind, pageNumbered, sampleOf } from '../shared/kind'
-import { readFolder } from '../electron/files'
 import { isGameFolder, isToolFolder } from '../shared/media'
 import type { FolderRow } from '../shared/model'
+
+import { type DesktopOperations, Explorer } from '../electron/explorer'
+import { readFolder } from '../electron/files'
+import { Library } from '../electron/library'
 
 const row = (details?: object, boundary?: object) =>
   ({
@@ -84,8 +86,9 @@ test('folder kind by content: video, music, text book, manga, in that order (R-3
   assert.equal(kindOf(2), 'general', 'two pictures are not a book')
   assert.equal(kindOf(3, 0, 0, ['a.bin', 'b.bin']), 'book')
   assert.equal(kindOf(3, 0, 0, ['a.bin', 'b.bin', 'c.bin']), 'general', 'half is not most')
-  for (const name of ['v1.cbz', 'v1.CBR', 'v1.cb7'])
+  for (const name of ['v1.cbz', 'v1.CBR', 'v1.cb7']) {
     assert.equal(kindOf(0, 0, 0, [name, 'a.bin', 'b.bin']), 'book')
+  }
   // PDF and plain ZIP files never decide.
   assert.equal(kindOf(0, 0, 0, ['a.pdf', 'b.zip']), 'general')
   assert.deepEqual(files(1, 0, 0, ['a.epub', 'b.txt', 'c.cbz', 'd.cue', 'e.pdf']), {
@@ -104,8 +107,8 @@ test('folder kind by content: video, music, text book, manga, in that order (R-3
 test('the scan counts what a folder holds the way an opened folder does', async (t) => {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'folder-kind-scan-')),
-    media = path.join(root, 'media')
+  const root = await fs.mkdtemp(path.join(base, 'folder-kind-scan-'))
+  const media = path.join(root, 'media')
   t.after(async () => {
     const target = await fs.realpath(root)
     if (!target.startsWith(base + path.sep)) throw new Error('Unsafe cleanup')
@@ -152,9 +155,9 @@ test('the scan counts what a folder holds the way an opened folder does', async 
 test('the folderKind request stores or clears the manual kind and rejects unknown kinds', async (t) => {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'folder-kind-')),
-    media = path.join(root, 'media'),
-    local = path.join(root, 'local')
+  const root = await fs.mkdtemp(path.join(base, 'folder-kind-'))
+  const media = path.join(root, 'media')
+  const local = path.join(root, 'local')
   await fs.mkdir(path.join(media, 'A'), { recursive: true })
   const lib = new Library(local, undefined, false)
   await lib.init()
@@ -250,9 +253,9 @@ test('the folderKind request stores or clears the manual kind and rejects unknow
 test('folderKinds sets the kind of several folders and reports the ones that fail', async (t) => {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'folder-kinds-')),
-    media = path.join(root, 'media'),
-    local = path.join(root, 'local')
+  const root = await fs.mkdtemp(path.join(base, 'folder-kinds-'))
+  const media = path.join(root, 'media')
+  const local = path.join(root, 'local')
   for (const name of ['A', 'B']) await fs.mkdir(path.join(media, name), { recursive: true })
   const lib = new Library(local, undefined, false)
   await lib.init()
@@ -271,8 +274,8 @@ test('folderKinds sets the kind of several folders and reports the ones that fai
   })
   await lib.create(media, { name: 'Kinds', depth: { mode: 'through', level: 2 } })
   const rowOf = (name: string) => lib.snapshot().rows.find((r) => r.name === name)!
-  const a = rowOf('A'),
-    b = rowOf('B')
+  const a = rowOf('A')
+  const b = rowOf('B')
   const result = await explorer.request({
     action: 'folderKinds',
     rows: [
@@ -318,8 +321,8 @@ test('folderKinds sets the kind of several folders and reports the ones that fai
 })
 
 test('R-404: pictures alone are not manga inside a music or video folder, or in a folder named like extras', () => {
-  const named = (name: string) => ({ ...row({}), name }) as FolderRow,
-    seven = files(7)
+  const named = (name: string) => ({ ...row({}), name }) as FolderRow
+  const seven = files(7)
   assert.equal(detectFolderKind(row({}), seven).kind, 'book')
   assert.equal(detectFolderKind(row({}), seven, 'music').kind, 'general')
   assert.equal(detectFolderKind(row({}), seven, 'video').kind, 'general')
@@ -336,10 +339,12 @@ test('R-404: pictures alone are not manga inside a music or video folder, or in 
     'ジャケット',
     '特典',
     'スキャン',
-  ])
+  ]) {
     assert.equal(detectFolderKind(named(name), seven).kind, 'general', name)
-  for (const name of ['scansion', 'My scans', 'Vol 1', 'covers of x'])
+  }
+  for (const name of ['scansion', 'My scans', 'Vol 1', 'covers of x']) {
     assert.equal(detectFolderKind(named(name), seven).kind, 'book', name)
+  }
   // A manual kind and comic archives still win.
   assert.equal(detectFolderKind(row({ kind: 'book' }), seven, 'music').kind, 'book')
   assert.equal(detectFolderKind(named('scans'), files(0, 0, 0, ['a.cbz'])).kind, 'book')
@@ -348,9 +353,9 @@ test('R-404: pictures alone are not manga inside a music or video folder, or in 
 test('R-457: a folder set as a tool is a protected ROOT that is not a game; choosing the game type undoes it', async (t) => {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'folder-tool-')),
-    media = path.join(root, 'media'),
-    local = path.join(root, 'local')
+  const root = await fs.mkdtemp(path.join(base, 'folder-tool-'))
+  const media = path.join(root, 'media')
+  const local = path.join(root, 'local')
   await fs.mkdir(path.join(media, 'Tool', 'plugins'), { recursive: true })
   await fs.writeFile(path.join(media, 'Tool', 'Tool.exe'), 'x')
   const lib = new Library(local, undefined, false)

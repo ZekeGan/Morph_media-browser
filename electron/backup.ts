@@ -1,24 +1,26 @@
-import { fmt } from '../shared/message'
+import { randomUUID } from 'node:crypto'
 // Backup and restore: one folder with the settings package and an export of every linked project.
 // Restoring reuses the project import (preview, checksums, rollback) and the settings import (backup first).
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { randomUUID } from 'node:crypto'
+
 import {
   BACKUP_ID,
   BACKUP_KIND,
   BACKUP_VERSION,
-  checkBackupManifest,
   type BackupEntry,
   type BackupManifest,
   type BackupPreview,
   type BackupProjectPreview,
+  checkBackupManifest,
 } from '../shared/backup'
-import type { ProjectImportPreview } from '../shared/project-export'
+import { fmt } from '../shared/message'
 import { DATA_DIR } from '../shared/model'
+import type { ProjectImportPreview } from '../shared/project-export'
+
 import { exists, message, readJson, safePath, within } from './files'
-import { writeSettingsFile } from './settings-file'
 import type { Library } from './library'
+import { writeSettingsFile } from './settings-file'
 import type { WorkspaceStore } from './workspace'
 
 interface BackupPlan {
@@ -29,6 +31,7 @@ interface BackupPlan {
   projects: BackupProjectPreview[]
   expires: number
 }
+
 const plans = new Map<string, BackupPlan>()
 
 export async function createBackup(
@@ -42,12 +45,14 @@ export async function createBackup(
   const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)
   parent = await fs.realpath(parent)
   // Inside a project's folder the copied records would be scanned as that project's folders.
-  for (const linked of library.snapshot().projects)
-    if (within(linked.root, parent))
+  for (const linked of library.snapshot().projects) {
+    if (within(linked.root, parent)) {
       throw new Error(fmt('備份位置不能放在專案資料夾裡，請選擇其他位置：{0}', linked.root))
+    }
+  }
   // Two backups in the same second get a counter instead of failing.
   let out = path.join(parent, `M-orph-backup-${stamp}`)
-  for (let n = 2; ; n++)
+  for (let n = 2; ; n++) {
     try {
       await fs.mkdir(out)
       break
@@ -55,11 +60,12 @@ export async function createBackup(
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST' || n > 99) throw error
       out = path.join(parent, `M-orph-backup-${stamp}-${n}`)
     }
+  }
   try {
     // A damaged settings file must not stop a backup (and so a restore) of the projects.
     let settings: string | undefined = 'settings.json'
-    const projects: BackupManifest['projects'] = [],
-      skipped: string[] = []
+    const projects: BackupManifest['projects'] = []
+    const skipped: string[] = []
     try {
       const state = await workspace.update({ action: 'exportPackage' }, ids)
       await writeSettingsFile(path.join(out, 'settings.json'), state.settingsPackage!)
@@ -124,12 +130,14 @@ async function previewProject(
   // A root written in backup.json is only a hint: network or device paths are never probed, and a local folder
   // counts as found only when this project's own definition is already there. Anything else needs "locate".
   if (!chosen) {
-    if (!path.isAbsolute(root) || /^[\\/]{2}/.test(root) || !(await isDirectory(root)))
+    if (!path.isAbsolute(root) || /^[\\/]{2}/.test(root) || !(await isDirectory(root))) {
       return { ...base, state: 'missing' } as BackupProjectPreview
+    }
     const definition = path.join(root, DATA_DIR, 'projects', `${entry.projectId}.json`)
     if (!(await exists(definition))) return { ...base, state: 'missing' } as BackupProjectPreview
-  } else if (!(await isDirectory(root)))
+  } else if (!(await isDirectory(root))) {
     return { ...base, state: 'missing' } as BackupProjectPreview
+  }
   try {
     const preview = await library.previewProjectImport(bundle, root)
     plan.imports.set(entry.projectId, preview)
@@ -144,6 +152,7 @@ async function previewProject(
     return { ...base, state: 'blocked', message: message(error) } as BackupProjectPreview
   }
 }
+
 const view = (token: string, plan: BackupPlan, changes?: number): BackupPreview => ({
   token,
   createdAt: plan.manifest.createdAt,
@@ -177,8 +186,9 @@ export async function previewBackup(
     await safePath(dir, file)
     try {
       const settingsStat = await fs.stat(file)
-      if (!settingsStat.isFile() || settingsStat.size > 4 * 1024 * 1024)
+      if (!settingsStat.isFile() || settingsStat.size > 4 * 1024 * 1024) {
         throw new Error('備份裡的設定檔不完整')
+      }
       const state = await workspace.update(
         { action: 'previewPackage', value: JSON.parse(await fs.readFile(file, 'utf8')) },
         ids
@@ -190,10 +200,11 @@ export async function previewBackup(
       plan.settingsToken = undefined
     }
   }
-  for (let index = 0; index < manifest.projects.length; index++)
+  for (let index = 0; index < manifest.projects.length; index++) {
     plan.projects.push(
       await previewProject(library, plan, index, manifest.projects[index].root, false)
     )
+  }
   const token = randomUUID()
   for (const [id, old] of plans) if (old.expires < Date.now()) plans.delete(id)
   plans.set(token, plan)
@@ -230,11 +241,11 @@ export async function applyBackup(
 ) {
   const plan = live(token)
   plans.delete(token)
-  const restored: string[] = [],
-    failed: string[] = []
+  const restored: string[] = []
+  const failed: string[] = []
   for (const projectId of projectIds) {
-    const entry = plan.projects.find((p) => p.projectId === projectId),
-      preview = plan.imports.get(projectId)
+    const entry = plan.projects.find((p) => p.projectId === projectId)
+    const preview = plan.imports.get(projectId)
     if (!entry || !preview || entry.state !== 'ready') {
       failed.push(fmt('{0}：找不到可還原的位置', entry?.name ?? projectId))
       continue
@@ -250,7 +261,7 @@ export async function applyBackup(
   // Restoring projects only fills in what is missing, so only the settings can be undone: the settings
   // package saves the current settings first, and its id lets the window offer "back to before the restore".
   let settingsUndo: string | undefined
-  if (settings && plan.settingsToken)
+  if (settings && plan.settingsToken) {
     try {
       const state = await workspace.update(
         { action: 'applyPackage', token: plan.settingsToken, mode: 'replace' },
@@ -260,6 +271,7 @@ export async function applyBackup(
     } catch (error) {
       failed.push(fmt('設定：{0}', message(error)))
     }
+  }
   return { projects: restored, failed, settings: !!settingsUndo, settingsUndo }
 }
 
@@ -268,18 +280,20 @@ export const backupsDir = (library: Library) => path.join(library.userData, 'bac
 
 async function folderSize(dir: string): Promise<number> {
   let total = 0
-  for (const entry of await fs.readdir(dir, { withFileTypes: true }))
+  for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
     if (entry.isFile()) total += (await fs.stat(path.join(dir, entry.name))).size
-    else if (entry.isDirectory() && !entry.isSymbolicLink())
+    else if (entry.isDirectory() && !entry.isSymbolicLink()) {
       total += await folderSize(path.join(dir, entry.name))
+    }
+  }
   return total
 }
 
 // A kept backup by id; the id comes from the window, so it must look like one and stay inside the folder.
 export async function keptBackup(library: Library, id: string) {
   if (typeof id !== 'string' || !BACKUP_ID.test(id)) throw new Error('備份不存在')
-  const dir = backupsDir(library),
-    target = path.join(dir, id)
+  const dir = backupsDir(library)
+  const target = path.join(dir, id)
   await safePath(dir, target)
   if (!(await exists(path.join(target, 'backup.json')))) throw new Error('備份不存在')
   return target
@@ -289,7 +303,7 @@ export async function listBackups(library: Library): Promise<BackupEntry[]> {
   const dir = backupsDir(library)
   const names = await fs.readdir(dir).catch(() => [] as string[])
   const entries: BackupEntry[] = []
-  for (const id of names.filter((name) => BACKUP_ID.test(name)))
+  for (const id of names.filter((name) => BACKUP_ID.test(name))) {
     try {
       const target = await keptBackup(library, id)
       const manifest = checkBackupManifest(await readJson(path.join(target, 'backup.json')))
@@ -303,6 +317,7 @@ export async function listBackups(library: Library): Promise<BackupEntry[]> {
     } catch {
       // A damaged or foreign folder is not listed and not touched.
     }
+  }
   return entries.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 }
 
@@ -314,9 +329,11 @@ export async function deleteBackup(library: Library, id: string) {
 export async function exportBackup(library: Library, id: string, dest: string) {
   const source = await keptBackup(library, id)
   dest = await fs.realpath(dest)
-  for (const linked of library.snapshot().projects)
-    if (within(linked.root, dest))
+  for (const linked of library.snapshot().projects) {
+    if (within(linked.root, dest)) {
       throw new Error(fmt('匯出位置不能放在專案資料夾裡，請選擇其他位置：{0}', linked.root))
+    }
+  }
   if (within(backupsDir(library), dest)) throw new Error('請選擇程式備份資料夾以外的位置')
   const target = path.join(dest, id)
   if (await exists(target)) throw new Error(fmt('這個位置已經有同名的備份：{0}', target))

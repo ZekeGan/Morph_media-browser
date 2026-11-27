@@ -1,22 +1,26 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { test } from 'node:test'
+
+import { browserRows } from '../shared/browse'
+import { DATA_DIR } from '../shared/model'
+
+import { ensureFolder, exists, folderFile, readFolder, saveFolder } from '../electron/files'
 import { detectGame, GAME_PROBE_LIMITS } from '../electron/game-detection'
 import { Library } from '../electron/library'
-import { ensureFolder, exists, folderFile, readFolder, saveFolder } from '../electron/files'
-import { DATA_DIR } from '../shared/model'
-import { browserRows } from '../shared/browse'
+
 const input = {
   name: 'Games',
   depth: { mode: 'through' as const, level: 1 },
   scanAll: true,
 }
+
 async function fixture(t: { after: (callback: () => Promise<void>) => void }) {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'game-boundary-')),
-    media = path.join(root, 'media')
+  const root = await fs.mkdtemp(path.join(base, 'game-boundary-'))
+  const media = path.join(root, 'media')
   await fs.mkdir(media)
   t.after(async () => {
     const target = await fs.realpath(root)
@@ -34,6 +38,7 @@ async function fixture(t: { after: (callback: () => Promise<void>) => void }) {
   }
   return { root, media, lib, files }
 }
+
 const tyranoMarkers = (base: string) =>
   [
     'package.json',
@@ -46,6 +51,7 @@ const tyranoMarkers = (base: string) =>
   ].map((file) => base + '/' + file)
 const nwMarkers = ['nw.pak', 'chrome_elf.dll', 'icudtl.dat', 'locales/ja.pak']
 const wolfMarkers = ['Data/BasicData/Game.dat', 'Data/BasicData/DataBase.dat']
+
 // Include historical metadata and empty directories; only the ROOT's own record may change.
 async function internalTree(dir: string, root = true): Promise<Record<string, string>> {
   const result: Record<string, string> = {}
@@ -56,12 +62,14 @@ async function internalTree(dir: string, root = true): Promise<Record<string, st
       result[entry.name + '/'] = 'directory'
       for (const [name, bytes] of Object.entries(
         await internalTree(path.join(dir, entry.name), false)
-      ))
+      )) {
         result[entry.name + '/' + name] = bytes
+      }
     } else result[entry.name] = (await fs.readFile(path.join(dir, entry.name))).toString('base64')
   }
   return result
 }
+
 test('embedded and packaged NW.js deployments stay unknown; WOLF unpacked and mixed data stop at their own root', async (t) => {
   const { media, lib, files } = await fixture(t)
   const samples = [
@@ -133,8 +141,8 @@ test('embedded and packaged NW.js deployments stay unknown; WOLF unpacked and mi
   for (let pass = 0; pass < 2; pass++) {
     state = await lib.scan()
     for (const sample of samples) {
-      const dir = path.join(media, sample.name),
-        row = state.rows.find((row) => row.path === dir)!
+      const dir = path.join(media, sample.name)
+      const row = state.rows.find((row) => row.path === dir)!
       assert.equal(row.boundary?.state, 'candidate')
       assert.deepEqual(row.boundary.engines, sample.engine ? [sample.engine] : [])
       assert.equal(row.record?.schemaVersion, 2)
@@ -147,8 +155,8 @@ test('embedded and packaged NW.js deployments stay unknown; WOLF unpacked and mi
     }
   }
   // Exact depth and a traversal left by an older version (R-510: ignored) still cannot reach internals.
-  const game = state.rows.find((row) => row.path === path.join(media, 'WolfMixed'))!,
-    unknown = state.rows.find((row) => row.path === path.join(media, 'ModernNW'))!
+  const game = state.rows.find((row) => row.path === path.join(media, 'WolfMixed'))!
+  const unknown = state.rows.find((row) => row.path === path.join(media, 'ModernNW'))!
   state = await lib.saveProject({
     ...state.projects[0].project!,
     scanAll: false,
@@ -156,8 +164,9 @@ test('embedded and packaged NW.js deployments stay unknown; WOLF unpacked and mi
     traversal: { [game.record!.folderId]: true, [unknown.record!.folderId]: true },
   })
   assert.ok(state.structure!.find((row) => row.path === game.path)?.boundary)
-  for (const root of [game.path, unknown.path])
+  for (const root of [game.path, unknown.path]) {
     assert.ok(!state.structure!.some((row) => row.path.startsWith(root + path.sep)))
+  }
   assert.equal(state.projects[0].project!.traversal, undefined, 'dropped when the project is saved')
   for (const [dir, tree] of before) assert.deepEqual(await internalTree(dir), tree)
 })
@@ -201,13 +210,13 @@ test('NW.js and WOLF markers require coherent file types and paths, retaining en
   assert.deepEqual((await detectGame(conflict))?.engines, ['RPG Maker MV', 'WOLF RPG'])
 })
 test('new runtime boundaries block stale shared writes and deep nested creation; manual corrections remain authoritative', async (t) => {
-  const { media, lib, files } = await fixture(t),
-    game = path.join(media, 'Runtime'),
-    child = path.join(game, 'assets/a/b/c/d/e')
+  const { media, lib, files } = await fixture(t)
+  const game = path.join(media, 'Runtime')
+  const child = path.join(game, 'assets/a/b/c/d/e')
   await fs.mkdir(child, { recursive: true })
-  let state = await lib.create(media, input),
-    row = state.rows.find((row) => row.path === child)!,
-    root = state.rows.find((row) => row.path === game)!
+  let state = await lib.create(media, input)
+  let row = state.rows.find((row) => row.path === child)!
+  let root = state.rows.find((row) => row.path === game)!
   const original = await fs.readFile(folderFile(child))
   await files(game, ['Renamed.exe', ...nwMarkers])
   await assert.rejects(lib.checkedRow(row.rowId, true), /受保護/)
@@ -233,15 +242,15 @@ test('new runtime boundaries block stale shared writes and deep nested creation;
   row = state.rows.find((row) => row.path === child)!
   await lib.checkedRow(row.rowId, true)
   // No ancestor records exist here. A four-level probe cutoff would let this escape.
-  const fresh = path.join(media, 'Fresh'),
-    deep = path.join(fresh, 'assets/a/b/c/d/e')
+  const fresh = path.join(media, 'Fresh')
+  const deep = path.join(fresh, 'assets/a/b/c/d/e')
   await files(fresh, ['Fresh.exe', ...nwMarkers, 'assets/a/b/c/d/e/file.bin'])
   await assert.rejects(lib.create(deep, { ...input, name: 'Deep nested' }), /受保護/)
   assert.equal(await exists(folderFile(deep)), false)
 })
 test('NW.js and WOLF marker links and probe failures stop branches; cancellation preserves all internals', async (t) => {
-  const { root, media, lib, files } = await fixture(t),
-    outside = path.join(root, 'outside')
+  const { root, media, lib, files } = await fixture(t)
+  const outside = path.join(root, 'outside')
   await files(outside, ['Game.dat', 'DataBase.dat', 'original.bin'])
   const outsideBefore = await internalTree(outside, false)
   const wolf = path.join(media, 'WolfLinked')
@@ -269,8 +278,9 @@ test('NW.js and WOLF marker links and probe failures stop branches; cancellation
   await files(denied, ['Renamed.exe', ...wolfMarkers])
   const open = fs.opendir.bind(fs)
   t.mock.method(fs, 'opendir', async (...args: Parameters<typeof fs.opendir>) => {
-    if (String(args[0]) === path.join(denied, 'Data/BasicData'))
+    if (String(args[0]) === path.join(denied, 'Data/BasicData')) {
       throw Object.assign(new Error('denied'), { code: 'EACCES' })
+    }
     return open(...args)
   })
   state = await lib.scan()
@@ -305,12 +315,12 @@ test('NW.js and WOLF marker links and probe failures stop branches; cancellation
   for (const [dir, before] of snapshots) assert.deepEqual(await internalTree(dir), before)
 })
 test('unpacked Tyrano app and app.asar directories stop at the outer launcher root, including renamed games', async (t) => {
-  const { media, lib, files } = await fixture(t),
-    samples = [
-      { name: 'ふたりぐらしver1.312', base: 'resources/app.asar', exe: 'hutarigurashi.exe' },
-      { name: 'ROOM', base: 'resources/app', exe: 'Room.exe' },
-    ],
-    history = new Map<string, Buffer>()
+  const { media, lib, files } = await fixture(t)
+  const samples = [
+    { name: 'ふたりぐらしver1.312', base: 'resources/app.asar', exe: 'hutarigurashi.exe' },
+    { name: 'ROOM', base: 'resources/app', exe: 'Room.exe' },
+  ]
+  const history = new Map<string, Buffer>()
   for (const sample of samples) {
     const game = path.join(media, sample.name)
     await files(game, [
@@ -329,8 +339,8 @@ test('unpacked Tyrano app and app.asar directories stop at the outer launcher ro
   for (let pass = 0; pass < 2; pass++) {
     state = await lib.scan()
     for (const sample of samples) {
-      const game = path.join(media, sample.name),
-        row = state.rows.find((row) => row.path === game)!
+      const game = path.join(media, sample.name)
+      const row = state.rows.find((row) => row.path === game)!
       assert.deepEqual(row.boundary?.engines, ['TyranoScript'])
       state = await lib.visit(row.rowId)
       assert.equal(
@@ -342,8 +352,8 @@ test('unpacked Tyrano app and app.asar directories stop at the outer launcher ro
     }
   }
   for (const [file, bytes] of history) assert.deepEqual(await fs.readFile(file), bytes)
-  const original = path.join(media, 'ROOM'),
-    moved = path.join(media, '任意改名')
+  const original = path.join(media, 'ROOM')
+  const moved = path.join(media, '任意改名')
   await fs.rename(original, moved)
   await fs.rename(path.join(moved, 'Room.exe'), path.join(moved, 'CustomLauncher.exe'))
   await fs.rename(
@@ -354,7 +364,7 @@ test('unpacked Tyrano app and app.asar directories stop at the outer launcher ro
 })
 test('wrapped Tyrano rules keep generic apps uncertain and never combine markers across wrappers', async (t) => {
   const { media, files } = await fixture(t)
-  for (const base of ['resources/app', 'resources/app.asar'])
+  for (const base of ['resources/app', 'resources/app.asar']) {
     for (const missing of [
       'package.json',
       'index.html',
@@ -374,6 +384,7 @@ test('wrapped Tyrano rules keep generic apps uncertain and never combine markers
         missing
       )
     }
+  }
   const split = path.join(media, 'Split')
   await files(split, [
     'Game.exe',
@@ -411,9 +422,9 @@ test('wrapped Tyrano rules keep generic apps uncertain and never combine markers
   assert.deepEqual((await detectGame(wrongType))?.engines, [])
 })
 test('wrapped Tyrano marker junctions are not traversed or written', async (t) => {
-  const { root, media, lib, files } = await fixture(t),
-    outside = path.join(root, 'outside'),
-    game = path.join(media, 'Linked')
+  const { root, media, lib, files } = await fixture(t)
+  const outside = path.join(root, 'outside')
+  const game = path.join(media, 'Linked')
   await files(outside, ['tyrano.js', 'plugins/kag/kag.js'])
   await files(game, [
     'Game.exe',
@@ -434,7 +445,7 @@ test('wrapped Tyrano marker junctions are not traversed or written', async (t) =
 })
 test('Unreal cross-layer launchers without version info stop at the outer game; collections stay separate', async (t) => {
   const { media, lib, files } = await fixture(t)
-  for (const name of ['UnrealSampleA', 'UnrealSampleB'])
+  for (const name of ['UnrealSampleA', 'UnrealSampleB']) {
     await files(path.join(media, name), [
       name + '.exe',
       'Engine/base.bin',
@@ -443,6 +454,7 @@ test('Unreal cross-layer launchers without version info stop at the outer game; 
       name + '/Content/Paks/game.ucas',
       name + '/Plugins/config.ini',
     ])
+  }
   assert.equal(await detectGame(media), undefined)
   let state = await lib.create(media, input)
   assert.equal(state.rows.length, 3)
@@ -505,8 +517,8 @@ test('visiting ASAR and Unreal roots never publishes internal folders in CARD/TA
     const game = state.rows.find((row) => row.name === name)!
     assert.ok(game.boundary)
     for (let i = 0; i < 2; i++) state = await lib.visit(game.rowId)
-    const project = state.projects[0].project!,
-      rows = state.structure!
+    const project = state.projects[0].project!
+    const rows = state.structure!
     assert.deepEqual(browserRows(rows, project, media, 'TABLE', game.path), [])
     assert.deepEqual(
       browserRows(
@@ -519,24 +531,25 @@ test('visiting ASAR and Unreal roots never publishes internal folders in CARD/TA
       [game.path],
       'a folder without published children shows only its own card, never its internals'
     )
-    for (const mode of ['TREE', 'CARD'] as const)
+    for (const mode of ['TREE', 'CARD'] as const) {
       assert.ok(
         browserRows(rows, project, media, mode, '').every(
           (row) => !row.path.startsWith(game.path + path.sep)
         )
       )
+    }
     assert.ok(state.rows.every((row) => !row.path.startsWith(game.path + path.sep)))
   }
   for (const [file, bytes] of history) assert.deepEqual(await fs.readFile(file), bytes)
 })
 test('a newly discovered boundary removes stale in-memory descendants without deleting existing records', async (t) => {
-  const { media, lib, files } = await fixture(t),
-    game = path.join(media, 'TyranoDataSample'),
-    child = path.join(game, 'resources/app/data')
+  const { media, lib, files } = await fixture(t)
+  const game = path.join(media, 'TyranoDataSample')
+  const child = path.join(game, 'resources/app/data')
   await fs.mkdir(child, { recursive: true })
-  let state = await lib.create(media, input),
-    root = state.rows.find((row) => row.path === game)!,
-    oldChild = state.rows.find((row) => row.path === child)!
+  let state = await lib.create(media, input)
+  let root = state.rows.find((row) => row.path === game)!
+  let oldChild = state.rows.find((row) => row.path === child)!
   const before = await fs.readFile(folderFile(child))
   assert.equal(root.boundary, undefined)
   await files(game, ['TyranoDataSample.exe', 'resources/app.asar'])
@@ -567,8 +580,9 @@ test('a newly discovered boundary removes stale in-memory descendants without de
 })
 test('file types, matching names and coherent paths reject empty-shell and cross-game engine markers', async (t) => {
   const { media, files } = await fixture(t)
-  for (const name of ['ExeDirectory', 'DataFile', 'UnrelatedData', 'Editor', 'Web', 'Split'])
+  for (const name of ['ExeDirectory', 'DataFile', 'UnrelatedData', 'Editor', 'Web', 'Split']) {
     await fs.mkdir(path.join(media, name))
+  }
   await fs.mkdir(path.join(media, 'ExeDirectory', 'Game.exe'))
   await files(path.join(media, 'ExeDirectory'), ['UnityPlayer.dll', 'Game_Data/data.bin'])
   await files(path.join(media, 'DataFile'), ['Game.exe', 'UnityPlayer.dll', 'Game_Data'])
@@ -584,14 +598,16 @@ test('file types, matching names and coherent paths reject empty-shell and cross
     'A/Binaries/Win64/A.exe',
     'B/Content/Paks/data.pak',
   ])
-  for (const name of ['ExeDirectory', 'Editor', 'Web', 'Split'])
+  for (const name of ['ExeDirectory', 'Editor', 'Web', 'Split']) {
     assert.equal(await detectGame(path.join(media, name)), undefined, name)
-  for (const name of ['DataFile', 'UnrelatedData'])
+  }
+  for (const name of ['DataFile', 'UnrelatedData']) {
     assert.deepEqual(
       (await detectGame(path.join(media, name)))?.engines,
       [],
       name + ' must stay uncertain, never confirmed Unity'
     )
+  }
   await files(path.join(media, 'Conflict'), [
     'Game.exe',
     'UnityPlayer.dll',
@@ -633,8 +649,9 @@ test('Godot needs an EXE with its own PCK; a lone EXE (embedded PCK) and PAK fil
   await files(path.join(media, 'OtherPck'), ['Game.exe', 'Other.pck'])
   // PAK is used by Unreal, id Tech and many mods; it is never Godot evidence.
   await files(path.join(media, 'PakOnly'), ['Game.exe', 'Game.pak'])
-  for (const name of ['SingleExe', 'OtherPck', 'PakOnly'])
+  for (const name of ['SingleExe', 'OtherPck', 'PakOnly']) {
     assert.equal(await detectGame(path.join(media, name)), undefined, name)
+  }
   // SiglusEngine also ships Scene.pck; its own rule applies instead of Godot.
   await files(path.join(media, 'Siglus'), ['SiglusEngine.exe', 'Scene.pck', 'Gameexe.dat'])
   assert.deepEqual((await detectGame(path.join(media, 'Siglus')))?.engines, ['SiglusEngine'])
@@ -646,14 +663,15 @@ test('Godot single-file exports are recognised by their console wrapper, not by 
   // The wrapper must belong to an EXE of the same name; an unrelated pair is not evidence.
   await files(path.join(media, 'Unrelated'), ['Other.exe', 'Tool.console.exe'])
   await files(path.join(media, 'WrapperOnly'), ['Tool.console.exe'])
-  for (const name of ['Unrelated', 'WrapperOnly'])
+  for (const name of ['Unrelated', 'WrapperOnly']) {
     assert.equal(await detectGame(path.join(media, name)), undefined, name)
+  }
 })
 // A minimal app.asar: the 16-byte pickle header and the JSON file tree (no file contents).
 const asar = (tree: object, patch?: (head: Buffer) => void) => {
-  const json = Buffer.from(JSON.stringify({ files: tree })),
-    pad = (4 - (json.length % 4)) % 4,
-    head = Buffer.alloc(16)
+  const json = Buffer.from(JSON.stringify({ files: tree }))
+  const pad = (4 - (json.length % 4)) % 4
+  const head = Buffer.alloc(16)
   head.writeUInt32LE(4, 0)
   head.writeUInt32LE(8 + json.length + pad, 4)
   head.writeUInt32LE(4 + json.length + pad, 8)
@@ -669,8 +687,8 @@ test('an Electron-packed TyranoScript game is recognised from the top of its app
     await fs.writeFile(path.join(dir, 'Game.exe'), 'x')
     await fs.writeFile(path.join(dir, 'resources', 'app.asar'), data)
   }
-  const folder = { files: {} },
-    file = { size: 1, offset: '0' }
+  const folder = { files: {} }
+  const file = { size: 1, offset: '0' }
   await write('Tyrano', asar({ tyrano: folder, data: folder, 'index.html': file }))
   const found = await detectGame(path.join(media, 'Tyrano'))
   assert.deepEqual(found?.engines, ['TyranoScript'])
@@ -698,20 +716,21 @@ test('an Electron-packed TyranoScript game is recognised from the top of its app
 })
 test('ASAR remains an unknown candidate; manual ROOT/not-game and an old traversal never rewrite history', async (t) => {
   const { media, lib, files } = await fixture(t)
-  for (const name of ['TyranoManualSample', 'TyranoAsarSample', 'TyranoDataSample'])
+  for (const name of ['TyranoManualSample', 'TyranoAsarSample', 'TyranoDataSample']) {
     await files(path.join(media, name), [
       name + '.exe',
       'resources/app.asar',
       'resources/app/data/save.sav',
     ])
+  }
   let state = await lib.create(media, input)
   for (const name of ['TyranoManualSample', 'TyranoAsarSample', 'TyranoDataSample']) {
     const row = state.rows.find((row) => row.name === name)!
     assert.deepEqual(row.boundary?.engines, [])
     assert.equal(await exists(path.join(row.path, 'resources', DATA_DIR)), false)
   }
-  const game = state.rows.find((row) => row.name === 'TyranoManualSample')!,
-    old = path.join(game.path, 'resources')
+  const game = state.rows.find((row) => row.name === 'TyranoManualSample')!
+  const old = path.join(game.path, 'resources')
   await ensureFolder(old, false)
   const bytes = await fs.readFile(folderFile(old))
   let record = await readFolder(game.path)
@@ -736,9 +755,9 @@ test('ASAR remains an unknown candidate; manual ROOT/not-game and an old travers
   assert.equal(state.rows.find((row) => row.path === old)?.readonly, false)
 })
 test('single wrapped MV game stops at the inner root; exact depth cannot bypass protection', async (t) => {
-  const { media, lib, files } = await fixture(t),
-    wrapper = path.join(media, 'RpgMakerNwjsSample'),
-    game = path.join(wrapper, 'GameFolder')
+  const { media, lib, files } = await fixture(t)
+  const wrapper = path.join(media, 'RpgMakerNwjsSample')
+  const game = path.join(wrapper, 'GameFolder')
   await files(wrapper, [
     'readme.txt',
     'GameFolder/RpgMakerNwjsSample.exe',
@@ -759,15 +778,15 @@ test('single wrapped MV game stops at the inner root; exact depth cannot bypass 
   assert.equal(await exists(path.join(game, 'www', DATA_DIR)), false)
 })
 test('an existing nested project cannot bypass a newly detected parent game boundary', async (t) => {
-  const { media, lib, files } = await fixture(t),
-    game = path.join(media, 'Game'),
-    nested = path.join(game, 'Game_Data')
+  const { media, lib, files } = await fixture(t)
+  const game = path.join(media, 'Game')
+  const nested = path.join(game, 'Game_Data')
   await fs.mkdir(nested, { recursive: true })
   let state = await lib.create(nested, { ...input, name: 'Legacy nested' })
-  const id = state.projects[0].projectId,
-    definition = path.join(nested, DATA_DIR, 'projects', id + '.json'),
-    old = await fs.readFile(definition),
-    record = await fs.readFile(folderFile(nested))
+  const id = state.projects[0].projectId
+  const definition = path.join(nested, DATA_DIR, 'projects', id + '.json')
+  const old = await fs.readFile(definition)
+  const record = await fs.readFile(folderFile(nested))
   await files(game, ['Game.exe', 'UnityPlayer.dll', 'Game_Data/child/file.bin'])
   state = await lib.create(media, input)
   assert.ok(state.projects.find((project) => project.projectId === id)!.error?.includes('受保護'))
@@ -777,9 +796,9 @@ test('an existing nested project cannot bypass a newly detected parent game boun
   await assert.rejects(lib.restoreProject(id), /受保護/)
 })
 test('multi-platform bundles and every App variant remain untouched, even with old records or not-game', async (t) => {
-  const { media, lib, files } = await fixture(t),
-    look = path.join(media, 'UnitySample'),
-    app = path.join(look, 'MacOS/MacOS/改名.app')
+  const { media, lib, files } = await fixture(t)
+  const look = path.join(media, 'UnitySample')
+  const app = path.join(look, 'MacOS/MacOS/改名.app')
   await files(look, [
     'Windows/UnitySample.exe',
     'Windows/UnityPlayer.dll',
@@ -790,8 +809,9 @@ test('multi-platform bundles and every App variant remain untouched, even with o
     'MacOS/MacOS/改名.app/Contents/Resources/Data/global.dat',
     'MacOS/MacOS/改名.app/Contents/Info.plist',
   ])
-  for (const name of ['Binary', 'Broken', 'Ordinary'])
+  for (const name of ['Binary', 'Broken', 'Ordinary']) {
     await files(path.join(media, name + '.app'), ['Contents/Info.plist', 'Contents/MacOS/app'])
+  }
   await fs.writeFile(path.join(media, 'Binary.app/Contents/Info.plist'), Buffer.from('bplist00'))
   await fs.writeFile(
     path.join(media, 'Broken.app/Contents/Info.plist'),
@@ -806,24 +826,26 @@ test('multi-platform bundles and every App variant remain untouched, even with o
     boundary: { state: 'not-game', engines: [], evidence: ['歷史設定'] },
   }
   await saveFolder(app, manual.record, manual.record.revision)
-  const before = await fs.readFile(folderFile(app)),
-    state = await lib.create(media, input)
+  const before = await fs.readFile(folderFile(app))
+  const state = await lib.create(media, input)
   assert.equal(state.rows.find((row) => row.path === look)!.boundary, undefined)
   assert.ok(state.rows.find((row) => row.path === app)!.readonly)
   assert.deepEqual(await fs.readFile(folderFile(app)), before)
   assert.deepEqual(await fs.readFile(folderFile(historical)), old)
-  for (const name of ['Binary', 'Broken', 'Ordinary'])
+  for (const name of ['Binary', 'Broken', 'Ordinary']) {
     assert.equal(await exists(path.join(media, name + '.app', DATA_DIR)), false)
+  }
   await assert.rejects(lib.create(app, input), /受保護/)
   await assert.rejects(lib.create(path.join(app, 'Contents/MacOS'), input), /受保護/)
   assert.equal(await exists(path.join(app, 'Contents/MacOS', DATA_DIR)), false)
 })
 test('probe limits, permission failure and junction markers fail closed without initializing descendants', async (t) => {
-  const { root, media, lib, files } = await fixture(t),
-    game = path.join(media, 'Large')
+  const { root, media, lib, files } = await fixture(t)
+  const game = path.join(media, 'Large')
   await files(game, ['Game.exe', 'renpy/runtime.bin'])
-  for (let i = 0; i < GAME_PROBE_LIMITS.directories + 2; i++)
+  for (let i = 0; i < GAME_PROBE_LIMITS.directories + 2; i++) {
     await fs.mkdir(path.join(game, 'game', String(i)), { recursive: true })
+  }
   await assert.rejects(detectGame(game), /判斷不完/)
   let state = await lib.create(media, input)
   assert.ok(
@@ -1087,9 +1109,9 @@ test('Japanese visual-novel engines are recognised from their runtime and archiv
   )
 })
 test('cleanup inside a game ROOT only removes whole records, never rewrites them (R-245)', async (t) => {
-  const { media, lib, files } = await fixture(t),
-    game = path.join(media, 'Leftover'),
-    child = path.join(game, 'www/data')
+  const { media, lib, files } = await fixture(t)
+  const game = path.join(media, 'Leftover')
+  const child = path.join(game, 'www/data')
   await fs.mkdir(child, { recursive: true })
   let state = await lib.create(media, input)
   const projectId = state.projects[0].projectId
@@ -1161,8 +1183,9 @@ test('R-457: tools among the games are told apart by their runtime files, and a 
   }
   // A tool candidate stops the scan like a game candidate: nothing is created inside it.
   const state = await lib.create(media, { ...input, depth: { mode: 'through' as const, level: 3 } })
-  for (const name of ['Qt', 'Deep'])
+  for (const name of ['Qt', 'Deep']) {
     assert.equal(state.rows.find((r) => r.name === name)?.boundary?.tool, true, name)
+  }
   assert.equal(await exists(path.join(media, 'Qt', 'platforms', DATA_DIR)), false)
   assert.equal(await exists(path.join(media, 'Deep', 'bin', DATA_DIR)), false)
   const inside = [path.join(media, 'Qt', 'platforms'), path.join(media, 'Deep', 'bin')]
@@ -1198,7 +1221,8 @@ test('R-463: a source-code folder inside a project is a tool candidate; a parent
     'the project root is scanned'
   )
   assert.equal(state.rows.find((r) => r.name === 'Downloader')?.boundary?.tool, true)
-  for (const inner of ['android', 'scripts', 'src'])
+  for (const inner of ['android', 'scripts', 'src']) {
     assert.ok(!state.rows.some((r) => r.name === inner), inner + ' is not scanned into')
+  }
   assert.equal(await exists(path.join(media, 'Downloader', 'android', DATA_DIR)), false)
 })

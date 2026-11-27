@@ -1,13 +1,15 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import { cellVisible, ruleText } from '../shared/cells'
 import {
-  cellsWithoutField,
-  validateProject,
   type Cell,
+  cellsWithoutField,
   type FolderRow,
   type Project,
+  validateProject,
 } from '../shared/model'
+
 import { modelProject } from './support/model-fixtures'
 
 // Display conditions with several parts, relative dates, and layout text chosen by rules (R-239).
@@ -44,8 +46,8 @@ const now = Date.parse('2026-11-10T12:00:00Z')
 test('within and older compare a date with today, in days', () => {
   const recent = cell({ condition: { attributeId: 'released', operator: 'within', value: 90 } })
   const old = cell({ condition: { attributeId: 'released', operator: 'older', value: 90 } })
-  const fresh = row({ released: '2026-10-01' }),
-    stale = row({ released: '2015-05-05' })
+  const fresh = row({ released: '2026-10-01' })
+  const stale = row({ released: '2015-05-05' })
   assert.equal(cellVisible(recent, fresh, undefined, now), true)
   assert.equal(cellVisible(recent, stale, undefined, now), false)
   assert.equal(cellVisible(old, stale, undefined, now), true)

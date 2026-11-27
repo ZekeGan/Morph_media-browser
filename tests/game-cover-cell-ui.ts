@@ -1,18 +1,20 @@
-import { _electron as electron } from 'playwright-core'
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
+import { _electron as electron } from 'playwright-core'
+
+import { type Cell, DATA_DIR } from '../shared/model'
+
 import { folderFile, readFolder } from '../electron/files'
-import { DATA_DIR, type Cell } from '../shared/model'
-import { tinyPng } from './support/archive-fixture'
+import { Library } from '../electron/library'
 import { closeApp, openLayoutEditor } from './support/app'
+import { tinyPng } from './support/archive-fixture'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'game-cover-cell-ui-')),
-  media = path.join(root, 'Games'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'game-cover-cell-ui-'))
+const media = path.join(root, 'Games')
+const local = path.join(root, 'local')
 await fs.mkdir(media)
 const lib = new Library(local, undefined, false)
 await lib.init()
@@ -33,8 +35,8 @@ const layout = (w: number, h: number): Cell[] => [
   },
   { cellId: 'name', kind: 'name', grid: { x: 0, y: h, w: 12, h: 1 }, style },
 ]
-const record = await readFolder(media),
-  assetId = 'cover-asset-1'
+const record = await readFolder(media)
+const assetId = 'cover-asset-1'
 await fs.mkdir(path.join(media, DATA_DIR, 'assets'), { recursive: true })
 await fs.writeFile(path.join(media, DATA_DIR, 'assets', assetId + '.png'), tinyPng)
 record.assets.push({
@@ -58,22 +60,22 @@ const fits = async (selector: string, host: string, label: string) => {
   const result = await page.evaluate(
     ({ selector, host }) => {
       const cell = document.querySelector<HTMLElement>(
-          host + ' .cell-image, ' + host + ' .cell-image-placeholder'
-        )!,
-        parent = cell.parentElement!,
-        box = cell.getBoundingClientRect(),
-        outer = parent.getBoundingClientRect(),
-        css = getComputedStyle(parent),
-        padX =
-          parseFloat(css.paddingLeft) +
-          parseFloat(css.paddingRight) +
-          parseFloat(css.borderLeftWidth) +
-          parseFloat(css.borderRightWidth),
-        padY =
-          parseFloat(css.paddingTop) +
-          parseFloat(css.paddingBottom) +
-          parseFloat(css.borderTopWidth) +
-          parseFloat(css.borderBottomWidth)
+        host + ' .cell-image, ' + host + ' .cell-image-placeholder'
+      )!
+      const parent = cell.parentElement!
+      const box = cell.getBoundingClientRect()
+      const outer = parent.getBoundingClientRect()
+      const css = getComputedStyle(parent)
+      const padX =
+        parseFloat(css.paddingLeft) +
+        parseFloat(css.paddingRight) +
+        parseFloat(css.borderLeftWidth) +
+        parseFloat(css.borderRightWidth)
+      const padY =
+        parseFloat(css.paddingTop) +
+        parseFloat(css.paddingBottom) +
+        parseFloat(css.borderTopWidth) +
+        parseFloat(css.borderBottomWidth)
       return {
         width: box.width,
         height: box.height,

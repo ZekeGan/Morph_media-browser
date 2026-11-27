@@ -1,18 +1,21 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
-import { WorkspaceStore } from '../electron/workspace'
-import { ensureFolder, exists, folderFile, projectFile } from '../electron/files'
-import { DATA_DIR, validateProject } from '../shared/model'
+import { test } from 'node:test'
+
 import { browserRows, folderBreadcrumbs, maxBrowseDepth } from '../shared/browse'
 import { editorFields, saveCardPreset } from '../shared/layouts'
+import { DATA_DIR, validateProject } from '../shared/model'
+
+import { ensureFolder, exists, folderFile, projectFile } from '../electron/files'
+import { Library } from '../electron/library'
+import { WorkspaceStore } from '../electron/workspace'
+
 async function fixture(t: { after: (fn: () => Promise<void>) => void }) {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'revision-')),
-    media = path.join(root, 'media')
+  const root = await fs.mkdtemp(path.join(base, 'revision-'))
+  const media = path.join(root, 'media')
   await fs.mkdir(media)
   t.after(async () => {
     const target = await fs.realpath(root)
@@ -23,16 +26,17 @@ async function fixture(t: { after: (fn: () => Promise<void>) => void }) {
   await lib.init()
   return { root, media, lib }
 }
+
 test('all-depth inventory and independent CARD/TREE/TABLE display; presets keep density', async (t) => {
   const { media, lib } = await fixture(t)
   await fs.mkdir(path.join(media, 'A', 'B', 'C'), { recursive: true })
   const s = await lib.create(media, {
-      name: 'All',
-      depth: { mode: 'through', level: 1 },
-      scanAll: true,
-    }),
-    p = s.projects[0].project!,
-    rows = s.structure!
+    name: 'All',
+    depth: { mode: 'through', level: 1 },
+    scanAll: true,
+  })
+  const p = s.projects[0].project!
+  const rows = s.structure!
   assert.equal(rows.length, 4)
   assert.deepEqual(p.cardView, { mode: 'single', level: 1 })
   assert.equal(p.list.itemsPerRow, 3)
@@ -88,29 +92,29 @@ test('all-depth inventory and independent CARD/TREE/TABLE display; presets keep 
 })
 
 test('breadcrumbs stay inside the project and depth uses indexed folders, not protected children', async (t) => {
-  const { media, lib } = await fixture(t),
-    s = await lib.create(media, {
-      name: 'Navigation',
-      depth: { mode: 'through', level: 1 },
-      scanAll: true,
-    }),
-    root = s.structure![0]
-  const a = { ...root, rowId: 'a', name: 'A', path: path.join(media, 'A'), depth: 2 },
-    b = { ...root, rowId: 'b', name: 'B', path: path.join(media, 'A', 'B'), depth: 3 },
-    other = {
-      ...root,
-      rowId: 'other',
-      name: 'A-other',
-      path: path.join(media, 'A-other'),
-      depth: 2,
-    },
-    protectedChild = {
-      ...b,
-      rowId: 'protected',
-      path: path.join(b.path, 'Game_Data'),
-      depth: 4,
-      readonly: true,
-    }
+  const { media, lib } = await fixture(t)
+  const s = await lib.create(media, {
+    name: 'Navigation',
+    depth: { mode: 'through', level: 1 },
+    scanAll: true,
+  })
+  const root = s.structure![0]
+  const a = { ...root, rowId: 'a', name: 'A', path: path.join(media, 'A'), depth: 2 }
+  const b = { ...root, rowId: 'b', name: 'B', path: path.join(media, 'A', 'B'), depth: 3 }
+  const other = {
+    ...root,
+    rowId: 'other',
+    name: 'A-other',
+    path: path.join(media, 'A-other'),
+    depth: 2,
+  }
+  const protectedChild = {
+    ...b,
+    rowId: 'protected',
+    path: path.join(b.path, 'Game_Data'),
+    depth: 4,
+    readonly: true,
+  }
   const rows = [root, other, b, a, protectedChild]
   assert.deepEqual(
     folderBreadcrumbs(rows, media, b.path.replaceAll('\\', '/').toUpperCase()).map((r) => r.rowId),
@@ -125,13 +129,13 @@ test('breadcrumbs stay inside the project and depth uses indexed folders, not pr
 })
 
 test('editor field sources distinguish shared and current-project private data without importing foreign overrides', async (t) => {
-  const { media, lib } = await fixture(t),
-    s = await lib.create(media, {
-      name: 'Fields',
-      depth: { mode: 'through', level: 1 },
-    }),
-    root = s.structure![0],
-    id = root.projectId
+  const { media, lib } = await fixture(t)
+  const s = await lib.create(media, {
+    name: 'Fields',
+    depth: { mode: 'through', level: 1 },
+  })
+  const root = s.structure![0]
+  const id = root.projectId
   const attribute = (attributeId: string, type = 'string') => ({
     attributeId,
     key: attributeId,
@@ -192,15 +196,15 @@ test('editor field sources distinguish shared and current-project private data w
   )
 })
 test('navigation reads existing records beyond legacy depth without initializing missing or damaged records', async (t) => {
-  const { media, lib } = await fixture(t),
-    a = path.join(media, 'A'),
-    b = path.join(a, 'B')
+  const { media, lib } = await fixture(t)
+  const a = path.join(media, 'A')
+  const b = path.join(a, 'B')
   await fs.mkdir(b, { recursive: true })
   let s = await lib.create(media, {
-      name: 'Legacy',
-      depth: { mode: 'through', level: 1 },
-    }),
-    p = s.projects[0].project!
+    name: 'Legacy',
+    depth: { mode: 'through', level: 1 },
+  })
+  let p = s.projects[0].project!
   assert.equal(await exists(path.join(a, DATA_DIR)), false)
   await lib.saveProject({ ...p, cardView: { mode: 'multi', level: 'all' } })
   assert.equal(await exists(path.join(a, DATA_DIR)), false)
@@ -217,9 +221,9 @@ test('navigation reads existing records beyond legacy depth without initializing
   assert.equal(await fs.readFile(folderFile(a), 'utf8'), '{ broken')
 })
 test('game root opens but protected children never gain records through navigation', async (t) => {
-  const { media, lib } = await fixture(t),
-    game = path.join(media, 'Game'),
-    internal = path.join(game, 'Game_Data')
+  const { media, lib } = await fixture(t)
+  const game = path.join(media, 'Game')
+  const internal = path.join(game, 'Game_Data')
   await fs.mkdir(internal, { recursive: true })
   await fs.writeFile(path.join(game, 'Game.exe'), 'ORIGINAL')
   await fs.writeFile(path.join(game, 'UnityPlayer.dll'), 'ORIGINAL')
@@ -248,8 +252,8 @@ test('game root opens but protected children never gain records through navigati
   assert.equal(await fs.readFile(path.join(game, 'Game.exe'), 'utf8'), 'ORIGINAL')
 })
 test('fractional Windows resize values normalize; invalid updates preserve settings and reload', async (t) => {
-  const { root } = await fixture(t),
-    store = new WorkspaceStore(path.join(root, 'workspace'))
+  const { root } = await fixture(t)
+  const store = new WorkspaceStore(path.join(root, 'workspace'))
   await store.init()
   await store.read(['p'])
   const value = {
@@ -284,8 +288,8 @@ test(
       depth: { mode: 'through', level: 1 },
       scanAll: true,
     })
-    const source = path.resolve(media, DATA_DIR),
-      target = path.resolve(media, DATA_DIR.toUpperCase())
+    const source = path.resolve(media, DATA_DIR)
+    const target = path.resolve(media, DATA_DIR.toUpperCase())
     assert.ok(source.startsWith(media + path.sep) && target.startsWith(media + path.sep))
     await fs.rename(source, target)
     s = await lib.scan()
@@ -297,11 +301,11 @@ test(
 )
 
 test('new projects do not invent TITLE; explicitly configured fields survive reconnect', async (t) => {
-  const { root, media, lib } = await fixture(t),
-    state = await lib.create(media, {
-      name: 'Empty fields',
-      depth: { mode: 'through', level: 1 },
-    })
+  const { root, media, lib } = await fixture(t)
+  const state = await lib.create(media, {
+    name: 'Empty fields',
+    depth: { mode: 'through', level: 1 },
+  })
   const project = state.projects[0].project!
   assert.deepEqual(project.fieldBindings, [])
   assert.deepEqual(

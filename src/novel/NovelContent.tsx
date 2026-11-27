@@ -1,4 +1,5 @@
 import { createElement, Fragment, memo, type ReactNode } from 'react'
+
 import { packagePath, rubyPieces, type TextPiece } from '../../shared/novel'
 
 // R-282: one chapter as React elements. TXT lines become paragraphs with web-novel ruby; EPUB XHTML is rebuilt from a
@@ -17,6 +18,7 @@ function upright(text: string, vertical: boolean, key: string): ReactNode {
     )
   )
 }
+
 const pieces = (list: TextPiece[], vertical: boolean, key: string) =>
   list.map((piece, index) =>
     typeof piece === 'string' ? (
@@ -134,11 +136,12 @@ function build(
   context: { path: string; images: Record<string, string>; vertical: boolean },
   key: string
 ): ReactNode {
-  if (node.nodeType === Node.TEXT_NODE)
+  if (node.nodeType === Node.TEXT_NODE) {
     return upright(node.textContent ?? '', context.vertical, key)
+  }
   if (node.nodeType !== Node.ELEMENT_NODE) return null
-  const element = node as Element,
-    tag = element.localName.toLowerCase()
+  const element = node as Element
+  const tag = element.localName.toLowerCase()
   if (dropped.has(tag)) return null
   // Pictures: <img src> and SVG <image href> inside the book, served by the read-only archive stream.
   if (tag === 'img' || tag === 'image') {
@@ -146,8 +149,8 @@ function build(
       element.getAttribute('src') ??
       element.getAttribute('href') ??
       element.getAttributeNS('http://www.w3.org/1999/xlink', 'href')
-    const target = href ? packagePath(context.path, href) : undefined,
-      url = target ? context.images[target] : undefined
+    const target = href ? packagePath(context.path, href) : undefined
+    const url = target ? context.images[target] : undefined
     return url ? (
       <img key={key} className="novel-image" src={url} alt={element.getAttribute('alt') ?? ''} />
     ) : null
@@ -155,8 +158,9 @@ function build(
   const children = [...element.childNodes].map((child, index) =>
     build(child, context, key + '.' + index)
   )
-  if (tag === 'svg' || tag === 'a' || !allowed.has(tag))
+  if (tag === 'svg' || tag === 'a' || !allowed.has(tag)) {
     return <Fragment key={key}>{children}</Fragment>
+  }
   return createElement(tag, { key }, ...(tag === 'br' || tag === 'hr' ? [] : children))
 }
 

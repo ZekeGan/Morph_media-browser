@@ -1,14 +1,22 @@
-import { createPortal } from 'react-dom'
-import { useEffect, useState, useRef, lazy, Suspense } from 'react'
 import { Button, FocusTrap, Group } from '@mantine/core'
-import type { ExplorerRequest, ExplorerResponse, MediaEntry } from '../../shared/explorer'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+
+import type {
+  ExplorerRequest,
+  ExplorerResponse,
+  MediaEntry,
+  ReadingPrefs,
+} from '../../shared/explorer'
 import type { FolderRow } from '../../shared/model'
-import type { ReadingPrefs } from '../../shared/explorer'
+
 import { t as tr, useLocale } from '../i18n'
+
 const Reader = lazy(() => import('../reader/Reader').then((module) => ({ default: module.Reader })))
 const NovelReader = lazy(() =>
   import('../novel/NovelReader').then((module) => ({ default: module.NovelReader }))
 )
+
 export function DocumentViewer({
   rowId,
   file,
@@ -30,14 +38,14 @@ export function DocumentViewer({
   useLocale()
   // The pages belong to the archive they were read from: when the file changes, the previous book's pages are gone in
   // the same render (R-436), so the reader never mounts with another book's pages under the new key.
-  const [loaded, setLoaded] = useState<{ id: string; entries: MediaEntry[] }>(),
-    images = loaded?.id === file.id ? loaded.entries : undefined,
-    [error, setError] = useState(''),
-    // R-430: the settings and immersive reading of the volume just finished, which the next volume starts with (the
-    // folder's saved settings may not have come back from the save yet).
-    [carried, setCarried] = useState<{ settings: ReadingPrefs; immersive: boolean }>()
-  const returnFocus = useRef(document.activeElement as HTMLElement),
-    onClose = useRef(close)
+  const [loaded, setLoaded] = useState<{ id: string; entries: MediaEntry[] }>()
+  const images = loaded?.id === file.id ? loaded.entries : undefined
+  const [error, setError] = useState('')
+  // R-430: the settings and immersive reading of the volume just finished, which the next volume starts with (the
+  // folder's saved settings may not have come back from the save yet).
+  const [carried, setCarried] = useState<{ settings: ReadingPrefs; immersive: boolean }>()
+  const returnFocus = useRef(document.activeElement as HTMLElement)
+  const onClose = useRef(close)
   onClose.current = close
   useEffect(() => () => returnFocus.current?.focus({ preventScroll: true }), [])
   useEffect(() => {
@@ -69,7 +77,7 @@ export function DocumentViewer({
       alive = false
     }
   }, [rowId, file.id, file.kind])
-  if (file.kind === 'text' && row)
+  if (file.kind === 'text' && row) {
     return (
       <Suspense fallback={<p>{tr('載入內容…')}</p>}>
         <NovelReader
@@ -84,26 +92,36 @@ export function DocumentViewer({
         />
       </Suspense>
     )
+  }
   // R-407: a comic archive of a book folder reads with the folder's shared reading settings and remembers its own page.
-  const comic = file.kind === 'archive' && /\.(cbz|cbr|cb7)$/i.test(file.name) && !!row && !!run,
-    reading = comic ? (carried?.settings ?? row?.record?.details?.reading) : undefined,
-    volume = comic ? row?.record?.details?.volumes?.[file.name] : undefined
+  const comic = file.kind === 'archive' && /\.(cbz|cbr|cb7)$/i.test(file.name) && !!row && !!run
+  const reading = comic ? (carried?.settings ?? row?.record?.details?.reading) : undefined
+  const volume = comic ? row?.record?.details?.volumes?.[file.name] : undefined
   const saveReading = (prefs: ReadingPrefs) => {
-    if (!comic || !row?.record || !run || !images || row.readonly || row.stopped || row.error)
+    if (!comic || !row?.record || !run || !images || row.readonly || row.stopped || row.error) {
       return
-    const { page, ...settings } = prefs,
-      keys = ['spread', 'rtl', 'firstSingle', 'webtoon', 'webtoonWidth', 'webtoonAsked'] as const,
-      sameSettings = keys.every(
-        (key) =>
-          // A direction nobody chose reads right to left, as the reader assumes.
-          (key === 'rtl'
-            ? (settings.rtl ?? true) === (reading?.rtl ?? true)
-            : !!settings[key] === !!reading?.[key]) &&
-          (key !== 'webtoonWidth' || settings[key] === reading?.[key])
-      )
+    }
+    const { page, ...settings } = prefs
+    const keys = [
+      'spread',
+      'rtl',
+      'firstSingle',
+      'webtoon',
+      'webtoonWidth',
+      'webtoonAsked',
+    ] as const
+    const sameSettings = keys.every(
+      (key) =>
+        // A direction nobody chose reads right to left, as the reader assumes.
+        (key === 'rtl'
+          ? (settings.rtl ?? true) === (reading?.rtl ?? true)
+          : !!settings[key] === !!reading?.[key]) &&
+        (key !== 'webtoonWidth' || settings[key] === reading?.[key])
+    )
     // Just looking (still on the first page, nothing changed) writes nothing.
-    if (sameSettings && (volume ? volume.page === page && volume.total === images.length : !page))
+    if (sameSettings && (volume ? volume.page === page && volume.total === images.length : !page)) {
       return
+    }
     void run({
       action: 'volumeProgress',
       rowId: row.rowId,
@@ -113,7 +131,7 @@ export function DocumentViewer({
       ...(sameSettings ? {} : { prefs: settings }),
     })
   }
-  if (images)
+  if (images) {
     return (
       <Suspense fallback={<p>{tr('載入內容…')}</p>}>
         <Reader
@@ -139,6 +157,7 @@ export function DocumentViewer({
         />
       </Suspense>
     )
+  }
   const view = (
     <FocusTrap active={!embedded}>
       <div

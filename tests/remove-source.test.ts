@@ -1,17 +1,18 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
+import { test } from 'node:test'
+
 import { Explorer } from '../electron/explorer'
 import { readFolder, saveFolder } from '../electron/files'
+import { Library } from '../electron/library'
 
 const base = path.resolve('.test-output')
 
 test("R-339: removing a website's data keeps hand-changed values and other sources", async (t) => {
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'remove-source-')),
-    media = path.join(root, 'Work')
+  const root = await fs.mkdtemp(path.join(base, 'remove-source-'))
+  const media = path.join(root, 'Work')
   await fs.mkdir(media, { recursive: true })
   await fs.writeFile(path.join(media, 'a.png'), 'x')
   const library = new Library(path.join(root, 'local'), undefined, false)

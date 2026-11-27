@@ -1,5 +1,6 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import { parseLaunchArgs } from '../shared/launchArgs'
 
 test('launch arguments accept pasted Windows paths and still reject real mistakes', () => {

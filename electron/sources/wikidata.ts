@@ -1,6 +1,6 @@
 import { SourceError } from '../metadata-common'
-import { clean, type Adapter, type Site } from './site'
 import { pickFromMap } from './language'
+import { type Adapter, clean, type Site } from './site'
 
 // R-418: a Wikidata item (www.wikidata.org/wiki/Q…) read from its entity data. It gives the label and description in
 // the preferred languages, the picture (P18) through Wikimedia Commons, and the item's IDs on other sites as plain
@@ -17,7 +17,9 @@ const ids: { key: string; property: string; pattern: RegExp }[] = [
   { key: 'MAL_ID', property: 'P4086', pattern: /^[1-9]\d{0,11}$/ },
   { key: 'MAL_MANGA_ID', property: 'P4087', pattern: /^[1-9]\d{0,11}$/ },
 ]
+
 type Claim = { mainsnak?: { datavalue?: { value?: unknown } } }
+
 const first = (claims: Record<string, Claim[]> | undefined, property: string) =>
   claims?.[property]?.find((claim) => claim?.mainsnak?.datavalue?.value !== undefined)?.mainsnak
     ?.datavalue?.value
@@ -55,9 +57,9 @@ export const wikidata: Adapter = async (site) => {
   const data = (await site.json('https://www.wikidata.org/wiki/Special:EntityData/' + id + '.json'))
     .entities?.[id]
   if (!data || data.id !== id) throw new SourceError('notFound')
-  const labels = mapOf(data.labels),
-    descriptions = mapOf(data.descriptions),
-    title = pickFromMap(labels, site.languages) ?? labels.en ?? Object.values(labels)[0] ?? id
+  const labels = mapOf(data.labels)
+  const descriptions = mapOf(data.descriptions)
+  const title = pickFromMap(labels, site.languages) ?? labels.en ?? Object.values(labels)[0] ?? id
   site.text('WIKIDATA_ID', id)
   site.text('DESCRIPTION', pickFromMap(descriptions, site.languages) ?? descriptions.en)
   for (const { key, property, pattern } of ids) {
@@ -65,12 +67,18 @@ export const wikidata: Adapter = async (site) => {
     if (typeof value === 'string' && pattern.test(value)) site.text(key, value)
   }
   const official = first(data.claims, 'P856')
-  if (typeof official === 'string')
+  if (typeof official === 'string') {
     try {
       const url = new URL(official)
-      if ((url.protocol === 'https:' || url.protocol === 'http:') && !url.username && !url.password)
+      if (
+        (url.protocol === 'https:' || url.protocol === 'http:') &&
+        !url.username &&
+        !url.password
+      ) {
         site.text('OFFICIAL_URL', url.href.slice(0, 500))
+      }
     } catch {}
+  }
   return {
     title: clean(title),
     canonical: 'https://www.wikidata.org/wiki/' + id,

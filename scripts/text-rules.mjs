@@ -23,6 +23,7 @@ export const banned = [
   { term: '資產', use: '圖片' },
   { term: '右側', use: '詳情（說實際位置時照寫）', except: /右側 ×/ },
 ]
+
 // Help and tooltips stay within about two lines.
 export const LONG = 40
 

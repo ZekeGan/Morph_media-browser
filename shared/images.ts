@@ -8,6 +8,7 @@ export const imageTypes: Record<string, string> = {
   avif: 'image/avif',
   ico: 'image/x-icon',
 }
+
 export function identifyImage(bytes: Uint8Array): { ext: string; mime: string } | undefined {
   const text = (start: number, end: number) => String.fromCharCode(...bytes.subarray(start, end))
   const ext =

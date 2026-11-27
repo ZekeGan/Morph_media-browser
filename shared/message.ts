@@ -4,14 +4,17 @@
 // Each message is marked from start to end, so messages joined with other text (a list of failures after a
 // summary) still come apart: START sentence SEPARATOR ["values"] END. JSON escapes control characters, so the
 // markers never appear inside the values.
-const START = '\u001e',
-  SEPARATOR = '\u001f',
-  END = '\u001d'
+const START = '\u001e'
+const SEPARATOR = '\u001f'
+const END = '\u001d'
 const segment = /\u001e([^\u001d\u001e\u001f]*)\u001f([^\u001d\u001e]*)\u001d/g
+
 export function fmt(key: string, ...values: unknown[]) {
   return START + key + SEPARATOR + JSON.stringify(values.map((value) => String(value))) + END
 }
+
 export const hasMessage = (text: string) => text.includes(START)
+
 // Replaces every marked message with what `render` makes of its sentence and values; other text stays as it is.
 export function renderMessages(text: string, render: (key: string, values: string[]) => string) {
   return text.replace(segment, (whole, key: string, json: string) => {
@@ -22,6 +25,7 @@ export function renderMessages(text: string, render: (key: string, values: strin
     return whole
   })
 }
+
 // The message in Traditional Chinese with its values filled in: for logs, tests and code that matches on wording.
 export function plainMessage(text: string): string {
   return renderMessages(text, (key, values) =>

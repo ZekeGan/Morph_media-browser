@@ -1,29 +1,33 @@
-import { fmt } from '../shared/message'
+import { createHash, randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { randomUUID, createHash } from 'node:crypto'
+
+import { mapCellLists } from '../shared/cellLists'
+import { groupsWithoutField } from '../shared/fieldGroups'
+import { fmt } from '../shared/message'
 import {
-  DATA_DIR,
   cellsWithoutField,
-  validateFolder,
-  validateProject,
+  DATA_DIR,
   type FolderRecord,
   type Project,
+  validateFolder,
+  validateProject,
 } from '../shared/model'
-import { fingerprint, exists, keyPath, within, safePath, readJson, message } from './files'
 import { isNewerFormat } from '../shared/upgrade'
-import { groupsWithoutField } from '../shared/fieldGroups'
-import { mapCellLists } from '../shared/cellLists'
+
+import { exists, fingerprint, keyPath, message, readJson, safePath, within } from './files'
 
 export interface ManagedFile {
   root: string
   path: string
   hash: string
 }
+
 export interface Change extends ManagedFile {
   value?: unknown
   stopScan?: boolean
 }
+
 export class MaintenanceFailure extends Error {
   constructor(
     message: string,
@@ -32,17 +36,18 @@ export class MaintenanceFailure extends Error {
     super(message)
   }
 }
+
 export async function managedTree(root: string) {
-  const files: ManagedFile[] = [],
-    skipped: string[] = [],
-    directories: string[] = []
+  const files: ManagedFile[] = []
+  const skipped: string[] = []
+  const directories: string[] = []
   const add = async (file: string) => {
     await safePath(root, file)
     if (await exists(file)) files.push({ root, path: file, hash: await fingerprint(file) })
   }
   const inspect = async (dir: string, meta: string) => {
-    const records: FolderRecord[] = [],
-      start = files.length
+    const records: FolderRecord[] = []
+    const start = files.length
     // Data a newer version wrote is never cleaned: the whole folder's records are kept as they are.
     const keepNewer = (error: unknown) => {
       if (!isNewerFormat(error)) return false
@@ -68,21 +73,23 @@ export async function managedTree(root: string) {
       skipped.push(fmt('{0}: 無有效身分記錄，保留', meta))
       return
     }
-    if (new Set(records.map((record) => record.folderId)).size !== 1)
+    if (new Set(records.map((record) => record.folderId)).size !== 1) {
       throw new Error(fmt('{0}: 主記錄與備份身分不符', meta))
+    }
     const projects = path.join(meta, 'projects')
     if (await exists(projects)) {
       await safePath(root, projects)
       for (const name of await fs.readdir(projects)) {
-        const match = /^([\w-]+)\.json(?:\.bak)?(?:\.removed-[\w-]+)?$/.exec(name),
-          file = path.join(projects, name)
+        const match = /^([\w-]+)\.json(?:\.bak)?(?:\.removed-[\w-]+)?$/.exec(name)
+        const file = path.join(projects, name)
         if (!match) continue
         try {
           await safePath(root, file)
           const project = await readJson(file)
           validateProject(project)
-          if (project.projectId !== match[1] || project.rootFolderId !== records[0].folderId)
+          if (project.projectId !== match[1] || project.rootFolderId !== records[0].folderId) {
             throw new Error('專案身分不符')
+          }
           await add(file)
         } catch (error) {
           skipped.push(`${file}: ${message(error)}`)
@@ -93,8 +100,9 @@ export async function managedTree(root: string) {
     for (const asset of records.flatMap((record) => [
       ...record.assets,
       ...(record.details?.subtitles ?? []),
-    ]))
+    ])) {
       await add(path.join(meta, asset.relativePath))
+    }
     const known = new Set(files.map((file) => keyPath(file.path)))
     const unknown = async (folder: string) => {
       await safePath(root, folder)
@@ -112,11 +120,11 @@ export async function managedTree(root: string) {
   while (pending.length) {
     const dir = pending.pop()!
     await safePath(root, dir)
-    const entries = await fs.readdir(dir, { withFileTypes: true }),
-      meta = entries.find(
-        (entry) =>
-          entry.isDirectory() && !entry.isSymbolicLink() && entry.name.toLowerCase() === DATA_DIR
-      )
+    const entries = await fs.readdir(dir, { withFileTypes: true })
+    const meta = entries.find(
+      (entry) =>
+        entry.isDirectory() && !entry.isSymbolicLink() && entry.name.toLowerCase() === DATA_DIR
+    )
     // Below a folder a newer version manages, nothing is offered either (the scan does not go there).
     if (meta && (await inspect(dir, path.join(dir, meta.name)))) continue
     for (const entry of entries) {
@@ -146,21 +154,23 @@ export async function applyMaintenance(
   forbiddenRoots: string[],
   beforeApply?: () => Promise<void>
 ) {
-  for (const root of forbiddenRoots)
+  for (const root of forbiddenRoots) {
     if (within(root, recovery)) throw new Error('復原副本必須位於所有修改範圍外')
+  }
   await safePath(userData, recovery)
   const check = async (change: ManagedFile) => {
     await safePath(change.root, change.path)
-    if ((await fingerprint(change.path)) !== change.hash)
+    if ((await fingerprint(change.path)) !== change.hash) {
       throw new Error('預覽後資料已變更，請重新預覽')
+    }
   }
   for (const change of changes) await check(change)
   await fs.mkdir(recovery, { recursive: false })
-  const originals: Buffer[] = [],
-    applied: number[] = []
+  const originals: Buffer[] = []
+  const applied: number[] = []
   const write = async (file: string, bytes: Buffer) => {
-    const temp = file + '.' + randomUUID() + '.tmp',
-      handle = await fs.open(temp, 'wx')
+    const temp = file + '.' + randomUUID() + '.tmp'
+    const handle = await fs.open(temp, 'wx')
     try {
       await handle.writeFile(bytes)
       await handle.sync()
@@ -176,8 +186,8 @@ export async function applyMaintenance(
     await check(change)
     const bytes = await fs.readFile(change.path)
     originals.push(bytes)
-    const backup = path.join(recovery, String(index)),
-      handle = await fs.open(backup, 'wx')
+    const backup = path.join(recovery, String(index))
+    const handle = await fs.open(backup, 'wx')
     try {
       await handle.writeFile(bytes)
       await handle.sync()
@@ -218,13 +228,13 @@ export async function applyMaintenance(
       applied.push(index)
     }
     for (const index of applied) {
-      const change = changes[index],
-        actual = (await exists(change.path)) ? await fingerprint(change.path) : undefined
+      const change = changes[index]
+      const actual = (await exists(change.path)) ? await fingerprint(change.path) : undefined
       if (actual !== expected.get(index)) throw new Error('寫入期間檔案已變更，請檢查復原副本')
     }
   } catch (error) {
     const failed: string[] = []
-    for (const index of applied.reverse())
+    for (const index of applied.reverse()) {
       try {
         const change = changes[index]
         // Missing metadata must stay excluded if any data restoration failed.
@@ -236,6 +246,7 @@ export async function applyMaintenance(
       } catch (restoreError) {
         failed.push(message(restoreError))
       }
+    }
     throw new MaintenanceFailure(
       fmt(
         '{0}；{1}；復原位置：{2}',

@@ -1,16 +1,19 @@
-import { fmt } from '../shared/message'
+import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { upgradeStored } from '../shared/upgrade'
-import { randomUUID } from 'node:crypto'
+
+import { fmt } from '../shared/message'
 import {
+  type CleanupResult,
   DATA_DIR,
+  type FolderRecord,
+  type FullRemovalPreview,
+  type ProjectRemovalPreview,
   validateFolder,
   validateProject,
-  type FolderRecord,
-  type CleanupResult,
-  type ProjectRemovalPreview,
 } from '../shared/model'
+import { upgradeStored } from '../shared/upgrade'
+
 import {
   atomicJson,
   exists,
@@ -29,15 +32,14 @@ import {
   within,
 } from './files'
 import { detectGame, insideAppBundle } from './game-detection'
-import type { FullRemovalPreview } from '../shared/model'
-import {
-  managedTree,
-  applyMaintenance,
-  MaintenanceFailure,
-  type Change,
-  type ManagedFile,
-} from './maintenance'
 import type { Library } from './library'
+import {
+  applyMaintenance,
+  type Change,
+  MaintenanceFailure,
+  type ManagedFile,
+  managedTree,
+} from './maintenance'
 
 export async function previewFullRemoval(
   ex: Library,
@@ -45,17 +47,18 @@ export async function previewFullRemoval(
 ): Promise<FullRemovalPreview> {
   const linked = ex.linked(projectId)
   await ex.currentProject(linked)
-  if (await ex.protectedAncestor(linked.root))
+  if (await ex.protectedAncestor(linked.root)) {
     throw new Error('這個專案在受保護的遊戲裡面，只能從清單移除')
-  const token = randomUUID(),
-    tree = await managedTree(linked.root),
-    overlaps = ex.state.projects.filter(
-      (ref) =>
-        ref.projectId !== projectId &&
-        (within(linked.root, ref.root) || within(ref.root, linked.root))
-    )
+  }
+  const token = randomUUID()
+  const tree = await managedTree(linked.root)
+  const overlaps = ex.state.projects.filter(
+    (ref) =>
+      ref.projectId !== projectId &&
+      (within(linked.root, ref.root) || within(ref.root, linked.root))
+  )
   const guards: ManagedFile[] = []
-  for (const ref of ex.refs)
+  for (const ref of ex.refs) {
     if (within(ref.root, linked.root) && !within(linked.root, ref.root)) {
       const file = projectFile(ref.root, ref.projectId)
       await safePath(ref.root, file)
@@ -65,8 +68,9 @@ export async function previewFullRemoval(
         await safePath(ref.root, file + '.bak')
         const backup = await readJson(file + '.bak')
         validateProject(backup)
-        if (backup.projectId !== value.projectId || backup.rootFolderId !== value.rootFolderId)
+        if (backup.projectId !== value.projectId || backup.rootFolderId !== value.rootFolderId) {
           throw new Error('祖先專案備份身分不符')
+        }
         guards.push({
           root: ref.root,
           path: file + '.bak',
@@ -74,17 +78,19 @@ export async function previewFullRemoval(
         })
       }
     }
+  }
   guards.push({
     root: ex.userData,
     path: ex.registry,
     hash: await fingerprint(ex.registry),
   })
-  if (await exists(ex.registry + '.bak'))
+  if (await exists(ex.registry + '.bak')) {
     guards.push({
       root: ex.userData,
       path: ex.registry + '.bak',
       hash: await fingerprint(ex.registry + '.bak'),
     })
+  }
   const preview: FullRemovalPreview = {
     token,
     projectId,
@@ -100,8 +106,9 @@ export async function previewFullRemoval(
     recoveryPath: path.join(ex.userData, 'maintenance-backups', token),
   }
   const absent: string[] = []
-  for (const guard of guards.filter((guard) => !guard.path.endsWith('.bak')))
+  for (const guard of guards.filter((guard) => !guard.path.endsWith('.bak'))) {
     if (!(await exists(guard.path + '.bak'))) absent.push(guard.path + '.bak')
+  }
   ex.fullPlans.clear()
   ex.fullPlans.set(token, { preview, tree, refs: JSON.stringify(ex.refs), guards, absent })
   return preview
@@ -110,22 +117,26 @@ export async function previewFullRemoval(
 export async function fullRemoveProject(ex: Library, token: string): Promise<CleanupResult> {
   const plan = ex.fullPlans.get(token)
   ex.fullPlans.delete(token)
-  if (!plan || plan.refs !== JSON.stringify(ex.refs))
+  if (!plan || plan.refs !== JSON.stringify(ex.refs)) {
     throw new Error('完全移除預覽已過期，請重新預覽')
-  if (await ex.protectedAncestor(plan.preview.root))
+  }
+  if (await ex.protectedAncestor(plan.preview.root)) {
     throw new Error('受保護的遊戲範圍變了，沒有移除')
+  }
   const tree = await managedTree(plan.preview.root)
-  if (JSON.stringify(tree) !== JSON.stringify(plan.tree))
+  if (JSON.stringify(tree) !== JSON.stringify(plan.tree)) {
     throw new Error('預覽後資料已變更，移除未執行')
-  const nextRefs = ex.refs.filter((ref) => !within(plan.preview.root, ref.root)),
-    changes: Change[] = []
+  }
+  const nextRefs = ex.refs.filter((ref) => !within(plan.preview.root, ref.root))
+  const changes: Change[] = []
   for (const guard of plan.guards) {
     await safePath(guard.root, guard.path)
-    if ((await fingerprint(guard.path)) !== guard.hash)
+    if ((await fingerprint(guard.path)) !== guard.hash) {
       throw new Error('預覽後專案已變更，移除未執行')
-    if (guard.path === ex.registry || guard.path === ex.registry + '.bak')
+    }
+    if (guard.path === ex.registry || guard.path === ex.registry + '.bak') {
       changes.push({ ...guard, value: nextRefs, stopScan: true })
-    else {
+    } else {
       const project = await readJson(guard.path)
       validateProject(project)
       changes.push({
@@ -156,14 +167,17 @@ export async function fullRemoveProject(ex: Library, token: string): Promise<Cle
       ex.userData,
       [plan.preview.root],
       async () => {
-        if (JSON.stringify(await managedTree(plan.preview.root)) !== JSON.stringify(tree))
+        if (JSON.stringify(await managedTree(plan.preview.root)) !== JSON.stringify(tree)) {
           throw new Error('備份期間資料已變更，移除未執行')
-        for (const file of plan.absent)
+        }
+        for (const file of plan.absent) {
           if (await exists(file)) throw new Error('預覽後備份已變更，移除未執行')
+        }
         for (const guard of plan.guards) {
           await safePath(guard.root, guard.path)
-          if ((await fingerprint(guard.path)) !== guard.hash)
+          if ((await fingerprint(guard.path)) !== guard.hash) {
             throw new Error('備份期間專案已變更，移除未執行')
+          }
         }
       }
     )
@@ -181,7 +195,7 @@ export async function fullRemoveProject(ex: Library, token: string): Promise<Cle
     skipped: plan.preview.skipped,
   }
   const removed = [...tree.files.map((file) => file.path)]
-  for (const dir of tree.directories)
+  for (const dir of tree.directories) {
     try {
       await safePath(plan.preview.root, dir)
       await removeEmptiedDir(dir, removed)
@@ -191,6 +205,7 @@ export async function fullRemoveProject(ex: Library, token: string): Promise<Cle
       if (code === 'ENOTEMPTY') result.skipped.push(fmt('{0}: 尚有未驗證資料，目錄保留', dir))
       else if (code !== 'ENOENT') result.failed.push(`${dir}: ${message(error)}`)
     }
+  }
   await ex.scan()
   return result
 }
@@ -206,8 +221,9 @@ export async function removableRoot(
     ex.refs.some(
       (ref) => ref.projectId !== projectId && (within(ref.root, root) || within(root, ref.root))
     )
-  )
+  ) {
     return
+  }
   const record = await readFolder(root)
   if (
     record.attributes.length ||
@@ -227,10 +243,11 @@ export async function removableRoot(
           'details',
         ].includes(key)
     )
-  )
+  ) {
     return
-  const meta = path.join(root, DATA_DIR),
-    files: { path: string; hash: string }[] = []
+  }
+  const meta = path.join(root, DATA_DIR)
+  const files: { path: string; hash: string }[] = []
   const collect = async (file: string) => {
     await safePath(root, file)
     files.push({ path: file, hash: await fingerprint(file) })
@@ -253,8 +270,9 @@ export async function removableRoot(
           child.isSymbolicLink() ||
           !match ||
           (!child.name.includes('.removed-') && match[1] !== projectId)
-        )
+        ) {
           return
+        }
         const target = path.join(file, child.name)
         await safePath(root, target)
         const value = await readJson(target)
@@ -271,28 +289,31 @@ export async function previewRemoveProject(
   ex: Library,
   projectId: string
 ): Promise<ProjectRemovalPreview> {
-  const linked = ex.linked(projectId),
-    project = await ex.currentProject(linked)
-  if (await ex.protectedAncestor(linked.root))
+  const linked = ex.linked(projectId)
+  const project = await ex.currentProject(linked)
+  if (await ex.protectedAncestor(linked.root)) {
     throw new Error('這個專案在受保護的遊戲或 App 裡面，只能從清單移除')
-  const records: { dir: string; record: FolderRecord }[] = [],
-    files: { path: string; hash: string }[] = [],
-    definitions: string[] = [],
-    skipped: string[] = [],
-    pending = [linked.root]
+  }
+  const records: { dir: string; record: FolderRecord }[] = []
+  const files: { path: string; hash: string }[] = []
+  const definitions: string[] = []
+  const skipped: string[] = []
+  const pending = [linked.root]
   for (const file of [
     projectFile(linked.root, projectId),
     projectFile(linked.root, projectId) + '.bak',
-  ])
+  ]) {
     if (await exists(file)) {
       await safePath(linked.root, file)
       const value = await readJson(file)
       validateProject(value)
-      if (value.projectId !== projectId || value.rootFolderId !== project.rootFolderId)
+      if (value.projectId !== projectId || value.rootFolderId !== project.rootFolderId) {
         throw new Error('專案設定身分不符，無法移除')
+      }
       definitions.push(file)
       files.push({ path: file, hash: await fingerprint(file) })
     }
+  }
   while (pending.length) {
     const dir = pending.pop()!
     try {
@@ -318,15 +339,21 @@ export async function previewRemoveProject(
         skipped.push(fmt('{0}: 遊戲內部記錄保留', dir))
         continue
       }
-      for (const entry of await fs.readdir(dir, { withFileTypes: true }))
-        if (entry.isDirectory() && !entry.isSymbolicLink() && entry.name.toLowerCase() !== DATA_DIR)
+      for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+        if (
+          entry.isDirectory() &&
+          !entry.isSymbolicLink() &&
+          entry.name.toLowerCase() !== DATA_DIR
+        ) {
           pending.push(path.join(dir, entry.name))
+        }
+      }
     } catch (error) {
       skipped.push(`${dir}: ${message(error)}`)
     }
   }
-  const rootFiles = await ex.removableRoot(linked.root, projectId),
-    token = randomUUID()
+  const rootFiles = await ex.removableRoot(linked.root, projectId)
+  const token = randomUUID()
   const preview: ProjectRemovalPreview = {
     token,
     projectId,
@@ -343,12 +370,14 @@ export async function previewRemoveProject(
     rootCleanup: !!rootFiles,
     ...(rootFiles ? { recoveryPath: path.join(ex.userData, 'project-removals', token) } : {}),
   }
-  if (!rootFiles)
+  if (!rootFiles) {
     skipped.push(
       fmt('{0}：專案資訊裡還有共用的資訊、其他專案或認不得的檔案，所以保留', linked.root)
     )
-  for (const file of rootFiles ?? [])
+  }
+  for (const file of rootFiles ?? []) {
     if (!files.some((item) => item.path === file.path)) files.push(file)
+  }
   ex.removalPlans.clear()
   ex.removalPlans.set(preview.token, {
     preview,
@@ -369,8 +398,9 @@ export async function removeProject(ex: Library, token: string): Promise<Cleanup
   if (await ex.protectedAncestor(plan.root)) throw new Error('受保護的遊戲範圍變了，沒有移除')
   for (const file of plan.files) {
     await safePath(plan.root, file.path)
-    if ((await fingerprint(file.path)) !== file.hash)
+    if ((await fingerprint(file.path)) !== file.hash) {
       throw new Error('預覽後資料已變更，移除未執行，請重新預覽')
+    }
   }
   if (plan.rootFiles) {
     const now = await ex.removableRoot(plan.root, plan.preview.projectId)
@@ -380,25 +410,31 @@ export async function removeProject(ex: Library, token: string): Promise<Cleanup
       now.some(
         (file) => !plan.rootFiles!.some((old) => old.path === file.path && old.hash === file.hash)
       )
-    )
+    ) {
       throw new Error('預覽後根資料夾內容或歸屬已變更，移除未執行')
+    }
   }
   const result: CleanupResult = { removed: 0, failed: [], skipped: plan.preview.skipped }
-  for (const item of plan.records)
+  for (const item of plan.records) {
     try {
-      if (await ex.protectedAncestor(item.dir))
+      if (await ex.protectedAncestor(item.dir)) {
         throw new Error('這裡變成受保護的遊戲，只在這個專案的資訊保留')
+      }
       const current = await readFolder(item.dir)
       delete current.projectOverrides[plan.preview.projectId]
       await saveFolder(item.dir, current, item.record.revision)
       result.removed++
-      if (plan.rootFiles && keyPath(item.dir) === keyPath(plan.root))
-        for (const file of plan.rootFiles)
-          if (file.path === folderFile(item.dir) || file.path === folderFile(item.dir) + '.bak')
+      if (plan.rootFiles && keyPath(item.dir) === keyPath(plan.root)) {
+        for (const file of plan.rootFiles) {
+          if (file.path === folderFile(item.dir) || file.path === folderFile(item.dir) + '.bak') {
             file.hash = await fingerprint(file.path)
+          }
+        }
+      }
     } catch (error) {
       result.failed.push(`${item.dir}: ${message(error)}`)
     }
+  }
   if (result.failed.length) {
     await ex.scan()
     return result
@@ -412,7 +448,7 @@ export async function removeProject(ex: Library, token: string): Promise<Cleanup
     throw error
   }
   // Archive instead of destroying definitions/backups. The suffix is excluded by link().
-  for (const file of plan.definitions)
+  for (const file of plan.definitions) {
     try {
       const archive = file + '.removed-' + plan.preview.token
       await safePath(plan.root, file)
@@ -420,15 +456,17 @@ export async function removeProject(ex: Library, token: string): Promise<Cleanup
       if (
         (await exists(archive)) ||
         (await fingerprint(file)) !== plan.files.find((item) => item.path === file)!.hash
-      )
+      ) {
         throw new Error('移除期間設定已變更，保留原檔')
+      }
       await fs.rename(file, archive)
       const rootFile = plan.rootFiles?.find((item) => item.path === file)
       if (rootFile) rootFile.path = archive
     } catch (error) {
       result.failed.push(`${file}: ${message(error)}`)
     }
-  if (plan.rootFiles && !result.failed.length)
+  }
+  if (plan.rootFiles && !result.failed.length) {
     try {
       const now = await ex.removableRoot(plan.root, plan.preview.projectId)
       if (
@@ -437,8 +475,9 @@ export async function removeProject(ex: Library, token: string): Promise<Cleanup
         now.some(
           (file) => !plan.rootFiles!.some((old) => old.path === file.path && old.hash === file.hash)
         )
-      )
+      ) {
         throw new Error('專案資料夾有變動，專案資訊保留')
+      }
       const recovery = plan.preview.recoveryPath!
       await safePath(ex.userData, recovery)
       await fs.mkdir(recovery, { recursive: true })
@@ -454,8 +493,9 @@ export async function removeProject(ex: Library, token: string): Promise<Cleanup
         } finally {
           await handle.close()
         }
-        if ((await fingerprint(target)) !== file.hash)
+        if ((await fingerprint(target)) !== file.hash) {
           throw new Error('復原的副本檢查沒通過，專案資訊保留')
+        }
       }
       await atomicJson(path.join(recovery, 'manifest.json'), {
         root: plan.root,
@@ -469,12 +509,14 @@ export async function removeProject(ex: Library, token: string): Promise<Cleanup
         rechecked.some(
           (file) => !now.some((old) => old.path === file.path && old.hash === file.hash)
         )
-      )
+      ) {
         throw new Error('備份時專案資料夾有變動，專案資訊保留')
+      }
       for (const file of now) {
         await safePath(plan.root, file.path)
-        if ((await fingerprint(file.path)) !== file.hash)
+        if ((await fingerprint(file.path)) !== file.hash) {
           throw new Error('備份時資料有變動，專案資訊保留')
+        }
       }
       // Keep the primary identity until every other owned file has been retired.
       for (const file of [
@@ -482,8 +524,9 @@ export async function removeProject(ex: Library, token: string): Promise<Cleanup
         ...now.filter((file) => file.path === folderFile(plan.root)),
       ]) {
         await safePath(plan.root, file.path)
-        if ((await fingerprint(file.path)) !== file.hash)
+        if ((await fingerprint(file.path)) !== file.hash) {
           throw new Error('清理期間資料已變更，停止此筆清理')
+        }
         await fs.unlink(file.path)
       }
       const retired = now.map((file) => file.path)
@@ -501,8 +544,8 @@ export async function removeProject(ex: Library, token: string): Promise<Cleanup
       // A late directory/permission failure must not strand unknown data beside a
       // missing identity. Restore only our verified primary, never overwrite a file.
       try {
-        const primary = plan.rootFiles.find((file) => file.path === folderFile(plan.root)),
-          copy = path.join(plan.preview.recoveryPath!, DATA_DIR, 'folder.json')
+        const primary = plan.rootFiles.find((file) => file.path === folderFile(plan.root))
+        const copy = path.join(plan.preview.recoveryPath!, DATA_DIR, 'folder.json')
         if (primary && !(await exists(primary.path)) && (await exists(copy))) {
           await safePath(ex.userData, copy)
           if ((await fingerprint(copy)) !== primary.hash) throw new Error('復原副本已變更')
@@ -525,6 +568,7 @@ export async function removeProject(ex: Library, token: string): Promise<Cleanup
         fmt('{0}: {1}；復原位置：{2}', plan.root, message(error), plan.preview.recoveryPath)
       )
     }
+  }
   await ex.scan()
   return result
 }

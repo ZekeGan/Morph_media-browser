@@ -1,23 +1,25 @@
 import { useEffect, useState } from 'react'
+
 import type { GameAvailability } from '../../shared/explorer'
 import type { FolderRow } from '../../shared/model'
+
 import { useRefreshNonce } from '../browse/refresh'
 
 // R-409: whether a game's extra buttons (Steam, store, save folder) can be used, asked only for cards on screen. The
 // cards that come into view together are asked in one request (at most 60 at a time); answers are kept in memory for
 // the folder's record revision and dropped when the window is refreshed (which also rescans).
-const cache = new Map<string, GameAvailability | null>(),
-  waiting = new Map<string, Set<() => void>>()
-let queue: string[] = [],
-  timer: ReturnType<typeof setTimeout> | undefined,
-  generation = 0,
-  seenNonce = 0
+const cache = new Map<string, GameAvailability | null>()
+const waiting = new Map<string, Set<() => void>>()
+let queue: string[] = []
+let timer: ReturnType<typeof setTimeout> | undefined
+let generation = 0
+let seenNonce = 0
 const keyOf = (row: FolderRow) => row.rowId + '@' + (row.record?.revision ?? 0)
 
 function flush() {
   timer = undefined
-  const keys = queue.splice(0, 60),
-    asked = generation
+  const keys = queue.splice(0, 60)
+  const asked = generation
   if (queue.length) timer = setTimeout(flush, 0)
   const ids = keys.map((key) => key.slice(0, key.lastIndexOf('@')))
   void window.explorer
@@ -33,6 +35,7 @@ function flush() {
       })
     })
 }
+
 function ask(key: string, done: () => void) {
   const callbacks = waiting.get(key)
   if (callbacks) {

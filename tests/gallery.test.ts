@@ -1,15 +1,16 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { galleryLayout, groupedGalleryLayout, galleryWindow } from '../shared/gallery'
+import { test } from 'node:test'
+
+import { galleryLayout, galleryWindow, groupedGalleryLayout } from '../shared/gallery'
 
 test('source groups keep original indices and collapse removes rendering work in every presentation', () => {
   for (const mode of ['manga', 'list', 'masonry'] as const) {
     const groups = [
-        { id: 'A', indices: [0, 2] },
-        { id: 'B', indices: [1, 3] },
-      ],
-      full = groupedGalleryLayout(groups, 430, mode, new Map([[2, 0.5]]), new Set()),
-      closed = groupedGalleryLayout(groups, 430, mode, new Map(), new Set(['A']))
+      { id: 'A', indices: [0, 2] },
+      { id: 'B', indices: [1, 3] },
+    ]
+    const full = groupedGalleryLayout(groups, 430, mode, new Map([[2, 0.5]]), new Set())
+    const closed = groupedGalleryLayout(groups, 430, mode, new Map(), new Set(['A']))
     assert.deepEqual(
       full.tiles.map((tile) => tile.index),
       [0, 2, 1, 3]
@@ -29,8 +30,8 @@ test('source groups keep original indices and collapse removes rendering work in
 })
 test('gallery window bounds mounted work and retains keyboard focus outside the viewport', () => {
   for (const mode of ['manga', 'list', 'masonry'] as const) {
-    const layout = galleryLayout(200, 430, mode, new Map()),
-      visible = galleryWindow(layout, 3000, 600)
+    const layout = galleryLayout(200, 430, mode, new Map())
+    const visible = galleryWindow(layout, 3000, 600)
     assert.ok(visible.length < 40)
     assert.ok(visible.every((tile) => tile.y + tile.height >= 2760 && tile.y <= 3840))
     assert.ok(galleryWindow(layout, 3000, 600, 240, 0).some((tile) => tile.index === 0))
@@ -38,17 +39,17 @@ test('gallery window bounds mounted work and retains keyboard focus outside the 
   }
 })
 test('late image ratios retain masonry column membership and resize without overlapping neighbors', () => {
-  const initial = galleryLayout(200, 430, 'masonry', new Map()),
-    loaded = galleryLayout(
-      200,
-      430,
-      'masonry',
-      new Map([
-        [0, 0.2],
-        [1, 3],
-        [5, 0.5],
-      ])
-    )
+  const initial = galleryLayout(200, 430, 'masonry', new Map())
+  const loaded = galleryLayout(
+    200,
+    430,
+    'masonry',
+    new Map([
+      [0, 0.2],
+      [1, 3],
+      [5, 0.5],
+    ])
+  )
   assert.ok(loaded.tiles[0].height > initial.tiles[0].height)
   for (let index = 0; index < 200; index++) {
     assert.equal(loaded.tiles[index].x, initial.tiles[index].x)

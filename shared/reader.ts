@@ -2,8 +2,10 @@ export interface ImageSize {
   width: number
   height: number
 }
+
 // R-374: a page wider than tall is a spread drawn as one picture, so it never shares the screen with another page.
 export const isWidePage = (size: ImageSize) => size.width > size.height
+
 // wide: whether a page is known to be wider than tall; pages not measured yet pair as usual.
 export function readingGroups(
   count: number,
@@ -20,14 +22,15 @@ export function readingGroups(
   }
   return groups
 }
+
 export function spreadGeometry(
   sizes: ImageSize[],
   fit: 'width' | 'height' | 'original' | 'contain',
   box: ImageSize,
   zoom: number
 ) {
-  const naturalHeight = Math.max(1, ...sizes.map((s) => s.height)),
-    ratio = sizes.reduce((sum, s) => sum + s.width / Math.max(1, s.height), 0) || 1
+  const naturalHeight = Math.max(1, ...sizes.map((s) => s.height))
+  const ratio = sizes.reduce((sum, s) => sum + s.width / Math.max(1, s.height), 0) || 1
   const height =
     (fit === 'contain'
       ? Math.min(box.height, box.width / ratio)
@@ -42,6 +45,7 @@ export function spreadGeometry(
     widths: sizes.map((s) => (height * s.width) / Math.max(1, s.height)),
   }
 }
+
 export const readerArrowStep = (key: string, rtl: boolean) =>
   key === 'ArrowLeft' ? (rtl ? 1 : -1) : key === 'ArrowRight' ? (rtl ? -1 : 1) : 0
 
@@ -70,5 +74,6 @@ export function savedPlace(
 // R-407: books of one folder in file name order, numbers counted as numbers (vol2 before vol10). The book list and
 // "the next book" use the same order.
 const volumeNames = new Intl.Collator('zh-Hant', { numeric: true })
+
 export const sortVolumes = <T extends { name: string }>(entries: readonly T[]): T[] =>
   [...entries].sort((a, b) => volumeNames.compare(a.name, b.name))

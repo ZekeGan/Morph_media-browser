@@ -1,7 +1,3 @@
-import '../media/media-workspace.css'
-import { t as tr } from '../i18n'
-import { Icon } from '../common/icons'
-import { iconLabel } from '../common/IconLabel'
 import {
   ActionIcon,
   Button,
@@ -16,10 +12,18 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
+
 import { cardDisplay } from '../../shared/browse'
-import { type FolderRow, type Project } from '../../shared/model'
 import type { BrowseMode, BrowseState } from '../../shared/explorer'
+import { type FolderRow, type Project } from '../../shared/model'
+
+import { iconLabel } from '../common/IconLabel'
+import { Icon } from '../common/icons'
+import { t as tr } from '../i18n'
 import { SortMenu } from './SortMenu'
+
+import '../media/media-workspace.css'
+
 type Props = {
   browse: BrowseState
   busy: boolean

@@ -1,24 +1,27 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
-import { Explorer, type DesktopOperations } from '../electron/explorer'
-import { readFolder, saveFolder } from '../electron/files'
-import { WorkspaceStore } from '../electron/workspace'
-import { bundledSuggestions, engineSave, engineSaveFolder, storeUrl } from '../electron/game-extras'
-import { RPYC_LIMIT } from '../electron/renpy-save'
+import { test } from 'node:test'
 import zlib from 'node:zlib'
+
 import { validateDetails } from '../shared/model'
 
+import { type DesktopOperations, Explorer } from '../electron/explorer'
+import { readFolder, saveFolder } from '../electron/files'
+import { bundledSuggestions, engineSave, engineSaveFolder, storeUrl } from '../electron/game-extras'
+import { Library } from '../electron/library'
+import { RPYC_LIMIT } from '../electron/renpy-save'
+import { WorkspaceStore } from '../electron/workspace'
+
 const base = path.resolve('.test-output')
+
 async function setup(
   t: { after: (fn: () => Promise<void>) => void },
   files: Record<string, string>
 ) {
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'game-extras-')),
-    media = path.join(root, 'Game')
+  const root = await fs.mkdtemp(path.join(base, 'game-extras-'))
+  const media = path.join(root, 'Game')
   for (const [name, body] of Object.entries(files)) {
     const file = path.join(media, name)
     await fs.mkdir(path.dirname(file), { recursive: true })
@@ -32,9 +35,9 @@ async function setup(
     external: [] as string[],
     played: [] as { folderId: string; seconds: number }[],
   }
-  let picks: (string | undefined)[] = [],
-    steam = true,
-    leproc: string | undefined
+  let picks: (string | undefined)[] = []
+  let steam = true
+  let leproc: string | undefined
   const desktop: DesktopOperations = {
     choose: async () => picks.shift(),
     open: async (file) => {
@@ -117,8 +120,8 @@ test('bundled tools and manuals are suggested, installers are not, and adding on
     /建議清單/
   )
   const project = library.snapshot().projects[0].project!
-  const manual = project.actionTemplates!.find((a) => a.label === '說明書')!,
-    config = project.actionTemplates!.find((a) => a.label === '設定程式')!
+  const manual = project.actionTemplates!.find((a) => a.label === '說明書')!
+  const config = project.actionTemplates!.find((a) => a.label === '設定程式')!
   assert.equal(manual.kind, 'file')
   assert.equal(config.kind, 'exe')
   const targets = (await readFolder(media)).details!.targets!
@@ -141,8 +144,9 @@ test('bundled tools and manuals are suggested, installers are not, and adding on
   for (const target of [
     { kind: 'file', path: 'help.chm', relative: true, args: [] },
     { kind: 'file', path: 'run.bat', relative: true, args: [] },
-  ])
+  ]) {
     assert.throws(() => validateDetails({ schemaVersion: 1, targets: { x: target } }))
+  }
   // A save folder outside the game must be a local drive path, never a network share.
   assert.throws(() =>
     validateDetails({ schemaVersion: 1, saveFolder: { path: '\\\\host\\share', relative: false } })
@@ -230,9 +234,9 @@ test('Unity and Ren’Py save folders are worked out only from plain names and o
   await fs.mkdir(base, { recursive: true })
   const root = await fs.mkdtemp(path.join(base, 'game-saves-'))
   t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }))
-  const home = path.join(root, 'home'),
-    unity = path.join(root, 'Unity'),
-    renpy = path.join(root, 'RenPy')
+  const home = path.join(root, 'home')
+  const unity = path.join(root, 'Unity')
+  const renpy = path.join(root, 'RenPy')
   await fs.mkdir(path.join(unity, 'Game_Data'), { recursive: true })
   await fs.writeFile(path.join(unity, 'Game_Data', 'app.info'), 'Studio\nTitle')
   assert.equal(await engineSaveFolder(unity, ['Unity'], home), undefined, 'not created yet')
@@ -291,8 +295,8 @@ test('Locale Emulator launches go through LEProc.exe and direct launches are tim
     }),
     /Locale Emulator/
   )
-  const leproc = path.join(root, 'LE', 'LEProc.exe'),
-    other = path.join(root, 'LE', 'Other.exe')
+  const leproc = path.join(root, 'LE', 'LEProc.exe')
+  const other = path.join(root, 'LE', 'Other.exe')
   await fs.mkdir(path.dirname(leproc), { recursive: true })
   await fs.writeFile(leproc, 'x')
   await fs.writeFile(other, 'x')
@@ -367,11 +371,11 @@ test('Godot, RPG Maker 2000/2003 and packaged NW.js or Electron apps get save fo
   await fs.mkdir(base, { recursive: true })
   const root = await fs.mkdtemp(path.join(base, 'game-saves-engines-'))
   t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }))
-  const home = path.join(root, 'home'),
-    put = async (file: string, text = 'x') => {
-      await fs.mkdir(path.dirname(file), { recursive: true })
-      await fs.writeFile(file, text)
-    }
+  const home = path.join(root, 'home')
+  const put = async (file: string, text = 'x') => {
+    await fs.mkdir(path.dirname(file), { recursive: true })
+    await fs.writeFile(file, text)
+  }
   // Godot: the project name, or a custom user directory, from project.godot.
   const godot = path.join(root, 'Godot')
   await put(path.join(godot, 'project.godot'), '[application]\n\nconfig/name="My Game"\n')
@@ -434,8 +438,8 @@ test('a known place that does not exist yet is "no saves yet", not "unknown" (R-
   await fs.mkdir(base, { recursive: true })
   const root = await fs.mkdtemp(path.join(base, 'game-saves-pending-'))
   t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }))
-  const home = path.join(root, 'home'),
-    unity = path.join(root, 'Unity')
+  const home = path.join(root, 'home')
+  const unity = path.join(root, 'Unity')
   await fs.mkdir(path.join(unity, 'Game_Data'), { recursive: true })
   await fs.writeFile(path.join(unity, 'Game_Data', 'app.info'), 'Studio\nTitle')
   assert.deepEqual(await engineSave(unity, ['Unity'], home), { state: 'pending' })
@@ -451,9 +455,9 @@ test('a known place that does not exist yet is "no saves yet", not "unknown" (R-
 // A script as Ren'Py stores it: "RENPY RPC2", a slot table, and the zlib-compressed pickle in slot 1.
 const rpyc = (source: string) => {
   const body = zlib.deflateSync(
-      Buffer.from('\x80\x02csome.Node\nU\x16config.save_directory' + source, 'latin1')
-    ),
-    head = Buffer.alloc(10 + 12 * 2)
+    Buffer.from('\x80\x02csome.Node\nU\x16config.save_directory' + source, 'latin1')
+  )
+  const head = Buffer.alloc(10 + 12 * 2)
   head.write('RENPY RPC2', 0, 'latin1')
   head.writeUInt32LE(1, 10)
   head.writeUInt32LE(head.length, 14)
@@ -500,10 +504,10 @@ test('Ren’Py save names come from options.rpyc, loose or inside an .rpa, with 
   await fs.mkdir(base, { recursive: true })
   const root = await fs.mkdtemp(path.join(base, 'game-saves-renpy-'))
   t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }))
-  const home = path.join(root, 'home'),
-    loose = path.join(root, 'Loose'),
-    packed = path.join(root, 'Packed'),
-    saves = (name: string) => path.join(home, 'AppData', 'Roaming', 'RenPy', name)
+  const home = path.join(root, 'home')
+  const loose = path.join(root, 'Loose')
+  const packed = path.join(root, 'Packed')
+  const saves = (name: string) => path.join(home, 'AppData', 'Roaming', 'RenPy', name)
   await fs.mkdir(path.join(loose, 'game'), { recursive: true })
   await fs.writeFile(path.join(loose, 'game', 'options.rpyc'), rpyc('"Loose-111"'))
   assert.deepEqual(await engineSave(loose, ['Ren’Py'], home), { state: 'pending' })

@@ -1,23 +1,26 @@
-import '../media/media-workspace.css'
-import { KindIcon } from './folderKind'
-import { useFolderSample } from './folderStats'
-import { useParentKind } from './folderKind'
-import type { OverviewEntry } from '../../shared/explorer'
-import { t as tr } from '../i18n'
-import { Icon } from '../common/icons'
-import { RightPanel } from '../panel/RightPanel'
-import { lazy, Suspense } from 'react'
 import { ActionIcon, Alert, Button, Group, Text, Tooltip } from '@mantine/core'
+import { lazy, Suspense } from 'react'
+
 import { pathKey } from '../../shared/browse'
-import { effectiveKind, templateKind } from '../../shared/kind'
-import { PanelSkeleton } from '../panel/PanelSkeleton'
-import { type FolderRow, type Project, type Request, type Response } from '../../shared/model'
 import type {
   BrowseState,
   ExplorerRequest,
   ExplorerResponse,
+  OverviewEntry,
   ReadingPrefs,
 } from '../../shared/explorer'
+import { effectiveKind, templateKind } from '../../shared/kind'
+import { type FolderRow, type Project, type Request, type Response } from '../../shared/model'
+
+import { Icon } from '../common/icons'
+import { t as tr } from '../i18n'
+import { PanelSkeleton } from '../panel/PanelSkeleton'
+import { RightPanel } from '../panel/RightPanel'
+import { KindIcon, useParentKind } from './folderKind'
+import { useFolderSample } from './folderStats'
+
+import '../media/media-workspace.css'
+
 const FolderContent = lazy(() =>
   import('../panel/FolderContent').then((m) => ({ default: m.FolderContent }))
 )
@@ -102,8 +105,8 @@ export function BrowsePanel(props: Props) {
   const { canEnter, switchTo, switchDiscard, switchStay, nextBook, readNext, readNextDone } = props
   // R-327: what the folder contains counts too (once its content was read), so a manga folder found by its pictures
   // gets its layout button like one marked by hand.
-  const sample = useFolderSample(detail?.rowId),
-    parentKind = useParentKind(detail)
+  const sample = useFolderSample(detail?.rowId)
+  const parentKind = useParentKind(detail)
   const kind = detail ? effectiveKind(detail, sample, parentKind) : 'general'
   return (
     <div

@@ -1,8 +1,9 @@
-import fs from 'node:fs/promises'
-import path from 'node:path'
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import { promisify } from 'node:util'
+
 import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
@@ -11,9 +12,9 @@ import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/ap
 // R-421: a VobSub picture track is a button like the text tracks and is drawn over the video.
 const base = path.resolve('.test-output')
 await fs.mkdir(path.join(base, 'shot'), { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'video-embedded-ui-')),
-  media = path.join(root, 'Videos'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'video-embedded-ui-'))
+const media = path.join(root, 'Videos')
+const local = path.join(root, 'local')
 await fs.mkdir(media)
 await fs.writeFile(path.join(root, 'eng.srt'), '1\n00:00:00,000 --> 00:00:02,900\nEmbedded words\n')
 await fs.writeFile(
@@ -62,19 +63,19 @@ try {
   )
   // ffmpeg cannot make picture subtitles from text, so the third track is an ASS track whose codec name is changed
   // to PGS (same length): the reader lists it as a picture track.
-  const movie = path.join(media, 'movie.mkv'),
-    bytes = await fs.readFile(movie),
-    codec = Buffer.from('S_TEXT/ASS')
-  const first = bytes.indexOf(codec),
-    second = bytes.indexOf(codec, first + 1)
+  const movie = path.join(media, 'movie.mkv')
+  const bytes = await fs.readFile(movie)
+  const codec = Buffer.from('S_TEXT/ASS')
+  const first = bytes.indexOf(codec)
+  const second = bytes.indexOf(codec, first + 1)
   assert.ok(first > 0 && second > first, 'two ASS tracks in the sample')
   Buffer.from('S_HDMV/PGS').copy(bytes, second)
   // R-421: the fourth track becomes VobSub the same way (the name is padded with NUL to the same length). Its
   // header gets the frame size and a palette whose colour 3 is red; its line becomes a packet that fills
   // x 128–191, y 150–165 with colour 3: two fields of eight lines, each line one "to the end of the line" run.
-  const third = bytes.indexOf(codec, second + 1),
-    mark = bytes.indexOf(Buffer.from('Title: VOBMARK')),
-    line = bytes.indexOf(Buffer.from('0,0,Default,,0,0,0,,' + 'V'.repeat(120)))
+  const third = bytes.indexOf(codec, second + 1)
+  const mark = bytes.indexOf(Buffer.from('Title: VOBMARK'))
+  const line = bytes.indexOf(Buffer.from('0,0,Default,,0,0,0,,' + 'V'.repeat(120)))
   assert.ok(third > second && mark > 0 && line > 0, 'the VobSub stand-in track is in the sample')
   Buffer.from('S_VOBSUB\0\0').copy(bytes, third)
   Buffer.from(
@@ -109,8 +110,8 @@ try {
     const video = document.querySelector('video')
     return video && video.readyState >= 1
   })
-  const controls = page.locator('.video-controls'),
-    panel = page.getByRole('dialog', { name: '更多播放設定', exact: true })
+  const controls = page.locator('.video-controls')
+  const panel = page.getByRole('dialog', { name: '更多播放設定', exact: true })
   await controls.getByRole('button', { name: '更多播放設定', exact: true }).click()
   await panel.waitFor()
   await panel.getByRole('button', { name: '字幕設定', exact: true }).click()
@@ -133,9 +134,9 @@ try {
   await page.locator('canvas.subtitle-picture[data-cue]').waitFor({ state: 'attached' })
   assert.equal(await shapes.getAttribute('aria-pressed'), 'true')
   const drawn = await page.locator('canvas.subtitle-picture').evaluate((node) => {
-    const canvas = node as HTMLCanvasElement,
-      context = canvas.getContext('2d')!,
-      at = (x: number, y: number) => [...context.getImageData(x, y, 1, 1).data]
+    const canvas = node as HTMLCanvasElement
+    const context = canvas.getContext('2d')!
+    const at = (x: number, y: number) => [...context.getImageData(x, y, 1, 1).data]
     return {
       size: [canvas.width, canvas.height],
       inside: [at(128, 150), at(191, 165)],
@@ -150,8 +151,8 @@ try {
   assert.ok(drawn.outside.every((pixel) => pixel[3] === 0))
   // The picture lies over the shown video, not over the black bars beside it.
   const shown = await page.evaluate(() => {
-    const canvas = document.querySelector('canvas.subtitle-picture')!.getBoundingClientRect(),
-      video = document.querySelector('.video-stage')!.getBoundingClientRect()
+    const canvas = document.querySelector('canvas.subtitle-picture')!.getBoundingClientRect()
+    const video = document.querySelector('.video-stage')!.getBoundingClientRect()
     return { ratio: canvas.width / canvas.height, inside: canvas.width <= video.width + 1 }
   })
   assert.ok(Math.abs(shown.ratio - 320 / 180) < 0.02 && shown.inside)

@@ -1,16 +1,19 @@
-import { Audio, AudioPlayer } from '@videojs/react/audio'
 import { ActionIcon, Button, Menu, Slider, Tooltip } from '@mantine/core'
+import { Audio, AudioPlayer } from '@videojs/react/audio'
 import { useEffect, useRef, useState } from 'react'
+
 import type { MediaEntry } from '../../shared/explorer'
-import { useVideoAudio } from './useVideoAudio'
+
 import { Icon } from '../common/icons'
 import { t as tr } from '../i18n'
 import { PlayOrderButton, usePlayOrder } from './playOrder'
+import { useVideoAudio } from './useVideoAudio'
 
 const clock = (seconds: number) =>
   Number.isFinite(seconds)
     ? Math.floor(seconds / 60) + ':' + String(Math.floor(seconds % 60)).padStart(2, '0')
     : '0:00'
+
 export function AudioViewer({
   background = false,
   file,
@@ -33,22 +36,22 @@ export function AudioViewer({
   startAt?: number
 }) {
   const order = usePlayOrder()
-  const node = useRef<HTMLAudioElement | null>(null),
-    allowed = useRef(false),
-    intent = useRef(true),
-    starting = useRef(false)
-  const [paused, setPaused] = useState(true),
-    [time, setTime] = useState(0),
-    [duration, setDuration] = useState(0),
-    [error, setError] = useState(''),
-    [coverError, setCoverError] = useState(''),
-    [chosenCover, setChosenCover] = useState<string>()
+  const node = useRef<HTMLAudioElement | null>(null)
+  const allowed = useRef(false)
+  const intent = useRef(true)
+  const starting = useRef(false)
+  const [paused, setPaused] = useState(true)
+  const [time, setTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const [error, setError] = useState('')
+  const [coverError, setCoverError] = useState('')
+  const [chosenCover, setChosenCover] = useState<string>()
   const candidates = covers.filter((entry) =>
     /^(cover|folder|front|album)\.[^.]+$/i.test(entry.name)
   )
-  const [embeddedCover, setEmbeddedCover] = useState<string>(),
-    [embeddedError, setEmbeddedError] = useState(''),
-    [coverLoading, setCoverLoading] = useState(!cover)
+  const [embeddedCover, setEmbeddedCover] = useState<string>()
+  const [embeddedError, setEmbeddedError] = useState('')
+  const [coverLoading, setCoverLoading] = useState(!cover)
   const coverUrl =
     chosenCover ??
     cover ??
@@ -56,10 +59,10 @@ export function AudioViewer({
     (!coverLoading && candidates.length === 1 ? candidates[0].url : undefined)
   useEffect(() => {
     if (cover) return
-    let active = true,
-      url: string | undefined
-    const controller = new AbortController(),
-      source = new URL(file.url)
+    let active = true
+    let url: string | undefined
+    const controller = new AbortController()
+    const source = new URL(file.url)
     source.hostname = 'audio-cover'
     setEmbeddedCover(undefined)
     setEmbeddedError('')
@@ -85,8 +88,8 @@ export function AudioViewer({
       if (url) URL.revokeObjectURL(url)
     }
   }, [file.url, cover])
-  const audio = useVideoAudio(),
-    live = useRef(audio)
+  const audio = useVideoAudio()
+  const live = useRef(audio)
   live.current = audio
   const start = async () => {
     const current = node.current
@@ -97,8 +100,9 @@ export function AudioViewer({
       !allowed.current ||
       (!background && document.hidden) ||
       !live.current.ready
-    )
+    ) {
       return
+    }
     current.volume = live.current.volume
     current.muted = live.current.muted
     starting.current = true
@@ -120,15 +124,16 @@ export function AudioViewer({
     }
     node.current = current
     // StrictMode re-attaches the same node after its src was cleared above.
-    if (current && wantedUrl.current && !current.getAttribute('src'))
+    if (current && wantedUrl.current && !current.getAttribute('src')) {
       current.src = wantedUrl.current
+    }
   }
   const bindRef = useRef(bind)
   wantedUrl.current = file.url
   // Keep a stable ref so ordinary state updates never detach the audio source.
   useEffect(() => {
-    let alive = true,
-      observed = false
+    let alive = true
+    let observed = false
     intent.current = true
     const pause = () => {
       intent.current = false
@@ -214,8 +219,9 @@ export function AudioViewer({
             if (event.currentTarget !== node.current) return
             setDuration(event.currentTarget.duration)
             // R-390: a podcast episode goes on from where it was left, unless it was heard to the end.
-            if (startAt && startAt < event.currentTarget.duration - 60)
+            if (startAt && startAt < event.currentTarget.duration - 60) {
               event.currentTarget.currentTime = startAt
+            }
             if (intent.current) void start()
           }}
           onPlay={(event) => {
@@ -224,9 +230,9 @@ export function AudioViewer({
               !allowed.current ||
               (!background && document.hidden) ||
               !intent.current
-            )
+            ) {
               event.currentTarget.pause()
-            else setPaused(false)
+            } else setPaused(false)
           }}
           onPause={() => setPaused(true)}
           onTimeUpdate={(event) => setTime(event.currentTarget.currentTime)}

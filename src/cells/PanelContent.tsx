@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react'
-import type { Cell, FolderRow, Project } from '../../shared/model'
-import type { FolderKind } from '../../shared/kind'
+
 import { builtinPanel } from '../../shared/explorer'
+import type { FolderKind } from '../../shared/kind'
 import { panelCells } from '../../shared/layouts'
+import type { Cell, FolderRow, Project } from '../../shared/model'
+
 import { Card } from './Card'
-import { PanelContentContext, type PanelContent } from './panelContext'
+import { type PanelContent, PanelContentContext } from './panelContext'
 
 // A folder's right panel: its chosen layout, else its kind's built-in one (`builtin` may add to it for this page).
 export function PanelCard({

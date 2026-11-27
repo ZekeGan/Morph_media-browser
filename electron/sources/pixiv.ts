@@ -1,5 +1,5 @@
 import { SourceError } from '../metadata-common'
-import { clean, type Adapter } from './site'
+import { type Adapter, clean } from './site'
 
 // Pixiv artworks (/artworks/<id>) and, since R-284, novels (/novel/show.php?id=<id>).
 export const pixiv: Adapter = async (site) => {
@@ -24,11 +24,12 @@ export const pixiv: Adapter = async (site) => {
       image: data.coverUrl,
     }
   }
-  const id = site.match(/^(?:\/[a-z]{2})?\/artworks\/([1-9]\d{0,12})\/?$/)[1],
-    response = await site.json('https://www.pixiv.net/ajax/illust/' + id)
+  const id = site.match(/^(?:\/[a-z]{2})?\/artworks\/([1-9]\d{0,12})\/?$/)[1]
+  const response = await site.json('https://www.pixiv.net/ajax/illust/' + id)
   const data = response.body
-  if (response.error || !data || String(data.id ?? data.illustId) !== id)
+  if (response.error || !data || String(data.id ?? data.illustId) !== id) {
     throw new SourceError('restricted')
+  }
   site.text('AUTHORS', data.userName)
   site.text('DESCRIPTION', data.description)
   site.text('RELEASE_DATE', data.createDate)

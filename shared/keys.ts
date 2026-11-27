@@ -7,6 +7,7 @@ export interface KeyField {
   // Optional fields may stay empty (TheTVDB's subscriber PIN, Danbooru's login with its key).
   optional?: boolean
 }
+
 export interface KeySite {
   id: string
   name: string
@@ -22,6 +23,7 @@ export interface KeySite {
   // A work page used by the key test; the test passes when the site accepts the key, even if this work is gone.
   sample: string
 }
+
 export const keySites: KeySite[] = [
   {
     id: 'tmdb',
@@ -93,13 +95,17 @@ export const keySites: KeySite[] = [
     sample: 'https://www.dmm.co.jp/dc/doujin/-/detail/=/cid=d_000001/',
   },
 ]
+
 export const keySite = (id: string) => keySites.find((site) => site.id === id)
 // The sentence main throws when a site needs a key that is missing; the window shows a "go to settings" button for it.
 export const KEY_MISSING = '這個網站需要你自己的金鑰；請到「應用程式設定 → 網站金鑰」填入'
+
 // Bangumi without a token answers 404 for NSFW entries as for missing ones.
 export const KEY_MAYBE_NSFW =
   '找不到作品，或是需要權杖的成人作品；可到「應用程式設定 → 網站金鑰」填入權杖'
+
 export const KEY_REJECTED = '網站拒絕了你的金鑰；請到「應用程式設定 → 網站金鑰」確認'
+
 export interface KeyStatus {
   set: boolean
   // The result of the last test, if one was made since the key was saved.

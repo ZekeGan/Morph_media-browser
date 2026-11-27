@@ -1,18 +1,20 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
-import { Explorer } from '../electron/explorer'
-import { importedValue } from '../electron/explorer-source'
-import { readFolder, folderFile } from '../electron/files'
-import { parseDate, readDate } from '../shared/fields'
+import { test } from 'node:test'
+
 import { columnValue } from '../shared/browse'
 import { cellField, conditionMet } from '../shared/cells'
-import { validateProject, type Cell, type FolderRow, type Project } from '../shared/model'
+import { parseDate, readDate } from '../shared/fields'
+import { type Cell, type FolderRow, type Project, validateProject } from '../shared/model'
+
+import { Explorer } from '../electron/explorer'
+import { importedValue } from '../electron/explorer-source'
+import { folderFile, readFolder } from '../electron/files'
+import { Library } from '../electron/library'
 import { dateConditionCount, switchDateToText, switchTextToDate } from '../src/editor/fieldTypes'
-import { modelProject } from './support/model-fixtures'
 import { tinyPng } from './support/archive-fixture'
+import { modelProject } from './support/model-fixtures'
 
 test('dates written as text are read when they name a full day, and nothing else is', () => {
   const day = (s: string) => parseDate(s)?.value
@@ -35,8 +37,9 @@ test('dates written as text are read when they name a full day, and nothing else
     '31 Feb, 2020',
     'Marchx 5, 2001',
     'Q4 2020',
-  ])
+  ]) {
     assert.equal(parseDate(text), undefined, text)
+  }
   // A time with a zone becomes local time, as the date-and-time input stores it.
   const local = parseDate('2020-11-12T03:04:05.000Z')!
   const at = new Date('2020-11-12T03:04:05.000Z')
@@ -68,12 +71,13 @@ test('imported dates are stored as dates unless the field is text or the value i
     '2020-11-12T00:00:00+14:00',
     '2020-11-12T23:59:00-12:00',
     '2020-11-12T00:00:00+09:00',
-  ])
+  ]) {
     assert.equal(
       importedValue({ key: 'RELEASE_DATE', type: 'string', value }, undefined).value,
       '2020-11-12',
       value
     )
+  }
   const posted = importedValue(
     { key: 'GALLERY_POSTED_UTC', type: 'string', value: '2020-11-12T03:04:05.000Z' },
     undefined
@@ -190,8 +194,8 @@ test('a date field becomes text and loses only the conditions comparing it as a 
 async function fixture(t: { after: (fn: () => Promise<void>) => void }) {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'date-fields-')),
-    media = path.join(root, 'media')
+  const root = await fs.mkdtemp(path.join(base, 'date-fields-'))
+  const media = path.join(root, 'media')
   await fs.mkdir(media)
   const lib = new Library(path.join(root, 'local'), undefined, false)
   await lib.init()
@@ -210,8 +214,8 @@ async function fixture(t: { after: (fn: () => Promise<void>) => void }) {
 }
 
 test('importing replaces an old text date with a date, and keeps text for a text field', async (t) => {
-  const { media, lib, explorer } = await fixture(t),
-    originalFetch = globalThis.fetch
+  const { media, lib, explorer } = await fixture(t)
+  const originalFetch = globalThis.fetch
   let date = '2020-11-12'
   globalThis.fetch = (async () =>
     new Response(JSON.stringify({ id: 12, name: 'Work', date }))) as typeof fetch

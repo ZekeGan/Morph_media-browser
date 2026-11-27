@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react'
+
 import { t as tr } from '../i18n'
 import { describeError } from './errors'
 
@@ -8,9 +9,11 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error?: 
   static getDerivedStateFromError(error: unknown) {
     return { error }
   }
+
   componentDidCatch(error: unknown) {
     console.error('Renderer error', error)
   }
+
   render() {
     if (this.state.error === undefined) return this.props.children
     const { detail, message } = describeError(this.state.error)

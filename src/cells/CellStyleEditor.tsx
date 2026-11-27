@@ -1,4 +1,3 @@
-import { useState, type ReactNode } from 'react'
 import {
   ActionIcon,
   Button,
@@ -14,11 +13,15 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
-import { Icon } from '../common/icons'
-import { t as tr } from '../i18n'
+import { type ReactNode, useState } from 'react'
+
 import type { Cell, Project } from '../../shared/model'
 
+import { Icon } from '../common/icons'
+import { t as tr } from '../i18n'
+
 type Style = Cell['style']
+
 // The two groups of the Style tab (R-233). Colours are always set, so they only count as changed when the background
 // is not transparent.
 const textKeys: (keyof Style)[] = [
@@ -56,6 +59,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
     </div>
   )
 }
+
 // A titled group that folds; when folded its title names what was changed, and a changed group can be reset.
 function Section({
   title,
@@ -124,6 +128,7 @@ function Section({
     </section>
   )
 }
+
 // Each option is a segmented control whose first entry means "default" (the field is then removed from the cell).
 function Segments<T extends string>({
   label,
@@ -166,10 +171,12 @@ export function CellStyleEditor({
   saved?: NonNullable<Project['stylePresets']>
   onSaved?: (presets: NonNullable<Project['stylePresets']>) => void
 }) {
-  const [naming, setNaming] = useState(false),
-    [name, setName] = useState('')
-  const trimmed = name.trim(),
-    duplicate = saved.some((p) => p.name.trim().toLocaleLowerCase() === trimmed.toLocaleLowerCase())
+  const [naming, setNaming] = useState(false)
+  const [name, setName] = useState('')
+  const trimmed = name.trim()
+  const duplicate = saved.some(
+    (p) => p.name.trim().toLocaleLowerCase() === trimmed.toLocaleLowerCase()
+  )
   const saveCurrent = () => {
     if (!onSaved || !trimmed || duplicate || saved.length >= 20) return
     onSaved([
@@ -181,14 +188,15 @@ export function CellStyleEditor({
   }
   const style = cell.style
   const transparent = style.backgroundColor === 'transparent'
-  const textChanged = textKeys.some((key) => style[key] !== undefined),
-    boxChanged = !transparent || boxKeys.some((key) => style[key] !== undefined)
-  const [textOpen, setTextOpen] = useState(true),
-    [boxOpen, setBoxOpen] = useState(false)
+  const textChanged = textKeys.some((key) => style[key] !== undefined)
+  const boxChanged = !transparent || boxKeys.some((key) => style[key] !== undefined)
+  const [textOpen, setTextOpen] = useState(true)
+  const [boxOpen, setBoxOpen] = useState(false)
   const patch = (changes: Partial<Style>) => {
     const next = { ...style, ...changes }
-    for (const key of Object.keys(next) as (keyof Style)[])
+    for (const key of Object.keys(next) as (keyof Style)[]) {
       if (next[key] === undefined) delete next[key]
+    }
     updateCell({ style: next })
   }
   const without = (keys: (keyof Style)[], extraChanges: Partial<Style> = {}) => {

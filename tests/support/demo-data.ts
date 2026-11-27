@@ -5,6 +5,7 @@ import path from 'node:path'
 import zlib from 'node:zlib'
 
 type Colour = [number, number, number]
+
 const crcTable = Array.from({ length: 256 }, (_, n) => {
   let c = n
   for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
@@ -16,13 +17,14 @@ const crc = (buffer: Buffer) => {
   return (c ^ 0xffffffff) >>> 0
 }
 const chunk = (type: string, data: Buffer) => {
-  const body = Buffer.concat([Buffer.from(type), data]),
-    out = Buffer.alloc(body.length + 8)
+  const body = Buffer.concat([Buffer.from(type), data])
+  const out = Buffer.alloc(body.length + 8)
   out.writeUInt32BE(data.length, 0)
   body.copy(out, 4)
   out.writeUInt32BE(crc(body), body.length + 4)
   return out
 }
+
 function encodePng(width: number, height: number, pixel: (x: number, y: number) => Colour) {
   const raw = Buffer.alloc((width * 3 + 1) * height)
   for (let y = 0; y < height; y++) {
@@ -46,6 +48,7 @@ function encodePng(width: number, height: number, pixel: (x: number, y: number) 
     chunk('IEND', Buffer.alloc(0)),
   ])
 }
+
 const mix = (a: Colour, b: Colour, t: number): Colour => [
   Math.round(a[0] + (b[0] - a[0]) * t),
   Math.round(a[1] + (b[1] - a[1]) * t),
@@ -68,16 +71,16 @@ const palettes = [
 
 // One flat cover: a gradient sky, a sun or moon, and layered hills; `seed` picks palette, sun position and hill shape.
 export function cover(seed: number, width = 360, height = 500) {
-  const [sky, far, sun, near] = palettes[seed % palettes.length],
-    sunX = width * (0.25 + ((seed * 37) % 50) / 100),
-    sunY = height * (0.22 + ((seed * 17) % 20) / 100),
-    radius = width * 0.16,
-    phase = seed * 1.7
+  const [sky, far, sun, near] = palettes[seed % palettes.length]
+  const sunX = width * (0.25 + ((seed * 37) % 50) / 100)
+  const sunY = height * (0.22 + ((seed * 17) % 20) / 100)
+  const radius = width * 0.16
+  const phase = seed * 1.7
   return encodePng(width, height, (x, y) => {
     let colour = mix(sky, far, y / height)
     if ((x - sunX) ** 2 + (y - sunY) ** 2 < radius ** 2) colour = sun
-    const hill1 = height * 0.62 + Math.sin(x / 55 + phase) * 28,
-      hill2 = height * 0.76 + Math.sin(x / 38 + phase * 2) * 22
+    const hill1 = height * 0.62 + Math.sin(x / 55 + phase) * 28
+    const hill2 = height * 0.76 + Math.sin(x / 38 + phase * 2) * 22
     if (y > hill1) colour = mix(far, sky, 0.35)
     if (y > hill2) colour = near
     if (y > height - 26) colour = mix(near, sky, 0.5)
@@ -95,11 +98,12 @@ export async function buildDemoLibrary(dir: string) {
   const make = async (name: string, files: number, game = false) => {
     const folder = path.join(media, name)
     await fs.mkdir(game ? path.join(folder, 'Game_Data') : folder, { recursive: true })
-    for (let index = 1; index <= files; index++)
+    for (let index = 1; index <= files; index++) {
       await fs.writeFile(
         path.join(folder, `${String(index).padStart(2, '0')}.png`),
         cover(seed + index * 3)
       )
+    }
     if (game) await fs.writeFile(path.join(folder, 'Game.exe'), 'x')
     seed++
   }

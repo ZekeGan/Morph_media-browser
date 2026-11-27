@@ -1,15 +1,15 @@
 import { SourceError } from '../metadata-common'
 import { dlsiteLocale } from './language'
-import { clean, type Adapter } from './site'
+import { type Adapter, clean } from './site'
 
 // Two public endpoints: product.json has the names (circle, creators by role, genres, series); the older
 // info/ajax endpoint adds price, download count and rating and is optional.
 export const dlsite: Adapter = async (site) => {
   const found = site.match(
-      /^\/(maniax|home|girls|girls-drama|bl|bl-drama|comic|books|ai|soft|app|appx|pro)\/(?:work|announce)\/=\/product_id\/([A-Z]{2}\d{5,8})(?:\.html)?\/?$/
-    ),
-    shop = found[1],
-    id = found[2]
+    /^\/(maniax|home|girls|girls-drama|bl|bl-drama|comic|books|ai|soft|app|appx|pro)\/(?:work|announce)\/=\/product_id\/([A-Z]{2}\d{5,8})(?:\.html)?\/?$/
+  )
+  const shop = found[1]
+  const id = found[2]
   // R-420: the first preferred language asks DLsite for its translated names (only where DLsite has them).
   const locale = dlsiteLocale(site.languages[0])
   const list = await site.json(
@@ -42,13 +42,16 @@ export const dlsite: Adapter = async (site) => {
   site.text('DESCRIPTION', data.intro_s)
   site.text('SERIES', data.series_name || sales?.title_name)
   // Creators are grouped by role (created_by, voice_by, scenario_by…); each role becomes its own tag field.
-  if (data.creaters && typeof data.creaters === 'object' && !Array.isArray(data.creaters))
-    for (const [role, people] of Object.entries(data.creaters).slice(0, 20))
-      if (/^[a-z]{1,20}_by$/.test(role) && Array.isArray(people))
+  if (data.creaters && typeof data.creaters === 'object' && !Array.isArray(data.creaters)) {
+    for (const [role, people] of Object.entries(data.creaters).slice(0, 20)) {
+      if (/^[a-z]{1,20}_by$/.test(role) && Array.isArray(people)) {
         site.list(
           role.toUpperCase(),
           people.map((person: { name?: unknown }) => person?.name)
         )
+      }
+    }
+  }
   site.list(
     'GENRES',
     Array.isArray(data.genres) ? data.genres.map((genre: { name?: unknown }) => genre?.name) : []

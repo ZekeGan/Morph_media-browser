@@ -6,8 +6,8 @@ export const plain = (text) => text.replace(/\x1b\[[0-9;]*m/g, '')
 // The error and its message lines (assertion values, Playwright's call log), the line of the test it stopped at, what
 // the page said and where the screenshots are. Falls back to the end of the output when no error line is found.
 export function failureSummary(text, name) {
-  const lines = plain(text).split(/\r?\n/),
-    start = lines.findIndex((line) => /^\s*(\w*Error\b|Error:)/.test(line))
+  const lines = plain(text).split(/\r?\n/)
+  const start = lines.findIndex((line) => /^\s*(\w*Error\b|Error:)/.test(line))
   const picked = []
   if (start >= 0) {
     for (const line of lines.slice(start, start + 40)) {
@@ -20,7 +20,7 @@ export function failureSummary(text, name) {
     )
     const support = lines.find((line) => /tests[\\/]support[\\/][^:]+\.ts:\d+/.test(line))
     const at = own ?? support
-    if (at)
+    if (at) {
       picked.push(
         'Stopped at: ' +
           at
@@ -28,9 +28,12 @@ export function failureSummary(text, name) {
             .replace(/^at\s+/, '')
             .replace(/\s*\{$/, '')
       )
+    }
   } else picked.push(...lines.filter(Boolean).slice(-12))
-  for (const line of lines)
-    if (/^(Artifacts|Page said):/.test(line) && !picked.includes(line))
+  for (const line of lines) {
+    if (/^(Artifacts|Page said):/.test(line) && !picked.includes(line)) {
       picked.push(line.length > 200 ? line.slice(0, 200) + '…' : line)
+    }
+  }
   return picked.join('\n')
 }

@@ -1,7 +1,9 @@
 import { NumberInput, Select, TextInput } from '@mantine/core'
+
+import type { CellCondition, Project } from '../../shared/model'
+
 import { HelpLabel } from '../common/HelpTip'
 import { t as tr } from '../i18n'
-import type { CellCondition, Project } from '../../shared/model'
 import { typeKinds } from './editorKinds'
 import { yesNo } from './fieldTypes'
 

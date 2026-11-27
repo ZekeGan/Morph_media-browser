@@ -1,8 +1,9 @@
-import fs from 'node:fs/promises'
-import path from 'node:path'
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import { promisify } from 'node:util'
+
 import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
@@ -11,13 +12,13 @@ import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/ap
 // gets the screen to itself.
 const base = path.resolve('.test-output')
 await fs.mkdir(path.join(base, 'shot'), { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'reader-read-on-ui-')),
-  comic = path.join(root, 'Book'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'reader-read-on-ui-'))
+const comic = path.join(root, 'Book')
+const local = path.join(root, 'local')
 await fs.mkdir(comic)
 const exec = promisify(execFile)
 // Page 4 is a spread drawn as one picture.
-for (let i = 1; i <= 8; i++)
+for (let i = 1; i <= 8; i++) {
   await exec(
     'ffmpeg',
     [
@@ -33,6 +34,7 @@ for (let i = 1; i <= 8; i++)
     ],
     { windowsHide: true }
   )
+}
 const library = new Library(local, undefined, false)
 await library.init()
 await library.create(comic, {
@@ -139,10 +141,10 @@ try {
   assert.equal(await peek.evaluate((node) => getComputedStyle(node).visibility), 'visible')
   assert.ok((await peek.locator('img').count()) >= 1, 'the next page is drawn beside')
   // R-392: every page has the whole window; the one beside waits exactly one window away and moves with the drag.
-  const slot = await peek.evaluate((node) => node.getBoundingClientRect().left),
-    current = await page
-      .locator('.reader-frame-layer.is-active')
-      .evaluate((node) => node.getBoundingClientRect().left)
+  const slot = await peek.evaluate((node) => node.getBoundingClientRect().left)
+  const current = await page
+    .locator('.reader-frame-layer.is-active')
+    .evaluate((node) => node.getBoundingClientRect().left)
   assert.ok(Math.abs(slot - current - stage.width) < 2, `one window apart: ${current} → ${slot}`)
   assert.ok(current < stage.x - 40, 'the strip has moved with the pointer: ' + current)
   await page.mouse.move(middle.x - 300, middle.y, { steps: 6 })

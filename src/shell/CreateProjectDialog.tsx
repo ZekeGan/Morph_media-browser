@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
 import { Alert, Button, Group, Modal, Select, Stack, Text, TextInput } from '@mantine/core'
-import { t as tr } from '../i18n'
+import { useEffect, useState } from 'react'
+
 import type { ProjectInput, Request, Response, RootSelection } from '../../shared/model'
 import type { WorkspacePrefs } from '../../shared/workspace'
+
+import { t as tr } from '../i18n'
 
 // One door for bringing a project in: pick a folder. If the folder already holds a project that is not in the
 // list (moved drive, new computer), the dialog offers to bring that one back instead of starting a new one.
@@ -35,8 +37,8 @@ export function CreateProjectDialog({
   link: (rootToken: string) => Promise<void>
   close: () => void
 }) {
-  const [named, setNamed] = useState(false),
-    [startNew, setStartNew] = useState(false)
+  const [named, setNamed] = useState(false)
+  const [startNew, setStartNew] = useState(false)
   useEffect(() => {
     if (opened) {
       setNamed(false)

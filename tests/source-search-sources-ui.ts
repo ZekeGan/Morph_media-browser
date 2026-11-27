@@ -1,6 +1,7 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
+
 import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
@@ -9,9 +10,9 @@ import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/ap
 // search cannot run. The choice is kept per folder kind on this computer.
 const base = path.resolve('.test-output')
 await fs.mkdir(path.join(base, 'shot'), { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'source-search-sources-ui-')),
-  media = path.join(root, 'Library'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'source-search-sources-ui-'))
+const media = path.join(root, 'Library')
+const local = path.join(root, 'local')
 await fs.mkdir(path.join(media, 'Work'), { recursive: true })
 const library = new Library(local, undefined, false)
 await library.init()
@@ -48,8 +49,9 @@ try {
     return !!saved && !saved.includes('vndb') && saved.includes('musicbrainz')
   })
   // With nothing ticked the button says so and the search is off.
-  for (const name of ['MusicBrainz', 'AniList', 'Bangumi', 'Steam', 'DLsite', 'nhentai'])
+  for (const name of ['MusicBrainz', 'AniList', 'Bangumi', 'Steam', 'DLsite', 'nhentai']) {
     await menu.getByRole('checkbox', { name, exact: true }).click()
+  }
   await page.waitForFunction(
     () => document.querySelector('.source-search-sources')?.textContent?.trim() === '未選來源'
   )

@@ -1,8 +1,3 @@
-import { t as tr, useLocale } from '../i18n'
-import { Icon } from '../common/icons'
-import { BrandMark } from '../common/BrandMark'
-import { describeError } from '../notices/errors'
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import {
   ActionIcon,
   Alert,
@@ -16,9 +11,9 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
+import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+
 import type { FolderRow, LinkedProject, Snapshot } from '../../shared/model'
-import { SearchDialog } from '../search/SearchDialog'
-import { usePlayback } from '../media/Playback'
 import {
   defaultWorkspace,
   sectionIds,
@@ -26,6 +21,13 @@ import {
   type WorkspaceCommand,
   type WorkspaceState,
 } from '../../shared/workspace'
+
+import { BrandMark } from '../common/BrandMark'
+import { Icon } from '../common/icons'
+import { t as tr, useLocale } from '../i18n'
+import { usePlayback } from '../media/Playback'
+import { describeError } from '../notices/errors'
+import { SearchDialog } from '../search/SearchDialog'
 
 interface Props {
   projects: LinkedProject[]
@@ -48,23 +50,25 @@ interface Props {
   status: string
   children: ReactNode
 }
+
 const title = (p: LinkedProject) => p.project?.name ?? tr('待重新連結')
+
 export function DesktopShell(props: Props) {
   useLocale()
   const playback = usePlayback()
 
   const { projects, selected, onOverlay, onDirty } = props
   const [workspace, setWorkspace] = useState<WorkspaceState>({ prefs: defaultWorkspace() })
-  const [ready, setReady] = useState(false),
-    [saving, setSaving] = useState(false),
-    [error, setError] = useState('')
-  const [maximized, setMaximized] = useState(false),
-    [liveWidth, setLiveWidth] = useState<number>(),
-    // R-500: the width being dragged to and the frame waiting to write it.
-    dragWidth = useRef(0),
-    dragFrame = useRef<number | undefined>(undefined)
-  const [form, setForm] = useState<{ id?: string; original: string }>(),
-    [name, setName] = useState('')
+  const [ready, setReady] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [maximized, setMaximized] = useState(false)
+  const [liveWidth, setLiveWidth] = useState<number>()
+  // R-500: the width being dragged to and the frame waiting to write it.
+  const dragWidth = useRef(0)
+  const dragFrame = useRef<number | undefined>(undefined)
+  const [form, setForm] = useState<{ id?: string; original: string }>()
+  const [name, setName] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const [dragging, setDragging] = useState<{ kind: 'project' | 'group'; id: string }>()
   // dragover can arrive before React re-renders with the new state; the ref is set at once, so a quick drag is
@@ -78,8 +82,8 @@ export function DesktopShell(props: Props) {
   const [groupDrop, setGroupDrop] = useState<{ id: string; after: boolean }>()
   const [openMenu, setOpenMenu] = useState('')
   const resizing = useRef(false)
-  const sidebarSlot = useRef<HTMLDivElement>(null),
-    sidebarToggle = useRef<HTMLButtonElement>(null)
+  const sidebarSlot = useRef<HTMLDivElement>(null)
+  const sidebarToggle = useRef<HTMLButtonElement>(null)
   const groupPositions = useRef(new Map<string, number>())
   const idsKey = projects.map((p) => p.projectId).join('|')
   useEffect(() => {
@@ -158,8 +162,8 @@ export function DesktopShell(props: Props) {
   // While the sidebar is hidden, resting the pointer on its button in the top bar lays it over the page without moving
   // anything; it goes away again when the pointer leaves or a project is picked. The window's left edge does not open
   // it (R-360): the pointer passes there too often by accident.
-  const [peek, setPeek] = useState(false),
-    peekTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const [peek, setPeek] = useState(false)
+  const peekTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const peeking = peek && !!prefs.sidebarHidden
   // Closing on purpose (Esc, picking a project) while the pointer rests on the button must not reopen it: the browser
   // sends a mouse move after the layout change, which the button would take as a fresh hover.
@@ -200,8 +204,9 @@ export function DesktopShell(props: Props) {
       if (
         e.key === 'Escape' &&
         !document.querySelector('.mantine-Menu-dropdown,.mantine-Modal-content')
-      )
+      ) {
         closePeekNow()
+      }
     }
     // Captured first: the button's tooltip takes Esc for itself on the document and stops it there (R-360).
     window.addEventListener('keydown', key, true)
@@ -221,8 +226,9 @@ export function DesktopShell(props: Props) {
   // A failed settings write must not hide otherwise usable projects.
   const placements = { ...prefs.projects }
   projects.forEach((p, i) => {
-    if (!placements[p.projectId])
+    if (!placements[p.projectId]) {
       placements[p.projectId] = { groupId: null, favorite: false, addedOrder: i + 1 }
+    }
   })
   const view = { ...prefs, projects: placements }
   const members = (section: string) =>
@@ -231,37 +237,40 @@ export function DesktopShell(props: Props) {
       view,
       section
     ).map((id) => projects.find((p) => p.projectId === id)!)
-  const unclassified = members('unclassified'),
-    favorites = members('favorites'),
-    sections = sectionIds(prefs)
+  const unclassified = members('unclassified')
+  const favorites = members('favorites')
+  const sections = sectionIds(prefs)
   const locked = props.busy || saving || !ready || !!workspace.error
   useLayoutEffect(() => {
     const elements = [
       ...(sidebarSlot.current?.querySelectorAll<HTMLElement>('[data-group-id]') ?? []),
     ]
-    for (const element of elements)
+    for (const element of elements) {
       element.getAnimations().forEach((animation) => animation.cancel())
+    }
     const next = new Map<string, number>()
     for (const element of elements) {
-      const id = element.dataset.groupId!,
-        top = element.getBoundingClientRect().top,
-        previous = groupPositions.current.get(id)
+      const id = element.dataset.groupId!
+      const top = element.getBoundingClientRect().top
+      const previous = groupPositions.current.get(id)
       next.set(id, top)
       if (
         previous !== undefined &&
         previous !== top &&
         !matchMedia('(prefers-reduced-motion: reduce)').matches
-      )
+      ) {
         element.animate(
           [{ transform: `translateY(${previous - top}px)` }, { transform: 'translateY(0)' }],
           { duration: 180, easing: 'ease-out' }
         )
+      }
     }
     groupPositions.current = next
   }, [prefs.sections])
   const closeForm = () => {
-    if (!form || name === form.original || window.confirm(tr('放棄尚未保存的群組名稱？')))
+    if (!form || name === form.original || window.confirm(tr('放棄尚未保存的群組名稱？'))) {
       setForm(undefined)
+    }
   }
   const editGroup = (id?: string) => {
     const original = prefs.groups.find((g) => g.id === id)?.name ?? ''
@@ -297,24 +306,26 @@ export function DesktopShell(props: Props) {
           if (
             !placements[id].favorite &&
             !(await mutate({ action: 'favorite', projectId: id, value: true }))
-          )
+          ) {
             return
+          }
           await mutate({ action: 'reorderProject', projectId: id, sectionId, beforeId })
         })()
-      } else
+      } else {
         void mutate({
           action: 'moveProject',
           projectId: id,
           groupId: sectionId === 'unclassified' ? null : sectionId,
           beforeId,
         })
+      }
     }
     endDrag()
   }
   const shiftSection = (id: string, delta: number) => {
-    const ids = [...sections],
-      i = ids.indexOf(id),
-      j = i + delta
+    const ids = [...sections]
+    const i = ids.indexOf(id)
+    const j = i + delta
     if (j < 0 || j >= ids.length) return
     ;[ids[i], ids[j]] = [ids[j], ids[i]]
     void mutate({ action: 'reorderSections', ids })
@@ -512,8 +523,9 @@ export function DesktopShell(props: Props) {
                             items.length
                           )
                         )
-                      )
+                      ) {
                         void mutate({ action: 'removeGroup', id })
+                      }
                     }}
                   >
                     {tr('刪除群組')}
@@ -924,8 +936,9 @@ export function DesktopShell(props: Props) {
                   ? { action: 'renameGroup', id: form.id, name }
                   : { action: 'createGroup', name }
               )
-            )
+            ) {
               setForm(undefined)
+            }
           }}
         >
           <Stack>

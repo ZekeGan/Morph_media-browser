@@ -15,11 +15,13 @@ export interface ExportManifest {
   projectName: string
   files: { path: string; sha256: string; size: number }[]
 }
+
 export interface ProjectExportResult {
   dir: string
   files: number
   skipped: number
 }
+
 export interface ProjectImportPreview {
   token: string
   bundle: string
@@ -66,6 +68,7 @@ const steps: Record<number, (value: unknown, kind: 'folder' | 'project') => unkn
     return { ...rest, contentCells: next }
   },
 }
+
 export function migrateRecord(version: number, value: unknown, kind: 'folder' | 'project') {
   for (let v = version; v < EXPORT_VERSION; v++) {
     const step = steps[v]
@@ -91,18 +94,22 @@ export function exportPathRole(rel: unknown): 'folder' | 'project' | 'asset' | u
   if (/^subtitles\/[\w-]+\.(srt|vtt)$/.test(tail)) return 'asset'
   return undefined
 }
+
 export function checkManifest(value: unknown): ExportManifest {
   const item = value as Partial<ExportManifest> | null
-  if (!item || typeof item !== 'object' || Array.isArray(item) || item.kind !== EXPORT_KIND)
+  if (!item || typeof item !== 'object' || Array.isArray(item) || item.kind !== EXPORT_KIND) {
     throw new Error('這不是專案匯出資料夾')
+  }
   if (
     !Number.isInteger(item.schemaVersion) ||
     item.schemaVersion! < 1 ||
     item.schemaVersion! > EXPORT_VERSION
-  )
+  ) {
     throw new Error('匯出資料的版本比這個程式新，請先更新程式')
-  if (typeof item.projectId !== 'string' || !/^[\w-]{1,100}$/.test(item.projectId))
+  }
+  if (typeof item.projectId !== 'string' || !/^[\w-]{1,100}$/.test(item.projectId)) {
     throw new Error('匯出資料的專案身分不合法')
+  }
   if (
     !Array.isArray(item.files) ||
     item.files.length > 200000 ||
@@ -115,9 +122,11 @@ export function checkManifest(value: unknown): ExportManifest {
         Number.isSafeInteger(f.size) &&
         f.size >= 0
     )
-  )
+  ) {
     throw new Error('匯出資料的檔案清單不合法')
-  if (new Set(item.files.map((f) => f.path.toLowerCase())).size !== item.files.length)
+  }
+  if (new Set(item.files.map((f) => f.path.toLowerCase())).size !== item.files.length) {
     throw new Error('匯出資料的檔案清單有重複項目')
+  }
   return item as ExportManifest
 }

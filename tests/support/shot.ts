@@ -4,9 +4,10 @@
 // Needs a current build (`pnpm build`). Writes the PNG under .test-output/shot/ and prints its path.
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../../electron/library'
+
 import { readFolder, saveFolder } from '../../electron/files'
-import { closeApp, launchApp, removeTestRoot, openLayoutEditor } from './app'
+import { Library } from '../../electron/library'
+import { closeApp, launchApp, openLayoutEditor, removeTestRoot } from './app'
 
 const args = process.argv.slice(2)
 const kind = (['game', 'manga', 'album', 'other'] as const).find((name) => name === args[0])
@@ -20,8 +21,8 @@ if (!kind) {
   )
   process.exit(2)
 }
-const width = Number(option('width') ?? 1500),
-  height = Number(option('height') ?? 900)
+const width = Number(option('width') ?? 1500)
+const height = Number(option('height') ?? 900)
 
 // A 1x1 PNG is enough for thumbnails and covers.
 const png = Buffer.from(
@@ -30,9 +31,9 @@ const png = Buffer.from(
 )
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'shot-')),
-  media = path.join(root, 'Library'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'shot-'))
+const media = path.join(root, 'Library')
+const local = path.join(root, 'local')
 const folders: Record<typeof kind, string[]> = {
   game: ['Game A/Game_Data', 'Game B/Game_Data', 'Notes'],
   manga: ['Work 1', 'Work 2'],
@@ -43,17 +44,20 @@ for (const folder of folders[kind]) await fs.mkdir(path.join(media, folder), { r
 for (const folder of folders[kind]) {
   const top = path.join(media, folder.split('/')[0])
   // A general folder's pictures are not named as pages, or it would open as a manga (R-479).
-  for (let index = 1; index <= 3; index++)
+  for (let index = 1; index <= 3; index++) {
     await fs.writeFile(
       path.join(top, kind === 'other' ? `photo ${'abc'[index - 1]}.png` : `${index}.png`),
       png
     )
+  }
 }
 // --big N adds N files to the first folder, to see how heavy folders behave.
 const big = Number(option('big') ?? 0)
-if (big)
-  for (let index = 0; index < big; index++)
+if (big) {
+  for (let index = 0; index < big; index++) {
     await fs.writeFile(path.join(media, folders[kind][0].split('/')[0], `extra-${index}.png`), png)
+  }
+}
 if (kind === 'game') {
   await fs.writeFile(path.join(media, 'Game A', 'Game.exe'), 'x')
   await fs.writeFile(path.join(media, 'Game B', 'Game.exe'), 'x')
@@ -91,12 +95,12 @@ if (args.includes('--fields')) {
   // Sample fields and bound components so the editor's field settings can be inspected.
   const project = created.projects[0].project!
   const style = { textColor: '#e4e6e8', backgroundColor: 'transparent' }
-  const status = crypto.randomUUID(),
-    score = crypto.randomUUID(),
-    steam = crypto.randomUUID(),
-    dlsite = crypto.randomUUID(),
-    getchu = crypto.randomUUID(),
-    groups = args.includes('--groups')
+  const status = crypto.randomUUID()
+  const score = crypto.randomUUID()
+  const steam = crypto.randomUUID()
+  const dlsite = crypto.randomUUID()
+  const getchu = crypto.randomUUID()
+  const groups = args.includes('--groups')
   if (groups) {
     // The first folder has only the DLsite title, so the group shows its second member.
     const dir = path.join(media, folders[kind][0].split('/')[0])
@@ -214,8 +218,9 @@ try {
     await page.locator('.center-mode').getByText(label, { exact: true }).click()
   }
   const child = option('child')
-  if (child)
+  if (child) {
     await page.locator('.media-subfolder').getByRole('button', { name: child, exact: true }).click()
+  }
   if (args.includes('--editor')) {
     // In a narrow window the open folder panel overlays the toolbar; close it first.
     const closePanel = page.getByRole('button', { name: '關閉資料夾內容', exact: true })
@@ -225,23 +230,27 @@ try {
     const select = option('select')
     if (select) await page.locator('.editor-cell').nth(Number(select)).click()
     const section = option('section')
-    if (section)
+    if (section) {
       await page
         .getByRole('tab', { name: section, exact: true })
         .or(page.getByRole('button', { name: section, exact: true }))
         .first()
         .click()
+    }
   }
-  if (args.includes('--settings'))
+  if (args.includes('--settings')) {
     await page.getByRole('tab', { name: '設定', exact: true }).click()
+  }
   if (option('backup') === 'undo')
-    // Shows the way back after a settings restore (the id is only displayed, not used).
+  // Shows the way back after a settings restore (the id is only displayed, not used).
+  {
     await page.evaluate(() =>
       localStorage.setItem(
         'morph.settingsUndo',
         JSON.stringify({ id: '00000000-0000-0000-0000-000000000000', at: new Date().toISOString() })
       )
     )
+  }
   if (args.includes('--backup')) {
     // Application settings › Backup; "create" makes one backup first so the list shows.
     await page.getByRole('button', { name: '應用程式設定', exact: true }).click()
@@ -257,8 +266,9 @@ try {
     await page.getByRole('button', { name: '專案選單 Shot', exact: true }).click()
     await page.getByRole('menuitem', { name: '專案設定', exact: true }).click()
     await page.getByRole('tab', { name: '移除', exact: true }).click()
-    if (option('project-settings') === 'delete')
+    if (option('project-settings') === 'delete') {
       await page.getByRole('button', { name: '刪除這個專案的資訊…', exact: true }).click()
+    }
   }
   if (args.includes('--mark')) {
     // Ctrl+click marks the first two folders so the batch type bar can be inspected.
@@ -270,8 +280,9 @@ try {
   // center path are printed so panel/center behaviour can be checked without a throwaway script.
   const card = option('card') ?? option('enter')
   if (card) {
-    if (option('enter'))
+    if (option('enter')) {
       await page.locator('.folder-card').filter({ hasText: card }).first().dblclick()
+    }
     // Time from the click to the panel title changing, measured inside the page.
     const elapsed = await page.evaluate(async (name) => {
       const element = [...document.querySelectorAll<HTMLElement>('.folder-card')].find((c) =>
@@ -314,8 +325,9 @@ try {
       let shell = 0
       await new Promise<void>((resolve) => {
         const tick = () => {
-          if (!shell && document.querySelector('.folder-panel-header'))
+          if (!shell && document.querySelector('.folder-panel-header')) {
             shell = performance.now() - start
+          }
           const loading = document.querySelector('.folder-panel-body .media-loading')
           const body = document.querySelector('.folder-panel-body')
           if (
@@ -323,9 +335,9 @@ try {
             body &&
             !loading &&
             document.querySelectorAll('.media-thumbnail img').length > 0
-          )
+          ) {
             resolve()
-          else requestAnimationFrame(tick)
+          } else requestAnimationFrame(tick)
         }
         tick()
       })
@@ -334,13 +346,16 @@ try {
     console.log('panel open:', JSON.stringify(timing))
   }
   const text = option('text')
-  if (text)
+  if (text) {
     for (const part of text.split('|')) await page.getByText(part, { exact: true }).first().click()
+  }
   const click = option('click')
   // Several buttons in turn: --click 'A|B'.
-  if (click)
-    for (const part of click.split('|'))
+  if (click) {
+    for (const part of click.split('|')) {
       await page.getByRole('button', { name: part, exact: true }).first().click()
+    }
+  }
   const evaluate = option('eval')
   if (evaluate) console.log('eval:', await page.evaluate(evaluate))
   const press = option('press')

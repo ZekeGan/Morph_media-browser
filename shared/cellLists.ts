@@ -19,6 +19,7 @@ const holders = [
 // 'card' is `cells` itself: the card being shown, or the list open in an editor.
 export const cellListKinds = ['card', ...holders.map((holder) => holder.where)] as const
 export type CellListKind = (typeof cellListKinds)[number]
+
 export interface CellList {
   where: CellListKind
   // The preset's id; the card has none.
@@ -58,10 +59,11 @@ export function mapRawCellLists(
   const next: Record<string, unknown> = { ...value, cells: map(value.cells) }
   for (const { key } of holders) {
     const held = value[key]
-    if (Array.isArray(held))
+    if (Array.isArray(held)) {
       next[key] = held.map((preset) =>
         plain(preset) ? { ...preset, cells: map(preset.cells) } : preset
       )
+    }
   }
   return next
 }

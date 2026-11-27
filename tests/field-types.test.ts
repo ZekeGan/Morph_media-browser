@@ -1,8 +1,10 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import { fieldTypes } from '../shared/fields'
-import { validateProject, type Cell, type Project } from '../shared/model'
-import { modelProject } from './support/model-fixtures'
+import { type Cell, type Project, validateProject } from '../shared/model'
+
+import { orderedFieldSourceGroups } from '../src/editor/fieldSources'
 import {
   fieldPurposes,
   fieldUses,
@@ -10,8 +12,8 @@ import {
   purposeChangeImpact,
   switchTextType,
 } from '../src/editor/fieldTypes'
-import { orderedFieldSourceGroups } from '../src/editor/fieldSources'
 import { t as tr } from '../src/i18n'
+import { modelProject } from './support/model-fixtures'
 
 const style = { textColor: '#ffffff', backgroundColor: 'transparent' }
 const cell = (patch: Partial<Cell>): Cell => ({
@@ -43,8 +45,8 @@ test('multiple values only changes the field type; components keep their display
 })
 
 test('fixed options take their options from stored values and move components to the choice display', () => {
-  const layout = cell({ wrap: true, scroll: true }),
-    other = cell({ cellId: 'other', kind: 'field-tags', tagPrefix: true })
+  const layout = cell({ wrap: true, scroll: true })
+  const other = cell({ cellId: 'other', kind: 'field-tags', tagPrefix: true })
   const p = switched(
     switchTextType(
       {

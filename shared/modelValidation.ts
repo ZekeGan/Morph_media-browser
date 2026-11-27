@@ -1,28 +1,30 @@
-import { documentFile, type FolderDetails } from './explorer'
 import { GROW_KINDS, MAX_GROW_ROWS } from './cardGrid'
-import { imageTypes } from './images'
-import { compatibleFieldTypes, httpUrl, validFieldValue } from './fields'
-import { validStableQuery } from './query'
-import { checkNotNewer, FORMAT_VERSION } from './upgrade'
-import { isFolderKind } from './kind'
 import { withOnlyCells } from './cellLists'
+import { documentFile, type FolderDetails } from './explorer'
+import { compatibleFieldTypes, httpUrl, validFieldValue } from './fields'
+import { imageTypes } from './images'
+import { isFolderKind } from './kind'
 import {
+  type Attribute,
+  cellConditions,
+  type FolderRecord,
+  MAX_FALLBACKS,
+  MAX_GROUP_MEMBERS,
   MAX_MORE_CONDITIONS,
   MAX_TEXT_RULES,
-  cellConditions,
-  MAX_GROUP_MEMBERS,
-  MAX_FALLBACKS,
-  type Attribute,
-  type FolderRecord,
   type Project,
 } from './modelTypes'
+import { validStableQuery } from './query'
+import { checkNotNewer, FORMAT_VERSION } from './upgrade'
 
 const obj = (v: unknown): v is Record<string, any> =>
   !!v && typeof v === 'object' && !Array.isArray(v)
+
 // R-319: a Locale Emulator profile GUID (the only form passed to LEProc.exe -runas).
 export const localeProfileId = (v: unknown): v is string =>
   typeof v === 'string' &&
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(v)
+
 const id = (v: unknown): v is string =>
   typeof v === 'string' &&
   /^[a-zA-Z0-9_-]{1,100}$/.test(v) &&
@@ -30,6 +32,7 @@ const id = (v: unknown): v is string =>
 const integer = (v: unknown, min: number, max: number) =>
   Number.isInteger(v) && Number(v) >= min && Number(v) <= max
 const text = (v: unknown, max = 10000): v is string => typeof v === 'string' && v.length <= max
+
 // R-413: { card?, panel? }, each { types?, levels?, folders? } whose values are layout ids; a level left unset is ''.
 function validLayoutRule(rule: unknown): boolean {
   return (
@@ -48,6 +51,7 @@ function validLayoutRule(rule: unknown): boolean {
         Object.entries(rule.folders).every(([folder, layout]) => id(folder) && id(layout))))
   )
 }
+
 const validLayoutRules = (v: unknown) =>
   obj(v) &&
   Object.keys(v).every((k) => k === 'card' || k === 'panel') &&
@@ -101,6 +105,7 @@ function conditionShape(c: unknown): boolean {
           text(c.value, 10000))
   )
 }
+
 function validFieldBinding(f: unknown): boolean {
   return (
     obj(f) &&
@@ -333,6 +338,7 @@ function validVolumeEntry(name: string, p: unknown): boolean {
     !Number.isNaN(Date.parse(p.updated))
   )
 }
+
 // R-282: a text book's place, kept under its file name inside the folder.
 function validNovelEntry(name: string, p: unknown): boolean {
   const ratio = (value: unknown) => typeof value === 'number' && value >= 0 && value <= 1
@@ -408,14 +414,17 @@ export function validateFolder(v: unknown): asserts v is FolderRecord {
     ) ||
     !Array.isArray(v.assets) ||
     !v.assets.every(validAsset)
-  )
+  ) {
     throw new Error('記錄損壞、版本不支援或不屬於本程式；原檔保留')
+  }
   if (v.details !== undefined) validateDetails(v.details)
 }
+
 export function validateDetails(v: unknown): asserts v is FolderDetails {
   checkNotNewer('details', v)
-  if (!obj(v) || v.schemaVersion !== FORMAT_VERSION.details || JSON.stringify(v).length > 2000000)
+  if (!obj(v) || v.schemaVersion !== FORMAT_VERSION.details || JSON.stringify(v).length > 2000000) {
     throw new Error('內容設定不合法')
+  }
   // Sections with truthy guards retain compatibility with existing null values.
   if (
     v.boundary &&
@@ -427,34 +436,39 @@ export function validateDetails(v: unknown): asserts v is FolderDetails {
       !v.boundary.evidence.every((x: unknown) => text(x, 500)) ||
       (v.boundary.role !== undefined &&
         (v.boundary.role !== 'tool' || v.boundary.state !== 'root')))
-  )
+  ) {
     throw new Error('遊戲保護設定不正確')
+  }
   if (
     v.hiddenActions !== undefined &&
     (!Array.isArray(v.hiddenActions) ||
       v.hiddenActions.length > 100 ||
       !v.hiddenActions.every(id) ||
       new Set(v.hiddenActions).size !== v.hiddenActions.length)
-  )
+  ) {
     throw new Error('遊戲操作顯示設定不合法')
+  }
   if (
     v.shownExtras !== undefined &&
     (!Array.isArray(v.shownExtras) ||
       !v.shownExtras.every((x: unknown) => ['steam', 'store', 'save'].includes(x as string)) ||
       new Set(v.shownExtras).size !== v.shownExtras.length)
-  )
+  ) {
     throw new Error('遊戲操作顯示設定不合法')
+  }
   if (v.kind !== undefined && !isFolderKind(v.kind)) throw new Error('資料夾類型不合法')
-  if (v.browseAs !== undefined && !['work', 'collection'].includes(v.browseAs))
+  if (v.browseAs !== undefined && !['work', 'collection'].includes(v.browseAs)) {
     throw new Error('瀏覽方式不合法')
+  }
   if (v.bannerAssetId !== undefined && !id(v.bannerAssetId)) throw new Error('封面身分不合法')
   if (
     v.cellImages !== undefined &&
     (!obj(v.cellImages) ||
       Object.keys(v.cellImages).length > 1000 ||
       !Object.entries(v.cellImages).every(([slot, asset]) => id(slot) && id(asset)))
-  )
+  ) {
     throw new Error('圖片組件設定不合法')
+  }
   if (
     v.reading &&
     (!obj(v.reading) ||
@@ -465,24 +479,28 @@ export function validateDetails(v: unknown): asserts v is FolderDetails {
       ['spread', 'rtl', 'firstSingle', 'webtoon', 'webtoonAsked'].some(
         (k) => v.reading[k] !== undefined && typeof v.reading[k] !== 'boolean'
       ))
-  )
+  ) {
     throw new Error('閱讀設定不合法')
-  if (v.targets && (!obj(v.targets) || !Object.entries(v.targets).every(validTargetEntry)))
+  }
+  if (v.targets && (!obj(v.targets) || !Object.entries(v.targets).every(validTargetEntry))) {
     throw new Error('任務設定不合法')
+  }
   if (
     v.novels !== undefined &&
     (!obj(v.novels) ||
       Object.keys(v.novels).length > 10000 ||
       !Object.entries(v.novels).every(([name, p]) => validNovelEntry(name, p)))
-  )
+  ) {
     throw new Error('小說閱讀紀錄不合法')
+  }
   if (
     v.volumes !== undefined &&
     (!obj(v.volumes) ||
       Object.keys(v.volumes).length > 10000 ||
       !Object.entries(v.volumes).every(([name, p]) => validVolumeEntry(name, p)))
-  )
+  ) {
     throw new Error('漫畫壓縮檔閱讀紀錄不合法')
+  }
   if (
     v.saveFolder !== undefined &&
     (!obj(v.saveFolder) ||
@@ -491,8 +509,9 @@ export function validateDetails(v: unknown): asserts v is FolderDetails {
       (v.saveFolder.relative && !relative(v.saveFolder.path)) ||
       // Outside the game it must be a local drive path; a network share would be contacted when opened.
       (!v.saveFolder.relative && !/^[A-Za-z]:[\\/]/.test(v.saveFolder.path)))
-  )
+  ) {
     throw new Error('存檔資料夾設定不合法')
+  }
   if (
     v.subtitles &&
     (!Array.isArray(v.subtitles) ||
@@ -504,15 +523,17 @@ export function validateDetails(v: unknown): asserts v is FolderDetails {
           relative(s.relativePath) &&
           /^subtitles\/[\w-]+\.(srt|vtt)$/.test(s.relativePath)
       ))
-  )
+  ) {
     throw new Error('字幕記錄不合法')
+  }
   if (
     v.playback &&
     (!obj(v.playback) ||
       Object.keys(v.playback).length > 10000 ||
       !Object.entries(v.playback).every(validPlaybackEntry))
-  )
+  ) {
     throw new Error('播放設定不合法')
+  }
   // R-432: the remembered embedded subtitle track: a name and/or a language, as short text.
   if (
     v.subtitleTrack !== undefined &&
@@ -523,9 +544,11 @@ export function validateDetails(v: unknown): asserts v is FolderDetails {
         (!text(v.subtitleTrack.name, 200) || !v.subtitleTrack.name)) ||
       (v.subtitleTrack.language !== undefined &&
         (!text(v.subtitleTrack.language, 35) || !v.subtitleTrack.language)))
-  )
+  ) {
     throw new Error('字幕軌偏好不合法')
+  }
 }
+
 export function validateProject(v: unknown): asserts v is Project {
   checkNotNewer('project', v)
   if (
@@ -539,8 +562,9 @@ export function validateProject(v: unknown): asserts v is Project {
             integer(v.cardView.level, 1, Number.MAX_SAFE_INTEGER) ||
             (v.cardView.mode === 'multi' && v.cardView.level === 'all')
           ))))
-  )
+  ) {
     throw new Error('CARD 顯示範圍不合法')
+  }
   if (
     !obj(v) ||
     v.kind !== 'media-viewer.project' ||
@@ -563,17 +587,20 @@ export function validateProject(v: unknown): asserts v is Project {
     !Array.isArray(v.cells) ||
     v.cells.length > 50 ||
     !v.cells.every(validCell)
-  )
+  ) {
     throw new Error('專案設定不合法或版本不支援')
+  }
   if (
     new Set(v.cells.map((c) => c.cellId)).size !== v.cells.length ||
     new Set(v.fieldBindings.map((f) => f.alias.toLowerCase())).size !== v.fieldBindings.length
-  )
+  ) {
     throw new Error('組件 ID 或欄位別名重複')
-  for (const cell of v.cells)
+  }
+  for (const cell of v.cells) {
     if (cell.fallbackIds) {
-      const type = v.fieldBindings.find((f) => f.attributeId === cell.attributeId)?.type,
-        display = cell.kind === 'field-text' ? 'string' : cell.kind === 'field-tags' ? 'tags' : type
+      const type = v.fieldBindings.find((f) => f.attributeId === cell.attributeId)?.type
+      const display =
+        cell.kind === 'field-text' ? 'string' : cell.kind === 'field-tags' ? 'tags' : type
       if (
         !compatibleFieldTypes(display, type) ||
         cell.fallbackIds.some(
@@ -583,11 +610,13 @@ export function validateProject(v: unknown): asserts v is Project {
               v.fieldBindings.find((f: { attributeId: string }) => f.attributeId === fallback)?.type
             )
         )
-      )
+      ) {
         throw new Error('備用欄位不存在，或格式不合')
+      }
     }
+  }
   validateFieldGroups(v as Project)
-  for (const cell of v.cells)
+  for (const cell of v.cells) {
     for (const condition of cellConditions(cell)) {
       const field = v.fieldBindings.find((field) => field.attributeId === condition.attributeId)
       if (
@@ -606,11 +635,14 @@ export function validateProject(v: unknown): asserts v is Project {
               condition.value,
               field.type === 'enum' ? undefined : field.options
             )))
-      )
+      ) {
         throw new Error('組件顯示條件不合法')
+      }
     }
-  if (v.layoutRules !== undefined && !validLayoutRules(v.layoutRules))
+  }
+  if (v.layoutRules !== undefined && !validLayoutRules(v.layoutRules)) {
     throw new Error('版面配置規則不合法')
+  }
   if (
     v.stylePresets !== undefined &&
     (!Array.isArray(v.stylePresets) ||
@@ -624,8 +656,9 @@ export function validateProject(v: unknown): asserts v is Project {
       !v.stylePresets.every(
         (p) => obj(p) && id(p.id) && text(p.name, 40) && p.name.trim() && validStyle(p.style)
       ))
-  )
+  ) {
     throw new Error('自訂樣式不合法或名稱重複')
+  }
   if (v.layoutPresets !== undefined) {
     if (
       !Array.isArray(v.layoutPresets) ||
@@ -638,10 +671,12 @@ export function validateProject(v: unknown): asserts v is Project {
         )
       ).size !== v.layoutPresets.length ||
       !v.layoutPresets.every((p) => obj(p) && id(p.id) && text(p.name, 100) && p.name.trim())
-    )
+    ) {
       throw new Error('卡片外觀不正確或名稱重複')
-    if (!id(v.activeLayoutId) || !v.layoutPresets.some((p) => p.id === v.activeLayoutId))
+    }
+    if (!id(v.activeLayoutId) || !v.layoutPresets.some((p) => p.id === v.activeLayoutId)) {
       throw new Error('使用中的外觀不存在')
+    }
     for (const preset of v.layoutPresets) validateProject(withOnlyCells(v, preset.cells))
   } else if (v.activeLayoutId !== undefined) throw new Error('外觀清單不存在')
   // R-409: the right-panel layouts (up to 40: the 30 book templates of a v1 project and the other kinds' templates).
@@ -655,18 +690,21 @@ export function validateProject(v: unknown): asserts v is Project {
         v.panelPresets.map((p) => (typeof p?.name === 'string' ? p.name.toLocaleLowerCase() : p))
       ).size !== v.panelPresets.length ||
       !v.panelPresets.every((p) => obj(p) && id(p.id) && text(p.name, 100) && p.name.trim())
-    )
+    ) {
       throw new Error('詳情版面不合法或名稱重複')
-    if (v.panelPresetId !== undefined && !v.panelPresets.some((p) => p.id === v.panelPresetId))
+    }
+    if (v.panelPresetId !== undefined && !v.panelPresets.some((p) => p.id === v.panelPresetId)) {
       throw new Error('詳情預設版面不存在')
+    }
     for (const preset of v.panelPresets) validateProject(withOnlyCells(v, preset.cells))
   } else if (v.panelPresetId !== undefined) throw new Error('詳情版面清單不存在')
   if (
     v.traversal !== undefined &&
     (!obj(v.traversal) ||
       !Object.entries(v.traversal).every(([k, b]) => id(k) && typeof b === 'boolean'))
-  )
+  ) {
     throw new Error('遍歷偏好不合法')
+  }
   if (
     v.actionTemplates !== undefined &&
     (!Array.isArray(v.actionTemplates) ||
@@ -680,8 +718,9 @@ export function validateProject(v: unknown): asserts v is Project {
           ['exe', 'folder', 'file-app', 'url', 'shortcut', 'file'].includes(t.kind) &&
           /^#[0-9a-f]{6}$/i.test(t.color)
       ))
-  )
+  ) {
     throw new Error('任務版型不合法')
+  }
   if (
     v.savedSearches !== undefined &&
     (!Array.isArray(v.savedSearches) ||
@@ -694,16 +733,20 @@ export function validateProject(v: unknown): asserts v is Project {
           (s.queryAst === undefined || validStableQuery(s.queryAst)) &&
           text(s.query, 2000)
       ))
-  )
+  ) {
     throw new Error('常用搜尋不合法')
-  for (let i = 0; i < v.cells.length; i++)
+  }
+  for (let i = 0; i < v.cells.length; i++) {
     for (let j = i + 1; j < v.cells.length; j++) {
-      const a = v.cells[i].grid,
-        b = v.cells[j].grid
-      if (a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y)
+      const a = v.cells[i].grid
+      const b = v.cells[j].grid
+      if (a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y) {
         throw new Error('組件不能重疊')
+      }
     }
+  }
 }
+
 // The type a field cell shows.
 const kindTypes: Record<string, string> = {
   'field-text': 'string',
@@ -715,11 +758,13 @@ const kindTypes: Record<string, string> = {
   'field-url': 'url',
   'field-date-only': 'date',
 }
+
 function validateFieldGroups(v: Project) {
   const groups = v.fieldGroups
   if (groups === undefined) {
-    if (v.cells.some((cell) => cell.groupId) || v.groupSources !== undefined)
+    if (v.cells.some((cell) => cell.groupId) || v.groupSources !== undefined) {
       throw new Error('欄位群組不存在')
+    }
     return
   }
   const typeOf = (attributeId: string) =>
@@ -745,9 +790,10 @@ function validateFieldGroups(v: Project) {
     new Set(groups.map((g) => g.name.trim().toLocaleLowerCase())).size !== groups.length ||
     new Set(groups.flatMap((g) => g.memberIds)).size !==
       groups.reduce((sum, g) => sum + g.memberIds.length, 0)
-  )
+  ) {
     throw new Error('欄位群組不正確：成員要存在、格式相容、只屬於一個群組，名稱不能重複')
-  for (const cell of v.cells)
+  }
+  for (const cell of v.cells) {
     if (cell.groupId) {
       const group = groups.find((g) => g.groupId === cell.groupId)
       if (
@@ -755,9 +801,11 @@ function validateFieldGroups(v: Project) {
         !cell.attributeId ||
         !group.memberIds.includes(cell.attributeId) ||
         !compatibleFieldTypes(kindTypes[cell.kind], typeOf(group.memberIds[0]))
-      )
+      ) {
         throw new Error('組件顯示的欄位群組不存在或格式不相容')
+      }
     }
+  }
   const sources = v.groupSources
   if (
     sources !== undefined &&
@@ -773,18 +821,22 @@ function validateFieldGroups(v: Project) {
               groups.some((g) => g.groupId === groupId && g.memberIds.includes(member as string))
           )
       ))
-  )
+  ) {
     throw new Error('資料夾指定的群組來源不合法')
+  }
 }
+
 // Group cells were removed; a project saved while they existed loads without them (children go with the group).
 export function withoutGroupCells<T>(value: T): T {
-  if (Array.isArray(value))
+  if (Array.isArray(value)) {
     return value
       .filter((item) => !(obj(item) && item.kind === 'group'))
       .map((item) => withoutGroupCells(item)) as T
-  if (obj(value))
+  }
+  if (obj(value)) {
     return Object.fromEntries(
       Object.entries(value).map(([key, item]) => [key, withoutGroupCells(item)])
     ) as T
+  }
   return value
 }

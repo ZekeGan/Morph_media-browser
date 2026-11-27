@@ -2,6 +2,7 @@ import type { FolderRow } from '../../shared/model'
 import { metadataSources, sourceForUrl } from '../../shared/sources'
 
 export const isUrl = (value?: string): value is string => !!value && /^https?:\/\//i.test(value)
+
 export const siteName = (url: string) => {
   const id = sourceForUrl(url)
   if (id) return metadataSources.find((item) => item.id === id)?.name ?? id
@@ -11,10 +12,11 @@ export const siteName = (url: string) => {
     return url
   }
 }
+
 // The websites this folder's data was imported from (one entry per site, with the address it was imported from).
 export function importSources(row: FolderRow) {
-  const seen = new Map<string, string>(),
-    record = row.record
+  const seen = new Map<string, string>()
+  const record = row.record
   if (!record) return []
   for (const attribute of [
     ...(record.projectOverrides[row.projectId] ?? []),

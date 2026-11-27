@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from 'react'
 import {
   ActionIcon,
   Alert,
@@ -11,9 +10,11 @@ import {
   Tooltip,
   UnstyledButton,
 } from '@mantine/core'
-import { Icon } from '../common/icons'
-import { OptionTagsInput } from './OptionTagsInput'
-import { t as tr } from '../i18n'
+import { useEffect, useRef, useState } from 'react'
+
+import { copyableValue, groupValue, isFilled } from '../../shared/cells'
+import { groupOfField } from '../../shared/fieldGroups'
+import type { editorFields } from '../../shared/layouts'
 import type {
   Attribute,
   FieldGroup,
@@ -23,34 +24,35 @@ import type {
   Request,
   Response,
 } from '../../shared/model'
-import type { editorFields } from '../../shared/layouts'
-import { copyableValue, groupValue, isFilled } from '../../shared/cells'
-import { groupOfField } from '../../shared/fieldGroups'
+
+import { EnumColors } from '../cells/EnumColors'
+import { Icon } from '../common/icons'
+import { t as tr } from '../i18n'
 import {
   dropHandlers,
+  type DropState,
   fieldDrag,
   UseCount,
   useGroupActions,
-  type DropState,
 } from './FieldGroupPalette'
 import { fieldSource, orderedFieldSourceGroups, useSourceFolding } from './fieldSources'
-import { EnumColors } from '../cells/EnumColors'
 import {
+  dateConditionCount,
+  type DateType,
   groupUseList,
   isTextType,
   purposeChangeImpact,
   purposeGlyph,
   purposeLabel,
   shownUses,
-  dateConditionCount,
   switchDateToText,
   switchDateType,
   switchTextToDate,
   switchTextType,
-  textTypes,
-  type DateType,
   type TextType,
+  textTypes,
 } from './fieldTypes'
+import { OptionTagsInput } from './OptionTagsInput'
 
 type Binding = Project['fieldBindings'][number]
 type Source = ReturnType<typeof editorFields>[number]
@@ -72,8 +74,8 @@ function UnifyDates({
   attributeId: string
   busy: boolean
 }) {
-  const [preview, setPreview] = useState<FieldUnifyPreview>(),
-    [working, setWorking] = useState(false)
+  const [preview, setPreview] = useState<FieldUnifyPreview>()
+  const [working, setWorking] = useState(false)
   const run = async (request: Request) => {
     setWorking(true)
     try {
@@ -82,7 +84,7 @@ function UnifyDates({
       setWorking(false)
     }
   }
-  if (!preview)
+  if (!preview) {
     return (
       <Button
         size="xs"
@@ -97,6 +99,7 @@ function UnifyDates({
         {tr('統一成日期…')}
       </Button>
     )
+  }
   const kind = preview.to === 'datetime' ? tr('日期和時間') : tr('日期')
   return (
     <Alert color="blue" className="field-unify" title={tr('統一成{0}', kind)}>
@@ -173,17 +176,17 @@ function FieldDetail({
   setRenaming: (value: { id: string; name: string }) => void
   showSource: (source: string) => void
 }) {
-  const id = binding.attributeId,
-    name = binding.alias || tr('未命名欄位'),
-    origin = fieldSource(id, attributes)
-  const [wording, setWording] = useState<{ trueLabel?: string; falseLabel?: string }>({}),
-    [wordingError, setWordingError] = useState('')
-  const [target, setTarget] = useState<TextType>(),
-    // Between date and text (R-240): 'string' for a date field, a date type for a text field.
-    [dateTarget, setDateTarget] = useState<'string' | DateType>(),
-    [typed, setTyped] = useState<string[]>([]),
-    [typedProblem, setTypedProblem] = useState(''),
-    [optionProblem, setOptionProblem] = useState('')
+  const id = binding.attributeId
+  const name = binding.alias || tr('未命名欄位')
+  const origin = fieldSource(id, attributes)
+  const [wording, setWording] = useState<{ trueLabel?: string; falseLabel?: string }>({})
+  const [wordingError, setWordingError] = useState('')
+  const [target, setTarget] = useState<TextType>()
+  // Between date and text (R-240): 'string' for a date field, a date type for a text field.
+  const [dateTarget, setDateTarget] = useState<'string' | DateType>()
+  const [typed, setTyped] = useState<string[]>([])
+  const [typedProblem, setTypedProblem] = useState('')
+  const [optionProblem, setOptionProblem] = useState('')
   const reasons: Record<string, string> = {
     fallback: tr('這個欄位用在備用來源，請先移除備用來源。'),
     group: tr('這個欄位在群組裡，請先移出群組。'),
@@ -213,12 +216,12 @@ function FieldDetail({
       : undefined
   const impact = target ? purposeChangeImpact(draft, id, target) : 0
   const datePlan = !dateTarget
-      ? undefined
-      : dateTarget === 'string'
-        ? switchDateToText(draft, id)
-        : switchTextToDate(draft, id, dateTarget, values),
-    removedConditions = dateTarget === 'string' ? dateConditionCount(draft, id) : 0,
-    shownCount = shownUses(draft, id, true).length
+    ? undefined
+    : dateTarget === 'string'
+      ? switchDateToText(draft, id)
+      : switchTextToDate(draft, id, dateTarget, values)
+  const removedConditions = dateTarget === 'string' ? dateConditionCount(draft, id) : 0
+  const shownCount = shownUses(draft, id, true).length
   const usage = (option: string) =>
     values.filter((value) => value === option || (Array.isArray(value) && value.includes(option)))
       .length
@@ -227,7 +230,7 @@ function FieldDetail({
     const used = (binding.options ?? []).filter(
       (option) => !options.includes(option) && usage(option) > 0
     )
-    if (used.length)
+    if (used.length) {
       return setOptionProblem(
         tr(
           '「{0}」仍有 {1} 個資料夾使用，請先把這些資料夾改成其他值再移除。',
@@ -235,6 +238,7 @@ function FieldDetail({
           usage(used[0])
         )
       )
+    }
     if (!options.length) return setOptionProblem(tr('至少需要一個選項'))
     setOptionProblem('')
     change({
@@ -303,8 +307,9 @@ function FieldDetail({
                       timed
                     )
                   )
-                )
+                ) {
                   return
+                }
                 const result = switchDateType(draft, id, next)
                 if ('project' in result) change(result.project)
                 else window.alert(reasons[result.error])
@@ -785,8 +790,8 @@ export function FieldManager({
   requestDelete: (binding: Binding) => void
   setRenaming: (value: { id: string; name: string }) => void
 }) {
-  const [search, setSearch] = useState(''),
-    [selected, setSelected] = useState(focusId)
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState(focusId)
   const query = search.trim().toLocaleLowerCase()
   const folding = useSourceFolding(!!query)
   // A field asked for from outside is always visible in the list, even in a folded source or under a search.
@@ -832,10 +837,10 @@ export function FieldManager({
     currentRow.current?.scrollIntoView({ block: 'nearest' })
   }, [selected])
   const row = (binding: Binding) => {
-    const id = binding.attributeId,
-      added = bound(id),
-      name = binding.alias || tr('未命名欄位'),
-      uses = shownUses(draft, id, cardEditor)
+    const id = binding.attributeId
+    const added = bound(id)
+    const name = binding.alias || tr('未命名欄位')
+    const uses = shownUses(draft, id, cardEditor)
     return (
       <UnstyledButton
         key={id}
@@ -925,8 +930,8 @@ export function FieldManager({
               </div>
             )}
             {orderedFieldSourceGroups(shown, attributes).map(({ source, fields }) => {
-              const added = fields.filter((f) => bound(f.attributeId)),
-                unadded = fields.filter((f) => !bound(f.attributeId))
+              const added = fields.filter((f) => bound(f.attributeId))
+              const unadded = fields.filter((f) => !bound(f.attributeId))
               return (
                 <details
                   key={source}

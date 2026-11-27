@@ -1,6 +1,6 @@
-import { compatibleFieldTypes } from './fields'
-import { MAX_GROUP_MEMBERS, type Cell, type FieldGroup, type Project } from './model'
 import { cellLists, mapCellLists } from './cellLists'
+import { compatibleFieldTypes } from './fields'
+import { type Cell, type FieldGroup, MAX_GROUP_MEMBERS, type Project } from './model'
 
 // Field groups (R-226): fields holding the same kind of data from different sources, shown as one. Every change
 // here returns a new project; cells, layouts, content templates and per-folder choices follow the group.
@@ -10,8 +10,10 @@ export type GroupRefusal = 'type' | 'full' | 'same' | 'name'
 export function groupOfField(project: Pick<Project, 'fieldGroups'>, attributeId: string) {
   return project.fieldGroups?.find((group) => group.memberIds.includes(attributeId))
 }
+
 const typeOf = (project: Project, attributeId: string) =>
   project.fieldBindings.find((field) => field.attributeId === attributeId)?.type
+
 export function groupType(project: Project, group: FieldGroup) {
   return typeOf(project, group.memberIds[0])
 }
@@ -28,8 +30,9 @@ export function joinRefusal(
       : groupOfField(project, target.attributeId)
   const members = group?.memberIds ?? ('attributeId' in target ? [target.attributeId] : [])
   if (members.includes(attributeId)) return 'same'
-  if (!compatibleFieldTypes(typeOf(project, members[0]), typeOf(project, attributeId)))
+  if (!compatibleFieldTypes(typeOf(project, members[0]), typeOf(project, attributeId))) {
     return 'type'
+  }
   if (members.length >= MAX_GROUP_MEMBERS) return 'full'
   return undefined
 }
@@ -43,6 +46,7 @@ export function groupNameTaken(project: Project, name: string, exceptGroupId?: s
     )
   )
 }
+
 // A free name from a base: "Title", "Title 2", "Title 3"…
 export function freeGroupName(project: Project, base: string) {
   const start = base.trim().slice(0, 90) || 'Group'
@@ -69,6 +73,7 @@ function withGroups(project: Project, groups: FieldGroup[]): Project {
   else delete next.groupSources
   return next
 }
+
 // Cells showing a group stay bound to one of its members; a dissolved group leaves its cells on its first member.
 export function settleCells(project: Project, before: FieldGroup[]): Project {
   return mapCellLists(project, (cells) =>
@@ -85,12 +90,13 @@ export function settleCells(project: Project, before: FieldGroup[]): Project {
     })
   )
 }
+
 function change(project: Project, groups: FieldGroup[]): Project {
-  const before = project.fieldGroups ?? [],
-    next = settleCells(withGroups(project, groups), before),
-    gone = before.filter((g) => !groups.some((now) => now.groupId === g.groupId))
+  const before = project.fieldGroups ?? []
+  const next = settleCells(withGroups(project, groups), before)
+  const gone = before.filter((g) => !groups.some((now) => now.groupId === g.groupId))
   // A saved search that named a dissolved group searches its first member from then on.
-  if (gone.length && next.savedSearches)
+  if (gone.length && next.savedSearches) {
     next.savedSearches = next.savedSearches.map((search) =>
       search.queryAst?.groups.flat().some((term) => gone.some((g) => g.groupId === term.field))
         ? {
@@ -107,8 +113,10 @@ function change(project: Project, groups: FieldGroup[]): Project {
           }
         : search
     )
+  }
   return next
 }
+
 // A field leaves whatever group it is in; a group left with no members is dissolved.
 function without(groups: FieldGroup[], attributeId: string) {
   return groups
@@ -124,14 +132,17 @@ export function createGroup(
 ): Project {
   const ids = [...new Set(memberIds)]
   if (ids.length < 1 || ids.length > MAX_GROUP_MEMBERS) throw new Error('full')
-  if (ids.some((id) => !compatibleFieldTypes(typeOf(project, ids[0]), typeOf(project, id))))
+  if (ids.some((id) => !compatibleFieldTypes(typeOf(project, ids[0]), typeOf(project, id)))) {
     throw new Error('type')
-  if (!name.trim() || name.trim().length > 100 || groupNameTaken(project, name))
+  }
+  if (!name.trim() || name.trim().length > 100 || groupNameTaken(project, name)) {
     throw new Error('name')
+  }
   let groups = project.fieldGroups ?? []
   for (const id of ids) groups = without(groups, id)
   return change(project, [{ groupId, name: name.trim(), memberIds: ids }, ...groups])
 }
+
 export function addToGroup(
   project: Project,
   groupId: string,
@@ -149,10 +160,12 @@ export function addToGroup(
   })
   return change(project, groups)
 }
+
 export function removeFromGroup(project: Project, attributeId: string): Project {
   if (!groupOfField(project, attributeId)) return project
   return change(project, without(project.fieldGroups ?? [], attributeId))
 }
+
 export function reorderGroup(project: Project, groupId: string, memberIds: string[]): Project {
   return change(
     project,
@@ -165,9 +178,11 @@ export function reorderGroup(project: Project, groupId: string, memberIds: strin
     )
   )
 }
+
 export function renameGroup(project: Project, groupId: string, name: string): Project {
-  if (!name.trim() || name.trim().length > 100 || groupNameTaken(project, name, groupId))
+  if (!name.trim() || name.trim().length > 100 || groupNameTaken(project, name, groupId)) {
     throw new Error('name')
+  }
   return change(
     project,
     (project.fieldGroups ?? []).map((g) =>
@@ -175,12 +190,14 @@ export function renameGroup(project: Project, groupId: string, name: string): Pr
     )
   )
 }
+
 export function dissolveGroup(project: Project, groupId: string): Project {
   return change(
     project,
     (project.fieldGroups ?? []).filter((g) => g.groupId !== groupId)
   )
 }
+
 // A folder's own choice of member for a group (undefined goes back to the group's order).
 export function setGroupSource(
   project: Project,
@@ -200,11 +217,13 @@ export function setGroupSource(
   if (!Object.keys(sources).length) delete next.groupSources
   return next
 }
+
 // Binding a cell to a group (or back to a single field) in the given cell list.
 export function bindCellToGroup(cell: Cell, group: FieldGroup): Cell {
   const { fallbackIds: _drop, ...plain } = cell
   return { ...plain, groupId: group.groupId, attributeId: group.memberIds[0] }
 }
+
 // An older component with fallback fields becomes a group of those fields, in the same order. Fields already in
 // another group are moved into the new one.
 export function groupFromFallbacks(
@@ -217,12 +236,13 @@ export function groupFromFallbacks(
     .flatMap((list) => list.cells)
     .find((c) => c.cellId === cellId)
   if (!cell?.attributeId || !cell.fallbackIds?.length) return project
-  const next = createGroup(project, [cell.attributeId, ...cell.fallbackIds], name, groupId),
-    group = next.fieldGroups!.find((g) => g.groupId === groupId)!
+  const next = createGroup(project, [cell.attributeId, ...cell.fallbackIds], name, groupId)
+  const group = next.fieldGroups!.find((g) => g.groupId === groupId)!
   return mapCellLists(next, (cells) =>
     cells.map((c) => (c.cellId === cellId ? bindCellToGroup(c, group) : c))
   )
 }
+
 // Deleting a field: it leaves its group first, so cells showing the group move on to the next member.
 export function groupsWithoutField(project: Project, attributeId: string): Project {
   return removeFromGroup(project, attributeId)

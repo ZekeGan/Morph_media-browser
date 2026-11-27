@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react'
 import { Alert, Button, Group, Text } from '@mantine/core'
-import { t as tr } from '../i18n'
+import { useEffect, useState } from 'react'
+
 import { HelpTip } from '../common/HelpTip'
+import { t as tr } from '../i18n'
 import { describeError } from '../notices/errors'
 
 // Application settings (R-320): the program that plays .swf games (Flash Player projector or Ruffle desktop). It is
 // picked in a main-process dialog; the window only shows the path. M:orph never plays Flash itself.
 export function FlashPlayerSetting({ opened }: { opened: boolean }) {
-  const [file, setFile] = useState<string>(),
-    [error, setError] = useState(''),
-    [pending, setPending] = useState(false)
+  const [file, setFile] = useState<string>()
+  const [error, setError] = useState('')
+  const [pending, setPending] = useState(false)
   useEffect(() => {
     if (!opened) return
     void window.desktop

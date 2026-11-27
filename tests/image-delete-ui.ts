@@ -1,18 +1,20 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
+
 import { DATA_DIR } from '../shared/model'
+
 import { readFolder, saveFolder } from '../electron/files'
-import { closeApp, launchApp, reportFailure, removeTestRoot } from './support/app'
+import { Library } from '../electron/library'
+import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
 // Saved images in folder settings can be deleted after a confirmation; the user's own media stays.
 const png = Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.alloc(64, 1)])
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'image-delete-ui-')),
-  media = path.join(root, 'Pics'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'image-delete-ui-'))
+const media = path.join(root, 'Pics')
+const local = path.join(root, 'local')
 await fs.mkdir(media, { recursive: true })
 await fs.writeFile(path.join(media, 'original.txt'), 'PRESERVE ORIGINAL')
 const lib = new Library(local, undefined, false)
@@ -22,9 +24,9 @@ await lib.create(media, {
   scanAll: true,
   depth: { mode: 'through', level: 2 },
 })
-const row = lib.snapshot().rows.find((r) => r.path === media) ?? lib.snapshot().rows[0],
-  record = await readFolder(row.path),
-  ids = ['11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222']
+const row = lib.snapshot().rows.find((r) => r.path === media) ?? lib.snapshot().rows[0]
+const record = await readFolder(row.path)
+const ids = ['11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222']
 await fs.mkdir(path.join(row.path, DATA_DIR, 'assets'), { recursive: true })
 for (const [i, assetId] of ids.entries()) {
   await fs.writeFile(path.join(row.path, DATA_DIR, 'assets', assetId + '.png'), png)

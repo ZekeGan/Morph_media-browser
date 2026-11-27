@@ -1,16 +1,18 @@
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { Popover } from '@mantine/core'
+import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react'
+
 import { Icon, type IconName } from '../common/icons'
 import { t as tr, useLocale } from '../i18n'
 
 export const videoTime = (value: number) => {
-  const seconds = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0,
-    h = Math.floor(seconds / 3600),
-    m = Math.floor(seconds / 60) % 60,
-    s = seconds % 60
+  const seconds = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor(seconds / 60) % 60
+  const s = seconds % 60
 
   return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(s).padStart(2, '0')
 }
+
 interface Props {
   controls: RefObject<HTMLDivElement | null>
   stage: RefObject<HTMLDivElement | null>
@@ -46,6 +48,7 @@ interface Props {
   // R-431: open the playing video in the external player (always offered, not only after a playback failure).
   external?: () => void
 }
+
 export function VideoControls(p: Props) {
   useLocale()
 

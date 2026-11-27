@@ -1,14 +1,16 @@
-import { _electron as electron } from 'playwright-core'
-import fs from 'node:fs/promises'
-import path from 'node:path'
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import { promisify } from 'node:util'
-import { Library } from '../electron/library'
-import { folderFile } from '../electron/files'
-import { catalog } from '../src/i18n/catalog'
+import { _electron as electron } from 'playwright-core'
+
 import type { LocaleId } from '../shared/locales'
 import { nativeText } from '../shared/native-messages'
+
+import { folderFile } from '../electron/files'
+import { Library } from '../electron/library'
+import { catalog } from '../src/i18n/catalog'
 import { closeApp } from './support/app'
 
 // R-474: the fields that differ between two records, as "path: before → after".
@@ -28,10 +30,10 @@ const recordDiff = (before: unknown, after: unknown, at = ''): string[] => {
 }
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'appearance-')),
-  local = path.join(root, 'local'),
-  media = path.join(root, 'Library'),
-  screens = path.join(root, 'screens')
+const root = await fs.mkdtemp(path.join(base, 'appearance-'))
+const local = path.join(root, 'local')
+const media = path.join(root, 'Library')
+const screens = path.join(root, 'screens')
 await fs.mkdir(screens)
 const originals = new Map<string, Buffer>()
 for (const folder of [
@@ -76,9 +78,9 @@ const env: Record<string, string> = Object.fromEntries(
   )
 )
 delete env.ELECTRON_RUN_AS_NODE
-const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
-  page = await app.firstWindow(),
-  errors: string[] = []
+const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
+const page = await app.firstWindow()
+const errors: string[] = []
 page.on('pageerror', (error) => errors.push(error.message))
 page.setDefaultTimeout(15000)
 let locale: LocaleId = 'zh-TW'
@@ -167,8 +169,9 @@ try {
   const records = new Map<string, Buffer>()
   let readerOpened = false
   for (const row of (await page.evaluate(() => window.media.request({ action: 'snapshot' })))
-    .snapshot.structure ?? [])
+    .snapshot.structure ?? []) {
     if (row.record) records.set(folderFile(row.path), await fs.readFile(folderFile(row.path)))
+  }
   for (const [theme, name] of [
     ['glass', '霧白玻璃'],
     ['paper', '暖紙墨橘'],
@@ -207,11 +210,12 @@ try {
     // R-474: when a record changed, say where in the run it happened and which fields, so a rare rewrite can be traced.
     for (const [file, bytes] of records) {
       const now = await fs.readFile(file)
-      if (!now.equals(bytes))
+      if (!now.equals(bytes)) {
         assert.fail(
           `Appearance changed a folder record (theme ${theme}, ${readerOpened ? 'after' : 'before'} the reader was opened): ${file}\n` +
             recordDiff(JSON.parse(bytes.toString()), JSON.parse(now.toString())).join('\n')
         )
+      }
     }
     await page.locator('.media-thumbnail').first().click()
     readerOpened = true
@@ -245,16 +249,17 @@ try {
     // The existing reader saves reading preferences on exit. Allow only that
     // intentional change, then use the new bytes as the next appearance baseline.
     for (const [file, bytes] of records) {
-      const next = await fs.readFile(file),
-        normalize = (record: any) => {
-          delete record.revision
-          if (record.details) {
-            delete record.details.reading
-            if (Object.keys(record.details).every((key) => key === 'schemaVersion'))
-              delete record.details
+      const next = await fs.readFile(file)
+      const normalize = (record: any) => {
+        delete record.revision
+        if (record.details) {
+          delete record.details.reading
+          if (Object.keys(record.details).every((key) => key === 'schemaVersion')) {
+            delete record.details
           }
-          return record
         }
+        return record
+      }
       assert.deepEqual(
         normalize(JSON.parse(next.toString())),
         normalize(JSON.parse(bytes.toString())),
@@ -299,11 +304,12 @@ try {
   }
   for (const [file, bytes] of [...originals, ...records]) {
     const now = await fs.readFile(file)
-    if (!now.equals(bytes))
+    if (!now.equals(bytes)) {
       assert.fail(
         `A folder record changed after the last theme's checks: ${file}\n` +
           recordDiff(JSON.parse(bytes.toString()), JSON.parse(now.toString())).join('\n')
       )
+    }
   }
   assert.deepEqual(errors, [])
   console.log(

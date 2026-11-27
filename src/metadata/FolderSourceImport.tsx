@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import {
   Alert,
   Badge,
@@ -11,17 +10,8 @@ import {
   Text,
   TextInput,
 } from '@mantine/core'
-import {
-  defaultSearchSources,
-  isSearchSource,
-  metadataSources,
-  searchableSources,
-  sourceForUrl,
-  type SearchSourceId,
-} from '../../shared/sources'
-import type { FolderKind } from '../../shared/kind'
-import { localeOptions } from '../../shared/locales'
-import { keySite, type KeyStatus } from '../../shared/keys'
+import { useEffect, useState } from 'react'
+
 import type {
   ExplorerRequest,
   ExplorerResponse,
@@ -29,27 +19,39 @@ import type {
   MetadataPreview,
   MetadataVersion,
 } from '../../shared/explorer'
-import { errorMessage } from '../../shared/notifications'
+import { keySite, type KeyStatus } from '../../shared/keys'
+import type { FolderKind } from '../../shared/kind'
+import { localeOptions } from '../../shared/locales'
 import type { FolderRow } from '../../shared/model'
-import { t as tr } from '../i18n'
+import { errorMessage } from '../../shared/notifications'
+import {
+  defaultSearchSources,
+  isSearchSource,
+  metadataSources,
+  searchableSources,
+  type SearchSourceId,
+  sourceForUrl,
+} from '../../shared/sources'
+
 import { HelpLabel, HelpTip } from '../common/HelpTip'
 import { Icon } from '../common/icons'
 import { importedFieldLabels } from '../editor/importedFieldLabels'
+import { t as tr } from '../i18n'
 
 type Run = (request: ExplorerRequest) => Promise<ExplorerResponse | undefined>
 
 // The import draft lives in the folder panel, so switching tabs keeps the pasted address and the preview.
 export function useSourceImport() {
-  const [source, setSource] = useState(''),
-    [preview, setPreview] = useState<MetadataPreview>(),
-    [keys, setKeys] = useState<string[]>([]),
-    [cover, setCover] = useState(true),
-    // R-449: also keep the album's own cover (MusicBrainz), beside the version's.
-    [albumCover, setAlbumCover] = useState(false),
-    // R-422: positions of the source's pictures picked for import (none by default).
-    [images, setImages] = useState<number[]>([]),
-    [result, setResult] = useState(''),
-    [replace, setReplace] = useState(false)
+  const [source, setSource] = useState('')
+  const [preview, setPreview] = useState<MetadataPreview>()
+  const [keys, setKeys] = useState<string[]>([])
+  const [cover, setCover] = useState(true)
+  // R-449: also keep the album's own cover (MusicBrainz), beside the version's.
+  const [albumCover, setAlbumCover] = useState(false)
+  // R-422: positions of the source's pictures picked for import (none by default).
+  const [images, setImages] = useState<number[]>([])
+  const [result, setResult] = useState('')
+  const [replace, setReplace] = useState(false)
   return {
     source,
     setSource,
@@ -69,11 +71,13 @@ export function useSourceImport() {
     setReplace,
   }
 }
+
 export type SourceImport = ReturnType<typeof useSourceImport>
 
 // "Fill in from a website": paste an address, preview what the site has, pick the fields to import.
 // R-420: preview values that are notes, not data to import.
 const noteKeys = ['COVER_STATUS', 'LANGUAGE_NOTICE']
+
 // The notice value is "<preferred language ids>|<script of the text>".
 function languageNotice(value: unknown) {
   const [ids, script] = String(value ?? '').split('|')
@@ -119,14 +123,14 @@ export function FolderSourceImport({
     preview?.provider === 'musicbrainz' && key === 'RELEASE_DATE'
       ? tr('最早發行日')
       : (sourceLabels[key] ?? key)
-  const { source, setSource, preview, setPreview, keys, setKeys, cover, setCover } = importer,
-    { images, setImages, albumCover, setAlbumCover } = importer
+  const { source, setSource, preview, setPreview, keys, setKeys, cover, setCover } = importer
+  const { images, setImages, albumCover, setAlbumCover } = importer
   // R-511: sources only offer screenshots now.
   const imageLabel = (image: { n?: number }) => tr('截圖 {0}', image.n ?? 0)
   // R-418: search the sources by the folder's name (editable); picking a candidate previews its address.
-  const [query, setQuery] = useState(row.name),
-    [searching, setSearching] = useState(false),
-    [found, setFound] = useState<{ list: MetadataCandidate[]; failed: string[] }>()
+  const [query, setQuery] = useState(row.name)
+  const [searching, setSearching] = useState(false)
+  const [found, setFound] = useState<{ list: MetadataCandidate[]; failed: string[] }>()
   useEffect(() => {
     setQuery(row.name)
     setFound(undefined)
@@ -134,8 +138,8 @@ export function FolderSourceImport({
   const sourceName = (id: string) => metadataSources.find((item) => item.id === id)?.name ?? id
   // R-424: which sources a name search asks. The choice is kept per folder kind on this computer (workspace prefs);
   // until the user has chosen for a kind, the kind's defaults are ticked. TMDB and FANZA need the user's own key.
-  const [saved, setSaved] = useState<SearchSourceId[]>(),
-    [searchKeys, setSearchKeys] = useState<Record<string, KeyStatus>>()
+  const [saved, setSaved] = useState<SearchSourceId[]>()
+  const [searchKeys, setSearchKeys] = useState<Record<string, KeyStatus>>()
   useEffect(() => {
     let alive = true
     setSaved(undefined)
@@ -152,9 +156,9 @@ export function FolderSourceImport({
     }
   }, [kind])
   const needsKey = (id: string) =>
-      (id === 'tmdb' || id === 'fanza') && !!searchKeys && !searchKeys[id]?.set,
-    chosen = (saved ?? defaultSearchSources(kind)).filter((id) => !needsKey(id)),
-    keyless = searchableSources.filter(needsKey)
+    (id === 'tmdb' || id === 'fanza') && !!searchKeys && !searchKeys[id]?.set
+  const chosen = (saved ?? defaultSearchSources(kind)).filter((id) => !needsKey(id))
+  const keyless = searchableSources.filter(needsKey)
   // R-443: the button says which sources are ticked (the first name, then "+N"); its tooltip lists them all.
   const chosenLabel = chosen.length
     ? sourceName(chosen[0]) + (chosen.length > 1 ? ' +' + (chosen.length - 1) : '')
@@ -192,11 +196,11 @@ export function FolderSourceImport({
     }
   }
   // The source is recognised from the pasted address alone; the preview button only works for a known site.
-  const detected = sourceForUrl(source.trim()),
-    [listOpen, setListOpen] = useState(false)
+  const detected = sourceForUrl(source.trim())
+  const [listOpen, setListOpen] = useState(false)
   // R-285: a site that needs the user's own key says so here, with a way to the settings, before anything is asked.
-  const keyed = detected ? keySite(detected) : undefined,
-    [keyStatus, setKeyStatus] = useState<Record<string, KeyStatus>>()
+  const keyed = detected ? keySite(detected) : undefined
+  const [keyStatus, setKeyStatus] = useState<Record<string, KeyStatus>>()
   useEffect(() => {
     if (!keyed) return
     let alive = true
@@ -241,8 +245,8 @@ export function FolderSourceImport({
       ...(row.contents?.audio ? { trackCount: row.contents.audio } : {}),
     })
     if (result?.preview) {
-      const next = result.preview,
-        all = next.values.filter((v) => !noteKeys.includes(v.key)).map((v) => v.key)
+      const next = result.preview
+      const all = next.values.filter((v) => !noteKeys.includes(v.key)).map((v) => v.key)
       setPreview(next)
       if (before) {
         setKeys(
@@ -289,8 +293,9 @@ export function FolderSourceImport({
             className="source-search"
             onSubmit={(event) => {
               event.preventDefault()
-              if (query.trim() && chosen.length && !searching && !disabled && !fieldDirty)
+              if (query.trim() && chosen.length && !searching && !disabled && !fieldDirty) {
                 void search()
+              }
             }}
           >
             <TextInput
@@ -602,18 +607,18 @@ export function FolderSourceImport({
               {preview.values
                 .filter((v) => !noteKeys.includes(v.key))
                 .map((v) => {
-                  const next = Array.isArray(v.value) ? v.value.join('、') : String(v.value),
-                    existing = row.record?.attributes.find(
-                      (attribute) =>
-                        attribute.attributeId ===
-                        (preview.provider ?? 'eh') + '-' + v.key.toLowerCase()
-                    ),
-                    current = existing
-                      ? Array.isArray(existing.value)
-                        ? existing.value.join('、')
-                        : String(existing.value)
-                      : '',
-                    same = !!existing && current === next
+                  const next = Array.isArray(v.value) ? v.value.join('、') : String(v.value)
+                  const existing = row.record?.attributes.find(
+                    (attribute) =>
+                      attribute.attributeId ===
+                      (preview.provider ?? 'eh') + '-' + v.key.toLowerCase()
+                  )
+                  const current = existing
+                    ? Array.isArray(existing.value)
+                      ? existing.value.join('、')
+                      : String(existing.value)
+                    : ''
+                  const same = !!existing && current === next
                   return (
                     <tr key={v.key} className={same ? 'same' : undefined}>
                       <td>

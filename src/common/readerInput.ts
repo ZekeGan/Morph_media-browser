@@ -1,4 +1,4 @@
-import { useEffect, type DependencyList, type RefObject } from 'react'
+import { type DependencyList, type RefObject, useEffect } from 'react'
 
 // R-371: what the manga reader and the novel reader do the same way when taking keys and the wheel. What each key
 // or wheel turn means stays in the reader that owns it.

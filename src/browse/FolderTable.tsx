@@ -1,20 +1,22 @@
-import { KindIcon } from './folderKind'
 import {
-  useLayoutEffect,
-  useRef,
   type Dispatch,
+  HTMLAttributes,
   MutableRefObject,
   SetStateAction,
-  HTMLAttributes,
+  useLayoutEffect,
+  useRef,
 } from 'react'
-import { t as tr } from '../i18n'
-import { formatPlayValue } from '../game/playtime'
-import { yesNo } from '../editor/fieldTypes'
-import { Icon } from '../common/icons'
-import { BoundaryFlag } from '../game/BoundaryFlag'
-import type { FolderRow } from '../../shared/model'
-import type { BrowseState } from '../../shared/explorer'
+
 import { headerSort, type SortKey } from '../../shared/browse'
+import type { BrowseState } from '../../shared/explorer'
+import type { FolderRow } from '../../shared/model'
+
+import { Icon } from '../common/icons'
+import { yesNo } from '../editor/fieldTypes'
+import { BoundaryFlag } from '../game/BoundaryFlag'
+import { formatPlayValue } from '../game/playtime'
+import { t as tr } from '../i18n'
+import { KindIcon } from './folderKind'
 
 // A header's sort mark: the arrow, numbered when there is more than one key (1↓, 2↑).
 const sortMark = (keys: SortKey[], id: string) => {
@@ -83,8 +85,8 @@ export function FolderTable({
   panelOpen: boolean
   showPanelFor: (id: string) => void
 }) {
-  const table = useRef<HTMLTableElement>(null),
-    seen = useRef({ order: '', lefts: new Map<string, number>() })
+  const table = useRef<HTMLTableElement>(null)
+  const seen = useRef({ order: '', lefts: new Map<string, number>() })
   const order = columns.map((c) => c.id).join('|')
   // When the column order changes, slide each moved column from where it was to where it now is.
   useLayoutEffect(() => {
@@ -99,18 +101,20 @@ export function FolderTable({
       !previous.order ||
       previous.order === order ||
       matchMedia('(prefers-reduced-motion: reduce)').matches
-    )
+    ) {
       return
+    }
     const rows = [head, ...Array.from(table.current.tBodies[0]?.rows ?? [])]
     Array.from(head.cells).forEach((cell, index) => {
-      const id = cell.dataset.columnId ?? '',
-        shift = (previous.lefts.get(id) ?? lefts.get(id)!) - lefts.get(id)!
+      const id = cell.dataset.columnId ?? ''
+      const shift = (previous.lefts.get(id) ?? lefts.get(id)!) - lefts.get(id)!
       if (!shift) return
-      for (const row of rows)
+      for (const row of rows) {
         row.cells[index]?.animate(
           [{ transform: `translateX(${shift}px)` }, { transform: 'none' }],
           { duration: 180, easing: 'cubic-bezier(0.2, 0, 0, 1)' }
         )
+      }
     })
   })
   return (
@@ -181,8 +185,8 @@ export function FolderTable({
                   onKeyDown={(e) => {
                     if (e.altKey && ['ArrowLeft', 'ArrowRight'].includes(e.key)) {
                       e.preventDefault()
-                      const index = columns.findIndex((column) => column.id === c.id),
-                        next = columns[index + (e.key === 'ArrowLeft' ? -1 : 1)]
+                      const index = columns.findIndex((column) => column.id === c.id)
+                      const next = columns[index + (e.key === 'ArrowLeft' ? -1 : 1)]
                       if (next) reorderColumn(c.id, next.id, e.key === 'ArrowRight')
                     }
                   }}

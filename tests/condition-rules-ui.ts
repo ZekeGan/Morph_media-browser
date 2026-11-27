@@ -1,18 +1,20 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
-import { folderFile, projectFile, readFolder, readJson } from '../electron/files'
+
 import type { Project } from '../shared/model'
-import { closeApp, launchApp, removeTestRoot, reportFailure, openLayoutEditor } from './support/app'
+
+import { folderFile, projectFile, readFolder, readJson } from '../electron/files'
+import { Library } from '../electron/library'
+import { closeApp, launchApp, openLayoutEditor, removeTestRoot, reportFailure } from './support/app'
 
 // Layout text chosen by rules ("released within 90 days" → New) and a component with two display conditions, any
 // of which shows it (R-239).
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'condition-rules-ui-')),
-  media = path.join(root, 'Library'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'condition-rules-ui-'))
+const media = path.join(root, 'Library')
+const local = path.join(root, 'local')
 await fs.mkdir(media, { recursive: true })
 const library = new Library(local, undefined, false)
 await library.init()
@@ -94,8 +96,8 @@ try {
   await button('儲存').click()
   await page.locator('.editor-page').waitFor({ state: 'hidden' })
   const saved = (await readJson(projectFile(media, project.projectId))) as Project
-  const label = saved.cells.find((c) => c.cellId === 'label')!,
-    note = saved.cells.find((c) => c.cellId === 'note')!
+  const label = saved.cells.find((c) => c.cellId === 'label')!
+  const note = saved.cells.find((c) => c.cellId === 'note')!
   assert.deepEqual(label.textRules, [
     { when: { attributeId: 'released', operator: 'within', value: 90 }, text: 'New' },
   ])

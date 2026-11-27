@@ -1,8 +1,9 @@
-import { t as tr, useLocale } from '../i18n'
-import { useEffect } from 'react'
 import { Notification, Portal } from '@mantine/core'
-import type { ReactNode } from 'react'
+import { type ReactNode, useEffect } from 'react'
+
 import type { Notice } from '../../shared/notifications'
+
+import { t as tr, useLocale } from '../i18n'
 
 export function Toasts({
   notice,

@@ -1,8 +1,10 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { archiveImage, archiveIndex, type ArchiveImage, type ArchiveIndex } from './archive'
+
 import type { NovelBook } from '../shared/explorer'
 import { packagePath } from '../shared/novel'
+
+import { type ArchiveImage, archiveImage, type ArchiveIndex, archiveIndex } from './archive'
 
 // R-282: text books for the novel reader. Everything is read only; EPUB content is returned as text for the window
 // to rebuild from a short list of allowed elements, and nothing in it is ever run.
@@ -11,12 +13,15 @@ const MAX_TEXT = 32 * 1024 * 1024
 // Japanese and Chinese novels are often saved in a legacy encoding. Valid UTF-8 (or a byte order mark) wins; otherwise
 // the encoding that decodes with the fewest replacement characters, and then the most kana / common CJK, is used.
 export function decodeText(bytes: Buffer): { text: string; encoding: string } {
-  if (bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf)
+  if (bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) {
     return { text: bytes.subarray(3).toString('utf8'), encoding: 'utf-8' }
-  if (bytes[0] === 0xff && bytes[1] === 0xfe)
+  }
+  if (bytes[0] === 0xff && bytes[1] === 0xfe) {
     return { text: new TextDecoder('utf-16le').decode(bytes.subarray(2)), encoding: 'utf-16le' }
-  if (bytes[0] === 0xfe && bytes[1] === 0xff)
+  }
+  if (bytes[0] === 0xfe && bytes[1] === 0xff) {
     return { text: new TextDecoder('utf-16be').decode(bytes.subarray(2)), encoding: 'utf-16be' }
+  }
   try {
     return { text: new TextDecoder('utf-8', { fatal: true }).decode(bytes), encoding: 'utf-8' }
   } catch {}
@@ -29,9 +34,9 @@ export function decodeText(bytes: Buffer): { text: string; encoding: string } {
     } catch {
       continue
     }
-    const bad = (text.match(/\uFFFD/g) ?? []).length,
-      kana = (text.match(/[\u3040-\u30ff]/g) ?? []).length,
-      hangul = (text.match(/[가-힯]/g) ?? []).length
+    const bad = (text.match(/\uFFFD/g) ?? []).length
+    const kana = (text.match(/[\u3040-\u30ff]/g) ?? []).length
+    const hangul = (text.match(/[가-힯]/g) ?? []).length
     const cjk = (text.match(/[\u4e00-\u9fff]/g) ?? []).length
     const score =
       -bad * 50 +
@@ -46,13 +51,14 @@ export function decodeText(bytes: Buffer): { text: string; encoding: string } {
 // Chapter headings as novels write them: 第一章 / 第12話 / Chapter 3 / プロローグ / 序章 / 番外編…, on their own line.
 const heading =
   /^[ \t\u3000]*(?:第[0-9０-９一二三四五六七八九十百千零〇两]+[章話话回節节卷部篇幕]|(?:chapter|CHAPTER|Chapter)\s*[0-9IVXLC]+|プロローグ|エピローグ|序章|終章|终章|序幕|楔子|番外編?|番外篇|あとがき|後記|后记)(?:[ \t\u3000:：.．、-].{0,40})?[ \t\u3000]*$/
+
 export function splitChapters(text: string): { title: string; text: string }[] {
-  const lines = text.replace(/\r\n?/g, '\n').split('\n'),
-    chapters: { title: string; lines: string[] }[] = [{ title: '', lines: [] }]
+  const lines = text.replace(/\r\n?/g, '\n').split('\n')
+  const chapters: { title: string; lines: string[] }[] = [{ title: '', lines: [] }]
   for (const line of lines) {
-    if (line.length <= 50 && heading.test(line))
+    if (line.length <= 50 && heading.test(line)) {
       chapters.push({ title: line.trim().replace(/^\u3000+/, ''), lines: [] })
-    else chapters[chapters.length - 1].lines.push(line)
+    } else chapters[chapters.length - 1].lines.push(line)
   }
   const result = chapters
     .map((chapter) => ({ title: chapter.title, text: chapter.lines.join('\n').trim() }))
@@ -86,25 +92,28 @@ const decodeEntities = (value: string) =>
 // Package files are read with forward-only scanning: each search starts where the last one ended and stops at the
 // first missing end, so a crafted file cannot make the scan slow. They are also capped at 1 MB.
 const PACKAGE_LIMIT = 1024 * 1024
+
 function tags(text: string, name: string) {
-  const lower = text.toLowerCase(),
-    open = '<' + name.toLowerCase(),
-    found: string[] = []
+  const lower = text.toLowerCase()
+  const open = '<' + name.toLowerCase()
+  const found: string[] = []
   let at = 0
   while ((at = lower.indexOf(open, at)) >= 0) {
     const end = lower.indexOf('>', at)
     if (end < 0) break
-    if (/[\s/>]/.test(lower[at + open.length] ?? '>'))
+    if (/[\s/>]/.test(lower[at + open.length] ?? '>')) {
       found.push(text.slice(at, Math.min(end + 1, at + 4096)))
+    }
     at = end + 1
   }
   return found
 }
+
 function elements(text: string, name: string, nested = false) {
-  const lower = text.toLowerCase(),
-    open = '<' + name.toLowerCase(),
-    close = '</' + name.toLowerCase(),
-    found: { tag: string; inner: string }[] = []
+  const lower = text.toLowerCase()
+  const open = '<' + name.toLowerCase()
+  const close = '</' + name.toLowerCase()
+  const found: { tag: string; inner: string }[] = []
   let at = 0
   while ((at = lower.indexOf(open, at)) >= 0) {
     const end = lower.indexOf('>', at)
@@ -124,8 +133,10 @@ function elements(text: string, name: string, nested = false) {
   }
   return found
 }
+
 const plain = (value: string) =>
   decodeEntities(value.slice(0, 1000).replace(/<[^<>]*>/g, '')).trim()
+
 // An identifier that is an ISBN-10 or ISBN-13, as its digits; anything else (a UUID, a store id) is not.
 export function isbnOf(value: string): string | undefined {
   const digits = value
@@ -134,68 +145,73 @@ export function isbnOf(value: string): string | undefined {
     .toUpperCase()
   return /^(97[89]\d{10}|\d{9}[\dX])$/.test(digits) ? digits : undefined
 }
+
 async function readEntry(file: string, index: ArchiveIndex, name: string, limit = MAX_TEXT) {
   const entry = index.texts?.find((item: ArchiveImage) => item.name === name)
   if (!entry || entry.size > limit) return undefined
   return (await archiveImage(file, index, entry)).toString('utf8')
 }
+
 export async function readEpub(
   file: string,
   imageUrl: (index: number) => string
 ): Promise<Omit<NovelBook, 'encoding'>> {
   const index = await archiveIndex(file, { texts: /\.(x?html?|opf|ncx|xml)$/i })
   const container = await readEntry(file, index, 'META-INF/container.xml', PACKAGE_LIMIT)
-  const rootfile = container ? tags(container, 'rootfile')[0] : undefined,
-    opfPath = rootfile && attr(rootfile, 'full-path')
+  const rootfile = container ? tags(container, 'rootfile')[0] : undefined
+  const opfPath = rootfile && attr(rootfile, 'full-path')
   if (!opfPath) throw new Error('EPUB 缺少 container.xml 或套件檔')
   const opf = await readEntry(file, index, opfPath, PACKAGE_LIMIT)
   if (!opf) throw new Error('EPUB 套件檔無法讀取')
   const manifest = new Map<string, { href: string; type: string; properties: string }>()
   for (const tag of tags(opf, 'item')) {
-    const id = attr(tag, 'id'),
-      href = attr(tag, 'href')
-    if (id && href)
+    const id = attr(tag, 'id')
+    const href = attr(tag, 'href')
+    if (id && href) {
       manifest.set(id, {
         href: packagePath(opfPath, decodeEntities(href)) ?? '',
         type: attr(tag, 'media-type') ?? '',
         properties: attr(tag, 'properties') ?? '',
       })
+    }
   }
   const spine = tags(opf, 'itemref')
     .map((tag) => manifest.get(attr(tag, 'idref') ?? ''))
     .filter((item): item is { href: string; type: string; properties: string } => !!item?.href)
-  const title = plain(elements(opf, 'dc:title')[0]?.inner ?? ''),
-    author = plain(elements(opf, 'dc:creator')[0]?.inner ?? '').slice(0, 200),
-    // R-390: the ISBN, when one of the identifiers is one ("urn:isbn:978…", "978-4-…", "ISBN 4…").
-    isbn = elements(opf, 'dc:identifier')
-      .map((element) => isbnOf(plain(element.inner)))
-      .find(Boolean)
+  const title = plain(elements(opf, 'dc:title')[0]?.inner ?? '')
+  const author = plain(elements(opf, 'dc:creator')[0]?.inner ?? '').slice(0, 200)
+  // R-390: the ISBN, when one of the identifiers is one ("urn:isbn:978…", "978-4-…", "ISBN 4…").
+  const isbn = elements(opf, 'dc:identifier')
+    .map((element) => isbnOf(plain(element.inner)))
+    .find(Boolean)
   // The cover: an EPUB 3 item marked cover-image, else the EPUB 2 <meta name="cover" content="item id">.
-  const coverMeta = tags(opf, 'meta').find((tag) => attr(tag, 'name') === 'cover'),
-    coverItem =
-      [...manifest.values()].find((item) => /\bcover-image\b/.test(item.properties)) ??
-      (coverMeta ? manifest.get(attr(coverMeta, 'content') ?? '') : undefined)
+  const coverMeta = tags(opf, 'meta').find((tag) => attr(tag, 'name') === 'cover')
+  const coverItem =
+    [...manifest.values()].find((item) => /\bcover-image\b/.test(item.properties)) ??
+    (coverMeta ? manifest.get(attr(coverMeta, 'content') ?? '') : undefined)
   // Chapter names from the EPUB 3 navigation document, else the EPUB 2 NCX.
   const names = new Map<string, string>()
   const nav = [...manifest.values()].find((item) => /\bnav\b/.test(item.properties))
   const navText = nav && (await readEntry(file, index, nav.href, PACKAGE_LIMIT))
-  if (navText)
+  if (navText) {
     for (const anchor of elements(navText, 'a')) {
-      const href = attr(anchor.tag, 'href'),
-        target = href && packagePath(nav!.href, decodeEntities(href)),
-        label = plain(anchor.inner)
+      const href = attr(anchor.tag, 'href')
+      const target = href && packagePath(nav!.href, decodeEntities(href))
+      const label = plain(anchor.inner)
       if (target && label && !names.has(target)) names.set(target, label)
     }
+  }
   const ncx = [...manifest.values()].find((item) => item.type === 'application/x-dtbncx+xml')
   const ncxText = !names.size && ncx && (await readEntry(file, index, ncx.href, PACKAGE_LIMIT))
-  if (ncxText)
+  if (ncxText) {
     for (const point of elements(ncxText, 'navPoint', true)) {
-      const label = plain(elements(point.inner, 'text')[0]?.inner ?? ''),
-        content = tags(point.inner, 'content')[0],
-        src = content && attr(content, 'src'),
-        target = src && packagePath(ncx!.href, decodeEntities(src))
+      const label = plain(elements(point.inner, 'text')[0]?.inner ?? '')
+      const content = tags(point.inner, 'content')[0]
+      const src = content && attr(content, 'src')
+      const target = src && packagePath(ncx!.href, decodeEntities(src))
       if (target && label && !names.has(target)) names.set(target, label)
     }
+  }
   const chapters: NovelBook['chapters'] = []
   let total = 0
   for (const item of spine) {
@@ -234,7 +250,8 @@ export async function readNovel(
   if (stat.size > MAX_TEXT) throw new Error('文字檔超過 32 MB，無法開啟')
   const { text, encoding } = decodeText(await fs.readFile(file))
   if (/\.md$/i.test(file))
-    // R-399: one chapter holding the whole file; headings and lists are the Markdown's own, not chapter titles.
+  // R-399: one chapter holding the whole file; headings and lists are the Markdown's own, not chapter titles.
+  {
     return {
       format: 'txt',
       markdown: true,
@@ -242,6 +259,7 @@ export async function readNovel(
       encoding,
       chapters: [{ title: '', text: text.replace(/\r\n?/g, '\n') }],
     }
+  }
   return {
     format: 'txt',
     title: path.basename(file).replace(/\.txt$/i, ''),

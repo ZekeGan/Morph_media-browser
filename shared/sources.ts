@@ -204,7 +204,9 @@ export const metadataSources = [
     hint: 'https://',
   },
 ] as const
+
 export type MetadataSourceId = (typeof metadataSources)[number]['id']
+
 // R-424: the sources a name search can ask, and the ones ticked first for each kind of folder (until the user chooses).
 export const searchableSources = [
   'vndb',
@@ -217,9 +219,12 @@ export const searchableSources = [
   'fanza',
   'nhentai',
 ] as const
+
 export type SearchSourceId = (typeof searchableSources)[number]
+
 export const isSearchSource = (value: unknown): value is SearchSourceId =>
   (searchableSources as readonly unknown[]).includes(value)
+
 export const defaultSearchSources = (
   kind: 'game' | 'book' | 'music' | 'video' | 'general'
 ): SearchSourceId[] =>
@@ -232,8 +237,10 @@ export const defaultSearchSources = (
         : kind === 'video'
           ? ['tmdb', 'anilist']
           : [...searchableSources]
+
 // E-Hentai and ExHentai are one site with the same galleries: they share stored field ids (eh-…).
 export const sourceFamily = (id?: string) => (id === 'exh' ? 'eh' : id)
+
 export function sourceForUrl(source: string): MetadataSourceId | undefined {
   if (/^\d+$/.test(source.trim())) return 'steam'
   let url: URL

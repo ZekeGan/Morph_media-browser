@@ -1,20 +1,22 @@
-import { _electron as electron } from 'playwright-core'
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
-import { Explorer } from '../electron/explorer'
-import { WorkspaceStore } from '../electron/workspace'
-import { folderFile, projectFile } from '../electron/files'
+import { _electron as electron } from 'playwright-core'
+
 import { stabilizeQuery } from '../shared/query'
+
+import { Explorer } from '../electron/explorer'
+import { folderFile, projectFile } from '../electron/files'
+import { Library } from '../electron/library'
+import { WorkspaceStore } from '../electron/workspace'
 import { closeApp } from './support/app'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'search-dialog-')),
-  media = path.join(root, 'Folders'),
-  other = path.join(root, 'Other'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'search-dialog-'))
+const media = path.join(root, 'Folders')
+const other = path.join(root, 'Other')
+const local = path.join(root, 'local')
 await fs.mkdir(path.join(media, 'Alpha'), { recursive: true })
 await fs.mkdir(path.join(other, 'Beta'), { recursive: true })
 const lib = new Library(local, undefined, false)
@@ -73,9 +75,9 @@ const env: Record<string, string> = Object.fromEntries(
   )
 )
 delete env.ELECTRON_RUN_AS_NODE
-const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
-  page = await app.firstWindow(),
-  errors: string[] = []
+const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
+const page = await app.firstWindow()
+const errors: string[] = []
 page.on('pageerror', (error) => errors.push(error.message))
 page.setDefaultTimeout(12000)
 const button = (name: string) => page.getByRole('button', { name, exact: true })
@@ -84,8 +86,8 @@ const record = async () =>
 try {
   await button('開啟專案 Search project').first().click()
   await page.keyboard.press('Control+k')
-  const dialog = page.locator('.folder-search-dialog'),
-    query = dialog.getByRole('textbox', { name: '資料夾名稱、路徑或欄位值', exact: true })
+  const dialog = page.locator('.folder-search-dialog')
+  const query = dialog.getByRole('textbox', { name: '資料夾名稱、路徑或欄位值', exact: true })
   await dialog.waitFor()
   assert.equal(
     await dialog.getByText('進階搜尋與索引', { exact: true }).count(), // ui-names: ignore (must not appear)
@@ -204,8 +206,9 @@ try {
   await page.waitForFunction(
     () => document.querySelector('.search-results button strong')?.textContent === 'Alpha'
   )
-  if ((await button('常用搜尋').getAttribute('aria-expanded')) !== 'true')
+  if ((await button('常用搜尋').getAttribute('aria-expanded')) !== 'true') {
     await button('常用搜尋').click()
+  }
   assert.ok(
     await page.locator('.saved-search-row button,.search-footer button').evaluateAll((elements) =>
       elements.every((element) => {
@@ -223,12 +226,13 @@ try {
   await page.keyboard.press('Enter')
   await dialog.waitFor({ state: 'hidden' })
   assert.deepEqual(errors, [])
-  for (const [file, bytes] of originals)
+  for (const [file, bytes] of originals) {
     assert.deepEqual(
       await fs.readFile(file),
       bytes,
       'unrelated project/folder records must remain unchanged'
     )
+  }
   console.log(
     'PASS search dialog: separate saved matches, stable field identity, explicit save/cancel/delete, duplicate identities, syntax errors, scope, focus, narrow layout, unrelated records. ' +
       root

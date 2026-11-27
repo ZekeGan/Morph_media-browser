@@ -8,10 +8,11 @@
 //   pnpm i18n diff [ref]
 // Lists the sentences added, changed or removed since ref (default origin/main, so the whole unpushed batch), with
 // where each new one is used; the batch report quotes it (R-515).
+import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
-import { execFileSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
+
 import { wordingProblems } from './text-rules.mjs'
 
 export const languages = ['zh-CN', 'en', 'ja', 'es']
@@ -22,18 +23,22 @@ const placeholders = (text) =>
     .join(',')
 
 export function addMessages(messages, entries, force = false) {
-  const out = { ...messages },
-    added = []
+  const out = { ...messages }
+  const added = []
   for (const [key, value] of Object.entries(entries)) {
     const translations = Array.isArray(value)
       ? Object.fromEntries(languages.map((language, i) => [language, value[i]]))
       : value
-    for (const language of languages)
-      if (typeof translations[language] !== 'string' || !translations[language].trim())
+    for (const language of languages) {
+      if (typeof translations[language] !== 'string' || !translations[language].trim()) {
         throw new Error(`「${key}」缺少 ${language}`)
-    for (const language of languages)
-      if (placeholders(translations[language]) !== placeholders(key))
+      }
+    }
+    for (const language of languages) {
+      if (placeholders(translations[language]) !== placeholders(key)) {
         throw new Error(`「${key}」的 ${language} 佔位符不一致：${translations[language]}`)
+      }
+    }
     if (key in out && !force) throw new Error(`「${key}」已經有翻譯（要取代就加 --force）`)
     const wording = wordingProblems(key)
     if (wording.length) throw new Error(`「${key}」用了一般人看不懂的詞：${wording.join('、')}`)
@@ -70,11 +75,11 @@ function diff(ref = 'origin/main') {
   const before = JSON.parse(
     execFileSync('git', ['show', ref + ':src/i18n/messages.json'], { cwd: root, encoding: 'utf8' })
   )
-  const added = Object.keys(now).filter((key) => !(key in before)),
-    removed = Object.keys(before).filter((key) => !(key in now)),
-    changed = Object.keys(now).filter(
-      (key) => key in before && JSON.stringify(now[key]) !== JSON.stringify(before[key])
-    )
+  const added = Object.keys(now).filter((key) => !(key in before))
+  const removed = Object.keys(before).filter((key) => !(key in now))
+  const changed = Object.keys(now).filter(
+    (key) => key in before && JSON.stringify(now[key]) !== JSON.stringify(before[key])
+  )
   console.log(
     `介面文字變動（相對 ${ref}）：新增 ${added.length}、改翻譯 ${changed.length}、移除 ${removed.length}`
   )
@@ -105,10 +110,12 @@ function main() {
   fs.writeFileSync(target, JSON.stringify(messages, null, 2) + '\n')
   console.log(`加入 ${added.length} 句`)
 }
-if (import.meta.url === pathToFileURL(process.argv[1]).href)
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     main()
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))
     process.exit(1)
   }
+}

@@ -1,11 +1,12 @@
-import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import test from 'node:test'
 import sharp from 'sharp'
-import { decodeThumbnail, SHARP_TYPES } from '../electron/thumbnail-decode'
+
 import { THUMB_EDGE } from '../electron/media-files'
+import { decodeThumbnail, SHARP_TYPES } from '../electron/thumbnail-decode'
 
 // R-518: pictures are made into thumbnails with sharp in the main process: the longer side becomes THUMB_EDGE,
 // never larger than the picture, turned the way the camera says, and only real picture formats are decoded.

@@ -1,43 +1,48 @@
-import { selectPreset, syncPresetDraft } from '../shared/layouts'
-import { t as tr, useLocale } from './i18n'
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Button, Checkbox, Group, Modal, Stack } from '@mantine/core'
-import type { CleanupPreview, Project, Request, Response } from '../shared/model'
-import { usePlayback } from './media/Playback'
-import { useCreateProject } from './useCreateProject'
-import { useSnapshot } from './useSnapshot'
-import { useDrafts } from './useDrafts'
-// R-503: the layout editor (with its grid library) is loaded the first time it opens, not at start.
-const Editor = lazy(() => import('./editor/Editor').then((module) => ({ default: module.Editor })))
-import { ProjectSettings } from './settings/ProjectSettings'
-import { ProblemsDialog, problemCount } from './storage/ProblemsDialog'
-import { CreateProjectDialog } from './shell/CreateProjectDialog'
-import { ApplicationSettings } from './settings/ApplicationSettings'
-import { DesktopShell } from './shell/DesktopShell'
-import { RefreshContext } from './browse/refresh'
-import { Toasts } from './notices/Toasts'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
+import { type ExplorerRequest, type ExplorerResponse, panelEditorStart } from '../shared/explorer'
+import { type FolderKind, isFolderKind } from '../shared/kind'
 import {
   fromPanelEditor,
   panelEditorProject,
   saveCardPreset,
+  selectPreset,
+  syncPresetDraft,
   visibleCells,
 } from '../shared/layouts'
-import { isFolderKind, type FolderKind } from '../shared/kind'
-import { BrowseWorkspace } from './browse/BrowseWorkspace'
-import { panelEditorStart, type ExplorerRequest, type ExplorerResponse } from '../shared/explorer'
-import { describeError } from './notices/errors'
+import type { CleanupPreview, Project, Request, Response } from '../shared/model'
 import type { Notice } from '../shared/notifications'
 
+import { BrowseWorkspace } from './browse/BrowseWorkspace'
+import { RefreshContext } from './browse/refresh'
+import { usePlayback } from './media/Playback'
+import { describeError } from './notices/errors'
+import { Toasts } from './notices/Toasts'
+import { ApplicationSettings } from './settings/ApplicationSettings'
+import { ProjectSettings } from './settings/ProjectSettings'
+import { CreateProjectDialog } from './shell/CreateProjectDialog'
+import { DesktopShell } from './shell/DesktopShell'
+import { problemCount, ProblemsDialog } from './storage/ProblemsDialog'
+import { t as tr, useLocale } from './i18n'
+import { useCreateProject } from './useCreateProject'
+import { useDrafts } from './useDrafts'
+import { useSnapshot } from './useSnapshot'
+
+// R-503: the layout editor (with its grid library) is loaded the first time it opens, not at start.
+const Editor = lazy(() => import('./editor/Editor').then((module) => ({ default: module.Editor })))
+
 type Act = (request: Request) => Promise<Response | undefined>
+
 export function App() {
   useLocale()
 
   const { snapshot, takeSnapshot, takeLater, takeProgress } = useSnapshot()
   const [selected, setSelected] = useState('')
-  const [busy, setBusy] = useState(false),
-    busyRef = useRef(false)
-  const [notice, setNoticeState] = useState<Notice>(),
-    [noticeVersion, setNoticeVersion] = useState(0)
+  const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
+  const [notice, setNoticeState] = useState<Notice>()
+  const [noticeVersion, setNoticeVersion] = useState(0)
   const setNotice = useCallback((value: Notice | undefined) => {
     setNoticeState(value)
     setNoticeVersion((v) => v + 1)
@@ -61,25 +66,25 @@ export function App() {
   const [settingsOverlay, setSettingsOverlay] = useState(false)
   const [toolbarTarget, setToolbarTarget] = useState<HTMLDivElement | null>(null)
   const [refreshNonce, setRefreshNonce] = useState(0)
-  const create = useCreateProject(notifyError),
-    createOpen = create.opened,
-    setCreateOpen = create.setOpened
-  const [settingsOpen, setSettingsOpen] = useState(false),
-    [settingsStart, setSettingsStart] = useState<{ tab: string; site?: string }>()
+  const create = useCreateProject(notifyError)
+  const createOpen = create.opened
+  const setCreateOpen = create.setOpened
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsStart, setSettingsStart] = useState<{ tab: string; site?: string }>()
   const [templateCategory, setTemplateCategory] = useState<string>()
   // R-363: the book template to open first (one folder's own); saving it then leaves the project default alone.
   const [templatePreset, setTemplatePreset] = useState<string>()
   // R-460: the folder the editor was opened for, its first preview. R-459: the project whose browser comes back
   // from the editor where it was.
-  const [templateRow, setTemplateRow] = useState<string>(),
-    [resumeProject, setResumeProject] = useState<string>()
-  const [settings, setSettings] = useState<Project>(),
-    [editor, setEditor] = useState(false),
-    [detailsId, setDetailsId] = useState<string>(),
-    [problems, setProblems] = useState(false)
+  const [templateRow, setTemplateRow] = useState<string>()
+  const [resumeProject, setResumeProject] = useState<string>()
+  const [settings, setSettings] = useState<Project>()
+  const [editor, setEditor] = useState(false)
+  const [detailsId, setDetailsId] = useState<string>()
+  const [problems, setProblems] = useState(false)
   const [shellOverlay, setShellOverlay] = useState(false)
-  const [cleanup, setCleanup] = useState<CleanupPreview>(),
-    [restart, setRestart] = useState(false)
+  const [cleanup, setCleanup] = useState<CleanupPreview>()
+  const [restart, setRestart] = useState(false)
   const act: Act = useCallback(
     async (request) => {
       if (busyRef.current && request.action !== 'cancelScan') return
@@ -130,8 +135,8 @@ export function App() {
   useEffect(() => {
     playback?.reconcile(snapshot.projects.map((link) => link.projectId))
   }, [snapshot.projects])
-  const linked = snapshot.projects.find((p) => p.projectId === selected),
-    project = linked?.project
+  const linked = snapshot.projects.find((p) => p.projectId === selected)
+  const project = linked?.project
   const settingsDirty =
     !!settings &&
     JSON.stringify(settings) !==
@@ -164,8 +169,9 @@ export function App() {
         !document.querySelector(
           '.mantine-Modal-content,.mantine-Drawer-content,.reader,.media-viewer-shell,.document-viewer'
         )
-      )
+      ) {
         act({ action: 'scan' })
+      }
     }
     window.addEventListener('focus', focus)
     return () => window.removeEventListener('focus', focus)
@@ -193,14 +199,14 @@ export function App() {
   }
   const beginLink = () => beginCreate()
   const rows = useMemo(
-      () => snapshot.rows.filter((r) => r.projectId === selected),
-      [snapshot.rows, selected]
-    ),
-    // R-501: kept between renders, so the browse view's folder kinds (which every card reads) are not rebuilt.
-    projectStructure = useMemo(
-      () => (snapshot.structure ?? snapshot.rows).filter((r) => r.projectId === selected),
-      [snapshot.structure, snapshot.rows, selected]
-    )
+    () => snapshot.rows.filter((r) => r.projectId === selected),
+    [snapshot.rows, selected]
+  )
+  // R-501: kept between renders, so the browse view's folder kinds (which every card reads) are not rebuilt.
+  const projectStructure = useMemo(
+    () => (snapshot.structure ?? snapshot.rows).filter((r) => r.projectId === selected),
+    [snapshot.structure, snapshot.rows, selected]
+  )
   // Folders that more than one linked project shows; only these need the shared / this-project switch.
   const sharedFolders = useMemo(() => {
     const owners = new Map<string, Set<string>>()
@@ -266,8 +272,8 @@ export function App() {
     templatePreset !== project?.activeLayoutId &&
     !!project?.layoutPresets?.some((p) => p.id === templatePreset)
   const keepDefault = (p: Project) => {
-    const next = syncPresetDraft(p),
-      original = next.layoutPresets?.find((x) => x.id === project!.activeLayoutId)
+    const next = syncPresetDraft(p)
+    const original = next.layoutPresets?.find((x) => x.id === project!.activeLayoutId)
     return cardOther && p.activeLayoutId === templatePreset && original
       ? { ...next, activeLayoutId: original.id, cells: structuredClone(original.cells) }
       : next
@@ -486,8 +492,8 @@ export function App() {
         {...create.fields}
         act={act}
         link={async (rootToken) => {
-          const before = new Set(snapshot.projects.map((p) => p.projectId)),
-            result = await act({ action: 'link', rootToken })
+          const before = new Set(snapshot.projects.map((p) => p.projectId))
+          const result = await act({ action: 'link', rootToken })
           if (!result || result.cancelled) return
           setCreateOpen(false)
           const next =
@@ -496,8 +502,12 @@ export function App() {
           if (next) openProject(next.projectId, undefined, true)
         }}
         close={() => {
-          if (!busy && (create.empty || window.confirm(tr('取消新增專案？目前還沒建立任何東西。'))))
+          if (
+            !busy &&
+            (create.empty || window.confirm(tr('取消新增專案？目前還沒建立任何東西。')))
+          ) {
             setCreateOpen(false)
+          }
         }}
         create={async () => {
           const { input, rootChoice, group } = create.fields
@@ -505,7 +515,7 @@ export function App() {
           if (result && !result.cancelled) {
             const id = result.snapshot.projects.at(-1)?.projectId
             if (id) {
-              if (group)
+              if (group) {
                 try {
                   await window.desktop.updateWorkspace({
                     action: 'moveProject',
@@ -515,6 +525,7 @@ export function App() {
                 } catch (e) {
                   notifyError(tr('專案已建立，但群組保存失敗：') + String(e))
                 }
+              }
               openProject(id, undefined, true)
             }
           }
@@ -531,8 +542,9 @@ export function App() {
       <Modal
         opened={!!settings}
         onClose={() => {
-          if (!busy && (!settingsDirty || window.confirm(tr('放棄尚未保存的專案設定？'))))
+          if (!busy && (!settingsDirty || window.confirm(tr('放棄尚未保存的專案設定？')))) {
             setSettings(undefined)
+          }
         }}
         title={
           tr('專案設定 · ') +

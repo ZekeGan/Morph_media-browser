@@ -3,14 +3,16 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import type { Page } from 'playwright-core'
-import { Library } from '../../electron/library'
-import { closeApp, launchApp, removeTestRoot, openLayoutEditor } from './app'
-import { readFolder, saveFolder } from '../../electron/files'
+
 import type { Cell } from '../../shared/model'
+
+import { readFolder, saveFolder } from '../../electron/files'
+import { Library } from '../../electron/library'
+import { closeApp, launchApp, openLayoutEditor, removeTestRoot } from './app'
 import { buildDemoLibrary, demoDetails } from './demo-data'
 
-const out = path.resolve('docs/images'),
-  want = process.argv.slice(2)
+const out = path.resolve('docs/images')
+const want = process.argv.slice(2)
 const themeName = { glass: '霧白玻璃', paper: '暖紙墨橘' }
 
 type Shot = {
@@ -20,6 +22,7 @@ type Shot = {
   theme?: keyof typeof themeName
   run: (page: Page) => Promise<void>
 }
+
 const openProject = async (page: Page) => {
   await page.getByRole('button', { name: '開啟專案 示範收藏', exact: true }).first().click()
   await page.locator('.workspace-toolbar').waitFor()
@@ -81,8 +84,8 @@ const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
 await fs.mkdir(out, { recursive: true })
 // The sample library sits at the top of the drive, so no personal folder name shows in the screenshots.
-const root = path.join(path.parse(base).root, 'Morph-Demo'),
-  local = path.join(base, 'docs-shots-local')
+const root = path.join(path.parse(base).root, 'Morph-Demo')
+const local = path.join(base, 'docs-shots-local')
 await fs.rm(root, { recursive: true, force: true })
 await fs.rm(local, { recursive: true, force: true })
 await fs.mkdir(root, { recursive: true })
@@ -95,9 +98,9 @@ const created = await library.create(media, {
   depth: { mode: 'through', level: 2 },
 })
 // A card with a cover, name, tags, rating and status, so the screenshots show what a finished layout looks like.
-const project = created.projects[0].project!,
-  style = { textColor: '#e4e6e8', backgroundColor: 'transparent' },
-  ids = { tags: 'demo-tags', score: 'demo-score', status: 'demo-status' }
+const project = created.projects[0].project!
+const style = { textColor: '#e4e6e8', backgroundColor: 'transparent' }
+const ids = { tags: 'demo-tags', score: 'demo-score', status: 'demo-status' }
 const at = (y: number, h: number, x = 0, w = 12) => ({ x, y, w, h })
 const cells: Cell[] = [
   {
@@ -139,8 +142,8 @@ await library.saveProject({
   ],
 })
 for (const [name, info] of Object.entries(demoDetails)) {
-  const dir = path.join(media, name),
-    record = await readFolder(dir)
+  const dir = path.join(media, name)
+  const record = await readFolder(dir)
   record.attributes = [
     { attributeId: ids.tags, key: '標籤', type: 'tags', value: info.tags, source: 'manual' },
     { attributeId: ids.score, key: '評分', type: 'number', value: info.score, source: 'manual' },

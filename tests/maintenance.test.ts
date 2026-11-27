@@ -1,24 +1,26 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
+import { test } from 'node:test'
+
 import {
+  exists,
+  fingerprint,
   folderFile,
   projectFile,
-  fingerprint,
   readFolder,
   readJson,
-  exists,
 } from '../electron/files'
+import { Library } from '../electron/library'
 import { stableRead } from '../electron/library-field-removal'
-import { applyMaintenance, managedTree, MaintenanceFailure } from '../electron/maintenance'
+import { applyMaintenance, MaintenanceFailure, managedTree } from '../electron/maintenance'
+
 async function fixture(t: { after: (callback: () => Promise<void>) => void }) {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'maintenance-')),
-    media = path.join(root, 'media'),
-    local = path.join(root, 'local')
+  const root = await fs.mkdtemp(path.join(base, 'maintenance-'))
+  const media = path.join(root, 'media')
+  const local = path.join(root, 'local')
   await fs.mkdir(path.join(media, 'A'), { recursive: true })
   await fs.writeFile(path.join(media, 'original.bin'), 'ORIGINAL')
   const lib = new Library(local, undefined, false)
@@ -34,6 +36,7 @@ async function fixture(t: { after: (callback: () => Promise<void>) => void }) {
   })
   return { root, media, local, lib }
 }
+
 test('field deletion previews identities, zero/false values, references and shared projects; stale and cancelled previews do not write', async (t) => {
   const { lib, media } = await fixture(t)
   let project = lib.snapshot().projects[0].project!
@@ -64,8 +67,8 @@ test('field deletion previews identities, zero/false values, references and shar
   ]
   await fs.writeFile(folderFile(media), JSON.stringify(record))
   await lib.scan()
-  const before = await fs.readFile(folderFile(media), 'utf8'),
-    preview = await lib.previewDeleteField(project.projectId, 'target')
+  const before = await fs.readFile(folderFile(media), 'utf8')
+  const preview = await lib.previewDeleteField(project.projectId, 'target')
   assert.equal(preview.fields, 1)
   assert.equal(preview.values, 1)
   assert.equal(preview.folders, 1)
@@ -86,8 +89,8 @@ test('field deletion previews identities, zero/false values, references and shar
   assert.equal(await fs.readFile(path.join(media, 'original.bin'), 'utf8'), 'ORIGINAL')
 })
 test('full removal includes historical protected descendants and archives, reports overlaps and preserves original/unknown files', async (t) => {
-  const { lib, media, local } = await fixture(t),
-    id = lib.snapshot().projects[0].projectId
+  const { lib, media, local } = await fixture(t)
+  const id = lib.snapshot().projects[0].projectId
   await lib.create(path.join(media, 'A'), {
     name: 'Nested',
     scanAll: true,
@@ -120,8 +123,8 @@ test('full removal includes historical protected descendants and archives, repor
   assert.equal(lib.snapshot().projects.length, 1)
 })
 test('full removal restores a pristine metadata tree and a recreated project gets a new folder identity', async (t) => {
-  const { lib, media } = await fixture(t),
-    old = (await readFolder(media)).folderId
+  const { lib, media } = await fixture(t)
+  const old = (await readFolder(media)).folderId
   const preview = await lib.previewFullRemoval(lib.snapshot().projects[0].projectId)
   await lib.fullRemoveProject(preview.token)
   assert.equal(await exists(path.join(media, '.media-viewer')), false)
@@ -134,15 +137,16 @@ test('full removal restores a pristine metadata tree and a recreated project get
   assert.equal(await fs.readFile(path.join(media, 'original.bin'), 'utf8'), 'ORIGINAL')
 })
 test('backup failure prevents full removal and leaves definitions, links, and original bytes intact', async (t) => {
-  const { lib, media, local } = await fixture(t),
-    // The state itself (a snapshot also carries a generation number that grows with every snapshot, R-448).
-    before = structuredClone(lib.state),
-    bytes = await fs.readFile(folderFile(media))
-  const preview = await lib.previewFullRemoval(before.projects[0].projectId),
-    open = fs.open
+  const { lib, media, local } = await fixture(t)
+  // The state itself (a snapshot also carries a generation number that grows with every snapshot, R-448).
+  const before = structuredClone(lib.state)
+  const bytes = await fs.readFile(folderFile(media))
+  const preview = await lib.previewFullRemoval(before.projects[0].projectId)
+  const open = fs.open
   fs.open = (async (...args: Parameters<typeof fs.open>) => {
-    if (String(args[0]).startsWith(path.join(local, 'maintenance-backups')))
+    if (String(args[0]).startsWith(path.join(local, 'maintenance-backups'))) {
       throw new Error('CONTROLLED BACKUP FAILURE')
+    }
     return open(...args)
   }) as typeof fs.open
   try {
@@ -155,11 +159,11 @@ test('backup failure prevents full removal and leaves definitions, links, and or
   assert.ok(await exists(projectFile(media, before.projects[0].projectId)))
 })
 test('maintenance restores exact bytes on mid-write failure and refuses stale bytes or an in-tree backup', async (t) => {
-  const { media, local } = await fixture(t),
-    one = folderFile(media),
-    two = folderFile(path.join(media, 'A'))
-  const before = await fs.readFile(one),
-    beforeTwo = await fs.readFile(two)
+  const { media, local } = await fixture(t)
+  const one = folderFile(media)
+  const two = folderFile(path.join(media, 'A'))
+  const before = await fs.readFile(one)
+  const beforeTwo = await fs.readFile(two)
   const changes = [
     { root: media, path: one, hash: await fingerprint(one), value: { changed: true } },
     { root: media, path: two, hash: await fingerprint(two), value: { unserializable: 1n } },
@@ -179,10 +183,10 @@ test('maintenance restores exact bytes on mid-write failure and refuses stale by
   assert.equal(await exists(path.join(local, 'stale')), false)
 })
 test('incomplete data restoration retains durable scan stops', async (t) => {
-  const { media, local } = await fixture(t),
-    stop = path.join(local, 'stop.json'),
-    one = folderFile(media),
-    two = folderFile(path.join(media, 'A'))
+  const { media, local } = await fixture(t)
+  const stop = path.join(local, 'stop.json')
+  const one = folderFile(media)
+  const two = folderFile(path.join(media, 'A'))
   await fs.writeFile(stop, JSON.stringify({ stopped: false }))
   const rename = fs.rename
   fs.rename = (async (...args: Parameters<typeof fs.rename>) => {
@@ -217,15 +221,15 @@ test('incomplete data restoration retains durable scan stops', async (t) => {
   assert.ok(await exists(path.join(local, 'partial', 'manifest.json')))
 })
 test('full removal invalidates changed bindings and added metadata, excludes ancestors and never recreates removed records', async (t) => {
-  const { lib, media } = await fixture(t),
-    ancestor = lib.snapshot().projects[0].projectId
+  const { lib, media } = await fixture(t)
+  const ancestor = lib.snapshot().projects[0].projectId
   await lib.create(path.join(media, 'A'), {
     name: 'Nested',
     scanAll: true,
     depth: { mode: 'through', level: 1 },
   })
-  const nested = lib.snapshot().projects[1].projectId,
-    preview = await lib.previewFullRemoval(nested)
+  const nested = lib.snapshot().projects[1].projectId
+  const preview = await lib.previewFullRemoval(nested)
   assert.ok(preview.affectedProjects.some((p) => p.projectId === ancestor))
   await fs.writeFile(path.join(media, 'A', '.media-viewer', 'unknown-after-preview'), 'KEEP')
   await assert.rejects(lib.fullRemoveProject(preview.token), /變更/)
@@ -243,14 +247,14 @@ test('full removal invalidates changed bindings and added metadata, excludes anc
   await assert.rejects(lib.fullRemoveProject(stale.token), /已過期|找不到/)
 })
 test('field deletion counts false and zero across shared/private values and projects, without deleting equal names with different identities', async (t) => {
-  const { lib, media } = await fixture(t),
-    first = lib.snapshot().projects[0].projectId
+  const { lib, media } = await fixture(t)
+  const first = lib.snapshot().projects[0].projectId
   await lib.create(media, {
     name: 'Shared',
     scanAll: true,
     depth: { mode: 'through', level: 2 },
   })
-  for (const ref of lib.snapshot().projects)
+  for (const ref of lib.snapshot().projects) {
     await lib.saveProject({
       ...ref.project!,
       fieldBindings: [
@@ -259,6 +263,7 @@ test('field deletion counts false and zero across shared/private values and proj
       ],
       cells: [{ ...ref.project!.cells[0], kind: 'field-boolean', attributeId: 'flag' }],
     })
+  }
   const record = await readFolder(media)
   record.attributes = [
     { attributeId: 'flag', key: 'Flag', type: 'boolean', value: false, source: 'manual' },
@@ -284,21 +289,22 @@ test('field deletion counts false and zero across shared/private values and proj
   )
   assert.deepEqual((await readFolder(media)).projectOverrides[first], [])
   assert.equal((await readFolder(media)).projectOverrides['unlinked-owner'][0].value, true)
-  for (const ref of lib.snapshot().projects)
+  for (const ref of lib.snapshot().projects) {
     assert.equal(
       ref.project!.fieldBindings.some((field) => field.attributeId === 'flag'),
       false
     )
+  }
 })
 test('field preview expires when another indexed folder enters the affected scope', async (t) => {
-  const { lib, media } = await fixture(t),
-    project = lib.snapshot().projects[0].project!
+  const { lib, media } = await fixture(t)
+  const project = lib.snapshot().projects[0].project!
   await lib.saveProject({
     ...project,
     fieldBindings: [{ attributeId: 'flag', alias: 'Flag', type: 'boolean' }],
   })
-  const preview = await lib.previewDeleteField(project.projectId, 'flag'),
-    before = await fs.readFile(projectFile(media, project.projectId))
+  const preview = await lib.previewDeleteField(project.projectId, 'flag')
+  const before = await fs.readFile(projectFile(media, project.projectId))
   await fs.mkdir(path.join(media, 'Added'))
   await lib.scan()
   const record = await readFolder(path.join(media, 'Added'))
@@ -311,8 +317,8 @@ test('field preview expires when another indexed folder enters the affected scop
   assert.deepEqual(await fs.readFile(projectFile(media, project.projectId)), before)
 })
 test('field deletion also scrubs backup-only references and preserves unrelated legacy searches on imported fields', async (t) => {
-  const { lib, media } = await fixture(t),
-    first = lib.snapshot().projects[0].project!
+  const { lib, media } = await fixture(t)
+  const first = lib.snapshot().projects[0].project!
   await lib.saveProject({
     ...first,
     fieldBindings: [{ attributeId: 'target', alias: 'Target', type: 'number' }],
@@ -321,8 +327,8 @@ test('field deletion also scrubs backup-only references and preserves unrelated 
     name: 'Backup only',
     depth: { mode: 'through', level: 1 },
   })
-  const other = lib.snapshot().projects[1].project!,
-    projectBackup = projectFile(path.join(media, 'A'), other.projectId) + '.bak'
+  const other = lib.snapshot().projects[1].project!
+  const projectBackup = projectFile(path.join(media, 'A'), other.projectId) + '.bak'
   await fs.writeFile(
     projectBackup,
     JSON.stringify({
@@ -370,8 +376,8 @@ test('field deletion also scrubs backup-only references and preserves unrelated 
   assert.equal(lib.snapshot().projects[0].project!.savedSearches!.length, 2)
 })
 test('full metadata inventory handles historical game records and archived definitions; rejects junctions and preserves unknown/corrupt files', async (t) => {
-  const { lib, media, root } = await fixture(t),
-    project = lib.snapshot().projects[0]
+  const { lib, media, root } = await fixture(t)
+  const project = lib.snapshot().projects[0]
   const historical = path.join(media, 'A', 'resources', 'app', 'data')
   await fs.mkdir(historical, { recursive: true })
   await fs.cp(path.join(media, 'A', '.media-viewer'), path.join(historical, '.media-viewer'), {
@@ -397,8 +403,8 @@ test('full metadata inventory handles historical game records and archived defin
   assert.equal(await fs.readFile(path.join(outside, 'original'), 'utf8'), 'OUTSIDE')
 })
 test('R-366: a file saved while a preview reads it stops the preview instead of pairing old content with the new hash', async (t) => {
-  const { root } = await fixture(t),
-    file = path.join(root, 'record.json')
+  const { root } = await fixture(t)
+  const file = path.join(root, 'record.json')
   await fs.writeFile(file, '{"a":1}')
   const { value, hash } = await stableRead(file, async () =>
     JSON.parse(await fs.readFile(file, 'utf8'))

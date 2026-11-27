@@ -1,7 +1,9 @@
 import dns from 'node:dns/promises'
 import net from 'node:net'
-import { limitedBytes } from './metadata-common'
+
 import { identifyImage } from '../shared/images'
+
+import { limitedBytes } from './metadata-common'
 import { pinnedFetch } from './pinned-fetch'
 
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024
@@ -24,6 +26,7 @@ const privateV4 = (ip: string) => {
     a >= 224
   )
 }
+
 // The eight 16-bit groups of an IPv6 address (with "::" expanded and a trailing dotted IPv4 converted).
 function groups(ip: string): number[] | undefined {
   let value = ip.toLowerCase().split('%')[0]
@@ -37,8 +40,8 @@ function groups(ip: string): number[] | undefined {
       ((c << 8) | d).toString(16)
   }
   const [head, tail] = value.split('::')
-  const left = head ? head.split(':') : [],
-    right = tail ? tail.split(':') : []
+  const left = head ? head.split(':') : []
+  const right = tail ? tail.split(':') : []
   const parts = value.includes('::')
     ? [...left, ...Array(8 - left.length - right.length).fill('0'), ...right]
     : left
@@ -46,7 +49,9 @@ function groups(ip: string): number[] | undefined {
   const numbers = parts.map((part) => parseInt(part, 16))
   return numbers.every((n) => Number.isInteger(n) && n >= 0 && n <= 0xffff) ? numbers : undefined
 }
+
 const v4 = (high: number, low: number) => [high >> 8, high & 255, low >> 8, low & 255].join('.')
+
 // Any IPv6 form, including hex-written IPv4-mapped (::ffff:7f00:1), NAT64 (64:ff9b::/96) and 6to4 (2002::/16)
 // addresses, is judged by the IPv4 address it carries.
 export const privateAddress = (ip: string): boolean => {
@@ -55,10 +60,12 @@ export const privateAddress = (ip: string): boolean => {
   if (version !== 6) return true
   const g = groups(ip)
   if (!g) return true
-  if (g.slice(0, 5).every((n) => n === 0) && (g[5] === 0xffff || g[5] === 0))
+  if (g.slice(0, 5).every((n) => n === 0) && (g[5] === 0xffff || g[5] === 0)) {
     return g[5] === 0 && g[6] === 0 ? true : privateV4(v4(g[6], g[7]))
-  if (g[0] === 0x64 && g[1] === 0xff9b && g.slice(2, 6).every((n) => n === 0))
+  }
+  if (g[0] === 0x64 && g[1] === 0xff9b && g.slice(2, 6).every((n) => n === 0)) {
     return privateV4(v4(g[6], g[7]))
+  }
   if (g[0] === 0x2002) return privateV4(v4(g[1], g[2]))
   return (
     g.every((n) => n === 0) ||
@@ -76,6 +83,7 @@ export interface RemoteImage {
   mime: string
   name: string
 }
+
 export interface ImageUrlOptions {
   fetcher?: typeof fetch
   allowPrivate?: boolean
@@ -94,12 +102,12 @@ export async function fetchImageUrl(
   // R-334: the real network goes through a connection pinned to the checked address.
   // The plain global fetch passed down from the website import counts as "the real network" too.
   const fetcher =
-      options.fetcher && options.fetcher !== globalThis.fetch
-        ? options.fetcher
-        : options.allowPrivate
-          ? fetch
-          : pinnedFetch,
-    lookup = options.lookup ?? resolveHost
+    options.fetcher && options.fetcher !== globalThis.fetch
+      ? options.fetcher
+      : options.allowPrivate
+        ? fetch
+        : pinnedFetch
+  const lookup = options.lookup ?? resolveHost
   if (typeof raw !== 'string' || raw.length > 2048) throw new Error('圖片網址不合法')
   let url: URL
   try {
@@ -113,12 +121,14 @@ export async function fetchImageUrl(
       url.username ||
       url.password ||
       !url.hostname
-    )
+    ) {
       throw new Error('只接受不含帳號密碼的 HTTP(S) 圖片網址')
+    }
     if (!options.allowPrivate) {
       const host = url.hostname.replace(/^\[|\]$/g, '')
-      if (host.toLowerCase() === 'localhost' || host.toLowerCase().endsWith('.localhost'))
+      if (host.toLowerCase() === 'localhost' || host.toLowerCase().endsWith('.localhost')) {
         throw new Error('不允許本機或內網位址')
+      }
       const addresses = net.isIP(host) ? [host] : await lookup(host).catch(() => [])
       if (!addresses.length) throw new Error('無法解析圖片網址的主機')
       if (addresses.some(privateAddress)) throw new Error('不允許本機或內網位址')
@@ -137,8 +147,9 @@ export async function fetchImageUrl(
     }
     const bytes = await limitedBytes(response, MAX_IMAGE_BYTES)
     const identified = identifyImage(bytes)
-    if (!identified)
+    if (!identified) {
       throw new Error('網址內容不是支援的圖片（PNG、JPEG、GIF、WebP、BMP、AVIF、ICO）')
+    }
     const last = decodeURIComponent(url.pathname.split('/').filter(Boolean).pop() ?? '')
       .replace(/[\\/:*?"<>|\0]/g, '_')
       .slice(0, 80)

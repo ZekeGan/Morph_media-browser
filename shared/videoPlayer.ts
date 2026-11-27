@@ -9,14 +9,17 @@ export function externalPlayerKind(program: string): ExternalPlayerKind {
   if (/^mpv\.exe$/i.test(name)) return 'mpv'
   return 'other'
 }
+
 // A position that can be passed on: finite, not negative, and sane. Anything else means "from the start".
 export const validStartTime = (time: unknown): time is number =>
   typeof time === 'number' && Number.isFinite(time) && time > 0 && time < 1e9
+
 const clock = (seconds: number) => {
-  const whole = Math.floor(seconds),
-    pad = (n: number) => String(n).padStart(2, '0')
+  const whole = Math.floor(seconds)
+  const pad = (n: number) => String(n).padStart(2, '0')
   return `${pad(Math.floor(whole / 3600))}:${pad(Math.floor(whole / 60) % 60)}:${pad(whole % 60)}`
 }
+
 export function externalPlayerArgs(program: string, file: string, time?: number): string[] {
   const kind = externalPlayerKind(program)
   if (!validStartTime(time) || kind === 'other') return [file]

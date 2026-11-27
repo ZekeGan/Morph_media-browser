@@ -1,17 +1,19 @@
-import { _electron as electron } from 'playwright-core'
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
-import { folderFile, readFolder, readJson, projectFile } from '../electron/files'
+import { _electron as electron } from 'playwright-core'
+
 import type { Cell, Project } from '../shared/model'
+
+import { folderFile, projectFile, readFolder, readJson } from '../electron/files'
+import { Library } from '../electron/library'
 import { closeApp, openLayoutEditor } from './support/app'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'cell-editor-ui-')),
-  media = path.join(root, 'Controlled'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'cell-editor-ui-'))
+const media = path.join(root, 'Controlled')
+const local = path.join(root, 'local')
 await fs.mkdir(media)
 await fs.writeFile(path.join(media, 'original.txt'), 'PRESERVE ORIGINAL')
 const lib = new Library(local, undefined, false)
@@ -21,8 +23,8 @@ await lib.create(media, {
   scanAll: true,
   depth: { mode: 'through', level: 1 },
 })
-const project = lib.snapshot().projects[0].project!,
-  style = { textColor: '#e4e6e8', backgroundColor: 'transparent' }
+const project = lib.snapshot().projects[0].project!
+const style = { textColor: '#e4e6e8', backgroundColor: 'transparent' }
 const cells: Cell[] = [
   {
     cellId: 'rating',
@@ -93,20 +95,21 @@ record.attributes = [
 ]
 await fs.writeFile(folderFile(media), JSON.stringify(record))
 await lib.scan()
-const originalRecord = await fs.readFile(folderFile(media)),
-  env = Object.fromEntries(
-    Object.entries({ ...process.env, MEDIA_VIEWER_TEST_DATA: local }).filter(
-      (entry): entry is [string, string] => entry[1] !== undefined
-    )
+const originalRecord = await fs.readFile(folderFile(media))
+const env = Object.fromEntries(
+  Object.entries({ ...process.env, MEDIA_VIEWER_TEST_DATA: local }).filter(
+    (entry): entry is [string, string] => entry[1] !== undefined
   )
+)
 delete env.ELECTRON_RUN_AS_NODE
-const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
-  page = await app.firstWindow(),
-  errors: string[] = []
+const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
+const page = await app.firstWindow()
+const errors: string[] = []
 page.on('pageerror', (error) => errors.push(error.message))
 page.setDefaultTimeout(15000)
 await page.evaluate('window.__name=(target)=>target')
 const button = (name: string) => page.getByRole('button', { name, exact: true })
+
 async function verifyCanvasDrag() {
   const cell = page.locator('.editor-cell').first()
   await cell.scrollIntoViewIfNeeded()
@@ -130,6 +133,7 @@ async function verifyCanvasDrag() {
   }
   assert.ok(false, `canvas drag offset ${offset}`)
 }
+
 try {
   await app.evaluate(({ BrowserWindow }) => {
     const win = BrowserWindow.getAllWindows()[0]
@@ -244,11 +248,11 @@ try {
     await page.locator('.react-grid-layout').dispatchEvent('dragover', inside)
     await page.locator('.react-grid-layout .dropping').waitFor({ state: 'attached', timeout: 3000 })
     await page.locator('.react-grid-layout').dispatchEvent('dragleave', inside)
-    if (finish === 'leave')
+    if (finish === 'leave') {
       await page
         .locator('body')
         .dispatchEvent('dragover', { clientX: 5, clientY: 5, dataTransfer: transfer })
-    else await palette.dispatchEvent('dragend', { dataTransfer: transfer })
+    } else await palette.dispatchEvent('dragend', { dataTransfer: transfer })
     await page.locator('.react-grid-layout .dropping').waitFor({ state: 'detached', timeout: 3000 })
     if (finish === 'leave') await palette.dispatchEvent('dragend', { dataTransfer: transfer })
     assert.equal(

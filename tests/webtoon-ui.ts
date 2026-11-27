@@ -1,22 +1,23 @@
-import fs from 'node:fs/promises'
-import path from 'node:path'
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import { promisify } from 'node:util'
-import { Library } from '../electron/library'
+
 import { readFolder } from '../electron/files'
+import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
 // R-256: webtoon mode. Tall pages suggest it once; it shows one gapless column whose width the toolbar slider and
 // +/- change, keys scroll a window height, and the mode, width and answered suggestion stay with the book.
 const base = path.resolve('.test-output')
 await fs.mkdir(path.join(base, 'shot'), { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'webtoon-ui-')),
-  comic = path.join(root, 'Strip'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'webtoon-ui-'))
+const comic = path.join(root, 'Strip')
+const local = path.join(root, 'local')
 await fs.mkdir(comic)
 const exec = promisify(execFile)
-for (let i = 1; i <= 12; i++)
+for (let i = 1; i <= 12; i++) {
   await exec(
     'ffmpeg',
     [
@@ -32,6 +33,7 @@ for (let i = 1; i <= 12; i++)
     ],
     { windowsHide: true }
   )
+}
 const library = new Library(local, undefined, false)
 await library.init()
 await library.create(comic, {

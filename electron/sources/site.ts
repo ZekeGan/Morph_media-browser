@@ -21,6 +21,7 @@ export interface Site {
   list(key: string, value: unknown, max?: number): void
   number(key: string, value: unknown): void
 }
+
 // Extra request settings: headers (a key or client ID) and a plain-text body (IGDB's query language).
 export interface RequestExtra {
   headers?: Record<string, string>
@@ -31,6 +32,7 @@ export interface RequestExtra {
   // R-523: follow redirects (at most three) that stay on this source's request hosts; told each new address.
   follow?: (url: URL) => void
 }
+
 export interface SiteResult {
   title: string
   canonical: string
@@ -43,12 +45,14 @@ export interface SiteResult {
   versionPick?: 'match' | 'fallback' | 'chosen'
   related?: { provider: 'vndb'; url: string; title: string }
 }
+
 export type Adapter = (site: Site) => Promise<SiteResult>
 
 export const clean = (value: unknown) =>
   decode(value)
     .replace(/<[^>]*>/g, '')
     .slice(0, 10000)
+
 export const tags = (value: unknown, max = 200) =>
   Array.isArray(value)
     ? [

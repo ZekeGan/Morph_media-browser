@@ -1,18 +1,20 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import {
+  type CellListKind,
   cellListKinds,
   cellLists,
   mapCellLists,
   withOnlyCells,
-  type CellListKind,
 } from '../shared/cellLists'
-import { validateProject, type Cell, type Project } from '../shared/model'
-import { withoutField } from '../electron/maintenance'
 import { createGroup, dissolveGroup } from '../shared/fieldGroups'
-import { switchTextType } from '../src/editor/fieldTypes'
-import { settleFieldGroups } from '../shared/upgrade'
 import { projectImageCells } from '../shared/layouts'
+import { type Cell, type Project, validateProject } from '../shared/model'
+import { settleFieldGroups } from '../shared/upgrade'
+
+import { withoutField } from '../electron/maintenance'
+import { switchTextType } from '../src/editor/fieldTypes'
 import { modelProject } from './support/model-fixtures'
 
 // R-368: every routine that must reach every list of layout components goes through shared/cellLists. The fixture
@@ -30,6 +32,7 @@ const field = (cellId: string, extra: Partial<Cell> = {}) =>
   }) as Cell
 const image = (cellId: string) =>
   ({ cellId, kind: 'image', grid: { x: 6, y: 0, w: 6, h: 1 }, style }) as Cell
+
 function fixture(): Project {
   const project: Project = {
     ...modelProject(),
@@ -52,6 +55,7 @@ function fixture(): Project {
   validateProject(project)
   return project
 }
+
 // Which kinds of list a check saw; it must be all of them.
 const kindsOf = (lists: { where: CellListKind }[]) => new Set(lists.map((list) => list.where))
 const allKinds = new Set<CellListKind>(cellListKinds)
@@ -64,8 +68,9 @@ test('R-368: one change reaches every list, and absent holders stay absent', () 
   const marked = mapCellLists(fixture(), (cells) =>
     cells.map((cell) => ({ ...cell, text: 'seen' }))
   )
-  for (const list of cellLists(marked))
+  for (const list of cellLists(marked)) {
     for (const cell of list.cells) assert.equal(cell.text, 'seen', list.where + ':' + list.id)
+  }
   const base: Record<string, unknown> = {
     ...modelProject(),
     cells: [field('only')],
@@ -78,8 +83,9 @@ test('R-368: one change reaches every list, and absent holders stay absent', () 
     string,
     unknown
   >
-  for (const key of ['layoutPresets', 'panelPresets'])
+  for (const key of ['layoutPresets', 'panelPresets']) {
     assert.ok(!(key in bare) || bare[key] === undefined, key + ' stays absent')
+  }
 })
 
 test('R-368: validation checks each saved list without its own holders', () => {
@@ -95,11 +101,12 @@ test('R-368: removing a field empties it from every list', () => {
   validateProject(removed)
   const lists = cellLists(removed)
   assert.deepEqual(kindsOf(lists), allKinds)
-  for (const list of lists)
+  for (const list of lists) {
     assert.ok(
       list.cells.every((cell) => cell.attributeId !== 'note'),
       list.where + ':' + list.id
     )
+  }
 })
 
 test('R-368: dissolving a group settles cells in every list', () => {
@@ -111,11 +118,12 @@ test('R-368: dissolving a group settles cells in every list', () => {
   validateProject(dissolved)
   const lists = cellLists(dissolved)
   assert.deepEqual(kindsOf(lists), allKinds)
-  for (const list of lists)
+  for (const list of lists) {
     assert.ok(
       list.cells.every((cell) => !cell.groupId),
       list.where + ':' + list.id
     )
+  }
 })
 
 test('R-368: changing a field type converts its components in every list', () => {
@@ -124,10 +132,13 @@ test('R-368: changing a field type converts its components in every list', () =>
   validateProject(result.project)
   const lists = cellLists(result.project)
   assert.deepEqual(kindsOf(lists), allKinds)
-  for (const list of lists)
-    for (const cell of list.cells)
-      if (cell.attributeId === 'note')
+  for (const list of lists) {
+    for (const cell of list.cells) {
+      if (cell.attributeId === 'note') {
         assert.equal(cell.kind, 'field-enum', list.where + ':' + list.id)
+      }
+    }
+  }
 })
 
 test('R-368: settling on read remaps dissolved group members in every list', () => {
@@ -140,10 +151,13 @@ test('R-368: settling on read remaps dissolved group members in every list', () 
   const settled = settleFieldGroups(raw) as Project
   const lists = cellLists(settled)
   assert.deepEqual(kindsOf(lists), allKinds)
-  for (const list of lists)
-    for (const cell of list.cells)
-      if (cell.groupId === 'gone')
+  for (const list of lists) {
+    for (const cell of list.cells) {
+      if (cell.groupId === 'gone') {
         assert.equal(cell.attributeId, 'note', list.where + ':' + list.id)
+      }
+    }
+  }
 })
 
 test('R-368: image components of every list can hold a picture', () => {

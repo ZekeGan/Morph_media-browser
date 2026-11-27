@@ -1,9 +1,8 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
-import { WorkspaceStore } from '../electron/workspace'
+import { test } from 'node:test'
+
 import {
   applyBackup,
   createBackup,
@@ -15,6 +14,8 @@ import {
   previewBackup,
 } from '../electron/backup'
 import { folderFile, readFolder, saveFolder } from '../electron/files'
+import { Library } from '../electron/library'
+import { WorkspaceStore } from '../electron/workspace'
 
 // Backup and restore on controlled folders only: create, restore in place, a moved root, a tampered list.
 async function setup(t: { after: (fn: () => Promise<void>) => void }) {
@@ -26,9 +27,9 @@ async function setup(t: { after: (fn: () => Promise<void>) => void }) {
     if (!target.startsWith(base + path.sep)) throw new Error('Unsafe cleanup')
     await fs.rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
-  const media = path.join(root, 'Library'),
-    local = path.join(root, 'local'),
-    out = path.join(root, 'backups')
+  const media = path.join(root, 'Library')
+  const local = path.join(root, 'local')
+  const out = path.join(root, 'backups')
   await fs.mkdir(path.join(media, 'A'), { recursive: true })
   await fs.writeFile(path.join(media, 'A', 'page.txt'), 'ORIGINAL')
   await fs.mkdir(out)
@@ -168,8 +169,9 @@ test('kept backups form one list of what the user made, and ids cannot leave the
   assert.equal(list.length, 2)
   assert.ok(list.some((entry) => entry.id === manual.id && entry.label === 'manual'))
   assert.ok(list.every((entry) => entry.size > 0 && entry.projects === 1))
-  for (const bad of ['..', '../local', 'M-orph-backup-x', path.join('..', manual.id)])
+  for (const bad of ['..', '../local', 'M-orph-backup-x', path.join('..', manual.id)]) {
     await assert.rejects(deleteBackup(library, bad), /備份不存在/)
+  }
   await assert.rejects(exportBackup(library, manual.id, media), /不能放在專案資料夾裡/)
   const exported = await exportBackup(library, manual.id, out)
   assert.ok(

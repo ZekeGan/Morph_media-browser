@@ -1,10 +1,12 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
-import { folderFile, readFolder } from '../electron/files'
+import { test } from 'node:test'
+
 import { textAsDate, unifyTarget } from '../shared/unifyDates'
+
+import { folderFile, readFolder } from '../electron/files'
+import { Library } from '../electron/library'
 
 test('R-364: text is read as the field date type; only text next to one date type is unified', () => {
   assert.equal(textAsDate('2026-07-20T00:38:17', 'datetime'), '2026-07-20T00:38:17')
@@ -22,15 +24,16 @@ test('R-364: text is read as the field date type; only text next to one date typ
 test('R-364: a field kept as text in some folders and as a date in others is unified after a preview', async (t) => {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'field-unify-')),
-    media = path.join(root, 'media'),
-    local = path.join(root, 'local')
+  const root = await fs.mkdtemp(path.join(base, 'field-unify-'))
+  const media = path.join(root, 'media')
+  const local = path.join(root, 'local')
   t.after(async () => {
     assert.ok((await fs.realpath(root)).startsWith(base + path.sep))
     await fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
-  for (const name of ['Old', 'New', 'Odd'])
+  for (const name of ['Old', 'New', 'Odd']) {
     await fs.mkdir(path.join(media, name), { recursive: true })
+  }
   const lib = new Library(local, undefined, false)
   await lib.init()
   await lib.create(media, { name: 'Unify', scanAll: true, depth: { mode: 'through', level: 2 } })
@@ -47,8 +50,8 @@ test('R-364: a field kept as text in some folders and as a date in others is uni
     values: ReturnType<typeof posted>[],
     own: ReturnType<typeof posted>[] = []
   ) => {
-    const folder = path.join(media, name),
-      record = await readFolder(folder)
+    const folder = path.join(media, name)
+    const record = await readFolder(folder)
     record.attributes = values
     if (own.length) record.projectOverrides[projectId] = own
     record.projectOverrides['someone-else'] = [posted('string', 'kept as it is')]
@@ -89,9 +92,9 @@ test('R-364: a field kept as text in some folders and as a date in others is uni
 test('R-364: a preview is refused when the field has no text next to a date', async (t) => {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'field-unify-')),
-    media = path.join(root, 'media'),
-    local = path.join(root, 'local')
+  const root = await fs.mkdtemp(path.join(base, 'field-unify-'))
+  const media = path.join(root, 'media')
+  const local = path.join(root, 'local')
   t.after(async () => {
     await fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
@@ -106,9 +109,9 @@ test('R-364: a preview is refused when the field has no text next to a date', as
 test('R-364: a field some project uses as text is not unified', async (t) => {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'field-unify-')),
-    media = path.join(root, 'media'),
-    local = path.join(root, 'local')
+  const root = await fs.mkdtemp(path.join(base, 'field-unify-'))
+  const media = path.join(root, 'media')
+  const local = path.join(root, 'local')
   t.after(async () => {
     await fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
@@ -125,8 +128,8 @@ test('R-364: a field some project uses as text is not unified', async (t) => {
     ['Old', 'string', '2025-03-14T16:46:03'],
     ['New', 'datetime', '2026-07-20T00:38:17'],
   ]) {
-    const folder = path.join(media, name),
-      record = await readFolder(folder)
+    const folder = path.join(media, name)
+    const record = await readFolder(folder)
     record.attributes = [{ attributeId: 'posted', key: 'Posted', type, value, source: 'eh' }]
     await fs.writeFile(folderFile(folder), JSON.stringify(record))
   }

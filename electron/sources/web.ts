@@ -1,9 +1,10 @@
 import dns from 'node:dns/promises'
 import net from 'node:net'
+
 import { privateAddress } from '../image-url'
-import { SourceError, sourceStatusKind, limitedBytes } from '../metadata-common'
-import { userAgent } from './config'
+import { limitedBytes, SourceError, sourceStatusKind } from '../metadata-common'
 import { pinnedFetch } from '../pinned-fetch'
+import { userAgent } from './config'
 
 // R-283: reading web pages without running them. A page is fetched under main's control (HTTPS only, no
 // credentials, no local or private addresses, at most three redirects, 2 MiB, 15 s), decoded with the page's own
@@ -13,15 +14,18 @@ export interface WebOptions {
   // Cookies a site needs to show its age-restricted pages, only after the user confirmed being an adult (R-293).
   cookie?: string
 }
+
 const resolveHost = async (host: string) =>
   (await dns.lookup(host, { all: true })).map((entry) => entry.address)
 
 export async function safeAddress(url: URL, lookup = resolveHost) {
-  if (url.protocol !== 'https:' || url.username || url.password || !url.hostname || url.port)
+  if (url.protocol !== 'https:' || url.username || url.password || !url.hostname || url.port) {
     throw new Error('只接受不含帳號密碼的 HTTPS 網址')
+  }
   const host = url.hostname.replace(/^\[|\]$/g, '')
-  if (host.toLowerCase() === 'localhost' || host.toLowerCase().endsWith('.localhost'))
+  if (host.toLowerCase() === 'localhost' || host.toLowerCase().endsWith('.localhost')) {
     throw new Error('不允許本機或內網位址')
+  }
   const addresses = net.isIP(host) ? [host] : await lookup(host).catch(() => [])
   if (!addresses.length) throw new SourceError('offline')
   if (addresses.some(privateAddress)) throw new Error('不允許本機或內網位址')
@@ -87,6 +91,7 @@ const encodings: Record<string, string> = {
   gb2312: 'gbk',
   'euc-kr': 'euc-kr',
 }
+
 // The charset from the HTTP header, else from a <meta> tag in the first 4 KiB, else UTF-8.
 export function decodePage(bytes: Buffer, contentType: string) {
   const head = bytes.subarray(0, 4096).toString('latin1')
@@ -99,24 +104,26 @@ export function decodePage(bytes: Buffer, contentType: string) {
 
 // --- Forward-only scanning ---
 export function tags(html: string, name: string) {
-  const lower = html.toLowerCase(),
-    open = '<' + name,
-    found: string[] = []
+  const lower = html.toLowerCase()
+  const open = '<' + name
+  const found: string[] = []
   let at = 0
   while ((at = lower.indexOf(open, at)) >= 0) {
     const end = lower.indexOf('>', at)
     if (end < 0) break
-    if (/[\s/>]/.test(lower[at + open.length] ?? '>'))
+    if (/[\s/>]/.test(lower[at + open.length] ?? '>')) {
       found.push(html.slice(at, Math.min(end + 1, at + 4096)))
+    }
     at = end + 1
   }
   return found
 }
+
 export function blocks(html: string, name: string, limit = 200_000) {
-  const lower = html.toLowerCase(),
-    open = '<' + name,
-    close = '</' + name,
-    found: { tag: string; inner: string }[] = []
+  const lower = html.toLowerCase()
+  const open = '<' + name
+  const close = '</' + name
+  const found: { tag: string; inner: string }[] = []
   let at = 0
   while ((at = lower.indexOf(open, at)) >= 0) {
     const end = lower.indexOf('>', at)
@@ -135,6 +142,7 @@ export function blocks(html: string, name: string, limit = 200_000) {
   }
   return found
 }
+
 export const attribute = (tag: string, name: string) => {
   const match = new RegExp(
     '\\s' + name + '\\s*=\\s*("([^"]*)"|\'([^\']*)\'|([^\\s"\'>]+))',
@@ -142,6 +150,7 @@ export const attribute = (tag: string, name: string) => {
   ).exec(tag)
   return match ? entity(match[2] ?? match[3] ?? match[4] ?? '') : undefined
 }
+
 export const entity = (value: string) =>
   value.replace(/&(amp|lt|gt|quot|apos|nbsp|#\d+|#x[0-9a-f]+);/gi, (m, key: string) => {
     const named: Record<string, string> = {
@@ -156,6 +165,7 @@ export const entity = (value: string) =>
     const code = key[1].toLowerCase() === 'x' ? parseInt(key.slice(2), 16) : Number(key.slice(1))
     return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : m
   })
+
 // Text of an HTML fragment: tags removed, entities decoded, spaces collapsed.
 export const textOf = (fragment: string) =>
   entity(
@@ -179,12 +189,13 @@ export interface PageMeta {
   keywords: string[]
   ld: Record<string, unknown>[]
 }
+
 // JSON-LD first, then OpenGraph / Twitter / plain <meta>, then <title>.
 export function pageMeta(html: string, base: URL): PageMeta {
   const meta = new Map<string, string>()
   for (const tag of tags(html, 'meta')) {
-    const key = (attribute(tag, 'property') ?? attribute(tag, 'name') ?? '').toLowerCase(),
-      content = attribute(tag, 'content')
+    const key = (attribute(tag, 'property') ?? attribute(tag, 'name') ?? '').toLowerCase()
+    const content = attribute(tag, 'content')
     if (key && content && !meta.has(key)) meta.set(key, content.trim())
   }
   const ld: Record<string, unknown>[] = []
@@ -207,14 +218,14 @@ export function pageMeta(html: string, base: URL): PageMeta {
       .map((item) => (typeof item === 'string' ? item : (item as { name?: unknown })?.name))
       .filter((item): item is string => typeof item === 'string' && !!item.trim())
       .map((item) => entity(item).trim())
-  const ldImage = main?.image,
-    image =
-      (typeof ldImage === 'string'
-        ? ldImage
-        : (names(ldImage)[0] ??
-          (Array.isArray(ldImage) ? text(ldImage[0]) : (ldImage as { url?: string })?.url))) ??
-      meta.get('og:image') ??
-      meta.get('twitter:image')
+  const ldImage = main?.image
+  const image =
+    (typeof ldImage === 'string'
+      ? ldImage
+      : (names(ldImage)[0] ??
+        (Array.isArray(ldImage) ? text(ldImage[0]) : (ldImage as { url?: string })?.url))) ??
+    meta.get('og:image') ??
+    meta.get('twitter:image')
   const absolute = (value: string | undefined) => {
     if (!value) return undefined
     try {

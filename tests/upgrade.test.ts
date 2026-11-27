@@ -1,12 +1,30 @@
-import { plainMessage } from '../shared/message'
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import fs from 'node:fs/promises'
 import { readFileSync } from 'node:fs'
+import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
-import { WorkspaceStore } from '../electron/workspace'
-import { managedTree } from '../electron/maintenance'
+import { test } from 'node:test'
+
+import { detectFolderKind } from '../shared/kind'
+import { plainMessage } from '../shared/message'
+import {
+  type Cell,
+  type FolderRow,
+  type Project,
+  validateFolder,
+  validateProject,
+} from '../shared/model'
+import { classifyError, errorMessage } from '../shared/notifications'
+import { migrateRecord } from '../shared/project-export'
+import {
+  FORMAT_VERSION,
+  type FormatKind,
+  isNewerFormat,
+  NewerFormatError,
+  UPGRADE_STEPS,
+  upgradeFormat,
+  upgradeStored,
+} from '../shared/upgrade'
+
 import {
   ensureFolder,
   folderFile,
@@ -15,26 +33,16 @@ import {
   restoreJson,
   saveFolder,
 } from '../electron/files'
-import { validateFolder, validateProject, type Cell, type Project } from '../shared/model'
+import { Library } from '../electron/library'
+import { managedTree } from '../electron/maintenance'
+import { WorkspaceStore } from '../electron/workspace'
 import { modelProject } from './support/model-fixtures'
-import {
-  FORMAT_VERSION,
-  NewerFormatError,
-  UPGRADE_STEPS,
-  isNewerFormat,
-  upgradeFormat,
-  upgradeStored,
-  type FormatKind,
-} from '../shared/upgrade'
-import { classifyError, errorMessage } from '../shared/notifications'
-import { migrateRecord } from '../shared/project-export'
-import { detectFolderKind } from '../shared/kind'
-import type { FolderRow } from '../shared/model'
 
 // A folder record as version 1 wrote it (R-387): shared values, a project's private values, fields this version does
 // not know, and the combined audio/video kind set by hand.
 const V1_FOLDER = path.resolve('tests', 'fixtures', 'folder-v1.json')
 const v1Folder = async () => JSON.parse(await fs.readFile(V1_FOLDER, 'utf8'))
+
 async function placeV1(dir: string) {
   await fs.mkdir(path.dirname(folderFile(dir)), { recursive: true })
   await fs.copyFile(V1_FOLDER, folderFile(dir))
@@ -52,6 +60,7 @@ async function sandbox(t: { after: (fn: () => Promise<void>) => void }, name: st
   })
   return root
 }
+
 // Pretends this build writes the next version of one format, with a step from the current one, for the length of a
 // test.
 function pretendNext(
@@ -67,6 +76,7 @@ function pretendNext(
     delete UPGRADE_STEPS[format][current]
   })
 }
+
 const raw = async (file: string) => JSON.parse(await fs.readFile(file, 'utf8'))
 
 test('upgrade steps run in order, and a missing step or newer data is refused', (t) => {
@@ -134,8 +144,8 @@ test('an older folder record is upgraded on read and written in the new format o
 })
 
 test('folder records v1 -> v2: the combined audio/video kind set by hand is dropped, the rest is kept (R-387)', async () => {
-  const old = await v1Folder(),
-    before = structuredClone(old)
+  const old = await v1Folder()
+  const before = structuredClone(old)
   const next = upgradeStored(old) as Record<string, any>
   assert.deepEqual(old, before, 'the value read is never changed in place')
   const { kind: _kind, ...details } = before.details
@@ -146,8 +156,8 @@ test('folder records v1 -> v2: the combined audio/video kind set by hand is drop
   validateFolder(next)
   assert.deepEqual(upgradeStored(next), next, 'upgrading again changes nothing')
   // With the manual choice gone, what the folder holds decides.
-  const row = { record: next } as unknown as FolderRow,
-    sample = { images: 0, videos: 0, audio: 0, total: 0 }
+  const row = { record: next } as unknown as FolderRow
+  const sample = { images: 0, videos: 0, audio: 0, total: 0 }
   assert.equal(detectFolderKind(row, { ...sample, videos: 2, total: 2 }).kind, 'video')
   assert.equal(detectFolderKind(row, { ...sample, audio: 9, total: 9 }).kind, 'music')
   assert.equal(detectFolderKind(row, { ...sample, total: 4 }).kind, 'general')
@@ -164,12 +174,13 @@ test('folder records v1 -> v2: the combined audio/video kind set by hand is drop
 })
 
 test('a scan reads a v1 folder record in the new format without rewriting it', async (t) => {
-  const root = await sandbox(t, 'upgrade-scan-v1'),
-    media = path.join(root, 'media'),
-    album = path.join(media, 'Album')
+  const root = await sandbox(t, 'upgrade-scan-v1')
+  const media = path.join(root, 'media')
+  const album = path.join(media, 'Album')
   await fs.mkdir(album, { recursive: true })
-  for (const name of ['01.mp3', '02.mp3', 'cover.jpg'])
+  for (const name of ['01.mp3', '02.mp3', 'cover.jpg']) {
     await fs.writeFile(path.join(album, name), 'x')
+  }
   const before = await placeV1(album)
   const lib = new Library(path.join(root, 'local'), undefined, false)
   await lib.init()
@@ -183,8 +194,8 @@ test('a scan reads a v1 folder record in the new format without rewriting it', a
 })
 
 test('a folder record from a newer version is read-only: not recreated, restored over or cleaned', async (t) => {
-  const dir = await sandbox(t, 'upgrade-newer'),
-    inner = path.join(dir, 'Inner')
+  const dir = await sandbox(t, 'upgrade-newer')
+  const inner = path.join(dir, 'Inner')
   await ensureFolder(dir, false)
   await fs.mkdir(inner)
   await ensureFolder(inner, false)
@@ -206,14 +217,14 @@ test('a folder record from a newer version is read-only: not recreated, restored
 })
 
 test('a scan shows a newer folder as needing an update and leaves it as it is', async (t) => {
-  const root = await sandbox(t, 'upgrade-scan'),
-    media = path.join(root, 'media')
+  const root = await sandbox(t, 'upgrade-scan')
+  const media = path.join(root, 'media')
   await fs.mkdir(path.join(media, 'A', 'Inner'), { recursive: true })
   const lib = new Library(path.join(root, 'local'), undefined, false)
   await lib.init()
   await lib.create(media, { name: 'P', scanAll: true, depth: { mode: 'through', level: 3 } })
-  const child = path.join(media, 'A'),
-    newer = JSON.stringify({ ...(await raw(folderFile(child))), schemaVersion: 7 })
+  const child = path.join(media, 'A')
+  const newer = JSON.stringify({ ...(await raw(folderFile(child))), schemaVersion: 7 })
   await fs.writeFile(folderFile(child), newer)
   await fs.rm(path.join(media, 'A', 'Inner', '.media-viewer'), { recursive: true, force: true })
   await lib.scan()
@@ -231,8 +242,8 @@ test('app settings are upgraded once at start-up after the old file is kept; new
   const first = new WorkspaceStore(root)
   await first.init()
   await first.update({ action: 'createGroup', name: 'G' }, [])
-  const file = path.join(root, 'workspace-ui.json'),
-    v1 = await fs.readFile(file, 'utf8')
+  const file = path.join(root, 'workspace-ui.json')
+  const v1 = await fs.readFile(file, 'utf8')
   pretendNext(t, 'workspace', (v) => ({ ...v, extra: true }))
   const upgraded = new WorkspaceStore(root)
   await upgraded.init()
@@ -263,8 +274,8 @@ test('newer-version errors survive the IPC prefix and are classified for the win
 })
 
 test('a project record from a newer version is not replaced by its backup', async (t) => {
-  const root = await sandbox(t, 'upgrade-project'),
-    media = path.join(root, 'media')
+  const root = await sandbox(t, 'upgrade-project')
+  const media = path.join(root, 'media')
   await fs.mkdir(media, { recursive: true })
   const lib = new Library(path.join(root, 'local'), undefined, false)
   await lib.init()
@@ -301,8 +312,9 @@ test('projects v1 -> v2: book and content templates become panel layouts, older 
     'folderBookPresets',
     'kindLayouts',
     'folderLayouts',
-  ])
+  ]) {
     assert.ok(!(key in next), key + ' is gone')
+  }
   assert.deepEqual(
     next.panelPresets!.map((p) => [p.id, p.name, p.cells.map((c) => c.cellId)]),
     [
@@ -454,8 +466,8 @@ test('projects v3 -> v4: a list that the split would take past 50 components kee
 })
 
 test('a v2 project is upgraded on read and written as v3 only on save; the v2 file stays as the backup (R-437)', async (t) => {
-  const root = await sandbox(t, 'upgrade-project-v2'),
-    media = path.join(root, 'media')
+  const root = await sandbox(t, 'upgrade-project-v2')
+  const media = path.join(root, 'media')
   await fs.mkdir(media, { recursive: true })
   await fs.writeFile(path.join(media, 'clip.mp4'), 'ORIGINAL')
   const lib = new Library(path.join(root, 'local'), undefined, false)
@@ -493,8 +505,8 @@ test('a v2 project is upgraded on read and written as v3 only on save; the v2 fi
 })
 
 test('an older project record is upgraded on read and written in the new format only on save (R-409)', async (t) => {
-  const root = await sandbox(t, 'upgrade-project-v1'),
-    media = path.join(root, 'media')
+  const root = await sandbox(t, 'upgrade-project-v1')
+  const media = path.join(root, 'media')
   await fs.mkdir(media, { recursive: true })
   await fs.writeFile(path.join(media, 'clip.mp4'), 'ORIGINAL')
   const lib = new Library(path.join(root, 'local'), undefined, false)

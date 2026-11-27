@@ -1,7 +1,7 @@
-import { t as tr, useLocale, currentLocale } from '../i18n'
 import { Badge, Button, Progress, Rating } from '@mantine/core'
-import { TagList } from './TagList'
-import { fieldValue, type Cell, type FolderRow, type Project } from '../../shared/model'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+
+import { placeCells, rowsFor } from '../../shared/cardGrid'
 import {
   cellField,
   cellVisible,
@@ -10,24 +10,28 @@ import {
   numericDisplay,
   ruleText,
 } from '../../shared/cells'
-import { describeError } from '../notices/errors'
 import { launchChoice } from '../../shared/explorer'
-import { rowCells } from '../../shared/layouts'
-import { placeCells, rowsFor } from '../../shared/cardGrid'
-import { effectiveKind } from '../../shared/kind'
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { httpUrl } from '../../shared/fields'
-import { useFolderStats } from '../browse/folderStats'
-import { formatLastPlayed, formatPlayTime, usePlaytime } from '../game/playtime'
+import { effectiveKind } from '../../shared/kind'
+import { rowCells } from '../../shared/layouts'
+import { type Cell, fieldValue, type FolderRow, type Project } from '../../shared/model'
 import { latestNovel } from '../../shared/novel'
-import { isMediaInfo, MediaButton, MediaInfo } from './MediaInfoCell'
+
+import { useIsWork } from '../browse/folderKind'
+import { useFolderStats } from '../browse/folderStats'
+import { yesNo } from '../editor/fieldTypes'
+import { formatLastPlayed, formatPlayTime, usePlaytime } from '../game/playtime'
+import { currentLocale, t as tr, useLocale } from '../i18n'
+import { describeError } from '../notices/errors'
 import { cellColors } from './cellStyle'
 import { folderCoverAsset, folderCoverPicture } from './folderCover'
 import { GameExtraCell } from './GameExtraCell'
+import { isMediaInfo, MediaButton, MediaInfo } from './MediaInfoCell'
 import { usePanelContent } from './panelContext'
+import { TagList } from './TagList'
+
 import './cells.css'
-import { yesNo } from '../editor/fieldTypes'
-import { useIsWork } from '../browse/folderKind'
+
 type CellProps = {
   cell: Cell
   row?: FolderRow
@@ -37,6 +41,7 @@ type CellProps = {
   // Cards report how many grid rows a growing component's content needs (R-398); the editor preview does not.
   onRows?: (cellId: string, rows: number, now?: boolean) => void
 }
+
 // A component that may grow (R-398) shows its content at natural height and tells its card how many rows that takes.
 function GrowBody({
   cellId,
@@ -49,15 +54,15 @@ function GrowBody({
 }) {
   const box = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
-    const node = box.current,
-      cell = node?.parentElement
+    const node = box.current
+    const cell = node?.parentElement
     if (!node || !cell || !onRows) return
     const measure = (now?: boolean) => {
-      const style = getComputedStyle(cell),
-        chrome = ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce(
-          (sum, key) => sum + (parseFloat(style[key as 'paddingTop']) || 0),
-          0
-        )
+      const style = getComputedStyle(cell)
+      const chrome = ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce(
+        (sum, key) => sum + (parseFloat(style[key as 'paddingTop']) || 0),
+        0
+      )
       onRows(cellId, rowsFor(node.offsetHeight + chrome), now)
     }
     measure(true)
@@ -74,6 +79,7 @@ function GrowBody({
     </div>
   )
 }
+
 // Covers come tall and wide; 'blur' shows all of the art and fills the rest with a blurred copy instead of bars or a crop.
 function CellPicture({
   src,
@@ -89,7 +95,7 @@ function CellPicture({
   const [failed, setFailed] = useState(false)
   useEffect(() => setFailed(false), [src])
   if (failed) return <span className="cell-image-placeholder">{empty ?? tr('沒有圖片')}</span>
-  if (fit !== 'blur')
+  if (fit !== 'blur') {
     return (
       <img
         className="cell-image"
@@ -99,6 +105,7 @@ function CellPicture({
         onError={() => setFailed(true)}
       />
     )
+  }
   return (
     <span className="cell-image cell-blur">
       <img className="cell-blur-bg" src={src} alt="" aria-hidden="true" />
@@ -106,27 +113,30 @@ function CellPicture({
     </span>
   )
 }
+
 // A component showing a field group tells on hover which member the value came from.
 function groupSourceTitle(project: Project, cell: Cell, row: FolderRow) {
   if (!cell.groupId) return undefined
-  const shown = cellField(cell, row, project).attributeId,
-    group = project.fieldGroups?.find((g) => g.groupId === cell.groupId),
-    alias = project.fieldBindings.find((f) => f.attributeId === shown)?.alias
+  const shown = cellField(cell, row, project).attributeId
+  const group = project.fieldGroups?.find((g) => g.groupId === cell.groupId)
+  const alias = project.fieldBindings.find((f) => f.attributeId === shown)?.alias
   if (!group || !alias || !isFilled(fieldValue(row, shown!))) return undefined
   const folderId = row.record?.folderId
   return folderId && project.groupSources?.[folderId]?.[group.groupId] === shown
     ? tr('{0}：來自「{1}」（這個資料夾指定）', group.name, alias)
     : tr('{0}：來自「{1}」', group.name, alias)
 }
+
 export function CellContent(props: CellProps) {
   useLocale()
-  const { cell, row, preview, project } = props,
-    [copied, setCopied] = useState<string>(),
-    [copyError, setCopyError] = useState('')
-  if (!cellVisible(cell, row, project))
+  const { cell, row, preview, project } = props
+  const [copied, setCopied] = useState<string>()
+  const [copyError, setCopyError] = useState('')
+  if (!cellVisible(cell, row, project)) {
     return preview ? <span className="cell-condition-hidden">{tr('條件未符合')}</span> : null
-  const shown = cellField(cell, row, project),
-    copy = copyableValue(shown.value)
+  }
+  const shown = cellField(cell, row, project)
+  const copy = copyableValue(shown.value)
   return (
     <>
       {cell.scroll ? (
@@ -179,6 +189,7 @@ export function CellContent(props: CellProps) {
     </>
   )
 }
+
 // R-308: play time or the last play date of a game started from M:orph; empty until it has been played.
 function PlayInfo({ cell, row }: Pick<CellProps, 'cell' | 'row'>) {
   const play = usePlaytime(row?.record?.folderId)
@@ -189,31 +200,38 @@ function PlayInfo({ cell, row }: Pick<CellProps, 'cell' | 'row'>) {
     </span>
   )
 }
+
 function CellValue({ cell, row, open, preview = false, project }: CellProps) {
   useLocale()
-  const stats = useFolderStats(row?.rowId),
-    [linkError, setLinkError] = useState(''),
-    // R-499: in the right panel a picture is drawn large, so it is the original file; cards keep the thumbnail.
-    inPanel = !!usePanelContent()
-  if (cell.kind === 'static-text')
+  const stats = useFolderStats(row?.rowId)
+  const [linkError, setLinkError] = useState('')
+  // R-499: in the right panel a picture is drawn large, so it is the original file; cards keep the thumbnail.
+  const inPanel = !!usePanelContent()
+  if (cell.kind === 'static-text') {
     return <span style={{ whiteSpace: 'pre-wrap' }}>{ruleText(cell, row, project)}</span>
-  if (cell.kind === 'spacer')
+  }
+  if (cell.kind === 'spacer') {
     return preview ? <span className="spacer-preview" aria-label={tr('空白間距')} /> : null
-  if (cell.kind === 'system-info' && isMediaInfo(cell.systemInfo))
+  }
+  if (cell.kind === 'system-info' && isMediaInfo(cell.systemInfo)) {
     return <MediaInfo cell={cell} row={row} />
-  if (cell.kind === 'video-play' || cell.kind === 'book-continue')
+  }
+  if (cell.kind === 'video-play' || cell.kind === 'book-continue') {
     return <MediaButton cell={cell} row={row} project={project} />
-  if (cell.kind === 'system-info' && cell.systemInfo === 'engine')
+  }
+  if (cell.kind === 'system-info' && cell.systemInfo === 'engine') {
     return (
       <span>
         {row?.boundary?.engines.length ? row.boundary.engines.join('／') : tr('未偵測到')}
       </span>
     )
+  }
   if (
     cell.kind === 'system-info' &&
     (cell.systemInfo === 'playTime' || cell.systemInfo === 'lastPlayed')
-  )
+  ) {
     return <PlayInfo cell={cell} row={row} />
+  }
   if (
     cell.kind === 'system-info' &&
     (cell.systemInfo === 'readProgress' || cell.systemInfo === 'lastRead')
@@ -260,7 +278,7 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
     )
   }
 
-  if (cell.kind === 'open-folder')
+  if (cell.kind === 'open-folder') {
     return (
       <Button
         size="compact-sm"
@@ -277,16 +295,17 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
         {tr('開啟資料夾')}
       </Button>
     )
+  }
   if (cell.kind === 'game-launch') {
     // The same launch the game page offers: the project's default launch action and the folder's bound target.
     const template = launchChoice(
-        project ?? {},
-        cell.actionId,
-        cell.fallbackActionIds,
-        row?.record?.details?.targets
-      ),
-      target = template ? row?.record?.details?.targets?.[template.id] : undefined,
-      ready = !!template && !!target && target.kind === template.kind
+      project ?? {},
+      cell.actionId,
+      cell.fallbackActionIds,
+      row?.record?.details?.targets
+    )
+    const target = template ? row?.record?.details?.targets?.[template.id] : undefined
+    const ready = !!template && !!target && target.kind === template.kind
     return (
       <span className="cell-launch">
         <Button
@@ -306,8 +325,9 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
             if (
               ['exe', 'file-app', 'shortcut'].includes(template.kind) &&
               !window.confirm(tr('啟動「{0}」？', tr(template.label)))
-            )
+            ) {
               return
+            }
             try {
               await window.explorer.request({
                 action: 'runTarget',
@@ -329,28 +349,29 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
     )
   }
   if (cell.kind === 'divider') return <hr className="cell-divider" />
-  if (cell.kind === 'game-extra')
+  if (cell.kind === 'game-extra') {
     return <GameExtraCell extra={cell.gameExtra ?? 'save'} row={row} preview={preview} />
+  }
   if (cell.kind === 'image') {
-    const selected = row?.record?.details?.cellImages?.[cell.attributeId ?? cell.cellId],
-      asset = selected
-        ? row?.record?.assets.find((a) => a.assetId === selected)
-        : cell.attributeId
-          ? undefined
-          : folderCoverAsset(row),
-      // No picture chosen for this folder: the folder cover (R-409; R-511: also for an older component set to an
-      // imported banner, logo or icon) or its n-th image file, when it has one.
-      fallback =
-        asset || !row
-          ? undefined
-          : cell.imageCover || cell.imageRole
-            ? folderCoverPicture(row, inPanel)
-            : cell.imageIndex
-              ? {
-                  src: `media://nth/${row.rowId}/${cell.imageIndex}${inPanel ? '?full=1' : ''}`,
-                  alt: tr('資料夾內第 {0} 張圖片', cell.imageIndex),
-                }
-              : undefined
+    const selected = row?.record?.details?.cellImages?.[cell.attributeId ?? cell.cellId]
+    const asset = selected
+      ? row?.record?.assets.find((a) => a.assetId === selected)
+      : cell.attributeId
+        ? undefined
+        : folderCoverAsset(row)
+    // No picture chosen for this folder: the folder cover (R-409; R-511: also for an older component set to an
+    // imported banner, logo or icon) or its n-th image file, when it has one.
+    const fallback =
+      asset || !row
+        ? undefined
+        : cell.imageCover || cell.imageRole
+          ? folderCoverPicture(row, inPanel)
+          : cell.imageIndex
+            ? {
+                src: `media://nth/${row.rowId}/${cell.imageIndex}${inPanel ? '?full=1' : ''}`,
+                alt: tr('資料夾內第 {0} 張圖片', cell.imageIndex),
+              }
+            : undefined
     return asset ? (
       <CellPicture
         src={`media://asset/${row!.rowId}/${asset.assetId}`}
@@ -374,11 +395,12 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
     cell.kind.startsWith('field-') &&
     !isFilled(value) &&
     (value == null || typeof value === 'string' || Array.isArray(value))
-  )
+  ) {
     return <span className="cell-empty">{tr('沒有值')}</span>
+  }
   const label =
     typeof value === 'string' ? value : value == null ? '' : tr('⚠ 格式不符：{0}', String(value))
-  if (cell.kind === 'field-tags')
+  if (cell.kind === 'field-tags') {
     return Array.isArray(value) ? (
       <TagList
         tags={value}
@@ -389,6 +411,7 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
     ) : (
       <span>{value == null ? '' : tr('⚠ 格式不符')}</span>
     )
+  }
   if (cell.kind === 'field-number') {
     const display = numericDisplay(
       value,
@@ -403,7 +426,7 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
           : { minimumFractionDigits: cell.decimals, maximumFractionDigits: cell.decimals }
       )
     const label = `${format(display.value)} / ${format(display.maximum)}`
-    if (cell.presentation === 'rating')
+    if (cell.presentation === 'rating') {
       return (
         <span className="cell-rating" title={label}>
           <Rating
@@ -416,13 +439,15 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
           <span>{label}</span>
         </span>
       )
-    if (cell.presentation === 'progress')
+    }
+    if (cell.presentation === 'progress') {
       return (
         <span className="cell-progress">
           <Progress value={display.percent} aria-label={label} />
           <span>{label}</span>
         </span>
       )
+    }
     return (
       <span>
         {cell.unit && cell.unitPosition === 'prefix' ? cell.unit : ''}
@@ -431,7 +456,7 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
       </span>
     )
   }
-  if (cell.kind === 'field-date')
+  if (cell.kind === 'field-date') {
     return (
       <span>
         {typeof value === 'string'
@@ -441,6 +466,7 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
             : tr('⚠ 格式不符')}
       </span>
     )
+  }
   if (cell.kind === 'field-boolean') {
     const binding = project?.fieldBindings.find(
       (field) => field.attributeId === cellField(cell, row, project).attributeId
@@ -484,7 +510,7 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
       <span>{label}</span>
     )
   }
-  if (cell.kind === 'field-url')
+  if (cell.kind === 'field-url') {
     return httpUrl(value) ? (
       <span>
         <button
@@ -509,6 +535,7 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
     ) : (
       <span>{value == null ? tr('未填') : tr('⚠ 格式不符')}</span>
     )
+  }
   return (
     <span
       className={[cell.kind === 'name' ? 'cell-name' : '', cell.wrap ? 'cell-wrap' : '']
@@ -520,6 +547,7 @@ function CellValue({ cell, row, open, preview = false, project }: CellProps) {
     </span>
   )
 }
+
 export function Card({
   project,
   row,
@@ -533,9 +561,9 @@ export function Card({
   // Rows each growing component needs, measured in the browser and applied in batches: one render for a whole card,
   // and the first measurement before the first paint so a card does not visibly jump.
   const work = useIsWork(row)
-  const [needed, setNeeded] = useState<Record<string, number>>({}),
-    queue = useRef<Record<string, number>>({}),
-    frame = useRef(0)
+  const [needed, setNeeded] = useState<Record<string, number>>({})
+  const queue = useRef<Record<string, number>>({})
+  const frame = useRef(0)
   const flush = useCallback(() => {
     cancelAnimationFrame(frame.current)
     frame.current = 0

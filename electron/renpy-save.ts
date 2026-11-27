@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import zlib from 'node:zlib'
+
 import { safePath } from './files'
 
 // R-384: a Ren'Py game shipped without options.rpy still carries config.save_directory in its compiled script
@@ -30,12 +31,13 @@ export async function rpycText(buffer: Buffer): Promise<string | undefined> {
     if (buffer.subarray(0, 10).toString('latin1') === 'RENPY RPC2') {
       let found: Buffer | undefined
       for (let pos = 10; pos + 12 <= buffer.length && pos < 10 + 12 * 16; pos += 12) {
-        const slot = buffer.readUInt32LE(pos),
-          start = buffer.readUInt32LE(pos + 4),
-          length = buffer.readUInt32LE(pos + 8)
+        const slot = buffer.readUInt32LE(pos)
+        const start = buffer.readUInt32LE(pos + 4)
+        const length = buffer.readUInt32LE(pos + 8)
         if (slot === 0) break
-        if (slot === 1 && start + length <= buffer.length)
+        if (slot === 1 && start + length <= buffer.length) {
           found = buffer.subarray(start, start + length)
+        }
       }
       if (!found) return undefined
       data = found
@@ -47,12 +49,13 @@ export async function rpycText(buffer: Buffer): Promise<string | undefined> {
 }
 
 type Pickled = unknown
+
 // Just enough of the pickle format (protocols 0–3 opcodes Ren'Py writes) to read an archive index of
 // { name: [(offset, length, prefix)] }. Anything else, or any malformed input, stops with undefined.
 export function readIndex(buffer: Buffer): Map<string, [number, number][]> | undefined {
-  const stack: Pickled[] = [],
-    marks: number[] = [],
-    memo = new Map<number, Pickled>()
+  const stack: Pickled[] = []
+  const marks: number[] = []
+  const memo = new Map<number, Pickled>()
   let pos = 0
   const need = (count: number) => {
     if (pos + count > buffer.length) throw new Error('short')
@@ -166,14 +169,14 @@ export function readIndex(buffer: Buffer): Map<string, [number, number][]> | und
           break
         }
         case 's': {
-          const value = stack.pop(),
-            key = stack.pop()
+          const value = stack.pop()
+          const key = stack.pop()
           ;(stack[stack.length - 1] as Map<Pickled, Pickled>).set(key, value)
           break
         }
         case 'u': {
-          const items = fromMark(),
-            map = stack[stack.length - 1] as Map<Pickled, Pickled>
+          const items = fromMark()
+          const map = stack[stack.length - 1] as Map<Pickled, Pickled>
           for (let i = 0; i + 1 < items.length; i += 2) map.set(items[i], items[i + 1])
           break
         }
@@ -240,26 +243,27 @@ async function fromArchive(root: string, file: string): Promise<string | undefin
   try {
     await safePath(root, file)
     handle = await fs.open(file, 'r')
-    const size = (await handle.stat()).size,
-      head = Buffer.alloc(64),
-      read = (await handle.read(head, 0, 64, 0)).bytesRead,
-      parts = head.subarray(0, read).toString('latin1').split('\n')[0].split(' ')
+    const size = (await handle.stat()).size
+    const head = Buffer.alloc(64)
+    const read = (await handle.read(head, 0, 64, 0)).bytesRead
+    const parts = head.subarray(0, read).toString('latin1').split('\n')[0].split(' ')
     // RPA-3.0 <index offset in hex> <key in hex>; RPA-2.0 has the offset only and no key.
-    const version = parts[0] === 'RPA-3.0' ? 3 : parts[0] === 'RPA-2.0' ? 2 : 0,
-      offset = parseInt(parts[1] ?? '', 16),
-      key = version === 3 ? parseInt(parts[2] ?? '', 16) : 0
+    const version = parts[0] === 'RPA-3.0' ? 3 : parts[0] === 'RPA-2.0' ? 2 : 0
+    const offset = parseInt(parts[1] ?? '', 16)
+    const key = version === 3 ? parseInt(parts[2] ?? '', 16) : 0
     if (!version || !Number.isSafeInteger(offset) || offset <= 0 || offset >= size) return undefined
     if (size - offset > RPA_INDEX_LIMIT || !Number.isSafeInteger(key)) return undefined
     const packed = Buffer.alloc(size - offset)
-    if ((await handle.read(packed, 0, packed.length, offset)).bytesRead !== packed.length)
+    if ((await handle.read(packed, 0, packed.length, offset)).bytesRead !== packed.length) {
       return undefined
+    }
     const index = readIndex(await inflate(packed, { maxOutputLength: INFLATED_LIMIT }))
-    const name = [...(index?.keys() ?? [])].find((n) => /(^|[\\/])options\.rpyc$/i.test(n)),
-      entry = name ? index!.get(name)![0] : undefined
+    const name = [...(index?.keys() ?? [])].find((n) => /(^|[\\/])options\.rpyc$/i.test(n))
+    const entry = name ? index!.get(name)![0] : undefined
     if (!entry) return undefined
     // Offsets and lengths are stored XOR the key (as signed 32-bit numbers, then unsigned) in version 3.
-    const start = (entry[0] ^ key) >>> 0,
-      length = (entry[1] ^ key) >>> 0
+    const start = (entry[0] ^ key) >>> 0
+    const length = (entry[1] ^ key) >>> 0
     if (length > RPYC_LIMIT || start + length > size) return undefined
     const script = Buffer.alloc(length)
     if ((await handle.read(script, 0, length, start)).bytesRead !== length) return undefined

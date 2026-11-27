@@ -1,7 +1,8 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import http from 'node:http'
 import type { AddressInfo } from 'node:net'
+import { test } from 'node:test'
+
 import { checkedLookup, pinnedFetch } from '../electron/pinned-fetch'
 
 const lookup = (
@@ -21,7 +22,7 @@ test('R-334: the connection only goes to an address that passed the check', asyn
   const single = await lookup([{ address: '93.184.216.34', family: 4 }], false)
   assert.equal(single.result, '93.184.216.34')
   // Any private answer in the list refuses the whole host.
-  for (const address of ['127.0.0.1', '10.0.0.8', '192.168.1.1', '::1', '::ffff:7f00:1'])
+  for (const address of ['127.0.0.1', '10.0.0.8', '192.168.1.1', '::1', '::ffff:7f00:1']) {
     assert.match(
       String(
         (
@@ -34,6 +35,7 @@ test('R-334: the connection only goes to an address that passed the check', asyn
       /內網/,
       address
     )
+  }
   assert.match(String((await lookup([])).error), /無法解析/)
 })
 
@@ -67,8 +69,9 @@ test('R-334: addresses written as IPs are checked, and the plain fetch handed do
     'https://[::1]/',
     'https://192.168.0.2/x',
     'https://a.localhost/',
-  ])
+  ]) {
     await assert.rejects(pinnedFetch(url), /內網/, url)
+  }
   const original = globalThis.fetch
   let used = 0
   globalThis.fetch = (async () => {

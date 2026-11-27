@@ -1,16 +1,15 @@
-import { fmt } from '../shared/message'
 // Runs one library:request from the renderer. main.ts checks the sender and the request shape first
 // (ipc-requests.ts); this module turns the request into Library, backup and native dialog calls.
-import { app, clipboard, dialog, shell, type BrowserWindow } from 'electron'
 import { randomUUID } from 'node:crypto'
-import { imageTypes } from '../shared/images'
-import type { Request, Response } from '../shared/model'
-import { fieldValue } from '../shared/model'
+import { app, type BrowserWindow, clipboard, dialog, shell } from 'electron'
+
 import { copyableValue } from '../shared/cells'
-import { completionNotice } from '../shared/notifications'
+import { imageTypes } from '../shared/images'
+import { fmt } from '../shared/message'
+import { fieldValue, type Request, type Response } from '../shared/model'
 import type { nativeText } from '../shared/native-messages'
-import type { Library } from './library'
-import type { WorkspaceStore } from './workspace'
+import { completionNotice } from '../shared/notifications'
+
 import {
   applyBackup,
   createKeptBackup,
@@ -21,6 +20,8 @@ import {
   locateBackupProject,
   previewBackup,
 } from './backup'
+import type { Library } from './library'
+import type { WorkspaceStore } from './workspace'
 
 export interface DispatchContext {
   library: Library
@@ -31,10 +32,12 @@ export interface DispatchContext {
 
 export function libraryDispatcher({ library, workspace, window, text: nt }: DispatchContext) {
   const rootChoices = new Map<string, { path: string; expires: number }>()
+
   async function selectFolder() {
     const result = await dialog.showOpenDialog(window(), { properties: ['openDirectory'] })
     return result.canceled ? undefined : result.filePaths[0]
   }
+
   // The renderer never names paths: a picked folder is remembered here and referred to by a short-lived token.
   function rememberChoice(path: string) {
     for (const [id, item] of rootChoices) if (item.expires < Date.now()) rootChoices.delete(id)
@@ -43,10 +46,12 @@ export function libraryDispatcher({ library, workspace, window, text: nt }: Disp
     rootChoices.set(token, { path, expires: Date.now() + 60 * 60 * 1000 })
     return { token, path }
   }
+
   async function chosenRoot(rootToken: string | undefined) {
     const choice = rootToken ? rootChoices.get(rootToken) : undefined
-    if (rootToken && (!choice || choice.expires < Date.now()))
+    if (rootToken && (!choice || choice.expires < Date.now())) {
       throw new Error('資料夾選擇已過期，請重新選擇')
+    }
     return choice?.path ?? (await selectFolder())
   }
 
@@ -59,12 +64,13 @@ export function libraryDispatcher({ library, workspace, window, text: nt }: Disp
         clipboard.writeText((await library.readableRow(request.rowId)).path)
         break
       case 'copyFieldValue': {
-        const row = await library.readableRow(request.rowId),
-          project = library
-            .snapshot()
-            .projects.find((ref) => ref.projectId === row.projectId)?.project
-        if (!project?.fieldBindings.some((field) => field.attributeId === request.attributeId))
+        const row = await library.readableRow(request.rowId)
+        const project = library
+          .snapshot()
+          .projects.find((ref) => ref.projectId === row.projectId)?.project
+        if (!project?.fieldBindings.some((field) => field.attributeId === request.attributeId)) {
           throw new Error('欄位不存在，無法複製')
+        }
         const value = copyableValue(fieldValue(row, request.attributeId))
         if (value === undefined) throw new Error('此欄位沒有可複製的值')
         clipboard.writeText(value)
@@ -75,12 +81,12 @@ export function libraryDispatcher({ library, workspace, window, text: nt }: Disp
         break
       case 'chooseRoot': {
         const root = await selectFolder()
-        if (root)
+        if (root) {
           extra.rootSelection = {
             ...rememberChoice(root),
             existing: await library.projectsAt(root),
           }
-        else extra.cancelled = true
+        } else extra.cancelled = true
         break
       }
       case 'create': {
@@ -143,14 +149,14 @@ export function libraryDispatcher({ library, workspace, window, text: nt }: Disp
           properties: ['openFile'],
           filters: [{ name: nt('圖片'), extensions: Object.keys(imageTypes) }],
         })
-        if (!selected.canceled)
+        if (!selected.canceled) {
           await library.addImage(
             request.rowId,
             request.revision,
             selected.filePaths[0],
             request.cellId
           )
-        else extra.cancelled = true
+        } else extra.cancelled = true
         break
       }
       case 'open': {

@@ -19,8 +19,8 @@ export async function launchApp(
   errors: string[],
   size = { width: 1500, height: 900 }
 ): Promise<{ app: ElectronApplication; page: Page }> {
-  const app = await electron.launch({ args: ['.'], env: testEnv(local), timeout: 30000 }),
-    page = await app.firstWindow()
+  const app = await electron.launch({ args: ['.'], env: testEnv(local), timeout: 30000 })
+  const page = await app.firstWindow()
   page.on('pageerror', (error) => errors.push(error.message))
   page.setDefaultTimeout(15000)
   await page.evaluate('window.__name=(target)=>target')
@@ -74,8 +74,8 @@ export async function reportFailure(page: Page, dir: string) {
 
 // Deletes a test's own folder; refuses anything outside .test-output.
 export async function removeTestRoot(root: string) {
-  const base = path.resolve('.test-output'),
-    target = path.resolve(root)
+  const base = path.resolve('.test-output')
+  const target = path.resolve(root)
   if (!target.startsWith(base + path.sep)) throw new Error('Unsafe cleanup: ' + target)
   await fs.rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 }
@@ -84,9 +84,9 @@ export async function removeTestRoot(root: string) {
 // each file to disk, which took most of those tests' time. Only `fn` runs this way; the app under test is a separate
 // process and still writes the normal way.
 export async function withoutFlush<T>(fn: () => Promise<T>): Promise<T> {
-  const handle = await fs.open(process.execPath, 'r'),
-    fileHandle = Object.getPrototypeOf(handle) as { sync: () => Promise<void> },
-    sync = fileHandle.sync
+  const handle = await fs.open(process.execPath, 'r')
+  const fileHandle = Object.getPrototypeOf(handle) as { sync: () => Promise<void> }
+  const sync = fileHandle.sync
   await handle.close()
   fileHandle.sync = async () => {}
   try {

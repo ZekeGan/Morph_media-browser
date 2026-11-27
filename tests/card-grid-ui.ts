@@ -1,51 +1,54 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
-import { ensureFolder, folderFile, readFolder } from '../electron/files'
+
 import type { Cell } from '../shared/model'
+
+import { ensureFolder, folderFile, readFolder } from '../electron/files'
+import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
 // R-398: a row whose components are all hidden collapses, and a component set to grow takes the rows its content needs
 // (up to its limit) and pushes the components below it down.
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'card-grid-ui-')),
-  media = path.join(root, 'Library'),
-  local = path.join(root, 'local')
-for (const name of ['Plain', 'Noted', 'Huge'])
+const root = await fs.mkdtemp(path.join(base, 'card-grid-ui-'))
+const media = path.join(root, 'Library')
+const local = path.join(root, 'local')
+for (const name of ['Plain', 'Noted', 'Huge']) {
   await fs.mkdir(path.join(media, name), { recursive: true })
+}
 const lib = new Library(local, undefined, false)
 await lib.init()
 await lib.create(media, { name: 'Grid', scanAll: true, depth: { mode: 'through', level: 2 } })
-const project = lib.snapshot().projects[0].project!,
-  style = { textColor: '#e4e6e8', backgroundColor: 'transparent' },
-  cells: Cell[] = [
-    { cellId: 'name', kind: 'name', grid: { x: 0, y: 0, w: 12, h: 1 }, style },
-    {
-      cellId: 'note',
-      kind: 'field-text',
-      attributeId: 'note',
-      condition: { attributeId: 'note', operator: 'set' },
-      grid: { x: 0, y: 1, w: 12, h: 1 },
-      style,
-    },
-    {
-      cellId: 'long',
-      kind: 'field-text',
-      attributeId: 'long',
-      growMax: 3,
-      grid: { x: 0, y: 2, w: 12, h: 1 },
-      style,
-    },
-    {
-      cellId: 'after',
-      kind: 'static-text',
-      text: 'AFTER',
-      grid: { x: 0, y: 3, w: 12, h: 1 },
-      style,
-    },
-  ]
+const project = lib.snapshot().projects[0].project!
+const style = { textColor: '#e4e6e8', backgroundColor: 'transparent' }
+const cells: Cell[] = [
+  { cellId: 'name', kind: 'name', grid: { x: 0, y: 0, w: 12, h: 1 }, style },
+  {
+    cellId: 'note',
+    kind: 'field-text',
+    attributeId: 'note',
+    condition: { attributeId: 'note', operator: 'set' },
+    grid: { x: 0, y: 1, w: 12, h: 1 },
+    style,
+  },
+  {
+    cellId: 'long',
+    kind: 'field-text',
+    attributeId: 'long',
+    growMax: 3,
+    grid: { x: 0, y: 2, w: 12, h: 1 },
+    style,
+  },
+  {
+    cellId: 'after',
+    kind: 'static-text',
+    text: 'AFTER',
+    grid: { x: 0, y: 3, w: 12, h: 1 },
+    style,
+  },
+]
 await lib.saveProject({
   ...project,
   fieldBindings: [
@@ -65,8 +68,9 @@ for (const [name, values] of Object.entries({
 })) {
   await ensureFolder(path.join(media, name), false)
   const record = await readFolder(path.join(media, name))
-  for (const [attributeId, value] of Object.entries(values))
+  for (const [attributeId, value] of Object.entries(values)) {
     record.attributes.push({ attributeId, key: attributeId, type: 'text', value, source: 'manual' })
+  }
   await fs.writeFile(folderFile(path.join(media, name)), JSON.stringify(record))
 }
 await lib.scan()
@@ -76,22 +80,22 @@ const { app, page } = await launchApp(local, errors)
 let passed = false
 try {
   await page.getByRole('button', { name: '開啟專案 Grid', exact: true }).first().click()
-  const card = (name: string) => page.locator('.folder-card').filter({ hasText: name }).first(),
-    boxes = (name: string) =>
-      card(name)
-        .locator('.card-cell')
-        .evaluateAll((nodes) =>
-          nodes.map((node) => {
-            const rect = node.getBoundingClientRect()
-            return {
-              text: (node as HTMLElement).innerText.trim().slice(0, 12),
-              top: Math.round(rect.top),
-              bottom: Math.round(rect.bottom),
-              height: Math.round(rect.height),
-              cut: node.scrollHeight > node.clientHeight + 1,
-            }
-          })
-        )
+  const card = (name: string) => page.locator('.folder-card').filter({ hasText: name }).first()
+  const boxes = (name: string) =>
+    card(name)
+      .locator('.card-cell')
+      .evaluateAll((nodes) =>
+        nodes.map((node) => {
+          const rect = node.getBoundingClientRect()
+          return {
+            text: (node as HTMLElement).innerText.trim().slice(0, 12),
+            top: Math.round(rect.top),
+            bottom: Math.round(rect.bottom),
+            height: Math.round(rect.height),
+            cut: node.scrollHeight > node.clientHeight + 1,
+          }
+        })
+      )
   await card('Plain').waitFor()
   // Plain: no note, so the note row is gone: three components, each directly under the one before (4px gap).
   await page.waitForFunction(

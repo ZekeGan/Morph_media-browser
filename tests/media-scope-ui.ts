@@ -1,22 +1,24 @@
-import { _electron as electron } from 'playwright-core'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { _electron as electron } from 'playwright-core'
+
+import { folderFile, projectFile } from '../electron/files'
 import { Library } from '../electron/library'
 import { WorkspaceStore } from '../electron/workspace'
-import { folderFile, projectFile } from '../electron/files'
-import { tinyPng } from './support/archive-fixture'
 import { closeApp } from './support/app'
+import { tinyPng } from './support/archive-fixture'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'media-scope-')),
-  media = path.join(root, 'Media'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'media-scope-'))
+const media = path.join(root, 'Media')
+const local = path.join(root, 'local')
 for (const folder of ['A', 'B']) {
   await fs.mkdir(path.join(media, folder), { recursive: true })
-  for (const name of ['001.png', '002.png'])
+  for (const name of ['001.png', '002.png']) {
     await fs.writeFile(path.join(media, folder, name), tinyPng)
+  }
 }
 await fs.writeFile(path.join(media, 'root.png'), tinyPng)
 const library = new Library(local, undefined, false)
@@ -26,14 +28,16 @@ await library.create(media, {
   scanAll: true,
   depth: { mode: 'through', level: 2 },
 })
-const snapshot = library.snapshot(),
-  project = snapshot.projects[0].project!,
-  originals = new Map<string, Buffer>()
+const snapshot = library.snapshot()
+const project = snapshot.projects[0].project!
+const originals = new Map<string, Buffer>()
 for (const row of snapshot.structure ?? snapshot.rows) {
   originals.set(folderFile(row.path), await fs.readFile(folderFile(row.path)))
-  for (const name of await fs.readdir(row.path))
-    if (name.endsWith('.png'))
+  for (const name of await fs.readdir(row.path)) {
+    if (name.endsWith('.png')) {
       originals.set(path.join(row.path, name), await fs.readFile(path.join(row.path, name)))
+    }
+  }
 }
 originals.set(
   projectFile(media, project.projectId),
@@ -48,8 +52,8 @@ const env = Object.fromEntries(
   )
 )
 delete env.ELECTRON_RUN_AS_NODE
-const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
-  page = await app.firstWindow()
+const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
+const page = await app.firstWindow()
 page.setDefaultTimeout(15000)
 await page.evaluate('window.__name=(target)=>target')
 const errors: string[] = []
@@ -123,8 +127,9 @@ try {
     .filter({ hasText: '001.png' })
     .filter({ has: page.locator('small') })
     .evaluateAll((nodes, title) => {
-      if (!nodes.some((node) => node.getAttribute('title') === title))
+      if (!nodes.some((node) => node.getAttribute('title') === title)) {
         throw new Error('Missing source identity')
+      }
     }, sourcePath)
   await page
     .locator('.media-thumbnail')
@@ -212,14 +217,15 @@ try {
   await page.screenshot({ path: path.join(root, 'narrow.png') })
   for (const [file, bytes] of originals) {
     if (file === folderFile(path.join(media, 'A'))) {
-      const before = JSON.parse(bytes.toString()),
-        after = JSON.parse(await fs.readFile(file, 'utf8'))
+      const before = JSON.parse(bytes.toString())
+      const after = JSON.parse(await fs.readFile(file, 'utf8'))
       assert.equal(after.folderId, before.folderId)
       delete after.revision
       delete before.revision
       delete after.details?.reading
-      if (after.details && Object.keys(after.details).every((key) => key === 'schemaVersion'))
+      if (after.details && Object.keys(after.details).every((key) => key === 'schemaVersion')) {
         delete after.details
+      }
       assert.deepEqual(after, before)
     } else assert.deepEqual(await fs.readFile(file), bytes)
   }

@@ -1,6 +1,7 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
+
 import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
@@ -8,14 +9,14 @@ import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/ap
 // place it was left at is still kept once it has started again.
 const base = path.resolve('.test-output')
 await fs.mkdir(path.join(base, 'shot'), { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'podcast-resume-ui-')),
-  show = path.join(root, 'Show'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'podcast-resume-ui-'))
+const show = path.join(root, 'Show')
+const local = path.join(root, 'local')
 await fs.mkdir(show, { recursive: true })
 // A silent WAV of the given length (8 kHz, 8-bit mono): long enough for a place well before its last minute.
 const silence = (seconds: number) => {
-  const samples = 8000 * seconds,
-    wav = Buffer.alloc(44 + samples, 128)
+  const samples = 8000 * seconds
+  const wav = Buffer.alloc(44 + samples, 128)
   wav.write('RIFF')
   wav.writeUInt32LE(36 + samples, 4)
   wav.write('WAVEfmt ', 8)

@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
 import { Button } from '@mantine/core'
-import type { Cell, FolderRow, Project } from '../../shared/model'
-import type { NovelBook } from '../../shared/explorer'
+import { useEffect, useRef, useState } from 'react'
+
 import { trackClock } from '../../shared/album'
+import type { NovelBook } from '../../shared/explorer'
+import type { Cell, FolderRow, Project } from '../../shared/model'
+
+import { t as tr } from '../i18n'
 import { usePodcast } from '../media/AlbumView'
 import { VideoPlayButton } from '../media/VideoHeader'
-import { t as tr } from '../i18n'
-import { usePanelContent } from './panelContext'
 import { useFolderFacts } from './folderFacts'
+import { usePanelContent } from './panelContext'
 
 // R-438 (provisional): the album, video and book facts as small components, like the game's system information. They
 // show what the right panel's page has read about the folder; where nothing is read (a card, the editor) they show
@@ -24,7 +26,9 @@ export const mediaInfoKinds = [
   'pages',
   'readPage',
 ] as const
+
 export type MediaInfoKind = (typeof mediaInfoKinds)[number]
+
 export const isMediaInfo = (value: unknown): value is MediaInfoKind =>
   (mediaInfoKinds as readonly unknown[]).includes(value)
 
@@ -49,13 +53,13 @@ function useEpubBook(row: FolderRow | undefined, fileId: string | undefined, wan
 }
 
 export function MediaInfo({ cell, row }: { cell: Cell; row?: FolderRow }) {
-  const content = usePanelContent(),
-    info = cell.systemInfo as MediaInfoKind,
-    ref = useRef<HTMLSpanElement>(null),
-    { podcast } = usePodcast(row ?? ({ rowId: '', path: '' } as FolderRow)),
-    book = useEpubBook(row, content?.epub?.id, info === 'bookTitle' || info === 'bookAuthor'),
-    // A card (no page has read the folder) asks main for its folder's facts once it is on screen.
-    facts = useFolderFacts(row?.rowId, ref, !content && !!row)
+  const content = usePanelContent()
+  const info = cell.systemInfo as MediaInfoKind
+  const ref = useRef<HTMLSpanElement>(null)
+  const { podcast } = usePodcast(row ?? ({ rowId: '', path: '' } as FolderRow))
+  const book = useEpubBook(row, content?.epub?.id, info === 'bookTitle' || info === 'bookAuthor')
+  // A card (no page has read the folder) asks main for its folder's facts once it is on screen.
+  const facts = useFolderFacts(row?.rowId, ref, !content && !!row)
   const summary = content?.album?.summary
   // What is known about the album: the page's reading of it, else what the index says for a card.
   const album = summary
@@ -131,12 +135,13 @@ export function MediaButton({
   project?: Project
 }) {
   const content = usePanelContent()
-  if (cell.kind === 'video-play')
+  if (cell.kind === 'video-play') {
     return content && row && project ? (
       <VideoPlayButton row={row} project={project} entries={content.entries} />
     ) : (
       <span className="muted">{tr('播放影片')}</span>
     )
+  }
   const readOn = content?.readOn
   if (!readOn) return <span className="muted">{tr('繼續閱讀')}</span>
   return (

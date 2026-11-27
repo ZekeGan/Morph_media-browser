@@ -1,14 +1,16 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
+import { defaultTreeCollapsed, visibleTreeRows } from '../shared/browse'
+import type { FolderRow } from '../shared/model'
 import {
   bookFinished,
-  readingGroups,
   readerArrowStep,
+  readingGroups,
   savedPlace,
   spreadGeometry,
 } from '../shared/reader'
-import { defaultTreeCollapsed, visibleTreeRows } from '../shared/browse'
-import type { FolderRow } from '../shared/model'
+
 test('reader groups preserve first-page and odd-page rules; RTL reverses only arrow navigation', () => {
   assert.deepEqual(readingGroups(5, true, false), [[0, 1], [2, 3], [4]])
   assert.deepEqual(readingGroups(5, true, true), [[0], [1, 2], [3, 4]])
@@ -26,12 +28,12 @@ test('reader groups preserve first-page and odd-page rules; RTL reverses only ar
 })
 test('width and height adaptation use the measured viewport and preserve page aspect ratios', () => {
   const sizes = [
-      { width: 1000, height: 2000 },
-      { width: 1200, height: 2000 },
-    ],
-    box = { width: 1100, height: 800 }
-  const height = spreadGeometry(sizes, 'height', box, 1),
-    width = spreadGeometry(sizes, 'width', box, 1)
+    { width: 1000, height: 2000 },
+    { width: 1200, height: 2000 },
+  ]
+  const box = { width: 1100, height: 800 }
+  const height = spreadGeometry(sizes, 'height', box, 1)
+  const width = spreadGeometry(sizes, 'width', box, 1)
   assert.equal(height.height, 800)
   assert.ok(Math.abs(height.width - 880) < 0.001)
   assert.deepEqual(height.widths, [400, 480])

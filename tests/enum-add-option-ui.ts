@@ -1,15 +1,16 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
+
 import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
 // A choice field gets a new option straight from the folder settings, without opening the CELL editor.
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'enum-add-option-ui-')),
-  media = path.join(root, 'Library'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'enum-add-option-ui-'))
+const media = path.join(root, 'Library')
+const local = path.join(root, 'local')
 await fs.mkdir(path.join(media, 'Work'), { recursive: true })
 const library = new Library(local, undefined, false)
 await library.init()
@@ -18,8 +19,8 @@ const created = await library.create(media, {
   scanAll: true,
   depth: { mode: 'through', level: 2 },
 })
-const project = created.projects[0].project!,
-  status = crypto.randomUUID()
+const project = created.projects[0].project!
+const status = crypto.randomUUID()
 await library.saveProject({
   ...project,
   fieldBindings: [

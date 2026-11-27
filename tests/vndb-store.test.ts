@@ -1,11 +1,13 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { metadata } from '../electron/metadata'
-import { storeLink, VNDB_STORE_MISSING } from '../electron/sources/vndb'
+import { test } from 'node:test'
+
 import { sourceForUrl } from '../shared/sources'
 
-const asked: unknown[] = [],
-  releases: unknown[] = []
+import { metadata } from '../electron/metadata'
+import { storeLink, VNDB_STORE_MISSING } from '../electron/sources/vndb'
+
+const asked: unknown[] = []
+const releases: unknown[] = []
 const fakeVndb = (found: boolean) =>
   (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
@@ -59,15 +61,17 @@ test('R-293: store addresses become the release links VNDB keeps', () => {
     'https://www.getchu.com/soft.phtml?id=abc',
     'https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game=0',
     'https://www.melonbooks.co.jp/detail/detail.php?product_id=1;drop',
-  ])
+  ]) {
     assert.equal(link(url), undefined, url)
+  }
   for (const url of [
     'https://www.getchu.com/soft.phtml?id=36221',
     'https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game=3193',
     'https://www.melonbooks.co.jp/detail/detail.php?product_id=50460',
     'https://ec.toranoana.shop/tora/ec/item/040030123456/',
-  ])
+  ]) {
     assert.equal(sourceForUrl(url), 'vndb', url)
+  }
 })
 
 test('R-293: a store address is previewed from VNDB, and FANZA without a key goes there too', async () => {

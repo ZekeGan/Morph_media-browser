@@ -1,12 +1,14 @@
-import { useMemo } from 'react'
 import { Button } from '@mantine/core'
+import { useMemo } from 'react'
+
 import type { MediaEntry } from '../../shared/explorer'
 import type { FolderRow, Project } from '../../shared/model'
-import { usePlayback } from './Playback'
+
 import { Icon } from '../common/icons'
+import { t as tr } from '../i18n'
+import { usePlayback } from './Playback'
 import { podcastFolder } from './podcast'
 import { clockText, continueTarget, useVideoPlaces } from './videoPlace'
-import { t as tr } from '../i18n'
 
 const names = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
 
@@ -23,8 +25,8 @@ export function VideoPlayButton({
   project: Project
   entries: MediaEntry[]
 }) {
-  const playback = usePlayback(),
-    places = useVideoPlaces()
+  const playback = usePlayback()
+  const places = useVideoPlaces()
   const videos = useMemo(
     () =>
       entries

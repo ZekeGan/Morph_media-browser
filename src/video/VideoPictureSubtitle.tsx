@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+
 import { decodeVobsub, type VobsubImage } from '../../shared/vobsub'
 
 // R-421: a picture (VobSub) subtitle over the video. The canvas is the track's own frame (the size its pictures
@@ -19,8 +20,8 @@ export function VideoPictureSubtitle({
   cue?: { start: number; data: string }
   box: { left: number; bottom: number; width: number; height: number }
 }) {
-  const canvas = useRef<HTMLCanvasElement>(null),
-    decoded = useRef(new Map<string, VobsubImage | null>())
+  const canvas = useRef<HTMLCanvasElement>(null)
+  const decoded = useRef(new Map<string, VobsubImage | null>())
   useEffect(() => {
     const context = canvas.current?.getContext('2d')
     if (!context) return

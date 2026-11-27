@@ -1,5 +1,5 @@
-import { defaultCells, type FolderRecord, type Project } from '../../shared/model'
 import { defaultSubtitle, type FolderDetails } from '../../shared/explorer'
+import { defaultCells, type FolderRecord, type Project } from '../../shared/model'
 
 export function modelDetails(): FolderDetails {
   return {

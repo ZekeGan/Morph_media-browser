@@ -1,9 +1,10 @@
 // Points at what may be out of date, so the closing step reads only what it names instead of re-reading the docs.
 // Advisory: prints findings and exits 0 (use --strict to exit 1 when anything is found).
 //   pnpm stale
+import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
-import { spawnSync } from 'node:child_process'
+
 import { areas, problems, root } from './areas.mjs'
 
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8')
@@ -57,8 +58,9 @@ for (const spec of specs.filter((file) => !historyDocs.has(file))) {
   const changed = code.some((file) => dirty.has(file))
     ? today
     : git('log', '-1', '--format=%cs', '--', ...code)[0]
-  if (changed && changed > confirmed)
+  if (changed && changed > confirmed) {
     note('規格卡可能過時', `${spec}：程式 ${changed} 有改動，最後確認 ${confirmed}`)
+  }
 }
 
 // 3. Docs naming files that no longer exist.
@@ -68,9 +70,11 @@ const docs = ['CLAUDE.md', 'README.md', 'README.zh-TW.md', 'README.ja.md', ...sp
 for (const file of docs.filter((f) => f !== 'docs/DECISIONS.md')) {
   for (const match of read(file).matchAll(
     /`((?:src|electron|shared|tests|scripts)\/[\w./-]+\.\w+)`/g
-  ))
-    if (!fs.existsSync(path.join(root, match[1])) && !match[1].includes('*'))
+  )) {
+    if (!fs.existsSync(path.join(root, match[1])) && !match[1].includes('*')) {
       note('文件提到不存在的檔案', `${file}：${match[1]}`)
+    }
+  }
 }
 
 // 3b. Docs naming functions or components (`sortRows`, `MediaQueue`) the code no longer has (R-279).
@@ -89,9 +93,11 @@ for (const file of [...docs.filter((f) => f !== 'docs/DECISIONS.md'), 'docs/WORK
       (match) => match[1]
     )
   )
-  for (const name of named)
-    if (!knownOutside.has(name) && !new RegExp(`\\b${name}\\b`).test(codeText))
+  for (const name of named) {
+    if (!knownOutside.has(name) && !new RegExp(`\\b${name}\\b`).test(codeText)) {
       note('文件提到不存在的名稱', `${file}：${name}`)
+    }
+  }
 }
 
 // 3c. Measured numbers written in the docs, compared with a fresh measurement (R-279). The first bundle is the
@@ -104,11 +110,12 @@ if (fs.existsSync(assets)) {
     .reduce((sum, name) => sum + fs.statSync(path.join(assets, name)).size, 0)
   const written = /前端首包約 ([\d.]+) MB/.exec(read('docs/WORK_ITEMS.md'))?.[1]
   const measured = bytes / 1024 / 1024
-  if (written && bytes && Math.abs(measured - Number(written)) / measured > 0.15)
+  if (written && bytes && Math.abs(measured - Number(written)) / measured > 0.15) {
     note(
       '文件中的量測值過時',
       `docs/WORK_ITEMS.md：前端首包寫 ${written} MB，最近一次建置是 ${measured.toFixed(1)} MB`
     )
+  }
 }
 
 // 3d. Known limitations carry their areas and the date they were last confirmed, like spec cards (R-279).
@@ -139,15 +146,16 @@ for (const line of (limits ?? '').split('\n').filter((l) => l.startsWith('- ')))
     note('已知限制缺少領域與確認日期', `${head}…（行尾補「（領域：id｜確認：日期）」）`)
     continue
   }
-  const ids = tag[1].split('、').map((id) => id.trim()),
-    code = areaCode(ids)
+  const ids = tag[1].split('、').map((id) => id.trim())
+  const code = areaCode(ids)
   const changed = code.some((file) => dirty.has(file))
     ? today
     : code.length
       ? git('log', '-1', '--format=%cs', '--', ...code)[0]
       : undefined
-  if (changed && changed > tag[2])
+  if (changed && changed > tag[2]) {
     note('已知限制可能過時', `${head}…：${tag[1]} 的程式 ${changed} 有改動，確認 ${tag[2]}`)
+  }
 }
 
 // 4. Translations no source text uses any more.
@@ -170,8 +178,9 @@ if (unused.length > 15) note('沒有程式使用的語系文字', `……共 ${u
 
 // 5. The requirement list keeps only open items.
 const work = read('docs/WORK_ITEMS.md')
-for (const match of work.matchAll(/^- \*\*(R-\d+)\*\*.*(?:｜|\|)\s*完成\b.*$/gm))
+for (const match of work.matchAll(/^- \*\*(R-\d+)\*\*.*(?:｜|\|)\s*完成\b.*$/gm)) {
   note('需求清單', `${match[1]} 已完成卻還在清單上（完成的需求只留在 CHANGELOG）`)
+}
 
 // 6. Spec pages: history notes and size.
 for (const spec of specs.filter((file) => !historyDocs.has(file))) {
@@ -182,13 +191,15 @@ for (const spec of specs.filter((file) => !historyDocs.has(file))) {
   const pending = text
     .split('\n')
     .filter((line) => /尚未實作|待實作/.test(line) && !/<a id=/.test(line))
-  if (pending.length)
+  if (pending.length) {
     note(
       '規格含歷史註記',
       `${spec}：${pending.length} 處提到「尚未實作／待實作」，確認需求清單是否還有這些項目`
     )
-  if (text.length > 15000)
+  }
+  if (text.length > 15000) {
     note('規格卡過大（>15,000 字）', `${spec}：${text.length.toLocaleString()} 字，可依領域拆開`)
+  }
 }
 
 const groups = [...new Set(findings.map((f) => f.group))]
@@ -196,7 +207,8 @@ for (const group of groups) {
   console.log(`■ ${group}`)
   for (const { line } of findings.filter((f) => f.group === group)) console.log(`  ${line}`)
 }
-if (unconfirmed)
+if (unconfirmed) {
   console.log(`· 另有 ${unconfirmed} 份規格尚未標「最後確認」日期（下次改到時補上即可）`)
+}
 if (!findings.length) console.log('沒有發現可能過時的內容。')
 if (findings.length && process.argv.includes('--strict')) process.exit(1)

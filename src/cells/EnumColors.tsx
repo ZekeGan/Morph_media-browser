@@ -1,6 +1,8 @@
 import { ColorInput, SimpleGrid, Stack, Text } from '@mantine/core'
-import { t as tr } from '../i18n'
+
 import type { Project } from '../../shared/model'
+
+import { t as tr } from '../i18n'
 
 const swatches = [
   '#e8590c',
@@ -12,6 +14,7 @@ const swatches = [
   '#c2255c',
   '#868e96',
 ]
+
 type Binding = Project['fieldBindings'][number]
 
 // A badge colour for each option of a single-choice field; options without a colour stay grey.

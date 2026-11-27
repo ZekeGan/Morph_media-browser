@@ -4,6 +4,7 @@ import type { Cell } from './modelTypes'
 export const CARD_ROW = 42
 export const CARD_GAP = 4
 export const MAX_GROW_ROWS = 20
+
 // Components whose content can be taller than their cell: long text, tags, layout text, and the wrapping name and path.
 export const GROW_KINDS: Cell['kind'][] = [
   'field-text',
@@ -30,12 +31,13 @@ export function placeCells(
   visible: (cell: Cell) => boolean,
   needed: Record<string, number> = {}
 ): Placed[] {
-  const shown = new Set(cells.filter(visible).map((cell) => cell.cellId)),
-    rowsOf = (cell: Cell) => Array.from({ length: cell.grid.h }, (_, i) => cell.grid.y + i),
-    held = new Set<number>(),
-    emptied = new Set<number>()
-  for (const cell of cells)
+  const shown = new Set(cells.filter(visible).map((cell) => cell.cellId))
+  const rowsOf = (cell: Cell) => Array.from({ length: cell.grid.h }, (_, i) => cell.grid.y + i)
+  const held = new Set<number>()
+  const emptied = new Set<number>()
+  for (const cell of cells) {
     for (const row of rowsOf(cell)) (shown.has(cell.cellId) ? held : emptied).add(row)
+  }
   const removed = [...emptied].filter((row) => !held.has(row)).sort((a, b) => a - b)
   const up = (y: number) => removed.filter((row) => row < y).length
   const items = cells
@@ -56,8 +58,9 @@ export function placeCells(
         above.y + above.cell.grid.h <= item.y &&
         above.cell.grid.x < item.cell.grid.x + item.cell.grid.w &&
         item.cell.grid.x < above.cell.grid.x + above.cell.grid.w
-      )
+      ) {
         item.push = Math.max(item.push, above.push + above.extra)
+      }
     }
   }
   const placed = new Map(

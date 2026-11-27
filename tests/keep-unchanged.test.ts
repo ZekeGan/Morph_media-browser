@@ -1,5 +1,6 @@
-import test from 'node:test'
 import assert from 'node:assert/strict'
+import test from 'node:test'
+
 import { keepUnchanged, sameData } from '../src/common/keepUnchanged'
 
 test('R-501: equal data is the same, any difference is not', () => {

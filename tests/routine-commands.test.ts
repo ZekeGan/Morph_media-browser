@@ -1,9 +1,10 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
-// @ts-expect-error - plain .mjs tooling modules without type declarations
-import * as items from '../scripts/item.mjs'
+import { test } from 'node:test'
+
 // @ts-expect-error - plain .mjs tooling modules without type declarations
 import { addMessages } from '../scripts/i18n.mjs'
+// @ts-expect-error - plain .mjs tooling modules without type declarations
+import * as items from '../scripts/item.mjs'
 
 const { acceptItems, addItem, confirmCard, confirmLimits, moveItems, nextId } = items
 

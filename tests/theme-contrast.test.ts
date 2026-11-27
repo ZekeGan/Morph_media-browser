@@ -1,6 +1,6 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { test } from 'node:test'
 
 // WCAG contrast of the colours the three themes use for text, so a palette tweak cannot quietly make text hard to read.
 const css = fs.readFileSync('src/themes/themes.css', 'utf8')
@@ -14,7 +14,9 @@ function tokens(theme: string): Record<string, string> {
     [...block.matchAll(/--([\w-]+):\s*([^;]+);/g)].map((match) => [match[1], match[2].trim()])
   )
 }
+
 type Colour = [number, number, number, number]
+
 function parse(value: string): Colour | undefined {
   const match = /^#([0-9a-f]{3,8})$/i.exec(value)
   if (!match) return undefined
@@ -23,11 +25,13 @@ function parse(value: string): Colour | undefined {
   const part = (index: number) => parseInt(hex.slice(index, index + 2), 16)
   return [part(0), part(2), part(4), hex.length === 8 ? part(6) / 255 : 1]
 }
+
 // A translucent colour is judged as it looks over what is behind it.
 function over(top: Colour, bottom: Colour): Colour {
   const alpha = top[3]
   return [0, 1, 2].map((i) => top[i] * alpha + bottom[i] * (1 - alpha)).concat(1) as Colour
 }
+
 function luminance(colour: Colour) {
   const channel = (value: number) => {
     const x = value / 255
@@ -35,6 +39,7 @@ function luminance(colour: Colour) {
   }
   return 0.2126 * channel(colour[0]) + 0.7152 * channel(colour[1]) + 0.0722 * channel(colour[2])
 }
+
 function ratio(a: Colour, b: Colour) {
   const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x)
   return (light + 0.05) / (dark + 0.05)
@@ -63,16 +68,16 @@ const pairs: [string, string, number][] = [
 
 for (const theme of ['dark', 'glass', 'paper']) {
   test(`the ${theme} theme keeps text readable`, () => {
-    const set = tokens(theme),
-      base = parse(set['app-bg'])!
+    const set = tokens(theme)
+    const base = parse(set['app-bg'])!
     const colour = (key: string) => {
       const parsed = parse(set[key])
       assert.ok(parsed, `${theme}: ${key} is not a plain hex colour`)
       return over(parsed, base)
     }
     for (const [foreground, background, minimum] of pairs) {
-      const back = colour(background),
-        value = ratio(over(colour(foreground), back), back)
+      const back = colour(background)
+      const value = ratio(over(colour(foreground), back), back)
       assert.ok(
         value >= minimum,
         `${theme}: ${foreground} on ${background} is ${value.toFixed(2)}, needs ${minimum}`

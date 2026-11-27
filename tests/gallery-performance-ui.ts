@@ -1,21 +1,23 @@
-import { _electron as electron } from 'playwright-core'
-import fs from 'node:fs/promises'
-import path from 'node:path'
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import { promisify } from 'node:util'
+import { _electron as electron } from 'playwright-core'
+
 import { Library } from '../electron/library'
 import { closeApp } from './support/app'
-const baseline = process.env.GALLERY_BENCH_BASELINE === '1',
-  base = path.resolve('.test-output')
+
+const baseline = process.env.GALLERY_BENCH_BASELINE === '1'
+const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, baseline ? 'gallery-before-' : 'gallery-after-')),
-  local = path.join(root, 'local'),
-  media = path.join(root, 'Images')
+const root = await fs.mkdtemp(path.join(base, baseline ? 'gallery-before-' : 'gallery-after-'))
+const local = path.join(root, 'local')
+const media = path.join(root, 'Images')
 await fs.mkdir(media)
-const exec = promisify(execFile),
-  count = 1200
-for (let i = 0; i < 3; i++)
+const exec = promisify(execFile)
+const count = 1200
+for (let i = 0; i < 3; i++) {
   await exec(
     'ffmpeg',
     [
@@ -33,7 +35,8 @@ for (let i = 0; i < 3; i++)
     ],
     { windowsHide: true }
   )
-for (let offset = 0; offset < count; offset += 32)
+}
+for (let offset = 0; offset < count; offset += 32) {
   await Promise.all(
     Array.from({ length: Math.min(32, count - offset) }, (_, i) =>
       fs.copyFile(
@@ -42,25 +45,27 @@ for (let offset = 0; offset < count; offset += 32)
       )
     )
   )
+}
 for (let i = 0; i < 3; i++) await fs.unlink(path.join(media, `source${i}.jpg`))
 const library = new Library(local, undefined, false)
 await library.init()
-for (const category of ['album', 'manga'])
+for (const category of ['album', 'manga']) {
   await library.create(media, {
     name: 'Large ' + category,
     depth: { mode: 'through', level: 1 },
     scanAll: true,
   })
+}
 const env = Object.fromEntries(
   Object.entries({ ...process.env, MEDIA_VIEWER_TEST_DATA: local }).filter(
     (entry): entry is [string, string] => entry[1] !== undefined
   )
 )
 delete env.ELECTRON_RUN_AS_NODE
-const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
-  page = await app.firstWindow(),
-  errors: string[] = [],
-  metrics: any = { baseline, count }
+const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
+const page = await app.firstWindow()
+const errors: string[] = []
+const metrics: any = { baseline, count }
 let requests = 0
 page.setDefaultTimeout(20000)
 page.on('pageerror', (error) => errors.push(error.message))
@@ -69,13 +74,13 @@ page.on('request', (request) => {
 })
 await page.evaluate('window.__name=(target)=>target')
 try {
-  const state = (await page.evaluate(() => window.media.request({ action: 'snapshot' }))).snapshot,
-    row = state.rows.find((row) => row.projectId === state.projects[0].projectId)!
-  const started = performance.now(),
-    content: any = await page.evaluate(
-      (id) => window.explorer.request({ action: 'content', rowId: id, limit: 96 } as any),
-      row.rowId
-    )
+  const state = (await page.evaluate(() => window.media.request({ action: 'snapshot' }))).snapshot
+  const row = state.rows.find((row) => row.projectId === state.projects[0].projectId)!
+  const started = performance.now()
+  const content: any = await page.evaluate(
+    (id) => window.explorer.request({ action: 'content', rowId: id, limit: 96 } as any),
+    row.rowId
+  )
   metrics.contentMs = performance.now() - started
   metrics.firstBatch = content.content.entries.length
   for (const category of ['album', 'manga']) {
@@ -95,11 +100,11 @@ try {
     )
     const firstImageMs = performance.now() - opened
     await page.waitForTimeout(500)
-    const initialRequests = requests,
-      initialNodes = await gallery.locator('.media-thumbnail').count()
+    const initialRequests = requests
+    const initialNodes = await gallery.locator('.media-thumbnail').count()
     const frame = await page.evaluate(async () => {
-      const scroll = document.querySelector('.folder-panel-body')!,
-        deltas: number[] = []
+      const scroll = document.querySelector('.folder-panel-body')!
+      const deltas: number[] = []
       let previous = performance.now()
       for (let i = 0; i < 50; i++) {
         await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))

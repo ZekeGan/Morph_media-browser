@@ -1,5 +1,5 @@
 import { SourceError, sourceJson } from '../metadata-common'
-import { clean, type Adapter } from './site'
+import { type Adapter, clean } from './site'
 
 // R-359: itch.io has no public API for other people's games, but every game page has a public data.json beside it
 // (title, cover, authors, tags, price) and an information table on the page (genre, platforms, status, engine, first
@@ -17,8 +17,8 @@ function infoTable(html: string) {
   while (rows.size < 60) {
     const start = html.indexOf('<tr><td>', at)
     if (start < 0) break
-    const labelEnd = html.indexOf('</td>', start + 8),
-      end = html.indexOf('</td></tr>', labelEnd)
+    const labelEnd = html.indexOf('</td>', start + 8)
+    const end = html.indexOf('</td></tr>', labelEnd)
     if (labelEnd < 0 || end < 0) break
     at = end + 10
     const label = html.slice(start + 8, labelEnd)
@@ -32,6 +32,7 @@ function infoTable(html: string) {
   }
   return rows
 }
+
 const split = (value?: string) =>
   value
     ? value
@@ -39,12 +40,14 @@ const split = (value?: string) =>
         .map((part) => part.trim())
         .filter(Boolean)
     : []
+
 // "11 November 2026 @ 17:48 UTC" → 2026-11-11.
 function day(value?: string) {
   if (!value) return undefined
   const time = Date.parse(value.replace('@', ''))
   return Number.isFinite(time) ? new Date(time).toISOString().slice(0, 10) : undefined
 }
+
 // The page's own description and rating (schema.org Product).
 function product(html: string) {
   const open = '<script type="application/ld+json">'
@@ -66,6 +69,7 @@ function product(html: string) {
 }
 
 const authorHost = /^([a-z0-9-]{1,63})\.itch\.io$/
+
 export const itch: Adapter = async (site) => {
   let author = authorHost.exec(site.input.hostname.toLowerCase())?.[1]
   let game = site.match(gamePath)[1].toLowerCase()
@@ -78,15 +82,16 @@ export const itch: Adapter = async (site) => {
     follow: (url) => (moved = url),
   })
   if (moved) {
-    const to = authorHost.exec(moved.hostname)?.[1],
-      path = /^\/([a-z0-9][a-z0-9_-]{0,99})\/data\.json$/i.exec(moved.pathname)?.[1]
+    const to = authorHost.exec(moved.hostname)?.[1]
+    const path = /^\/([a-z0-9][a-z0-9_-]{0,99})\/data\.json$/i.exec(moved.pathname)?.[1]
     if (!to || !path) throw new SourceError('notFound')
     author = to
     game = path.toLowerCase()
   }
   const page = `https://${author}.itch.io/${game}`
-  if (!data || typeof data.title !== 'string' || typeof data.id !== 'number')
+  if (!data || typeof data.title !== 'string' || typeof data.id !== 'number') {
     throw new SourceError('notFound')
+  }
   site.text('ITCH_ID', String(data.id))
   site.list(
     'AUTHORS',
@@ -123,12 +128,13 @@ export const itch: Adapter = async (site) => {
       })
     ).results?.[0]
     const vn = release?.vns?.[0]
-    if (vn && typeof vn.id === 'string' && /^v[1-9]\d{0,11}$/.test(vn.id))
+    if (vn && typeof vn.id === 'string' && /^v[1-9]\d{0,11}$/.test(vn.id)) {
       related = {
         provider: 'vndb',
         url: 'https://vndb.org/' + vn.id,
         title: clean(vn.title).slice(0, 200),
       }
+    }
   } catch {}
   // The game's own link gives its exact address (slug spelling). It must stay on the pasted author's subdomain, so a
   // page cannot claim to be someone else's game.
@@ -140,8 +146,9 @@ export const itch: Adapter = async (site) => {
       url.protocol === 'https:' &&
       url.hostname === author + '.itch.io' &&
       gamePath.test(url.pathname)
-    )
+    ) {
       canonical = url.origin + url.pathname.replace(/\/$/, '')
+    }
   } catch {}
   return {
     title: clean(data.title),

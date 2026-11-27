@@ -1,14 +1,16 @@
-import { t as tr, useLocale } from '../i18n'
-import { useState } from 'react'
 import { Alert, Button, Checkbox, Group, Stack, Tabs, Text, TextInput } from '@mantine/core'
+import { useState } from 'react'
+
 import type {
+  CleanupResult,
+  FullRemovalPreview,
   Project,
   ProjectRemovalPreview,
-  FullRemovalPreview,
-  CleanupResult,
   Request,
   Response,
 } from '../../shared/model'
+
+import { t as tr, useLocale } from '../i18n'
 
 export function ProjectSettings({
   project,
@@ -31,10 +33,10 @@ export function ProjectSettings({
 }) {
   useLocale()
 
-  const [preview, setPreview] = useState<ProjectRemovalPreview>(),
-    [result, setResult] = useState<CleanupResult>()
-  const [fullPreview, setFullPreview] = useState<FullRemovalPreview>(),
-    [alsoShared, setAlsoShared] = useState(false)
+  const [preview, setPreview] = useState<ProjectRemovalPreview>()
+  const [result, setResult] = useState<CleanupResult>()
+  const [fullPreview, setFullPreview] = useState<FullRemovalPreview>()
+  const [alsoShared, setAlsoShared] = useState(false)
   // Deleting removes only this project's own info. Clearing everything M:orph made in the tree (shared info, game
   // decisions, projects removed from the list earlier) needs its own tick, even when no other linked project uses it.
   const deleteShared = !!fullPreview && alsoShared
@@ -89,8 +91,9 @@ export function ProjectSettings({
                     window.confirm(
                       tr('改成掃描所有層的資料夾？遊戲裡面和你清除過的資料夾仍然不會碰。')
                     )
-                  )
+                  ) {
                     change({ ...project, scanAll: true })
+                  }
                 }}
               >
                 {tr('舊專案：擴大掃描範圍')}

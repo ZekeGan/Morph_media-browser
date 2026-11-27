@@ -1,12 +1,14 @@
 import { ActionIcon, Badge, Button, Group, Stack, Text, Tooltip } from '@mantine/core'
+
 import type { ExplorerRequest, ExplorerResponse, GameExtra } from '../../shared/explorer'
 import type { FolderRow } from '../../shared/model'
 import { metadataSources } from '../../shared/sources'
-import { t as tr } from '../i18n'
-import { Icon } from '../common/icons'
+
 import { HelpTip } from '../common/HelpTip'
-import { useGameExtras } from './useGameExtras'
+import { Icon } from '../common/icons'
+import { t as tr } from '../i18n'
 import { formatLastPlayed, formatPlayTime, usePlaytime } from './playtime'
+import { useGameExtras } from './useGameExtras'
 
 type Run = (request: ExplorerRequest) => Promise<ExplorerResponse | undefined>
 
@@ -76,15 +78,16 @@ export function GameExtraButtons({ row, busy, run }: { row: FolderRow; busy: boo
 // R-418: the engine an imported source names (VNDB's ENGINE) next to the one found in the folder; names are compared
 // without case, spaces and punctuation.
 const engineKey = (name: string) => name.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '')
+
 function engineComparison(row: FolderRow) {
   const imported = row.record?.attributes.find(
     (a) => /-engine$/.test(a.attributeId) && typeof a.value === 'string' && a.value.trim()
   )
   if (!imported) return undefined
-  const value = String(imported.value).trim(),
-    local = row.boundary?.engines ?? [],
-    prefix = imported.attributeId.replace(/-engine$/, ''),
-    site = metadataSources.find((source) => source.id === prefix)?.name ?? prefix
+  const value = String(imported.value).trim()
+  const local = row.boundary?.engines ?? []
+  const prefix = imported.attributeId.replace(/-engine$/, '')
+  const site = metadataSources.find((source) => source.id === prefix)?.name ?? prefix
   return {
     site,
     value,
@@ -105,8 +108,8 @@ export function GameExtraSettings({
 }) {
   const extras = useGameExtras(row)
   if (!extras || !row.record) return null
-  const revision = row.record.revision,
-    engines = engineComparison(row)
+  const revision = row.record.revision
+  const engines = engineComparison(row)
   const offered: { extra: GameExtra; label: string }[] = [
     ...(extras.steamAppId ? [{ extra: 'steam' as const, label: tr('用 Steam 啟動') }] : []),
     ...(extras.storeUrl

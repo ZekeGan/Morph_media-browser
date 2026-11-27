@@ -1,4 +1,5 @@
-import { useEffect, useRef, useSyncExternalStore, type RefObject } from 'react'
+import { type RefObject, useEffect, useRef, useSyncExternalStore } from 'react'
+
 import type { FolderFacts } from '../../shared/explorer'
 
 // R-438: what a card says about an album or video folder, asked of main for the cards that are on screen. Asks are
@@ -12,6 +13,7 @@ let timer: ReturnType<typeof setTimeout> | undefined
 const notify = (rowId: string) => {
   for (const listener of listeners.get(rowId) ?? []) listener()
 }
+
 async function send() {
   timer = undefined
   const ids = [...pending].slice(0, 60)
@@ -39,10 +41,12 @@ async function send() {
     // The card keeps its dash.
   }
 }
+
 function ask(rowId: string) {
   pending.add(rowId)
   timer ??= setTimeout(() => void send(), 100)
 }
+
 // The facts of a folder once its card is in view (null while not wanted or not yet known).
 export function useFolderFacts(
   rowId: string | undefined,
@@ -71,8 +75,9 @@ export function useFolderFacts(
       if (entries.some((entry) => entry.isIntersecting)) {
         // A card back in view looks again for a length that was still missing.
         if (cache.get(rowId)?.duration === undefined) retries.delete(rowId)
-        if (!seen.current || !cache.has(rowId) || cache.get(rowId)?.duration === undefined)
+        if (!seen.current || !cache.has(rowId) || cache.get(rowId)?.duration === undefined) {
           ask(rowId)
+        }
         seen.current = true
       }
     })

@@ -1,4 +1,3 @@
-import { useContext, useEffect, useMemo, useState, type MouseEvent } from 'react'
 import {
   ActionIcon,
   Button,
@@ -11,13 +10,11 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
-import { t as tr, useLocale } from '../i18n'
-import { layoutName } from '../editor/layoutName'
-import { Icon } from '../common/icons'
-import { Card } from '../cells/Card'
-import { isLayoutWork, KindIcon, LayoutWorksContext } from './folderKind'
-import { cardPresets, cardRule } from '../../shared/layouts'
+import { type MouseEvent, useContext, useEffect, useMemo, useState } from 'react'
+
+import { pathKey, treeStructure } from '../../shared/browse'
 import { builtinPanel, panelEditorStart } from '../../shared/explorer'
+import { effectiveKind, type FolderKind } from '../../shared/kind'
 import {
   chooseLayout,
   choosePanel,
@@ -26,10 +23,15 @@ import {
   type LayoutRule,
   type LayoutSource,
 } from '../../shared/layoutRules'
-import { pathKey, treeStructure } from '../../shared/browse'
-import { sortRows } from '../../shared/search'
-import { effectiveKind, type FolderKind } from '../../shared/kind'
+import { cardPresets, cardRule } from '../../shared/layouts'
 import type { FolderRow, Project } from '../../shared/model'
+import { sortRows } from '../../shared/search'
+
+import { Card } from '../cells/Card'
+import { Icon } from '../common/icons'
+import { layoutName } from '../editor/layoutName'
+import { t as tr, useLocale } from '../i18n'
+import { isLayoutWork, KindIcon, LayoutWorksContext } from './folderKind'
 
 // R-413: one window for which card layout every folder uses. Left: the rules (the default layout, a layout per kind
 // for works, a layout per level for other folders), each with how many folders it reaches. Right: the folders as an
@@ -49,8 +51,8 @@ const sources: Record<LayoutSource, string> = {
   level: '層級',
   default: '預設',
 }
-const MAX_LEVELS = 12,
-  PREVIEW = 3
+const MAX_LEVELS = 12
+const PREVIEW = 3
 
 interface Props {
   opened: boolean
@@ -69,7 +71,9 @@ interface Props {
   // R-444: opens the card editor at a card layout without making it the default layout.
   editCard?: (preset: string, rowId?: string) => void
 }
+
 type Target = 'card' | 'panel'
+
 export function LayoutConfig({
   opened,
   close,
@@ -89,30 +93,30 @@ export function LayoutConfig({
   const panelPresets = project.panelPresets ?? []
   const presets = panel ? panelPresets : cardPresets(project)
   // Both drafts live side by side, so switching between card and panel keeps what was changed.
-  const [drafts, setDrafts] = useState<Record<Target, LayoutRule>>({ card: {}, panel: {} }),
-    [bases, setBases] = useState<Record<Target, string>>({ card: '', panel: '' }),
-    draft = drafts[target],
-    base = bases[target],
-    setBase = (id: string) => setBases((now) => ({ ...now, [target]: id })),
-    [picked, setPicked] = useState<string>(),
-    // R-483: the folder the list starts at, moved up with the breadcrumb; the folder being browsed until then.
-    [anchorId, setAnchorId] = useState<string>(),
-    [query, setQuery] = useState(''),
-    [closed, setClosed] = useState<string[]>([]),
-    // R-444: show only the folders with their own layout, or only those changed and not saved yet.
-    [only, setOnly] = useState<'all' | 'own' | 'dirty'>('all'),
-    // R-444: folders marked with Ctrl / Shift + click, to give them a layout together.
-    [marked, setMarked] = useState<string[]>([]),
-    // R-444: the preview can be folded away (remembered on this computer); a narrow window starts with it folded.
-    [previewOpen, setPreviewOpen] = useState(() => {
-      try {
-        const saved = localStorage.getItem('layoutConfig.preview')
-        if (saved) return saved === 'open'
-      } catch {
-        // Storage may be unavailable; fall back to the window width.
-      }
-      return window.innerWidth >= 960
-    })
+  const [drafts, setDrafts] = useState<Record<Target, LayoutRule>>({ card: {}, panel: {} })
+  const [bases, setBases] = useState<Record<Target, string>>({ card: '', panel: '' })
+  const draft = drafts[target]
+  const base = bases[target]
+  const setBase = (id: string) => setBases((now) => ({ ...now, [target]: id }))
+  const [picked, setPicked] = useState<string>()
+  // R-483: the folder the list starts at, moved up with the breadcrumb; the folder being browsed until then.
+  const [anchorId, setAnchorId] = useState<string>()
+  const [query, setQuery] = useState('')
+  const [closed, setClosed] = useState<string[]>([])
+  // R-444: show only the folders with their own layout, or only those changed and not saved yet.
+  const [only, setOnly] = useState<'all' | 'own' | 'dirty'>('all')
+  // R-444: folders marked with Ctrl / Shift + click, to give them a layout together.
+  const [marked, setMarked] = useState<string[]>([])
+  // R-444: the preview can be folded away (remembered on this computer); a narrow window starts with it folded.
+  const [previewOpen, setPreviewOpen] = useState(() => {
+    try {
+      const saved = localStorage.getItem('layoutConfig.preview')
+      if (saved) return saved === 'open'
+    } catch {
+      // Storage may be unavailable; fall back to the window width.
+    }
+    return window.innerWidth >= 960
+  })
   // R-444: the rules column can be folded away for more room (remembered on this computer).
   const [rulesOpen, setRulesOpen] = useState(() => {
     try {
@@ -190,8 +194,8 @@ export function LayoutConfig({
   }, [rows, start])
   // Two levels below the list's first folder are open; deeper branches start closed.
   const closedBelow = (list: FolderRow[]) => {
-    const kids = treeStructure(list).children,
-      top = list.reduce((min, r) => Math.min(min, r.depth), Infinity)
+    const kids = treeStructure(list).children
+    const top = list.reduce((min, r) => Math.min(min, r.depth), Infinity)
     return list.filter((r) => r.depth - top >= 2 && kids.get(r.rowId)?.length).map((r) => r.rowId)
   }
   const goUp = (row: FolderRow) => {
@@ -207,13 +211,13 @@ export function LayoutConfig({
   // R-496: folders under one parent are listed by name; the snapshot's order follows the scan and is not stable.
   const structure = useMemo(() => treeStructure(sortRows(scope)), [scope])
   const savedRules = (): Record<Target, LayoutRule> => ({
-      card: structuredClone(cardRule(project) ?? {}),
-      panel: structuredClone(project.layoutRules?.panel ?? {}),
-    }),
-    savedBases = (): Record<Target, string> => ({
-      card: project.activeLayoutId ?? cardPresets(project)[0].id,
-      panel: project.panelPresetId ?? '',
-    })
+    card: structuredClone(cardRule(project) ?? {}),
+    panel: structuredClone(project.layoutRules?.panel ?? {}),
+  })
+  const savedBases = (): Record<Target, string> => ({
+    card: project.activeLayoutId ?? cardPresets(project)[0].id,
+    panel: project.panelPresetId ?? '',
+  })
   useEffect(() => {
     if (!opened) return
     setTarget(initialTarget)
@@ -267,8 +271,8 @@ export function LayoutConfig({
       levelTotals: [] as number[],
     }
     for (const row of rows) {
-      const kind = kindOf(row),
-        level = layoutLevel(row) - 1
+      const kind = kindOf(row)
+      const level = layoutLevel(row) - 1
       if (panel || work(row)) out.kindTotals[kind] = (out.kindTotals[kind] ?? 0) + 1
       if (levelRuled(row)) {
         out.levelTotals[level] = (out.levelTotals[level] ?? 0) + 1
@@ -294,13 +298,13 @@ export function LayoutConfig({
   // A search or a filter (R-444) shows the folders that match and the folders above them; otherwise the open branches.
   const listed = useMemo(() => {
     const text = query.trim().toLocaleLowerCase()
-    const saved = savedRules()[target].folders ?? {},
-      matches = (r: FolderRow) => {
-        const id = r.record?.folderId
-        if (only === 'own' && !(id && draft.folders?.[id])) return false
-        if (only === 'dirty' && !(id && draft.folders?.[id] !== saved[id])) return false
-        return !text || r.name.toLocaleLowerCase().includes(text)
-      }
+    const saved = savedRules()[target].folders ?? {}
+    const matches = (r: FolderRow) => {
+      const id = r.record?.folderId
+      if (only === 'own' && !(id && draft.folders?.[id])) return false
+      if (only === 'dirty' && !(id && draft.folders?.[id] !== saved[id])) return false
+      return !text || r.name.toLocaleLowerCase().includes(text)
+    }
     const keep =
       text || only !== 'all'
         ? new Set(
@@ -328,25 +332,28 @@ export function LayoutConfig({
   const savedFolders = savedRules()[target].folders ?? {}
   // Unsaved changes of both card and panel.
   const changes = useMemo(() => {
-    const rules = savedRules(),
-      saved = savedBases()
+    const rules = savedRules()
+    const saved = savedBases()
     let count = 0
     for (const which of ['card', 'panel'] as const) {
-      const before = rules[which],
-        now = drafts[which]
+      const before = rules[which]
+      const now = drafts[which]
       if (bases[which] !== saved[which]) count++
       for (const kind of new Set([
         ...Object.keys(before.types ?? {}),
         ...Object.keys(now.types ?? {}),
-      ]))
+      ])) {
         if (before.types?.[kind as FolderKind] !== now.types?.[kind as FolderKind]) count++
-      for (let i = 0; i < deepest; i++)
+      }
+      for (let i = 0; i < deepest; i++) {
         if ((before.levels?.[i] ?? '') !== (now.levels?.[i] ?? '')) count++
+      }
       for (const id of new Set([
         ...Object.keys(before.folders ?? {}),
         ...Object.keys(now.folders ?? {}),
-      ]))
+      ])) {
         if (before.folders?.[id] !== now.folders?.[id]) count++
+      }
     }
     return count
   }, [drafts, bases, project])
@@ -357,8 +364,8 @@ export function LayoutConfig({
     return pickedRow ? [pickedRow] : []
   }, [pickedRow, scope, marked])
   const previewProject = useMemo<Project>(() => {
-    const cards = cardPresets(project),
-      preset = cards.find((p) => p.id === bases.card) ?? cards[0]
+    const cards = cardPresets(project)
+    const preset = cards.find((p) => p.id === bases.card) ?? cards[0]
     return {
       ...project,
       layoutPresets: cards,
@@ -369,9 +376,9 @@ export function LayoutConfig({
   }, [project, drafts, bases])
   // The picked folder's right panel with the draft rules: its layout, else its kind's built-in panel.
   const panelPreview = (row: FolderRow) => {
-    const { id } = choice(row),
-      kind = kindOf(row),
-      cells = presets.find((p) => p.id === id)?.cells ?? builtinPanel(project, kind)
+    const { id } = choice(row)
+    const kind = kindOf(row)
+    const cells = presets.find((p) => p.id === id)?.cells ?? builtinPanel(project, kind)
     return { kind, cells }
   }
   // The project with both drafts; `extra` adds right-panel layouts made in this window.
@@ -383,13 +390,14 @@ export function LayoutConfig({
     const cards = cardPresets(project)
     if (bases.card !== savedBases().card) {
       const preset = cards.find((p) => p.id === bases.card)
-      if (preset)
+      if (preset) {
         next = {
           ...next,
           cells: structuredClone(preset.cells),
           layoutPresets: cards,
           activeLayoutId: preset.id,
         }
+      }
     }
     const list = [...panelPresets, ...extra]
     return {
@@ -407,9 +415,9 @@ export function LayoutConfig({
   const ownCopy = async (row: FolderRow) => {
     const folderId = row.record?.folderId
     if (!folderId || panelPresets.length >= 40) return
-    const { cells, kind } = panelPreview(row),
-      used = new Set(panelPresets.map((p) => p.name.toLocaleLowerCase())),
-      first = row.name.slice(0, 90).trim() || tr('此資料夾')
+    const { cells, kind } = panelPreview(row)
+    const used = new Set(panelPresets.map((p) => p.name.toLocaleLowerCase()))
+    const first = row.name.slice(0, 90).trim() || tr('此資料夾')
     let label = first
     for (let n = 2; used.has(label.toLocaleLowerCase()); n++) label = first + ' (' + n + ')'
     const id = crypto.randomUUID()
@@ -444,8 +452,8 @@ export function LayoutConfig({
           : [...start, row.rowId]
       })
     } else if (e.shiftKey && pickedRow) {
-      const from = listed.findIndex((r) => r.rowId === pickedRow.rowId),
-        to = listed.findIndex((r) => r.rowId === row.rowId)
+      const from = listed.findIndex((r) => r.rowId === pickedRow.rowId)
+      const to = listed.findIndex((r) => r.rowId === row.rowId)
       if (from < 0 || to < 0) return
       setMarked(listed.slice(Math.min(from, to), Math.max(from, to) + 1).map((r) => r.rowId))
       return
@@ -701,12 +709,12 @@ export function LayoutConfig({
           )}
           <div className="layout-config-list" role="list">
             {listed.map((row) => {
-              const { id, source } = choice(row),
-                folderId = row.record?.folderId,
-                own = folderId ? draft.folders?.[folderId] : undefined,
-                dirty = !!folderId && own !== savedFolders[folderId],
-                count = structure.children.get(row.rowId)?.length ?? 0,
-                isClosed = !query.trim() && only === 'all' && closed.includes(row.rowId)
+              const { id, source } = choice(row)
+              const folderId = row.record?.folderId
+              const own = folderId ? draft.folders?.[folderId] : undefined
+              const dirty = !!folderId && own !== savedFolders[folderId]
+              const count = structure.children.get(row.rowId)?.length ?? 0
+              const isClosed = !query.trim() && only === 'all' && closed.includes(row.rowId)
               return (
                 <div
                   key={row.rowId}

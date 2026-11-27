@@ -1,17 +1,18 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
+
 import { readFolder, saveFolder } from '../electron/files'
-import { closeApp, launchApp, removeTestRoot, reportFailure, openLayoutEditor } from './support/app'
+import { Library } from '../electron/library'
+import { closeApp, launchApp, openLayoutEditor, removeTestRoot, reportFailure } from './support/app'
 
 // Manage fields: a date field changes to text (date comparisons removed, counted first) and a text field changes to
 // a date only when every saved value reads as a date (R-240).
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'date-field-ui-')),
-  media = path.join(root, 'Library'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'date-field-ui-'))
+const media = path.join(root, 'Library')
+const local = path.join(root, 'local')
 for (const name of ['Work A', 'Work B']) await fs.mkdir(path.join(media, name), { recursive: true })
 const library = new Library(local, undefined, false)
 await library.init()
@@ -20,17 +21,17 @@ const created = await library.create(media, {
   scanAll: true,
   depth: { mode: 'through', level: 2 },
 })
-const project = created.projects[0].project!,
-  style = { textColor: '#e4e6e8', backgroundColor: 'transparent' },
-  released = crypto.randomUUID(),
-  note = crypto.randomUUID()
+const project = created.projects[0].project!
+const style = { textColor: '#e4e6e8', backgroundColor: 'transparent' }
+const released = crypto.randomUUID()
+const note = crypto.randomUUID()
 // One text value reads as a date, the other is a year alone.
 for (const [name, value] of [
   ['Work A', '12 Nov, 2020'],
   ['Work B', '1999'],
 ]) {
-  const dir = path.join(media, name),
-    record = await readFolder(dir)
+  const dir = path.join(media, name)
+  const record = await readFolder(dir)
   record.attributes.push({
     attributeId: note,
     key: '備註',

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+
 import { t as tr, useLocale } from '../i18n'
 
 // Shared file context menu (add to play queue / file info) for Gallery and the playback panel.
@@ -19,8 +20,8 @@ export function FileMenu({
   onClose: () => void
 }) {
   useLocale()
-  const item = useRef<HTMLButtonElement>(null),
-    opener = useRef(document.activeElement as HTMLElement | null)
+  const item = useRef<HTMLButtonElement>(null)
+  const opener = useRef(document.activeElement as HTMLElement | null)
   useEffect(() => {
     item.current?.focus()
     const away = (event: Event) => {

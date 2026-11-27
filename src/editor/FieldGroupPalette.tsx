@@ -1,30 +1,32 @@
-import { useEffect, useState } from 'react'
 import { ActionIcon, Button, Menu, TextInput, Tooltip, UnstyledButton } from '@mantine/core'
-import { Icon } from '../common/icons'
-import { HelpTip } from '../common/HelpTip'
-import { t as tr } from '../i18n'
-import {
-  fieldValue,
-  type Attribute,
-  type FieldGroup,
-  type FolderRow,
-  type Project,
-} from '../../shared/model'
+import { useEffect, useState } from 'react'
+
 import { groupValue } from '../../shared/cells'
 import {
   addToGroup,
   createGroup,
   dissolveGroup,
   freeGroupName,
+  type GroupRefusal,
   groupType,
   joinRefusal,
   removeFromGroup,
   renameGroup,
   reorderGroup,
-  type GroupRefusal,
 } from '../../shared/fieldGroups'
+import {
+  type Attribute,
+  type FieldGroup,
+  fieldValue,
+  type FolderRow,
+  type Project,
+} from '../../shared/model'
+
+import { HelpTip } from '../common/HelpTip'
+import { Icon } from '../common/icons'
+import { t as tr } from '../i18n'
 import { fieldSource } from './fieldSources'
-import { purposeGlyph, usesSummary, yesNo, type FieldUse } from './fieldTypes'
+import { type FieldUse, purposeGlyph, usesSummary, yesNo } from './fieldTypes'
 
 type Binding = Project['fieldBindings'][number]
 
@@ -67,6 +69,7 @@ export function refusalText(refusal: GroupRefusal | string) {
 
 // The field being dragged in the field lists (dataTransfer cannot be read while dragging over a target).
 let dragged: { attributeId?: string; groupId?: string; member?: string } = {}
+
 export const fieldDrag = {
   start: (value: typeof dragged) => (dragged = value),
   end: () => (dragged = {}),
@@ -107,9 +110,9 @@ export function useGroupActions({
     refuse: (refusal: GroupRefusal) => setError(refusalText(refusal)),
     // A new group of the given fields, named after the first; returns its ID.
     create(fields: Binding[]) {
-      const next = bound(fields),
-        groupId = crypto.randomUUID(),
-        first = next.fieldBindings.find((f) => f.attributeId === fields[0].attributeId)
+      const next = bound(fields)
+      const groupId = crypto.randomUUID()
+      const first = next.fieldBindings.find((f) => f.attributeId === fields[0].attributeId)
       const name = freeGroupName(next, tr('{0} 群組', first?.alias ?? fields[0].alias))
       return attempt(() =>
         createGroup(
@@ -145,10 +148,12 @@ export function useGroupActions({
     },
   }
 }
+
 export type GroupActions = ReturnType<typeof useGroupActions>
 
 // Where a dragged field would land on a row: start a group with it, join the group, or be refused (with why).
 export type DropState = 'ok' | 'refused' | undefined
+
 export function useDropTarget(
   actions: GroupActions,
   target: { groupId: string } | { attributeId: string },
@@ -157,6 +162,7 @@ export function useDropTarget(
   const [over, setOver] = useState<DropState>()
   return { over, props: dropHandlers(actions, target, fieldOf, setOver) }
 }
+
 export function dropHandlers(
   actions: GroupActions,
   target: { groupId: string } | { attributeId: string },
@@ -165,8 +171,8 @@ export function dropHandlers(
 ) {
   return {
     onDragOver: (event: React.DragEvent) => {
-      const now = fieldDrag.current(),
-        moving = now.attributeId && !now.member ? fieldOf(now.attributeId) : undefined
+      const now = fieldDrag.current()
+      const moving = now.attributeId && !now.member ? fieldOf(now.attributeId) : undefined
       if (!moving) return
       const refusal = actions.refusal(target, moving)
       if (refusal === 'same') return
@@ -177,8 +183,8 @@ export function dropHandlers(
     onDragLeave: () => setOver(undefined),
     onDrop: (event: React.DragEvent) => {
       setOver(undefined)
-      const now = fieldDrag.current(),
-        moving = now.attributeId && !now.member ? fieldOf(now.attributeId) : undefined
+      const now = fieldDrag.current()
+      const moving = now.attributeId && !now.member ? fieldOf(now.attributeId) : undefined
       if (!moving) return
       event.preventDefault()
       event.stopPropagation()
@@ -334,8 +340,8 @@ export function GroupView({
   memberKind?: (binding: Binding) => string | undefined
   focusName?: boolean
 }) {
-  const [name, setName] = useState(group.name),
-    [overMember, setOverMember] = useState<string>()
+  const [name, setName] = useState(group.name)
+  const [overMember, setOverMember] = useState<string>()
   useEffect(() => setName(group.name), [group.name])
   const shown = preview ? groupValue(project, group, preview) : undefined
   const move = (from: string, to: number) => {
@@ -390,8 +396,8 @@ export function GroupView({
         {group.memberIds.map((id, index) => {
           const binding = project.fieldBindings.find((f) => f.attributeId === id)
           if (!binding) return null
-          const kind = memberKind?.(binding),
-            isShown = shown?.attributeId === id
+          const kind = memberKind?.(binding)
+          const isShown = shown?.attributeId === id
           return (
             <div
               key={id}

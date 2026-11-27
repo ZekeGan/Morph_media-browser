@@ -1,7 +1,9 @@
 import { ActionIcon, Breadcrumbs, Tooltip } from '@mantine/core'
+
 import type { FolderRow } from '../../shared/model'
-import { t as tr } from '../i18n'
+
 import { Icon } from '../common/icons'
+import { t as tr } from '../i18n'
 
 // The bar above the folder list: back and forward through visited places, the clickable path, and a count.
 export function BrowseNav({

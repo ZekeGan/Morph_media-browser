@@ -1,23 +1,25 @@
-import { _electron as electron } from 'playwright-core'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { _electron as electron } from 'playwright-core'
+
+import { folderFile, readFolder, saveFolder } from '../electron/files'
 import { Library } from '../electron/library'
 import { WorkspaceStore } from '../electron/workspace'
-import { folderFile, readFolder, saveFolder } from '../electron/files'
+import { closeApp } from './support/app'
 import { tinyPng, zipFixture } from './support/archive-fixture'
 import { videoFixture } from './support/video-fixture'
-import { closeApp } from './support/app'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'mixed-ui-')),
-  media = path.join(root, 'Media'),
-  child = path.join(media, 'Child'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'mixed-ui-'))
+const media = path.join(root, 'Media')
+const child = path.join(media, 'Child')
+const local = path.join(root, 'local')
 await fs.mkdir(child, { recursive: true })
-for (let i = 1; i <= 241; i++)
+for (let i = 1; i <= 241; i++) {
   await fs.writeFile(path.join(media, `image-${String(i).padStart(3, '0')}.png`), tinyPng)
+}
 await fs.writeFile(path.join(child, 'child-only.png'), tinyPng)
 await fs.writeFile(path.join(media, 'normal.ini'), 'ORIGINAL CONFIG')
 await fs.writeFile(path.join(media, 'launch.exe'), 'UNSUPPORTED ORIGINAL')
@@ -88,9 +90,9 @@ for (const dir of [media, child]) {
   record.details = { ...(record.details ?? { schemaVersion: 1 }), kind: 'video' }
   await saveFolder(dir, record, record.revision)
 }
-const project = library.snapshot().projects[0].project!,
-  recordBefore = await fs.readFile(folderFile(media)),
-  childBefore = await fs.readFile(folderFile(child))
+const project = library.snapshot().projects[0].project!
+const recordBefore = await fs.readFile(folderFile(media))
+const childBefore = await fs.readFile(folderFile(child))
 const store = new WorkspaceStore(local, ['zh-TW'])
 await store.init()
 await store.update({ action: 'appearance', theme: 'glass', locale: 'zh-TW' }, [project.projectId])
@@ -100,8 +102,8 @@ const env = Object.fromEntries(
   )
 )
 delete env.ELECTRON_RUN_AS_NODE
-const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
-  page = await app.firstWindow()
+const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
+const page = await app.firstWindow()
 page.setDefaultTimeout(15000)
 await page.evaluate('window.__name=(target)=>target')
 const errors: string[] = []
@@ -356,8 +358,8 @@ try {
     BrowserWindow.getAllWindows()[0].setBounds({ width: 700, height: 780 })
   )
   await page.screenshot({ path: path.join(root, 'narrow.png') })
-  const after = JSON.parse(await fs.readFile(folderFile(media), 'utf8')),
-    before = JSON.parse(recordBefore.toString())
+  const after = JSON.parse(await fs.readFile(folderFile(media), 'utf8'))
+  const before = JSON.parse(recordBefore.toString())
   assert.equal(after.details.reading.page, 1)
   delete after.revision
   delete before.revision

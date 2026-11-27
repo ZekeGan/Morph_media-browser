@@ -1,20 +1,22 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
-import { Explorer, type DesktopOperations } from '../electron/explorer'
+import { test } from 'node:test'
+
 import { DATA_DIR } from '../shared/model'
+
+import { type DesktopOperations, Explorer } from '../electron/explorer'
 import { exists, folderFile, readFolder, saveFolder } from '../electron/files'
+import { Library } from '../electron/library'
 
 const png = Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.alloc(64, 1)])
 
 test('saved images can be deleted: references cleared in one write, file removed after, originals kept', async (t) => {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'image-delete-')),
-    media = path.join(root, 'media'),
-    local = path.join(root, 'local')
+  const root = await fs.mkdtemp(path.join(base, 'image-delete-'))
+  const media = path.join(root, 'media')
+  const local = path.join(root, 'local')
   await fs.mkdir(path.join(media, 'Game A'), { recursive: true })
   await fs.writeFile(path.join(media, 'Game A', 'cover.png'), 'ORIGINAL')
   const lib = new Library(local, undefined, false)
@@ -57,8 +59,8 @@ test('saved images can be deleted: references cleared in one write, file removed
   }
   const dir = rowOf().path
   let record = await readFolder(dir)
-  const [used, spare] = record.assets,
-    file = (a: typeof used) => path.join(dir, DATA_DIR, a.relativePath)
+  const [used, spare] = record.assets
+  const file = (a: typeof used) => path.join(dir, DATA_DIR, a.relativePath)
   record.details!.cellImages = { pic: used.assetId, other: spare.assetId }
   await saveFolder(dir, record, record.revision)
   await lib.scan()

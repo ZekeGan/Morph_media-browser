@@ -3,18 +3,20 @@ export interface Cue {
   end: number
   text: string
 }
+
 const time = (value: string) => {
   const parts = value.replace(',', '.').split(':').map(Number)
-  if (parts.length < 2 || parts.length > 3 || parts.some((n) => !Number.isFinite(n) || n < 0))
+  if (parts.length < 2 || parts.length > 3 || parts.some((n) => !Number.isFinite(n) || n < 0)) {
     throw new Error('字幕時間格式不合法')
+  }
   return parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1]
 }
 
 // R-412: ASS/SSA dialogue text keeps only the words and the line breaks. Override blocks ({\an8}, {\i1}, {\pos(…)})
 // go away, \N and \n become a new line, \h a space, and the vector drawings between {\p1} and {\p0} are dropped.
 export function assText(raw: string): string {
-  let drawing = false,
-    out = ''
+  let drawing = false
+  let out = ''
   for (const part of raw.split(/(\{[^}]*\})/)) {
     if (part.length > 1 && part.startsWith('{') && part.endsWith('}')) {
       const mode = /\\p(\d+)/.exec(part)
@@ -33,19 +35,19 @@ export function assText(raw: string): string {
 // An ASS/SSA script: the [Events] section's Dialogue lines, read by its Format line (Start, End, Text).
 function parseAss(input: string): Cue[] {
   const cues: Cue[] = []
-  let events = false,
-    format = [
-      'layer',
-      'start',
-      'end',
-      'style',
-      'name',
-      'marginl',
-      'marginr',
-      'marginv',
-      'effect',
-      'text',
-    ]
+  let events = false
+  let format = [
+    'layer',
+    'start',
+    'end',
+    'style',
+    'name',
+    'marginl',
+    'marginr',
+    'marginv',
+    'effect',
+    'text',
+  ]
   for (const line of input.replace(/^﻿/, '').replace(/\r/g, '').split('\n')) {
     const text = line.trim()
     if (/^\[.*\]$/.test(text)) {
@@ -70,12 +72,13 @@ function parseAss(input: string): Cue[] {
       remaining = remaining.slice(at + 1)
     }
     fields.push(remaining)
-    const startIndex = format.indexOf('start'),
-      endIndex = format.indexOf('end'),
-      textIndex = format.indexOf('text')
+    const startIndex = format.indexOf('start')
+    const endIndex = format.indexOf('end')
+    const textIndex = format.indexOf('text')
     if (startIndex < 0 || endIndex < 0 || textIndex < 0 || fields.length <= textIndex) continue
     const words = assText(fields[textIndex])
-    let start: number, end: number
+    let start: number
+    let end: number
     try {
       start = time(fields[startIndex].trim())
       end = time(fields[endIndex].trim())
@@ -95,15 +98,15 @@ export function parseSubtitles(input: string): Cue[] {
     if (!cues.length) throw new Error('找不到有效 SRT／VTT／ASS 字幕，原字幕保留')
     return cues.sort((a, b) => a.start - b.start || a.end - b.end)
   }
-  const lines = input.replace(/^﻿/, '').replace(/\r/g, '').split('\n'),
-    cues: Cue[] = []
+  const lines = input.replace(/^﻿/, '').replace(/\r/g, '').split('\n')
+  const cues: Cue[] = []
   for (let i = 0; i < lines.length; i++) {
     const match = /^\s*([\d:.,]+)\s+-->\s+([\d:.,]+)(?:\s.*)?$/.exec(lines[i])
     if (!match) continue
     const text: string[] = []
     while (i + 1 < lines.length && lines[i + 1].trim()) text.push(lines[++i])
-    const start = time(match[1]),
-      end = time(match[2])
+    const start = time(match[1])
+    const end = time(match[2])
     if (end <= start) throw new Error('字幕結束時間需晚於開始')
     cues.push({ start, end, text: text.join('\n').replace(/<[^>]*>/g, '') })
   }
@@ -115,8 +118,8 @@ export function parseSubtitles(input: string): Cue[] {
 // line would end a cue early, so empty lines are dropped.
 export function cuesToSrt(cues: readonly Cue[]): string {
   const stamp = (seconds: number) => {
-    const ms = Math.round(seconds * 1000),
-      part = (value: number, width = 2) => String(value).padStart(width, '0')
+    const ms = Math.round(seconds * 1000)
+    const part = (value: number, width = 2) => String(value).padStart(width, '0')
     return `${part(Math.floor(ms / 3_600_000))}:${part(Math.floor(ms / 60_000) % 60)}:${part(Math.floor(ms / 1000) % 60)},${part(ms % 1000, 3)}`
   }
   return cues

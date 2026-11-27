@@ -1,9 +1,11 @@
 import { ActionIcon, Button, Group, Select, Stack, Text, Tooltip } from '@mantine/core'
-import { Icon } from '../common/icons'
-import { HelpTip } from '../common/HelpTip'
-import { t as tr } from '../i18n'
-import { MAX_FALLBACKS, type Cell, type FolderRow, type Project } from '../../shared/model'
+
 import { launchChoice, launchTemplates } from '../../shared/explorer'
+import { type Cell, type FolderRow, MAX_FALLBACKS, type Project } from '../../shared/model'
+
+import { HelpTip } from '../common/HelpTip'
+import { Icon } from '../common/icons'
+import { t as tr } from '../i18n'
 
 // Ordered fallback actions of a launch cell: the first action this folder has a target for is the one it starts.
 export function FallbackActions({
@@ -17,26 +19,26 @@ export function FallbackActions({
   preview?: FolderRow
   updateCell: (update: Partial<Cell>) => void
 }) {
-  const fallbacks = cell.fallbackActionIds ?? [],
-    all = launchTemplates(draft),
-    label = (id: string) => {
-      const t = all.find((item) => item.id === id)
-      return t ? tr(t.label) : id
-    },
-    main = launchChoice(draft, cell.actionId, undefined, undefined)?.id,
-    used = new Set([main, ...fallbacks]),
-    free = all.filter((t) => !used.has(t.id)),
-    set = (next: string[]) => updateCell({ fallbackActionIds: next.length ? next : undefined }),
-    move = (from: number, to: number) => {
-      const next = [...fallbacks]
-      next.splice(to, 0, next.splice(from, 1)[0])
-      set(next)
-    },
-    shown = preview
-      ? launchChoice(draft, cell.actionId, cell.fallbackActionIds, preview.record?.details?.targets)
-      : undefined,
-    bound = (id: string) =>
-      preview?.record?.details?.targets?.[id]?.kind === all.find((t) => t.id === id)?.kind
+  const fallbacks = cell.fallbackActionIds ?? []
+  const all = launchTemplates(draft)
+  const label = (id: string) => {
+    const t = all.find((item) => item.id === id)
+    return t ? tr(t.label) : id
+  }
+  const main = launchChoice(draft, cell.actionId, undefined, undefined)?.id
+  const used = new Set([main, ...fallbacks])
+  const free = all.filter((t) => !used.has(t.id))
+  const set = (next: string[]) => updateCell({ fallbackActionIds: next.length ? next : undefined })
+  const move = (from: number, to: number) => {
+    const next = [...fallbacks]
+    next.splice(to, 0, next.splice(from, 1)[0])
+    set(next)
+  }
+  const shown = preview
+    ? launchChoice(draft, cell.actionId, cell.fallbackActionIds, preview.record?.details?.targets)
+    : undefined
+  const bound = (id: string) =>
+    preview?.record?.details?.targets?.[id]?.kind === all.find((t) => t.id === id)?.kind
   return (
     <Stack gap={6} className="fallback-fields">
       <Group gap={4} wrap="nowrap">

@@ -4,6 +4,7 @@
 // version reads back). Later versions must read the same from it: tests/compat.test.ts.
 import fs from 'node:fs/promises'
 import path from 'node:path'
+
 import { buildCompatSample, placeCompatSample, summariseCompatSample } from './compat-sample'
 
 const version = JSON.parse(await fs.readFile('package.json', 'utf8')).version as string

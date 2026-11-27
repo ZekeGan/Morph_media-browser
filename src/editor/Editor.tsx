@@ -1,9 +1,3 @@
-import { Icon } from '../common/icons'
-import { effectiveKind, type FolderKind } from '../../shared/kind'
-import { t as tr, useLocale } from '../i18n'
-import { layoutName } from './layoutName'
-import { cellColors } from '../cells/cellStyle'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   ActionIcon,
   Alert,
@@ -17,42 +11,50 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
-import GridLayout, { useContainerWidth, type Layout } from 'react-grid-layout'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import GridLayout, { type Layout, useContainerWidth } from 'react-grid-layout'
 import { transformStrategy } from 'react-grid-layout/core'
-import { localDragPosition } from './editorDrag'
+
+import { cellFieldIds, isFilled } from '../../shared/cells'
+import { cellType, isFieldKind } from '../../shared/explorer'
+import { bindCellToGroup, freeGroupName, groupFromFallbacks } from '../../shared/fieldGroups'
+import { effectiveKind, type FolderKind } from '../../shared/kind'
+import {
+  addCommonFields,
+  addPreset,
+  editorFields,
+  extremePreviewRow,
+  presetDraft,
+  removePreset,
+  renamePreset,
+  samplePreviewRow,
+  selectPreset,
+  syncPresetDraft,
+} from '../../shared/layouts'
+import { isGameFolder } from '../../shared/media'
 import {
   type Cell,
   type CellKind,
+  type FieldDeletionPreview,
+  fieldValue,
   type FolderRow,
   type Project,
   type Request,
   type Response,
-  type FieldDeletionPreview,
-  fieldValue,
 } from '../../shared/model'
+
 import { CellContent } from '../cells/Card'
+import { cellColors } from '../cells/cellStyle'
+import { Icon } from '../common/icons'
+import { t as tr, useLocale } from '../i18n'
+import { commonFieldNames } from './commonFields'
+import { localDragPosition } from './editorDrag'
 import { EditorInspector, type InspectorTab } from './EditorInspector'
 import { EditorPalette } from './EditorPalette'
-import { cellType, isFieldKind } from '../../shared/explorer'
-import {
-  editorFields,
-  presetDraft,
-  syncPresetDraft,
-  selectPreset,
-  addPreset,
-  renamePreset,
-  removePreset,
-  addCommonFields,
-  extremePreviewRow,
-  samplePreviewRow,
-} from '../../shared/layouts'
-import { commonFieldNames } from './commonFields'
-import { isGameFolder } from '../../shared/media'
-import { cellFieldIds, isFilled } from '../../shared/cells'
+import { refusalText } from './FieldGroupPalette'
 import { fieldSource, rowFieldAttributes } from './fieldSources'
 import { importedFieldLabels } from './importedFieldLabels'
-import { bindCellToGroup, freeGroupName, groupFromFallbacks } from '../../shared/fieldGroups'
-import { refusalText } from './FieldGroupPalette'
+import { layoutName } from './layoutName'
 import { settleGrid } from './settleGrid'
 
 const withoutGroup = (cell: Cell): Cell => {
@@ -67,6 +69,7 @@ const EXTREME = {
   sample: 'extreme:sample',
 }
 const TAB_KEY = 'editor.inspectorTab'
+
 export function Editor({
   project,
   rows,
@@ -154,30 +157,30 @@ export function Editor({
     presetUi ? presetDraft(project) : structuredClone(project)
   )
   const [draft, setDraft] = useState(() => structuredClone(initial))
-  const [past, setPast] = useState<Project[]>([]),
-    [future, setFuture] = useState<Project[]>([])
-  const [selected, setSelected] = useState(''),
-    // R-460: the folder it was opened for, else (a right panel) the first folder of that kind, else the first one.
-    [previewId, setPreviewId] = useState<string | undefined>(
-      () =>
-        rows.find((r) => r.rowId === previewRow)?.rowId ??
-        (panelKind
-          ? rows.find((r) => effectiveKind(r, r.contents) === panelKind)?.rowId
-          : undefined) ??
-        rows[0]?.rowId
-    )
+  const [past, setPast] = useState<Project[]>([])
+  const [future, setFuture] = useState<Project[]>([])
+  const [selected, setSelected] = useState('')
+  // R-460: the folder it was opened for, else (a right panel) the first folder of that kind, else the first one.
+  const [previewId, setPreviewId] = useState<string | undefined>(
+    () =>
+      rows.find((r) => r.rowId === previewRow)?.rowId ??
+      (panelKind
+        ? rows.find((r) => effectiveKind(r, r.contents) === panelKind)?.rowId
+        : undefined) ??
+      rows[0]?.rowId
+  )
   const [error, setError] = useState('')
   const [tab, setTab] = useState<InspectorTab>(() => {
-      try {
-        const saved = localStorage.getItem(TAB_KEY)
-        return saved === 'style' ? saved : 'content'
-      } catch {
-        return 'content'
-      }
-    }),
-    [renaming, setRenaming] = useState<{ id: string; name: string }>()
-  const [schemeAction, setSchemeAction] = useState<'new' | 'copy' | 'rename'>(),
-    [schemeName, setSchemeName] = useState('')
+    try {
+      const saved = localStorage.getItem(TAB_KEY)
+      return saved === 'style' ? saved : 'content'
+    } catch {
+      return 'content'
+    }
+  })
+  const [renaming, setRenaming] = useState<{ id: string; name: string }>()
+  const [schemeAction, setSchemeAction] = useState<'new' | 'copy' | 'rename'>()
+  const [schemeName, setSchemeName] = useState('')
   const [pendingPreset, setPendingPreset] = useState<string>()
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial)
   const [fieldDeletion, setFieldDeletion] = useState<FieldDeletionPreview>()
@@ -191,8 +194,8 @@ export function Editor({
   // The grid removes its drop placeholder only when its own enter/leave count returns to zero, which misses when an
   // element entered mid-drag is moved or replaced (the placeholder itself moves). So the editor clears it whenever
   // the pointer is outside the canvas or the drag ends: a drop sent to the grid removes it, and is ignored here.
-  const cancelGridDrop = useRef(false),
-    overGrid = useRef(false)
+  const cancelGridDrop = useRef(false)
+  const overGrid = useRef(false)
   const clearDropPlaceholder = () => {
     const grid = containerRef.current?.querySelector<HTMLElement>('.react-grid-layout')
     if (!grid) return
@@ -217,8 +220,8 @@ export function Editor({
   const dragImage = (event: React.DragEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect()
     dragGrab.current = { x: rect.width / 2, y: rect.height / 2 }
-    const ghost = event.currentTarget.cloneNode(true) as HTMLElement,
-      blank = document.createElement('canvas')
+    const ghost = event.currentTarget.cloneNode(true) as HTMLElement
+    const blank = document.createElement('canvas')
     blank.width = blank.height = 1
     event.dataTransfer.setDragImage(blank, 0, 0)
     ghost.classList.add('palette-drag-ghost')
@@ -250,8 +253,9 @@ export function Editor({
       // The drop sent to clear the placeholder is not the end of the drag.
       if (cancelGridDrop.current) return
       ghost.remove()
-      for (const name of ['dragover', 'drag'])
+      for (const name of ['dragover', 'drag']) {
         document.removeEventListener(name, move as EventListener, true)
+      }
       document.removeEventListener('dragleave', leave as EventListener, true)
       for (const name of ['dragend', 'drop']) document.removeEventListener(name, end, true)
       overGrid.current = false
@@ -259,8 +263,9 @@ export function Editor({
       // A drag that ends anywhere but on the canvas (Esc, released outside) leaves no placeholder behind.
       if (e.type === 'dragend') clearDropPlaceholder()
     }
-    for (const name of ['dragover', 'drag'])
+    for (const name of ['dragover', 'drag']) {
       document.addEventListener(name, move as EventListener, true)
+    }
     document.addEventListener('dragleave', leave as EventListener, true)
     for (const name of ['dragend', 'drop']) document.addEventListener(name, end, true)
   }
@@ -313,8 +318,8 @@ export function Editor({
   )
   // Components whose content is cut off in the current preview (hidden overflow; scrolling cells are fine).
   const [overflowing, setOverflowing] = useState<string[]>([])
-  const [floatAt, setFloatAt] = useState<{ left: number; top: number }>(),
-    [moving, setMoving] = useState(false)
+  const [floatAt, setFloatAt] = useState<{ left: number; top: number }>()
+  const [moving, setMoving] = useState(false)
   // Checked after every render and again whenever a component's size changes: the grid animates size changes
   // (about 200 ms), so a check right after "one row taller" would still see the old, too small height.
   useLayoutEffect(() => {
@@ -339,15 +344,18 @@ export function Editor({
       for (const image of images) image.removeEventListener('load', check)
       cancelAnimationFrame(frame)
     }
+
     function measure() {
       if (!canvas) return
       // A picture filling its frame by cropping counts as cut off when its proportions differ from the frame's by
       // more than 20% (a little cropping is what "fill" is for).
       const cropped = (node: HTMLElement) => {
-        if (!(node instanceof HTMLImageElement) || getComputedStyle(node).objectFit !== 'cover')
+        if (!(node instanceof HTMLImageElement) || getComputedStyle(node).objectFit !== 'cover') {
           return false
-        if (!node.naturalWidth || !node.naturalHeight || !node.clientWidth || !node.clientHeight)
+        }
+        if (!node.naturalWidth || !node.naturalHeight || !node.clientWidth || !node.clientHeight) {
           return false
+        }
         const ratio =
           node.naturalWidth / node.naturalHeight / (node.clientWidth / node.clientHeight)
         return Math.abs(Math.log(ratio)) > Math.log(1.2)
@@ -375,8 +383,8 @@ export function Editor({
       const chosen = canvas.querySelector<HTMLElement>('.editor-cell.selected')
       let at: { left: number; top: number } | undefined
       if (chosen) {
-        const box = canvas.getBoundingClientRect(),
-          rect = chosen.getBoundingClientRect()
+        const box = canvas.getBoundingClientRect()
+        const rect = chosen.getBoundingClientRect()
         const top = rect.top - box.top
         const above = top >= 32
         at = {
@@ -389,8 +397,8 @@ export function Editor({
   })
   const level = draft.cells
   const withLevel = (cells: Cell[]): Project => ({ ...draft, cells })
-  const selectedCell = level.find((c) => c.cellId === selected),
-    preview = extremePreview ?? rows.find((r) => r.rowId === previewId)
+  const selectedCell = level.find((c) => c.cellId === selected)
+  const preview = extremePreview ?? rows.find((r) => r.rowId === previewId)
   const hasContent =
     !!selectedCell &&
     (isFieldKind(selectedCell.kind) ||
@@ -413,14 +421,16 @@ export function Editor({
       draft.fieldBindings.some(
         (f) => f.attributeId !== id && f.alias.toLocaleLowerCase() === alias.toLocaleLowerCase()
       )
-    )
+    ) {
       return tr('已有同名欄位')
+    }
     if (
       draft.fieldGroups?.some(
         (g) => g.name.trim().toLocaleLowerCase() === alias.toLocaleLowerCase()
       )
-    )
+    ) {
       return tr('已有同名群組')
+    }
     return ''
   }
   const applyRename = () => {
@@ -476,8 +486,9 @@ export function Editor({
   // A field component shows a group instead (R-226), or an older one with fallback fields becomes a group.
   const setGroup = (groupId: string) => {
     const group = draft.fieldGroups?.find((g) => g.groupId === groupId)
-    if (group)
+    if (group) {
       change(withLevel(level.map((c) => (c.cellId === selected ? bindCellToGroup(c, group) : c))))
+    }
   }
   // "Edit group" in the Content tab opens that group in the left panel (a new request each time).
   const [groupRequest, setGroupRequest] = useState<{ id: string; at: number }>()
@@ -521,15 +532,15 @@ export function Editor({
     if (bindings.some((f) => f.attributeId === source.attributeId)) return bindings
     // A website field gets its plain name and site, e.g. TITLE_ORIGINAL → "Original title (E-Hentai)" (R-236);
     // other fields keep their key.
-    const plain = source.alias ? importedFieldLabels()[source.alias] : undefined,
-      site = fieldSource(source.attributeId, attributes),
-      base = plain
-        ? site === tr('自建')
-          ? plain
-          : tr('{0}（{1}）', plain, site)
-        : source.alias || tr('欄位')
-    let alias = base,
-      i = 2
+    const plain = source.alias ? importedFieldLabels()[source.alias] : undefined
+    const site = fieldSource(source.attributeId, attributes)
+    const base = plain
+      ? site === tr('自建')
+        ? plain
+        : tr('{0}（{1}）', plain, site)
+      : source.alias || tr('欄位')
+    let alias = base
+    let i = 2
     const taken = (name: string) =>
       bindings.some((f) => f.alias.toLocaleLowerCase() === name.toLocaleLowerCase()) ||
       !!draft.fieldGroups?.some(
@@ -568,13 +579,13 @@ export function Editor({
   }
   // Starting points for an empty card: the cells are ordinary ones and can be changed freely afterwards.
   const startFrom = (template: 'simple' | 'fields' | 'game') => {
-    const style = { textColor: '#e4e6e8', backgroundColor: 'transparent' },
-      cell = (kind: CellKind, y: number, h = 1): Cell => ({
-        cellId: crypto.randomUUID(),
-        kind,
-        grid: { x: 0, y, w: 12, h },
-        style,
-      })
+    const style = { textColor: '#e4e6e8', backgroundColor: 'transparent' }
+    const cell = (kind: CellKind, y: number, h = 1): Cell => ({
+      cellId: crypto.randomUUID(),
+      kind,
+      grid: { x: 0, y, w: 12, h },
+      style,
+    })
     const base =
       template === 'game'
         ? [
@@ -621,19 +632,20 @@ export function Editor({
       return moved ? { ...c, grid: { x: moved.x, y: moved.y, w: moved.w, h: moved.h } } : c
     })
     const y = Math.max(0, ...cells.map((c) => c.grid.y + c.grid.h))
-    let bindings = draft.fieldBindings,
-      attributeId = source?.attributeId
+    let bindings = draft.fieldBindings
+    let attributeId = source?.attributeId
     if (source) bindings = withSourceBinding(bindings, source)
     attributeId ??= bindings.find((f) => f.type === cellType(kind))?.attributeId
     if (isFieldKind(kind) && !attributeId) {
       attributeId = crypto.randomUUID()
-      let alias = cellType(kind),
-        i = 2
+      let alias = cellType(kind)
+      let i = 2
       while (
         bindings.some((f) => f.alias.toLowerCase() === alias.toLowerCase()) ||
         draft.fieldGroups?.some((g) => g.name.trim().toLowerCase() === alias.toLowerCase())
-      )
+      ) {
         alias = `${cellType(kind)}_${i++}`
+      }
       bindings = [...bindings, { attributeId, alias, type: cellType(kind) }]
     }
     if (kind === 'image') attributeId = crypto.randomUUID()
@@ -669,12 +681,12 @@ export function Editor({
       setError(tr('每張卡片最多放 50 個組件'))
       return
     }
-    const y = Math.max(0, ...level.map((c) => c.grid.y + c.grid.h)),
-      copy: Cell = {
-        ...structuredClone(cell),
-        cellId: crypto.randomUUID(),
-        grid: { ...cell.grid, y },
-      }
+    const y = Math.max(0, ...level.map((c) => c.grid.y + c.grid.h))
+    const copy: Cell = {
+      ...structuredClone(cell),
+      cellId: crypto.randomUUID(),
+      grid: { ...cell.grid, y },
+    }
     if (copy.kind === 'image') copy.attributeId = crypto.randomUUID()
     if (y + copy.grid.h > 100) {
       setError(tr('畫布沒有空間，請先移動或刪除組件'))
@@ -713,14 +725,16 @@ export function Editor({
         event.defaultPrevented ||
         !selected ||
         busy
-      )
+      ) {
         return
+      }
       if (
         (event.target as HTMLElement)?.closest(
           'input,textarea,select,[role="combobox"],[contenteditable="true"],.mantine-Modal-content'
         )
-      )
+      ) {
         return
+      }
       event.preventDefault()
       if (copy) duplicateSelected()
       else removeSelected()
@@ -1178,8 +1192,9 @@ export function Editor({
               !(event.target as HTMLElement).closest(
                 '.editor-cell, .cell-float-toolbar, .canvas-status, button, input'
               )
-            )
+            ) {
               setSelected('')
+            }
           }}
         >
           {previewId === EXTREME.sample && (
@@ -1331,17 +1346,17 @@ export function Editor({
                 }}
                 onDrop={(layout, item, event) => {
                   if (cancelGridDrop.current) return
-                  const transfer = (event as DragEvent).dataTransfer,
-                    kind = transfer?.getData('text/plain') as CellKind,
-                    id = transfer?.getData('application/x-media-viewer-field'),
-                    groupId = transfer?.getData('application/x-media-viewer-group') || undefined,
-                    source = id
-                      ? (draft.fieldBindings.find((f) => f.attributeId === id) ??
-                        availableFields
-                          .filter((f) => !f.conflict)
-                          .map((f) => ({ attributeId: f.attributeId, alias: f.key, type: f.type }))
-                          .find((f) => f.attributeId === id))
-                      : undefined
+                  const transfer = (event as DragEvent).dataTransfer
+                  const kind = transfer?.getData('text/plain') as CellKind
+                  const id = transfer?.getData('application/x-media-viewer-field')
+                  const groupId = transfer?.getData('application/x-media-viewer-group') || undefined
+                  const source = id
+                    ? (draft.fieldBindings.find((f) => f.attributeId === id) ??
+                      availableFields
+                        .filter((f) => !f.conflict)
+                        .map((f) => ({ attributeId: f.attributeId, alias: f.key, type: f.type }))
+                        .find((f) => f.attributeId === id))
+                    : undefined
                   if (id && !source) {
                     setError(tr('這個欄位已改過或格式不合，請重新選一個'))
                     return
@@ -1372,11 +1387,11 @@ export function Editor({
                     add(kind, undefined, layout, source, groupId)
                     return
                   }
-                  const column = (width - 4 * 11) / 12,
-                    w = 6,
-                    left = drop.clientX - grid.left - (column * w + 4 * (w - 1)) / 2,
-                    x = Math.min(12 - w, Math.max(0, Math.round(left / (column + 4)))),
-                    y = Math.max(0, Math.round((drop.clientY - grid.top - 21) / (42 + 4)))
+                  const column = (width - 4 * 11) / 12
+                  const w = 6
+                  const left = drop.clientX - grid.left - (column * w + 4 * (w - 1)) / 2
+                  const x = Math.min(12 - w, Math.max(0, Math.round(left / (column + 4))))
+                  const y = Math.max(0, Math.round((drop.clientY - grid.top - 21) / (42 + 4)))
                   add(kind, { x, y, w, h: 1 }, layout, source, groupId)
                 }}
                 onDragStart={() => setMoving(true)}

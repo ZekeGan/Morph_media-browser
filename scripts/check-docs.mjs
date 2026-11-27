@@ -1,8 +1,8 @@
 // Dependency-free repository link checks; semantic consistency remains a review task.
-import fs from 'node:fs'
-import path from 'node:path'
-import os from 'node:os'
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -32,9 +32,9 @@ function prose(markdown) {
 }
 
 function anchors(markdown) {
-  const ids = new Set(),
-    counts = new Map(),
-    text = prose(markdown)
+  const ids = new Set()
+  const counts = new Map()
+  const text = prose(markdown)
   for (const match of text.matchAll(/\b(?:id|name)=["']([^"']+)["']/g)) ids.add(match[1])
   for (const match of text.matchAll(/^ {0,3}#{1,6}\s+(.+?)\s*#*\s*$/gm)) {
     const heading = match[1].replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
@@ -53,8 +53,8 @@ function anchors(markdown) {
 }
 
 function links(markdown) {
-  const text = prose(markdown).replace(/`+[^`\n]*`+/g, ''),
-    targets = []
+  const text = prose(markdown).replace(/`+[^`\n]*`+/g, '')
+  const targets = []
   const definitions = new Map()
   for (const match of text.matchAll(/^ {0,3}\[([^\]]+)\]:\s*(<[^>]+>|\S+)/gm)) {
     definitions.set(match[1].trim().toLowerCase(), match[2])
@@ -62,8 +62,9 @@ function links(markdown) {
   }
   for (const match of text.matchAll(
     /!?\[[^\]\n]*\]\(\s*(<[^>\n]+>|[^\s)]+)(?:\s+["'][^\n]*["'])?\s*\)/g
-  ))
+  )) {
     targets.push(match[1])
+  }
   for (const match of text.matchAll(/\[([^\]\n]+)\]\[([^\]\n]*)\]/g)) {
     const name = (match[2] || match[1]).trim().toLowerCase()
     if (!definitions.has(name)) targets.push(`missing-reference:${name}`)
@@ -73,8 +74,8 @@ function links(markdown) {
 
 export function checkDocuments(base, files) {
   files = [...new Set(files)]
-  const errors = [],
-    cache = new Map()
+  const errors = []
+  const cache = new Map()
   let checked = 0
   const read = (file) => {
     if (!cache.has(file)) cache.set(file, fs.readFileSync(file, 'utf8'))
@@ -101,15 +102,16 @@ export function checkDocuments(base, files) {
       const target = raw.startsWith('<') ? raw.slice(1, -1) : raw
       if (/^(?:[a-z][\w+.-]*:|\/\/)/i.test(target)) continue
       try {
-        const hash = target.indexOf('#'),
-          name = hash < 0 ? target : target.slice(0, hash)
+        const hash = target.indexOf('#')
+        const name = hash < 0 ? target : target.slice(0, hash)
         const fragment = hash < 0 ? '' : decodeURIComponent(target.slice(hash + 1))
         const file = name ? path.resolve(path.dirname(source), decodeURIComponent(name)) : source
         checked++
         if (!inside(base, file)) throw new Error('link leaves repository')
         if (!fs.existsSync(file)) throw new Error('target not found')
-        if (fragment && /\.md$/i.test(file) && !anchors(read(file)).has(fragment))
+        if (fragment && /\.md$/i.test(file) && !anchors(read(file)).has(fragment)) {
           throw new Error('anchor not found')
+        }
       } catch (error) {
         errors.push(`${input}: ${target} — ${error.message}`)
       }
@@ -120,8 +122,8 @@ export function checkDocuments(base, files) {
 
 function selfTest() {
   const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'media-viewer-docs-'))
-  const index = path.join(fixture, 'README.md'),
-    target = path.join(fixture, 'target.md')
+  const index = path.join(fixture, 'README.md')
+  const target = path.join(fixture, 'target.md')
   const source = path.join(fixture, 'source file.ts')
   try {
     fs.writeFileSync(target, '# 重複標題\n## 重複標題\n<a id="legacy"></a>\n')

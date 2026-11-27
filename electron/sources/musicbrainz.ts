@@ -1,9 +1,11 @@
-import { SourceError } from '../metadata-common'
-import { clean, tags, type Adapter, type Site } from './site'
 import type { MetadataVersion } from '../../shared/explorer'
+
+import { SourceError } from '../metadata-common'
 import { pickByLanguage } from './language'
+import { type Adapter, clean, type Site, tags } from './site'
 
 const UUID = '([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})'
+
 type Credit = { name?: unknown }
 type Named = { name?: unknown }
 type Alias = { name?: unknown; locale?: unknown; primary?: unknown }
@@ -12,10 +14,10 @@ type Alias = { name?: unknown; locale?: unknown; primary?: unknown }
 export function lengthText(ms: unknown) {
   // A track longer than a day is not a real length.
   if (typeof ms !== 'number' || !Number.isFinite(ms) || ms <= 0 || ms > 86_400_000) return ''
-  const total = Math.round(ms / 1000),
-    s = String(total % 60).padStart(2, '0'),
-    m = Math.floor(total / 60) % 60,
-    h = Math.floor(total / 3600)
+  const total = Math.round(ms / 1000)
+  const s = String(total % 60).padStart(2, '0')
+  const m = Math.floor(total / 60) % 60
+  const h = Math.floor(total / 3600)
   return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`
 }
 
@@ -30,14 +32,16 @@ function genresAndTags(site: Site, data: { genres?: Named[]; tags?: Named[] }) {
     data.tags?.map((tag) => tag?.name)
   )
 }
+
 // R-381: a name in a preferred language, from the entry's primary aliases for that language; else the name itself.
 function nameIn(site: Site, name: unknown, aliases: unknown) {
   const list = (Array.isArray(aliases) ? (aliases as Alias[]) : []).filter(
-      (alias) => alias?.primary === true && typeof alias.name === 'string' && alias.name.trim()
-    ),
-    found = pickByLanguage(list, (alias) => alias.locale, site.languages)
+    (alias) => alias?.primary === true && typeof alias.name === 'string' && alias.name.trim()
+  )
+  const found = pickByLanguage(list, (alias) => alias.locale, site.languages)
   return typeof found?.name === 'string' ? found.name : name
 }
+
 const mb = (path: string, inc: string) => `https://musicbrainz.org/ws/2/${path}?inc=${inc}&fmt=json`
 // The Cover Art Archive's front picture of a release or release-group (it redirects to archive.org; see config.ts).
 const cover = (kind: 'release' | 'release-group', id: string) =>
@@ -78,8 +82,9 @@ async function artist(site: Site): Promise<ReturnType<Adapter>> {
 // The spacing is kept across previews, so switching versions quickly does not go faster either.
 // R-461: every MusicBrainz request (name search too) takes its turn in one queue, so two at once wait for each other.
 export const pace = { ms: 1000 }
-let last = 0,
-  queue: Promise<unknown> = Promise.resolve()
+let last = 0
+let queue: Promise<unknown> = Promise.resolve()
+
 export function musicBrainzTurn<T>(job: () => Promise<T>): Promise<T> {
   const turn = queue.then(async () => {
     const wait = last + pace.ms - Date.now()
@@ -93,14 +98,17 @@ export function musicBrainzTurn<T>(job: () => Promise<T>): Promise<T> {
   queue = turn.catch(() => {})
   return turn
 }
+
 function paced(site: Site) {
   return (url: string) => musicBrainzTurn(() => site.json(url))
 }
+
 type Ask = ReturnType<typeof paced>
 
 type Track = { title?: unknown; length?: unknown; number?: unknown }
 type Medium = { format?: unknown; position?: unknown; 'track-count'?: unknown; tracks?: Track[] }
 type Label = { label?: Named; 'catalog-number'?: unknown }
+
 const RELEASE_INC = 'artist-credits+recordings+labels+media+genres+tags+release-groups'
 const uuid = new RegExp('^' + UUID + '$', 'i')
 
@@ -138,8 +146,8 @@ function editionValues(site: Site, data: any, dateKey: 'RELEASE_DATE' | 'EDITION
     'TRACK_LIST',
     media.flatMap((medium, disc) =>
       (medium.tracks ?? []).map((track, index) => {
-        const length = lengthText(track.length),
-          number = typeof track.number === 'string' && track.number ? track.number : index + 1
+        const length = lengthText(track.length)
+        const number = typeof track.number === 'string' && track.number ? track.number : index + 1
         return `${disc + 1}-${number} ${clean(track.title)}${length ? ` (${length})` : ''}`
       })
     )
@@ -150,15 +158,15 @@ function editionValues(site: Site, data: any, dateKey: 'RELEASE_DATE' | 'EDITION
 // number, and whether it is an official release.
 function versionOf(raw: any): MetadataVersion | undefined {
   if (typeof raw?.id !== 'string' || !uuid.test(raw.id)) return undefined
-  const media: Medium[] = Array.isArray(raw.media) ? raw.media.slice(0, 50) : [],
-    labels: Label[] = Array.isArray(raw['label-info']) ? raw['label-info'] : [],
-    counts = new Map<string, number>()
+  const media: Medium[] = Array.isArray(raw.media) ? raw.media.slice(0, 50) : []
+  const labels: Label[] = Array.isArray(raw['label-info']) ? raw['label-info'] : []
+  const counts = new Map<string, number>()
   for (const medium of media) {
     const format = clean(medium?.format).slice(0, 40) || '?'
     counts.set(format, (counts.get(format) ?? 0) + 1)
   }
-  const tracks = media.reduce((sum, medium) => sum + (Number(medium?.['track-count']) || 0), 0),
-    text = (value: unknown, max = 100) => clean(value).slice(0, max) || undefined
+  const tracks = media.reduce((sum, medium) => sum + (Number(medium?.['track-count']) || 0), 0)
+  const text = (value: unknown, max = 100) => clean(value).slice(0, max) || undefined
   return {
     id: raw.id.toLowerCase(),
     date: text(raw.date, 10),
@@ -176,16 +184,16 @@ function versionOf(raw: any): MetadataVersion | undefined {
 // R-449: the version picked for the folder: one whose track count matches its music files first; among those (or
 // among all, when none matches) an official release, then the earliest, then a CD or digital one.
 export function pickVersion(list: MetadataVersion[], trackCount?: number) {
-  const matching = trackCount ? list.filter((version) => version.tracks === trackCount) : [],
-    pool = matching.length ? matching : list,
-    rank = (version: MetadataVersion) => [
-      version.official ? 0 : 1,
-      version.date || '9999',
-      /^(?:\d+×)?(?:CD|Digital Media)\b/.test(version.formats ?? '') ? 0 : 1,
-    ]
+  const matching = trackCount ? list.filter((version) => version.tracks === trackCount) : []
+  const pool = matching.length ? matching : list
+  const rank = (version: MetadataVersion) => [
+    version.official ? 0 : 1,
+    version.date || '9999',
+    /^(?:\d+×)?(?:CD|Digital Media)\b/.test(version.formats ?? '') ? 0 : 1,
+  ]
   const best = [...pool].sort((a, b) => {
-    const x = rank(a),
-      y = rank(b)
+    const x = rank(a)
+    const y = rank(b)
     for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] < y[i] ? -1 : 1
     return 0
   })[0]
@@ -195,6 +203,7 @@ export function pickVersion(list: MetadataVersion[], trackCount?: number) {
 // R-449: switching versions asks again for the same album; its data and version list are kept a short while so only
 // the new version is fetched.
 const albums = new Map<string, { group: any; list: MetadataVersion[]; expires: number }>()
+
 async function albumData(ask: Ask, id: string, reuse: boolean) {
   const kept = albums.get(id)
   if (reuse && kept && kept.expires > Date.now()) return kept
@@ -231,11 +240,13 @@ async function album(site: Site, ask: Ask, id: string, given?: any): Promise<Ret
     ...version,
     ...(site.trackCount ? { matches: version.tracks === site.trackCount } : {}),
   }))
-  let chosen: string | undefined, versionPick: 'match' | 'fallback' | 'chosen' | undefined
+  let chosen: string | undefined
+  let versionPick: 'match' | 'fallback' | 'chosen' | undefined
   if (typeof site.release === 'string') {
     chosen = site.release.toLowerCase()
-    if (!uuid.test(chosen) || (list.length && !list.some((version) => version.id === chosen)))
+    if (!uuid.test(chosen) || (list.length && !list.some((version) => version.id === chosen))) {
       throw new SourceError('notFound')
+    }
     versionPick = 'chosen'
   } else if (site.release === undefined) {
     const picked = given
@@ -254,16 +265,17 @@ async function album(site: Site, ask: Ask, id: string, given?: any): Promise<Ret
   )
   site.text('RELEASE_DATE', group['first-release-date'])
   genresAndTags(site, group)
-  const albumUrl = 'https://musicbrainz.org/release-group/' + id,
-    title = clean(nameIn(site, group.title, group.aliases)),
-    listed = { versions, version: chosen, versionPick }
-  if (!chosen)
+  const albumUrl = 'https://musicbrainz.org/release-group/' + id
+  const title = clean(nameIn(site, group.title, group.aliases))
+  const listed = { versions, version: chosen, versionPick }
+  if (!chosen) {
     return {
       title,
       canonical: albumUrl,
       image: cover('release-group', id),
       ...(versions.length ? listed : {}),
     }
+  }
   const data = given?.id === chosen ? given : await ask(mb('release/' + chosen, RELEASE_INC))
   // The version must belong to this album (also when the list could not be read).
   if (data.id !== chosen || data['release-group']?.id !== id) throw new SourceError('notFound')
@@ -291,8 +303,9 @@ export const musicbrainz: Adapter = async (site) => {
   if (data.id !== id) throw new SourceError('notFound')
   // R-449: a version of a known album is shown with the album's version menu, this version picked.
   const group = data['release-group']?.id
-  if (typeof group === 'string' && uuid.test(group))
+  if (typeof group === 'string' && uuid.test(group)) {
     return album(site, ask, group.toLowerCase(), data)
+  }
   site.list(
     'ARTISTS',
     data['artist-credit']?.map((artist: Credit) => artist?.name)

@@ -1,20 +1,22 @@
-import { useEffect, useState } from 'react'
 import { Alert, Checkbox, Group, Text, Tooltip } from '@mantine/core'
-import { t as tr } from '../i18n'
+import { useEffect, useState } from 'react'
+
+import { type LocaleId, localeIds, localeOptions } from '../../shared/locales'
+
 import { HelpTip } from '../common/HelpTip'
 import { Icon } from '../common/icons'
 import { useListDrag } from '../common/useListDrag'
+import { t as tr } from '../i18n'
 import { describeError } from '../notices/errors'
-import { localeIds, localeOptions, type LocaleId } from '../../shared/locales'
 
 // Application settings (R-381): the languages an external source's title and description are taken in, first
 // choice first. By default it is the interface language alone; the order is kept on this computer only.
 const nameOf = (id: LocaleId) => localeOptions.find((option) => option.value === id)?.label ?? id
 
 export function SourceLanguageSetting({ opened, locale }: { opened: boolean; locale: LocaleId }) {
-  const [saved, setSaved] = useState<LocaleId[]>([]),
-    [error, setError] = useState(''),
-    [pending, setPending] = useState(false)
+  const [saved, setSaved] = useState<LocaleId[]>([])
+  const [error, setError] = useState('')
+  const [pending, setPending] = useState(false)
   useEffect(() => {
     if (!opened) return
     void window.desktop
@@ -22,9 +24,9 @@ export function SourceLanguageSetting({ opened, locale }: { opened: boolean; loc
       .then((state) => setSaved(state.prefs.sourceLanguages ?? []))
       .catch(() => {})
   }, [opened])
-  const custom = saved.length > 0,
-    // A saved list that leaves some languages out still shows all five; the rest follow in the usual order.
-    order = [...saved, ...localeIds.filter((id) => !saved.includes(id))]
+  const custom = saved.length > 0
+  // A saved list that leaves some languages out still shows all five; the rest follow in the usual order.
+  const order = [...saved, ...localeIds.filter((id) => !saved.includes(id))]
   const save = async (value: LocaleId[]) => {
     setPending(true)
     setError('')

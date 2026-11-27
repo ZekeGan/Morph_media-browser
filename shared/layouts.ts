@@ -1,8 +1,9 @@
-import { fieldValue, type Attribute, type Cell, type FolderRow, type Project } from './model'
-import { settleCells } from './fieldGroups'
 import { cellLists } from './cellLists'
-import { chooseLayout, choosePanel, dropLayout } from './layoutRules'
+import { settleCells } from './fieldGroups'
 import type { FolderKind } from './kind'
+import { chooseLayout, choosePanel, dropLayout } from './layoutRules'
+import { type Attribute, type Cell, fieldValue, type FolderRow, type Project } from './model'
+
 // R-362: a book's cover is a component of its template (the folder's cover picture, else its first image), so it can
 // be moved, resized or left out like any other.
 export const bookCover = (grid: Cell['grid'] = { x: 0, y: 0, w: 4, h: 4 }): Cell => ({
@@ -12,6 +13,7 @@ export const bookCover = (grid: Cell['grid'] = { x: 0, y: 0, w: 4, h: 4 }): Cell
   grid,
   style: { textColor: '#e4e6e8', backgroundColor: 'transparent' },
 })
+
 // R-437: the folder cover as a component of a built-in right panel (the same rule as a card's: shared by every kind).
 export const panelCover = (cellId: string, grid: Cell['grid']): Cell => ({
   cellId,
@@ -20,6 +22,7 @@ export const panelCover = (cellId: string, grid: Cell['grid']): Cell => ({
   grid,
   style: { textColor: '#e4e6e8', backgroundColor: 'transparent' },
 })
+
 export function projectImageCells(project: Project): Cell[] {
   return [
     ...new Map(
@@ -33,6 +36,7 @@ export function projectImageCells(project: Project): Cell[] {
     ).values(),
   ]
 }
+
 export interface EditorField {
   attributeId: string
   key: string
@@ -42,6 +46,7 @@ export interface EditorField {
   conflict: boolean
   hasData: boolean
 }
+
 export function editorFields(rows: FolderRow[], projectId: string): EditorField[] {
   const fields = new Map<string, EditorField>()
   for (const row of rows.filter((r) => r.projectId === projectId)) {
@@ -54,8 +59,9 @@ export function editorFields(rows: FolderRow[], projectId: string): EditorField[
           !['string', 'tags', 'number', 'datetime', 'boolean', 'enum', 'url', 'date'].includes(
             attribute.type
           )
-        )
+        ) {
           continue
+        }
         const previous = fields.get(attribute.attributeId)
         const hasData =
           attribute.value != null &&
@@ -68,7 +74,7 @@ export function editorFields(rows: FolderRow[], projectId: string): EditorField[
           previous[scope] = true
           previous.conflict ||= previous.type !== attribute.type
           previous.hasData ||= hasData
-        } else
+        } else {
           fields.set(attribute.attributeId, {
             attributeId: attribute.attributeId,
             key: attribute.key,
@@ -78,11 +84,13 @@ export function editorFields(rows: FolderRow[], projectId: string): EditorField[
             conflict: false,
             hasData,
           })
+        }
       }
     }
   }
   return [...fields.values()]
 }
+
 export const legacyDefault = (cells: Cell[]) =>
   cells.length === 4 &&
   cells.every(
@@ -95,6 +103,7 @@ export const legacyDefault = (cells: Cell[]) =>
       c.style.textColor === '#243247' &&
       c.style.backgroundColor === '#ffffff'
   )
+
 export function visibleCells(project: Pick<Project, 'cells' | 'layoutPresets'>): Cell[] {
   return !project.layoutPresets && legacyDefault(project.cells)
     ? project.cells.map((c) => ({
@@ -103,26 +112,29 @@ export function visibleCells(project: Pick<Project, 'cells' | 'layoutPresets'>):
       }))
     : project.cells
 }
+
 export function cardPresets(project: Project) {
   return (
     project.layoutPresets ?? [{ id: 'default', name: '預設版面', cells: visibleCells(project) }]
   )
 }
+
 export function saveCardPreset(
   project: Project,
   options: { name: string; asNew: boolean },
   makeId: () => string,
   base: Project = project
 ): Project {
-  const presets = cardPresets(base),
-    name = options.name.trim(),
-    id = options.asNew ? makeId() : (project.activeLayoutId ?? presets[0].id)
+  const presets = cardPresets(base)
+  const name = options.name.trim()
+  const id = options.asNew ? makeId() : (project.activeLayoutId ?? presets[0].id)
   if (
     !name ||
     name.length > 100 ||
     presets.some((p) => p.id !== id && p.name.toLocaleLowerCase() === name.toLocaleLowerCase())
-  )
+  ) {
     throw new Error('外觀名稱需為 1～100 字，且不可重複')
+  }
   const preset = { id, name, cells: structuredClone(project.cells) }
   return {
     ...project,
@@ -137,19 +149,22 @@ export function saveCardPreset(
 // active layout. `work` says whether the folder counts as a work (where unknown, it is taken as one, which matches
 // the older rule that applied kind layouts to every folder).
 export const cardRule = (project: Project) => project.layoutRules?.card
+
 export function cardChoice(project: Project, row: FolderRow, work = true) {
   const presets = cardPresets(project)
   return chooseLayout(cardRule(project), row, work, project.activeLayoutId ?? presets[0].id, (id) =>
     presets.some((preset) => preset.id === id)
   )
 }
+
 export function rowCells(project: Project, row: FolderRow, work = true): Cell[] {
   const { id } = cardChoice(project, row, work)
   return cardPresets(project).find((preset) => preset.id === id)?.cells ?? visibleCells(project)
 }
+
 export function presetDraft(project: Project): Project {
-  const presets = structuredClone(cardPresets(project)),
-    active = project.activeLayoutId ?? presets[0].id
+  const presets = structuredClone(cardPresets(project))
+  const active = project.activeLayoutId ?? presets[0].id
   return {
     ...structuredClone(project),
     layoutPresets: presets,
@@ -157,6 +172,7 @@ export function presetDraft(project: Project): Project {
     cells: structuredClone(project.cells),
   }
 }
+
 export function syncPresetDraft(project: Project): Project {
   return {
     ...project,
@@ -167,26 +183,30 @@ export function syncPresetDraft(project: Project): Project {
     ),
   }
 }
+
 export function selectPreset(project: Project, id: string): Project {
-  const next = syncPresetDraft(project),
-    preset = next.layoutPresets?.find((item) => item.id === id)
+  const next = syncPresetDraft(project)
+  const preset = next.layoutPresets?.find((item) => item.id === id)
   if (!preset) throw new Error('卡片外觀不存在')
   return { ...next, activeLayoutId: id, cells: structuredClone(preset.cells) }
 }
+
 export function addPreset(project: Project, name: string, id: string, copy: boolean): Project {
-  const next = syncPresetDraft(project),
-    presets = next.layoutPresets ?? []
+  const next = syncPresetDraft(project)
+  const presets = next.layoutPresets ?? []
   name = name.trim()
   if (
     !name ||
     name.length > 100 ||
     presets.length >= 30 ||
     presets.some((preset) => preset.name.toLocaleLowerCase() === name.toLocaleLowerCase())
-  )
+  ) {
     throw new Error('外觀名稱需為 1～100 字，且不可重複')
+  }
   const cells = copy ? structuredClone(project.cells) : []
   return { ...next, layoutPresets: [...presets, { id, name, cells }], activeLayoutId: id, cells }
 }
+
 export function renamePreset(project: Project, name: string): Project {
   name = name.trim()
   if (
@@ -197,8 +217,9 @@ export function renamePreset(project: Project, name: string): Project {
         preset.id !== project.activeLayoutId &&
         preset.name.toLocaleLowerCase() === name.toLocaleLowerCase()
     )
-  )
+  ) {
     throw new Error('外觀名稱需為 1～100 字，且不可重複')
+  }
   return {
     ...project,
     layoutPresets: project.layoutPresets?.map((preset) =>
@@ -206,11 +227,13 @@ export function renamePreset(project: Project, name: string): Project {
     ),
   }
 }
+
 export function removePreset(project: Project): Project {
-  if (!project.layoutPresets || project.layoutPresets.length < 2)
+  if (!project.layoutPresets || project.layoutPresets.length < 2) {
     throw new Error('至少保留一個外觀')
-  const presets = project.layoutPresets.filter((preset) => preset.id !== project.activeLayoutId),
-    first = presets[0]
+  }
+  const presets = project.layoutPresets.filter((preset) => preset.id !== project.activeLayoutId)
+  const first = presets[0]
   return {
     ...project,
     layoutPresets: presets,
@@ -234,6 +257,7 @@ export interface CommonFieldNames {
   statuses: string[]
   note: string
 }
+
 // A starting set of fields (rating, tags, status, note) added to the project and placed under the card's existing
 // components, so a new project is usable without opening the layout editor. Fields whose name is already taken, and
 // components that no longer fit, are skipped.
@@ -244,8 +268,8 @@ export function addCommonFields(project: Project, names: CommonFieldNames): Proj
     { alias: names.status, type: 'enum', kind: 'field-enum', options: names.statuses },
     { alias: names.note, type: 'string', kind: 'field-text' },
   ] as const
-  const bindings = [...project.fieldBindings],
-    cells = [...project.cells]
+  const bindings = [...project.fieldBindings]
+  const cells = [...project.cells]
   let y = Math.max(0, ...cells.map((c) => c.grid.y + c.grid.h))
   for (const item of wanted) {
     const alias = item.alias.trim()
@@ -253,8 +277,9 @@ export function addCommonFields(project: Project, names: CommonFieldNames): Proj
       !alias ||
       bindings.some((f) => f.alias.toLowerCase() === alias.toLowerCase()) ||
       project.fieldGroups?.some((g) => g.name.trim().toLowerCase() === alias.toLowerCase())
-    )
+    ) {
       continue
+    }
     if (cells.length >= 50 || y + 1 > 100) break
     const attributeId = crypto.randomUUID()
     bindings.push({
@@ -284,6 +309,7 @@ const sizeOf = (value: unknown) =>
     : value == null || value === ''
       ? 0
       : String(value).length
+
 export function extremePreviewRow(
   rows: FolderRow[],
   fields: Project['fieldBindings'],
@@ -327,6 +353,7 @@ export function extremePreviewRow(
 // Editor preview for fields without data (R-230): every field takes a real value from any folder that has one, and a
 // sample of its type otherwise, so a new field shows how it will look before any folder holds a value. Never saved.
 export type PreviewSamples = Record<string, unknown>
+
 // A group shows its first member with a value, so within a group only the first member gets a sample, and none does
 // when any member has real data (a sample would hide it).
 export function samplePreviewRow(
@@ -386,13 +413,16 @@ export const panelKindNames: Record<FolderKind, string> = {
   video: '影片',
   general: '一般',
 }
+
 export const panelDefaultName = (kind: string) => kind + ' 預設'
+
 export function panelChoice(project: Project, row: FolderRow, kind: FolderKind) {
   const presets = project.panelPresets ?? []
   return choosePanel(project.layoutRules?.panel, row, kind, project.panelPresetId, (id) =>
     presets.some((preset) => preset.id === id)
   )
 }
+
 // The cells a folder's right panel shows: its chosen layout, else the built-in one of its kind.
 export function panelCells(
   project: Project,
@@ -406,6 +436,7 @@ export function panelCells(
     builtin(kind)
   )
 }
+
 // The layout the panel editor opens for a kind: the one asked for, the kind's layout, the panel default; without
 // any, a new "<kind> 預設" made from the built-in panel. In the editor the panel layouts stand where the card layouts
 // are, so its layout tools serve them.
@@ -420,8 +451,8 @@ export function panelEditorProject(
   const has = (id?: string) => !!id && presets.some((preset) => preset.id === id)
   let active = [start, project.layoutRules?.panel?.types?.[kind], project.panelPresetId].find(has)
   if (!active) {
-    const name = panelDefaultName(panelKindNames[kind]),
-      taken = new Set(presets.map((preset) => preset.name.toLocaleLowerCase()))
+    const name = panelDefaultName(panelKindNames[kind])
+    const taken = new Set(presets.map((preset) => preset.name.toLocaleLowerCase()))
     let unique = name
     for (let n = 2; taken.has(unique.toLocaleLowerCase()); n++) unique = name + ' (' + n + ')'
     active = has('panel-' + kind) ? makeId() : 'panel-' + kind
@@ -438,6 +469,7 @@ export function panelEditorProject(
     panelPresetId: undefined,
   }
 }
+
 // Back from the panel editor: the card layouts stay as they were. The layout chosen when saving becomes the kind's
 // layout, unless the editor was opened for one folder's layout (keepDefault). Rules pointing at a deleted layout drop it.
 export function fromPanelEditor(
@@ -446,12 +478,13 @@ export function fromPanelEditor(
   kind: FolderKind,
   keepDefault: boolean
 ): Project {
-  const synced = syncPresetDraft(edited),
-    presets = synced.layoutPresets!,
-    kept = new Set(presets.map((preset) => preset.id))
+  const synced = syncPresetDraft(edited)
+  const presets = synced.layoutPresets!
+  const kept = new Set(presets.map((preset) => preset.id))
   let panel = original.layoutRules?.panel
-  for (const preset of original.panelPresets ?? [])
+  for (const preset of original.panelPresets ?? []) {
     if (!kept.has(preset.id)) panel = dropLayout(panel, preset.id)
+  }
   if (!keepDefault) panel = { ...panel, types: { ...panel?.types, [kind]: synced.activeLayoutId! } }
   const rules = { ...original.layoutRules, panel }
   if (!Object.keys(panel ?? {}).length) delete rules.panel

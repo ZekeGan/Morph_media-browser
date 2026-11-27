@@ -1,36 +1,39 @@
-import { t as tr, useLocale } from '../i18n'
-import { Icon, type IconName } from '../common/icons'
-import { consume, focusNextFrame, useCapturedKeys, useWheel } from '../common/readerInput'
+import { ActionIcon, Button, FocusTrap, Group, Select, Slider, Tooltip } from '@mantine/core'
 import {
+  type ReactNode,
   useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { ActionIcon, Button, FocusTrap, Group, Select, Slider, Tooltip } from '@mantine/core'
+
 import type { MediaEntry, ReadingPrefs } from '../../shared/explorer'
 import {
   bookFinished,
-  isWidePage,
-  readingGroups,
-  readerArrowStep,
-  spreadGeometry,
   type ImageSize,
+  isWidePage,
+  readerArrowStep,
+  readingGroups,
+  spreadGeometry,
 } from '../../shared/reader'
+
+import { Icon, type IconName } from '../common/icons'
+import { consume, focusNextFrame, useCapturedKeys, useWheel } from '../common/readerInput'
+import { t as tr, useLocale } from '../i18n'
 import {
-  Webtoon,
-  WEBTOON_MAX,
-  WEBTOON_MIN,
   clampWidth,
   lastWebtoonWidth,
   looksLikeWebtoon,
   rememberWebtoonWidth,
+  Webtoon,
+  WEBTOON_MAX,
+  WEBTOON_MIN,
   type WebtoonHandle,
 } from './Webtoon'
+
 interface Frame {
   key: string
   token: number
@@ -41,9 +44,11 @@ interface Frame {
   // R-270: the side a page turn slides this frame in from; none for loads, mode changes and jumps from the queue.
   enter?: 'left' | 'right'
 }
+
 // R-378: whether a page turn slides or the new page just appears. A reading habit, so it is kept for this computer
 // and every book rather than in each book's record.
 const turnMotionKey = 'morph.readerTurnMotion'
+
 function lastTurnMotion() {
   try {
     return localStorage.getItem(turnMotionKey) !== 'off'
@@ -51,16 +56,19 @@ function lastTurnMotion() {
     return true
   }
 }
+
 function rememberTurnMotion(value: boolean) {
   try {
     localStorage.setItem(turnMotionKey, value ? 'on' : 'off')
   } catch {}
 }
+
 interface CachedImage {
   image: HTMLImageElement
   promise: Promise<ImageSize>
   animated: boolean
 }
+
 export function Reader({
   images,
   start,
@@ -127,20 +135,20 @@ export function Reader({
       ? prefs.page
       : undefined
   )
-  const [page, setPage] = useState(resumeAt ?? Math.max(0, Math.min(start, images.length - 1))),
-    [ending, setEnding] = useState(false),
-    [fit, setFit] = useState<'height' | 'width'>(
-      !manga && prefs?.fit === 'width' ? 'width' : 'height'
-    )
-  const [spread, setSpread] = useState(prefs?.spread ?? false),
-    // R-406: image mode always reads left to right and never uses the folder's manga direction.
-    [rtl, setRtl] = useState(manga && (prefs?.rtl ?? true)),
-    [first, setFirst] = useState(prefs?.firstSingle ?? false)
+  const [page, setPage] = useState(resumeAt ?? Math.max(0, Math.min(start, images.length - 1)))
+  const [ending, setEnding] = useState(false)
+  const [fit, setFit] = useState<'height' | 'width'>(
+    !manga && prefs?.fit === 'width' ? 'width' : 'height'
+  )
+  const [spread, setSpread] = useState(prefs?.spread ?? false)
+  // R-406: image mode always reads left to right and never uses the folder's manga direction.
+  const [rtl, setRtl] = useState(manga && (prefs?.rtl ?? true))
+  const [first, setFirst] = useState(prefs?.firstSingle ?? false)
   // R-256: webtoon mode and its column width (this book's, else the last one used on this computer).
-  const [webtoon, setWebtoon] = useState(manga && !!prefs?.webtoon),
-    [webtoonWidth, setWidthState] = useState(() => prefs?.webtoonWidth ?? lastWebtoonWidth()),
-    [asked, setAsked] = useState(!!prefs?.webtoonAsked),
-    [suggest, setSuggest] = useState(false)
+  const [webtoon, setWebtoon] = useState(manga && !!prefs?.webtoon)
+  const [webtoonWidth, setWidthState] = useState(() => prefs?.webtoonWidth ?? lastWebtoonWidth())
+  const [asked, setAsked] = useState(!!prefs?.webtoonAsked)
+  const [suggest, setSuggest] = useState(false)
   const strip = useRef<WebtoonHandle>(null)
   const [storedTurnMotion, setTurnMotionState] = useState(lastTurnMotion)
   // R-406: image mode never slides; the stored setting is left alone.
@@ -154,16 +162,16 @@ export function Reader({
     setWidthState(next)
     rememberWebtoonWidth(next)
   }, [])
-  const [toolbar, setToolbar] = useState(true),
-    [pageDropdown, setPageDropdown] = useState(false),
-    [immersive, setImmersive] = useState(false),
-    [zoom, setZoom] = useState(1),
-    [box, setBox] = useState<ImageSize>({ width: 1, height: 1 })
-  const [frames, setFrames] = useState<Frame[]>([]),
-    [activeKey, setActiveKey] = useState(''),
-    [loading, setLoading] = useState(true),
-    [error, setError] = useState(''),
-    [retry, setRetry] = useState(0)
+  const [toolbar, setToolbar] = useState(true)
+  const [pageDropdown, setPageDropdown] = useState(false)
+  const [immersive, setImmersive] = useState(false)
+  const [zoom, setZoom] = useState(1)
+  const [box, setBox] = useState<ImageSize>({ width: 1, height: 1 })
+  const [frames, setFrames] = useState<Frame[]>([])
+  const [activeKey, setActiveKey] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [retry, setRetry] = useState(0)
   useEffect(() => {
     if (error) setToolbar(true)
   }, [error])
@@ -187,22 +195,22 @@ export function Reader({
   }, [pageDropdown])
   const toggleChrome = () =>
     immersive ? setBars((value) => !value) : setToolbar((value) => !value)
-  const select = useRef<HTMLInputElement>(null),
-    viewport = useRef<HTMLDivElement>(null),
-    drag = useRef<
-      | {
-          x: number
-          y: number
-          left: number
-          top: number
-          pan: boolean
-          moved: boolean
-          time: number
-          // Started within the edge panels' strips: no page drag (R-264).
-          edge: boolean
-        }
-      | undefined
-    >(undefined)
+  const select = useRef<HTMLInputElement>(null)
+  const viewport = useRef<HTMLDivElement>(null)
+  const drag = useRef<
+    | {
+        x: number
+        y: number
+        left: number
+        top: number
+        pan: boolean
+        moved: boolean
+        time: number
+        // Started within the edge panels' strips: no page drag (R-264).
+        edge: boolean
+      }
+    | undefined
+  >(undefined)
   const heading = useRef<'left' | 'right' | undefined>(undefined)
   // R-392: the page being looked at moves with the pointer (a transform on its frame layer, no re-render). On release
   // a turn continues the slide from where the page was left (--drag-x), anything shorter eases back.
@@ -252,17 +260,18 @@ export function Reader({
       const node = peek(side)
       if (node) node.style.visibility = animate ? 'visible' : ''
     }
-    if (animate)
+    if (animate) {
       window.setTimeout(() => {
         for (const side of ['left', 'right'] as const) {
           const node = peek(side)
           if (node) node.style.visibility = ''
         }
       }, 180)
+    }
   }
   useLayoutEffect(() => {
-    const dx = pendingDrag.current,
-      surface = viewport.current?.querySelector<HTMLElement>('.reader-surface')
+    const dx = pendingDrag.current
+    const surface = viewport.current?.querySelector<HTMLElement>('.reader-surface')
     if (dx === undefined || !surface) return
     pendingDrag.current = undefined
     for (const node of surface.querySelectorAll<HTMLElement>('.reader-frame-layer, .reader-peek')) {
@@ -276,14 +285,14 @@ export function Reader({
   }, [activeKey])
   // The size of every picture loaded so far, by address (R-392 places the pages beside with it).
   const sizes = useRef(new Map<string, ImageSize>())
-  const cache = useRef(new Map<string, CachedImage>()),
-    sequence = useRef(0),
-    activeRef = useRef(''),
-    protectedUrls = useRef(new Set<string>()),
-    returnFocus = useRef(document.activeElement as HTMLElement)
-  const ownsFullscreen = useRef(false),
-    handover = useRef(false),
-    mounted = useRef(false)
+  const cache = useRef(new Map<string, CachedImage>())
+  const sequence = useRef(0)
+  const activeRef = useRef('')
+  const protectedUrls = useRef(new Set<string>())
+  const returnFocus = useRef(document.activeElement as HTMLElement)
+  const ownsFullscreen = useRef(false)
+  const handover = useRef(false)
+  const mounted = useRef(false)
   useEffect(() => {
     mounted.current = true
     const changed = () => {
@@ -299,12 +308,13 @@ export function Reader({
       document.removeEventListener('fullscreenchange', changed)
       // Leave fullscreen only once the reader is really gone: React's development mode unmounts and remounts every
       // component once, and a reader that just took fullscreen over from the previous book must keep it (R-275).
-      if (ownsFullscreen.current && !handover.current)
+      if (ownsFullscreen.current && !handover.current) {
         setTimeout(() => {
           if (mounted.current || !document.fullscreenElement) return
           ownsFullscreen.current = false
           void document.exitFullscreen().catch(() => {})
         }, 0)
+      }
     }
   }, [])
   useEffect(() => {
@@ -368,19 +378,19 @@ export function Reader({
     [images, manga, spread, first, webtoon, wide]
   )
   const groupIndex = Math.max(
-      0,
-      groups.findIndex((group) => group.includes(page))
-    ),
-    group = groups[groupIndex] ?? []
-  const active = frames.find((frame) => frame.key === activeKey),
-    geometry = spreadGeometry(active?.sizes ?? [], fit, box, zoom)
+    0,
+    groups.findIndex((group) => group.includes(page))
+  )
+  const group = groups[groupIndex] ?? []
+  const active = frames.find((frame) => frame.key === activeKey)
+  const geometry = spreadGeometry(active?.sizes ?? [], fit, box, zoom)
   // R-392: the groups beside the one on screen (not the one being turned to), drawn at their own size right next to
   // it while a page is dragged. A group whose picture sizes are not known yet sits a whole window away.
   const peeks = (['left', 'right'] as const).flatMap((side) => {
     if (!manga || webtoon || !active) return []
-    const shownAt = groups.findIndex((item) => item.includes(active.indices[0])),
-      forward = (side === 'right') !== rtl,
-      indices = shownAt < 0 ? undefined : groups[shownAt + (forward ? 1 : -1)]
+    const shownAt = groups.findIndex((item) => item.includes(active.indices[0]))
+    const forward = (side === 'right') !== rtl
+    const indices = shownAt < 0 ? undefined : groups[shownAt + (forward ? 1 : -1)]
     if (!indices) return []
     const known = indices.map((index) => sizes.current.get(images[index]?.url))
     const size = known.every(Boolean)
@@ -450,8 +460,9 @@ export function Reader({
     void promise
       .then((size) => {
         sizes.current.set(entry.url, size)
-        if (mounted.current && isWidePage(size))
+        if (mounted.current && isWidePage(size)) {
           setWide((known) => (known.has(entry.url) ? known : new Set(known).add(entry.url)))
+        }
       })
       .catch(() => {})
     cache.current.set(entry.url, { image, promise, animated: entry.mime === 'image/gif' })
@@ -461,8 +472,8 @@ export function Reader({
   }
   const groupKey = group.map((index) => images[index]?.url).join('|')
   useEffect(() => {
-    const token = ++sequence.current,
-      enter = heading.current
+    const token = ++sequence.current
+    const enter = heading.current
     heading.current = undefined
     let cancelled = false
     setLoading(true)
@@ -501,14 +512,17 @@ export function Reader({
   useEffect(() => {
     if (!active) return
     const index = groups.findIndex((group) => group.includes(active.indices[0]))
-    for (const next of [groups[index + 1], groups[index + 2], groups[index - 1]])
-      for (const i of next ?? [])
+    for (const next of [groups[index + 1], groups[index + 2], groups[index - 1]]) {
+      for (const i of next ?? []) {
         if (images[i]?.mime !== 'image/gif') void load(images[i]).catch(() => {})
-    for (const [url, item] of cache.current)
+      }
+    }
+    for (const [url, item] of cache.current) {
       if (item.animated && !protectedUrls.current.has(url)) {
         cache.current.delete(url)
         item.image.src = ''
       }
+    }
     trim()
   }, [activeKey, groups, images])
   useLayoutEffect(() => {
@@ -516,9 +530,9 @@ export function Reader({
     if (!element) return
     // Measure a stable viewport: panning uses scroll offsets without layout scrollbars.
     const measure = () => {
-      const bounds = element.getBoundingClientRect(),
-        width = Math.max(1, bounds.width),
-        height = Math.max(1, bounds.height)
+      const bounds = element.getBoundingClientRect()
+      const width = Math.max(1, bounds.width)
+      const height = Math.max(1, bounds.height)
       setBox((previous) =>
         previous.width === width && previous.height === height ? previous : { width, height }
       )
@@ -547,13 +561,13 @@ export function Reader({
     []
   )
   const changeZoom = (value: number, x?: number, y?: number) => {
-    const element = viewport.current,
-      state = latest.current
+    const element = viewport.current
+    const state = latest.current
     if (!element || !state.active) return
     const next = Math.min(10, Math.max(manga ? 1 : 0.1, value))
     if (next === state.zoom) return
-    const pointX = x ?? element.clientWidth / 2,
-      pointY = y ?? element.clientHeight / 2
+    const pointX = x ?? element.clientWidth / 2
+    const pointY = y ?? element.clientHeight / 2
     // Several wheel events can be batched before React commits the next geometry.
     // Keep the first anchor in that batch rather than mixing old sizes with new zoom.
     anchor.current ??= {
@@ -590,22 +604,29 @@ export function Reader({
   // Leaving a manga any other way than exit (closing the viewer, another folder) keeps the reading place, but only
   // when it moved since opening: just looking, or a book still loading that could not resume, writes nothing.
   // R-517: a book left with its last page on screen is recorded as read to the end, even when opened right there.
-  const savedOnExit = useRef(false),
-    opened = useRef<ReadingPrefs | undefined>(undefined),
-    leaving = useRef({ readingNow, save, manga, last: images.length - 1, savedPage: prefs?.page })
+  const savedOnExit = useRef(false)
+  const opened = useRef<ReadingPrefs | undefined>(undefined)
+  const leaving = useRef({
+    readingNow,
+    save,
+    manga,
+    last: images.length - 1,
+    savedPage: prefs?.page,
+  })
   opened.current ??= readingNow()
   leaving.current = { readingNow, save, manga, last: images.length - 1, savedPage: prefs?.page }
   useEffect(
     () => () => {
       if (savedOnExit.current || !leaving.current.manga) return
-      const { readingNow, save, last, savedPage } = leaving.current,
-        now = readingNow(),
-        start = opened.current
+      const { readingNow, save, last, savedPage } = leaving.current
+      const now = readingNow()
+      const start = opened.current
       if (
         (Object.keys(now) as (keyof ReadingPrefs)[]).some((key) => now[key] !== start?.[key]) ||
         (last > 0 && now.page === last && savedPage !== last)
-      )
+      ) {
         save(now)
+      }
     },
     []
   )
@@ -655,8 +676,8 @@ export function Reader({
   const readOn = (direction: 1 | -1) => {
     const element = viewport.current
     if (element) {
-      const max = element.scrollHeight - element.clientHeight,
-        at = element.scrollTop
+      const max = element.scrollHeight - element.clientHeight
+      const at = element.scrollTop
       if (direction > 0 ? at < max - 1 : at > 1) {
         element.scrollTop = at + direction * element.clientHeight * 0.9
         return
@@ -671,9 +692,9 @@ export function Reader({
   useWheel(viewport, (event, element) => {
     if (!latest.current.active) return
     event.preventDefault()
-    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? element.clientHeight : 1,
-      dx = event.deltaX * unit,
-      dy = event.deltaY * unit
+    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? element.clientHeight : 1
+    const dx = event.deltaX * unit
+    const dy = event.deltaY * unit
     if (event.ctrlKey) {
       const bounds = element.getBoundingClientRect()
       changeZoom(
@@ -683,10 +704,10 @@ export function Reader({
       )
       return
     }
-    const left = element.scrollLeft,
-      top = element.scrollTop,
-      now = performance.now(),
-      state = wheeled.current
+    const left = element.scrollLeft
+    const top = element.scrollTop
+    const now = performance.now()
+    const state = wheeled.current
     element.scrollLeft = left + dx
     element.scrollTop = top + dy
     if (element.scrollLeft !== left || element.scrollTop !== top) {
@@ -829,9 +850,9 @@ export function Reader({
           previous.filter((item) => item.key === frame.key || item.token > frame.token)
         )
       // R-330: only a page turn keeps the old page under the new one; a jump (the queue, a load) drops it at once.
-      if (!frame.enter || window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+      if (!frame.enter || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         requestAnimationFrame(settle)
-      else setTimeout(settle, 220)
+      } else setTimeout(settle, 220)
     })
   }
   const openedWith = useRef(selectedId)
@@ -896,6 +917,7 @@ export function Reader({
       </ActionIcon>
     </Tooltip>
   )
+
   // One list of tools for the top toolbar and the immersive left rail (R-263): icons only, name and shortcut in the
   // tooltip, the mode in use marked as pressed.
   type ReaderTool = {
@@ -906,6 +928,7 @@ export function Reader({
     disabled?: boolean
     pressed?: boolean
   }
+
   const modeTools: ReaderTool[] = manga
     ? [
         {
@@ -979,31 +1002,31 @@ export function Reader({
         },
       ]
   const zoomOut: ReaderTool = {
-      label: tr('縮小'),
-      key: '−',
-      icon: 'minus',
-      action: () => changeZoom(zoom / 1.25),
-      disabled: zoom <= (manga ? 1 : 0.1),
-    },
-    zoomIn: ReaderTool = {
-      label: tr('放大'),
-      key: '+',
-      icon: 'plus',
-      action: () => changeZoom(zoom * 1.25),
-      disabled: zoom >= 10,
-    },
-    zoomReset: ReaderTool = {
-      label: tr('重設縮放'),
-      key: 'R',
-      icon: 'refresh',
-      action: () => setFitMode(fit),
-    },
-    immersiveTool: ReaderTool = {
-      label: immersive ? tr('退出沉浸閱讀') : tr('沉浸閱讀'),
-      key: 'F11 / T',
-      icon: immersive ? 'focus-exit' : 'focus',
-      action: () => void toggleImmersive(),
-    }
+    label: tr('縮小'),
+    key: '−',
+    icon: 'minus',
+    action: () => changeZoom(zoom / 1.25),
+    disabled: zoom <= (manga ? 1 : 0.1),
+  }
+  const zoomIn: ReaderTool = {
+    label: tr('放大'),
+    key: '+',
+    icon: 'plus',
+    action: () => changeZoom(zoom * 1.25),
+    disabled: zoom >= 10,
+  }
+  const zoomReset: ReaderTool = {
+    label: tr('重設縮放'),
+    key: 'R',
+    icon: 'refresh',
+    action: () => setFitMode(fit),
+  }
+  const immersiveTool: ReaderTool = {
+    label: immersive ? tr('退出沉浸閱讀') : tr('沉浸閱讀'),
+    key: 'F11 / T',
+    icon: immersive ? 'focus-exit' : 'focus',
+    action: () => void toggleImmersive(),
+  }
   const toolButton = (tool: ReaderTool, position?: 'right') => (
     <Tooltip
       key={tool.icon}
@@ -1026,17 +1049,18 @@ export function Reader({
   )
   // Immersive edges (R-262, R-254): the bottom bar scrubs through pages and previews the page under the pointer.
   const track = useRef<HTMLDivElement>(null)
-  const [scrub, setScrub] = useState<number>(),
-    [hovered, setHovered] = useState<number>()
+  const [scrub, setScrub] = useState<number>()
+  const [hovered, setHovered] = useState<number>()
   // R-414: the bar follows the reading direction; a webtoon always reads downward, whatever the page setting says.
   const barRtl = rtl && !webtoon
-  const last = Math.max(1, groups.length - 1),
-    place = (index: number) => {
-      const ratio = index / last
-      return (barRtl ? 1 - ratio : ratio) * (track.current?.clientWidth ?? 0)
-    },
-    previewIndex = scrub ?? hovered,
-    previewEntry = previewIndex === undefined ? undefined : images[groups[previewIndex]?.[0] ?? -1]
+  const last = Math.max(1, groups.length - 1)
+  const place = (index: number) => {
+    const ratio = index / last
+    return (barRtl ? 1 - ratio : ratio) * (track.current?.clientWidth ?? 0)
+  }
+  const previewIndex = scrub ?? hovered
+  const previewEntry =
+    previewIndex === undefined ? undefined : images[groups[previewIndex]?.[0] ?? -1]
   const edges = immersive && (
     <>
       <div className="reader-edge reader-edge-left" aria-hidden="true" />
@@ -1061,8 +1085,8 @@ export function Reader({
           ref={track}
           className="reader-progress-track"
           onMouseMove={(event) => {
-            const bounds = event.currentTarget.getBoundingClientRect(),
-              ratio = Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width))
+            const bounds = event.currentTarget.getBoundingClientRect()
+            const ratio = Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width))
             setHovered(Math.round((barRtl ? 1 - ratio : ratio) * last))
           }}
           onMouseLeave={() => setHovered(undefined)}
@@ -1107,8 +1131,8 @@ export function Reader({
   )
   // R-269: in immersive reading the pointer hides after two seconds at rest, except over the tool rail or progress
   // bar; any movement brings it back.
-  const [idle, setIdle] = useState(false),
-    idleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const [idle, setIdle] = useState(false)
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const rest = () => {
     clearTimeout(idleTimer.current)
     idleTimer.current = setTimeout(() => setIdle(true), 2000)
@@ -1263,9 +1287,9 @@ export function Reader({
             tabIndex={0}
             onPointerDown={(event) => {
               if (event.button !== 0) return
-              const element = event.currentTarget,
-                bounds = element.getBoundingClientRect(),
-                pan = geometry.width > box.width || geometry.height > box.height
+              const element = event.currentTarget
+              const bounds = element.getBoundingClientRect()
+              const pan = geometry.width > box.width || geometry.height > box.height
               if (pan) event.preventDefault()
               drag.current = {
                 x: event.clientX,
@@ -1285,8 +1309,9 @@ export function Reader({
             onPointerMove={(event) => {
               const start = drag.current
               if (!start) return
-              if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 5)
+              if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 5) {
                 start.moved = true
+              }
               if (start.pan && start.moved) {
                 event.currentTarget.scrollLeft = start.left - (event.clientX - start.x)
                 event.currentTarget.scrollTop = start.top - (event.clientY - start.y)
@@ -1301,12 +1326,13 @@ export function Reader({
                 !start.edge &&
                 turnMotion &&
                 !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-              )
+              ) {
                 followDrag(
                   Math.abs(event.clientX - start.x) > Math.abs(event.clientY - start.y)
                     ? event.clientX - start.x
                     : 0
                 )
+              }
             }}
             onPointerUp={(event) => {
               const start = drag.current
@@ -1314,10 +1340,10 @@ export function Reader({
               // R-264: a sideways drag on a page that fits turns it, like a swipe. Short drags stay clicks, a zoomed
               // page keeps panning, and drags starting at the left, right or bottom edge belong to the edge panels.
               if (manga && start && !start.pan && start.moved) {
-                const bounds = event.currentTarget.getBoundingClientRect(),
-                  dx = event.clientX - start.x,
-                  dy = event.clientY - start.y,
-                  fast = Math.abs(dx) > 40 && performance.now() - start.time < 250
+                const bounds = event.currentTarget.getBoundingClientRect()
+                const dx = event.clientX - start.x
+                const dy = event.clientY - start.y
+                const fast = Math.abs(dx) > 40 && performance.now() - start.time < 250
                 if (
                   !start.edge &&
                   Math.abs(dx) > Math.abs(dy) &&
@@ -1335,8 +1361,8 @@ export function Reader({
                 !start.moved &&
                 Math.hypot(event.clientX - start.x, event.clientY - start.y) <= 5
               ) {
-                const bounds = event.currentTarget.getBoundingClientRect(),
-                  third = (event.clientX - bounds.left) / bounds.width
+                const bounds = event.currentTarget.getBoundingClientRect()
+                const third = (event.clientX - bounds.left) / bounds.width
                 if (third >= 1 / 3 && third <= 2 / 3) toggleChrome()
                 else step(readerArrowStep(third < 0.5 ? 'ArrowLeft' : 'ArrowRight', rtl))
               }
@@ -1359,9 +1385,9 @@ export function Reader({
               }
             >
               {frames.map((frame) => {
-                const size = spreadGeometry(frame.sizes, fit, box, zoom),
-                  isActive = frame.key === activeKey,
-                  isPrevious = !!active && frame.token < active.token
+                const size = spreadGeometry(frame.sizes, fit, box, zoom)
+                const isActive = frame.key === activeKey
+                const isPrevious = !!active && frame.token < active.token
                 return (
                   <div
                     key={frame.key}
@@ -1390,8 +1416,9 @@ export function Reader({
                         <img
                           key={images[index].id}
                           ref={(image) => {
-                            if (image?.complete && image.naturalWidth)
+                            if (image?.complete && image.naturalWidth) {
                               void frameReady(image, frame, index)
+                            }
                           }}
                           src={images[index].url}
                           alt={images[index].name}

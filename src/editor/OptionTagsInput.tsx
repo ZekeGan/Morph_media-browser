@@ -1,5 +1,5 @@
-import { useState } from 'react'
 import { TagsInput, type TagsInputProps } from '@mantine/core'
+import { useState } from 'react'
 
 const separators = /[,，]/
 
@@ -18,9 +18,11 @@ export function OptionTagsInput(props: TagsInputProps) {
           setSearch(text)
           return
         }
-        const parts = text.split(separators),
-          rest = parts.pop() ?? '',
-          added = parts.map((part) => part.trim()).filter((part) => part && !value.includes(part))
+        const parts = text.split(separators)
+        const rest = parts.pop() ?? ''
+        const added = parts
+          .map((part) => part.trim())
+          .filter((part) => part && !value.includes(part))
         if (added.length) props.onChange?.([...value, ...new Set(added)])
         setSearch(rest)
       }}

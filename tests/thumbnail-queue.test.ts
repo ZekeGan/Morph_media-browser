@@ -1,10 +1,11 @@
-import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { queueThumbnail, thumbnail, THUMBNAIL_WORKERS } from '../electron/explorer-stream'
+import test from 'node:test'
+
 import type { Explorer } from '../electron/explorer'
+import { queueThumbnail, thumbnail, THUMBNAIL_WORKERS } from '../electron/explorer-stream'
 
 // R-441: thumbnails are made a few at a time (never more than THUMBNAIL_WORKERS), the newest request first, and a
 // request the window gave up on is skipped without decoding anything.
@@ -13,8 +14,8 @@ const jpeg = Buffer.from([255, 216, 1, 2, 3, 255, 217])
 test('thumbnails are made a few at a time, newest first, skipping cancelled ones', async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'thumb-queue-'))
   t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }))
-  let active = 0,
-    most = 0
+  let active = 0
+  let most = 0
   const started: string[] = []
   const ex = {
     root,
@@ -80,8 +81,8 @@ test('a burst is made in order with small files first, the newest burst first', 
       },
       size
     )
-  const big = 5 * 1024 * 1024,
-    small = 200 * 1024
+  const big = 5 * 1024 * 1024
+  const small = 200 * 1024
   // Three rounds of work: the second burst arrives while the second round runs.
   const count = THUMBNAIL_WORKERS * 3
   const first = Array.from({ length: count }, (_, i) =>

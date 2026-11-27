@@ -1,4 +1,5 @@
 import sharp from 'sharp'
+
 import { THUMB_EDGE } from './media-files'
 
 // R-518: picture thumbnails were decoded in the app window, where four at once shared one process with the
@@ -29,6 +30,7 @@ export const SHARP_TYPES = new Set([
   'image/webp',
   'image/avif',
 ])
+
 // The format read from the file's own header, whatever its name says (AVIF is reported as heif). Anything else,
 // SVG included, is refused before decoding.
 const FORMATS = new Set(['jpeg', 'png', 'gif', 'webp', 'heif'])

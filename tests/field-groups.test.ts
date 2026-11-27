@@ -1,9 +1,10 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { validateProject, type Cell, type FolderRow, type Project } from '../shared/model'
+import { test } from 'node:test'
+
 import { cellField, groupValue } from '../shared/cells'
 import {
   addToGroup,
+  bindCellToGroup,
   createGroup,
   dissolveGroup,
   freeGroupName,
@@ -13,10 +14,11 @@ import {
   renameGroup,
   reorderGroup,
   setGroupSource,
-  bindCellToGroup,
 } from '../shared/fieldGroups'
-import { withoutField } from '../electron/maintenance'
+import { type Cell, type FolderRow, type Project, validateProject } from '../shared/model'
 import { upgradeStored } from '../shared/upgrade'
+
+import { withoutField } from '../electron/maintenance'
 import { modelProject } from './support/model-fixtures'
 
 const style = { textColor: '#ffffff', backgroundColor: 'transparent' }

@@ -1,12 +1,14 @@
-import { useState } from 'react'
 import { ActionIcon, Button, Group, Select, Stack, Text, Tooltip } from '@mantine/core'
+import { useState } from 'react'
+
+import { cellField, groupOf, isFilled } from '../../shared/cells'
+import { cellType } from '../../shared/explorer'
+import { groupType } from '../../shared/fieldGroups'
+import { compatibleFieldTypes } from '../../shared/fields'
+import type { Attribute, Cell, FolderRow, Project } from '../../shared/model'
+
 import { Icon } from '../common/icons'
 import { t as tr } from '../i18n'
-import { cellField, groupOf, isFilled } from '../../shared/cells'
-import type { Attribute, Cell, FolderRow, Project } from '../../shared/model'
-import { cellType } from '../../shared/explorer'
-import { compatibleFieldTypes } from '../../shared/fields'
-import { groupType } from '../../shared/fieldGroups'
 import { fieldSource, fieldSourceGroups } from './fieldSources'
 import { importedFieldLabels } from './importedFieldLabels'
 
@@ -39,41 +41,42 @@ export function DisplaySource({
   setRenaming: (value: { id: string; name: string }) => void
 }) {
   const [picking, setPicking] = useState(false)
-  const display = cellType(cell.kind),
-    group = groupOf(draft, cell.groupId),
-    candidates = [...draft.fieldBindings, ...sources.map((f) => ({ ...f, alias: f.key }))].filter(
-      (f) => compatibleFieldTypes(display, f.type)
-    ),
-    groups = (draft.fieldGroups ?? []).filter((g) =>
-      compatibleFieldTypes(display, groupType(draft, g))
-    ),
-    name = (id: string) => candidates.find((f) => f.attributeId === id)?.alias ?? id,
-    origin = (id: string) => fieldSource(id, attributes),
-    shown = cellField(cell, preview, draft),
-    chain = cell.fallbackIds?.length ? [cell.attributeId!, ...cell.fallbackIds] : undefined,
-    // Imported fields keep upper-case keys (TITLE_ORIGINAL_2); people read the plain name and the site instead.
-    labels = importedFieldLabels(),
-    friendly = (id: string) => {
-      const key = attributes.find((a) => a.attributeId === id)?.key,
-        plain = (key && labels[key]) || name(id),
-        site = origin(id)
-      return site === tr('自建') ? plain : `${plain} · ${site}`
-    },
-    members = group?.memberIds ?? chain ?? [],
-    // What the component shows now, and where that is in the order (R-229): one short line, no folder name.
-    nowText = !preview
-      ? group
-        ? tr('{0} 個欄位，依序取第一個有值的', members.length)
-        : tr('備用來源（舊版）：{0} 個欄位', members.length)
-      : isFilled(shown.value) && shown.attributeId
-        ? tr(
-            '目前：{0}（第 {1} 個）',
-            friendly(shown.attributeId),
-            members.indexOf(shown.attributeId) + 1
-          )
-        : tr('目前：都沒有值'),
-    nowTitle = members.map((id, i) => `${i + 1}. ${friendly(id)}（${name(id)}）`).join('\n'),
-    current = group ? GROUP + group.groupId : (cell.attributeId ?? null)
+  const display = cellType(cell.kind)
+  const group = groupOf(draft, cell.groupId)
+  const candidates = [
+    ...draft.fieldBindings,
+    ...sources.map((f) => ({ ...f, alias: f.key })),
+  ].filter((f) => compatibleFieldTypes(display, f.type))
+  const groups = (draft.fieldGroups ?? []).filter((g) =>
+    compatibleFieldTypes(display, groupType(draft, g))
+  )
+  const name = (id: string) => candidates.find((f) => f.attributeId === id)?.alias ?? id
+  const origin = (id: string) => fieldSource(id, attributes)
+  const shown = cellField(cell, preview, draft)
+  const chain = cell.fallbackIds?.length ? [cell.attributeId!, ...cell.fallbackIds] : undefined
+  // Imported fields keep upper-case keys (TITLE_ORIGINAL_2); people read the plain name and the site instead.
+  const labels = importedFieldLabels()
+  const friendly = (id: string) => {
+    const key = attributes.find((a) => a.attributeId === id)?.key
+    const plain = (key && labels[key]) || name(id)
+    const site = origin(id)
+    return site === tr('自建') ? plain : `${plain} · ${site}`
+  }
+  const members = group?.memberIds ?? chain ?? []
+  // What the component shows now, and where that is in the order (R-229): one short line, no folder name.
+  const nowText = !preview
+    ? group
+      ? tr('{0} 個欄位，依序取第一個有值的', members.length)
+      : tr('備用來源（舊版）：{0} 個欄位', members.length)
+    : isFilled(shown.value) && shown.attributeId
+      ? tr(
+          '目前：{0}（第 {1} 個）',
+          friendly(shown.attributeId),
+          members.indexOf(shown.attributeId) + 1
+        )
+      : tr('目前：都沒有值')
+  const nowTitle = members.map((id, i) => `${i + 1}. ${friendly(id)}（${name(id)}）`).join('\n')
+  const current = group ? GROUP + group.groupId : (cell.attributeId ?? null)
   const choose = (value: string | null) => {
     setPicking(false)
     if (!value || value === current) return

@@ -1,4 +1,3 @@
-import type { Dispatch, SetStateAction } from 'react'
 import {
   Accordion,
   Alert,
@@ -12,6 +11,8 @@ import {
   Switch,
   Text,
 } from '@mantine/core'
+import type { Dispatch, SetStateAction } from 'react'
+
 import {
   defaultSubtitle,
   type EmbeddedSubtitleInfo,
@@ -19,6 +20,7 @@ import {
   type MediaEntry,
   type SubtitlePrefs,
 } from '../../shared/explorer'
+
 import { t as tr, useLocale } from '../i18n'
 import { embeddedLabel } from './embeddedLabel'
 

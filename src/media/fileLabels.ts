@@ -1,4 +1,5 @@
 import type { MediaEntry } from '../../shared/explorer'
+
 import { t as tr } from '../i18n'
 
 // A file's kind in words, with its extension ("Image · PNG"), and its size for people (shared by the file list and
@@ -18,6 +19,7 @@ export const friendlyType = (entry: Pick<MediaEntry, 'name' | 'kind'>) => {
   }[entry.kind]
   return extension && entry.kind !== 'pdf' ? label + ' · ' + extension : label
 }
+
 export const fileSize = (bytes: number) =>
   bytes >= 1024 * 1024
     ? (bytes / 1024 / 1024).toFixed(1) + ' MB'

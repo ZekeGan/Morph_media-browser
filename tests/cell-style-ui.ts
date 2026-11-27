@@ -1,17 +1,19 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
-import { ensureFolder, folderFile, readFolder } from '../electron/files'
+
 import type { Cell } from '../shared/model'
-import { closeApp, launchApp, removeTestRoot, reportFailure, openLayoutEditor } from './support/app'
+
+import { ensureFolder, folderFile, readFolder } from '../electron/files'
+import { Library } from '../electron/library'
+import { closeApp, launchApp, openLayoutEditor, removeTestRoot, reportFailure } from './support/app'
 
 // Text, box and tag/choice colour styles show on cards and can be set in the editor's Style section.
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'cell-style-ui-')),
-  media = path.join(root, 'Library'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'cell-style-ui-'))
+const media = path.join(root, 'Library')
+const local = path.join(root, 'local')
 await fs.mkdir(path.join(media, 'Item'), { recursive: true })
 const lib = new Library(local, undefined, false)
 await lib.init()
@@ -20,57 +22,57 @@ await lib.create(media, {
   scanAll: true,
   depth: { mode: 'through', level: 2 },
 })
-const project = lib.snapshot().projects[0].project!,
-  plain = { textColor: '#e4e6e8', backgroundColor: 'transparent' },
-  cells: Cell[] = [
-    {
-      cellId: 'name',
-      kind: 'name',
-      grid: { x: 0, y: 0, w: 12, h: 1 },
-      style: {
-        ...plain,
-        weight: 'bold',
-        italic: true,
-        underline: true,
-        strike: true,
-        fontSize: 'xlarge',
-        letterSpacing: 'wide',
-        lineHeight: 'loose',
-        opacity: 'soft',
-      },
+const project = lib.snapshot().projects[0].project!
+const plain = { textColor: '#e4e6e8', backgroundColor: 'transparent' }
+const cells: Cell[] = [
+  {
+    cellId: 'name',
+    kind: 'name',
+    grid: { x: 0, y: 0, w: 12, h: 1 },
+    style: {
+      ...plain,
+      weight: 'bold',
+      italic: true,
+      underline: true,
+      strike: true,
+      fontSize: 'xlarge',
+      letterSpacing: 'wide',
+      lineHeight: 'loose',
+      opacity: 'soft',
     },
-    {
-      cellId: 'box',
-      kind: 'path',
-      grid: { x: 0, y: 1, w: 12, h: 1 },
-      style: {
-        ...plain,
-        padding: 'roomy',
-        radius: 'large',
-        borderColor: '#3fb68b',
-        borderWidth: 'thick',
-        valign: 'bottom',
-        align: 'right',
-      },
+  },
+  {
+    cellId: 'box',
+    kind: 'path',
+    grid: { x: 0, y: 1, w: 12, h: 1 },
+    style: {
+      ...plain,
+      padding: 'roomy',
+      radius: 'large',
+      borderColor: '#3fb68b',
+      borderWidth: 'thick',
+      valign: 'bottom',
+      align: 'right',
     },
-    {
-      cellId: 'tags',
-      kind: 'field-tags',
-      attributeId: 'tags',
-      tagColors: 'namespace',
-      tagPrefix: false,
-      grid: { x: 0, y: 2, w: 12, h: 1 },
-      style: plain,
-    },
-    {
-      cellId: 'status',
-      kind: 'field-enum',
-      attributeId: 'status',
-      presentation: 'badge',
-      grid: { x: 0, y: 3, w: 12, h: 1 },
-      style: plain,
-    },
-  ]
+  },
+  {
+    cellId: 'tags',
+    kind: 'field-tags',
+    attributeId: 'tags',
+    tagColors: 'namespace',
+    tagPrefix: false,
+    grid: { x: 0, y: 2, w: 12, h: 1 },
+    style: plain,
+  },
+  {
+    cellId: 'status',
+    kind: 'field-enum',
+    attributeId: 'status',
+    presentation: 'badge',
+    grid: { x: 0, y: 3, w: 12, h: 1 },
+    style: plain,
+  },
+]
 await lib.saveProject({
   ...project,
   fieldBindings: [

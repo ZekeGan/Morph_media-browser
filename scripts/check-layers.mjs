@@ -5,8 +5,8 @@
 //   electron/ may not import src/
 // `import type` is allowed everywhere: types vanish at build time. Run by .githooks/pre-commit (about 0.1 s).
 import fs from 'node:fs'
-import path from 'node:path'
 import { builtinModules } from 'node:module'
+import path from 'node:path'
 
 const root = path.resolve(
   path.dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, '$1')),

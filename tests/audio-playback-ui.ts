@@ -1,22 +1,23 @@
-import { _electron as electron } from 'playwright-core'
 import assert from 'node:assert/strict'
+import { execFile } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import { _electron as electron } from 'playwright-core'
+import { createServer } from 'vite'
+
+import { projectFile } from '../electron/files'
 import { Library } from '../electron/library'
 import { WorkspaceStore } from '../electron/workspace'
-import { projectFile } from '../electron/files'
-import { createServer } from 'vite'
-import { videoFixture } from './support/video-fixture'
 import { closeApp } from './support/app'
+import { videoFixture } from './support/video-fixture'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'audio-playback-')),
-  local = path.join(root, 'local'),
-  media = path.join(root, 'Media'),
-  music = path.join(root, 'Music')
+const root = await fs.mkdtemp(path.join(base, 'audio-playback-'))
+const local = path.join(root, 'local')
+const media = path.join(root, 'Media')
+const music = path.join(root, 'Music')
 await fs.mkdir(media)
 await fs.mkdir(music)
 // A plain 64x64 colour picture: the 1x1 grey one from the archive fixtures cannot be decoded for a thumbnail.
@@ -79,8 +80,8 @@ await promisify(execFile)(
   { windowsHide: true }
 )
 await fs.copyFile(path.join(root, 'tone.mp3'), path.join(media, 'plain.mp3'))
-const sample = process.env.AUDIO_SAMPLE,
-  originalSample = sample ? await fs.readFile(sample) : undefined
+const sample = process.env.AUDIO_SAMPLE
+const originalSample = sample ? await fs.readFile(sample) : undefined
 if (originalSample) await fs.writeFile(path.join(media, 'embedded.mp3'), originalSample)
 await fs.copyFile(path.join(media, 'embedded.mp3'), path.join(music, 'embedded.mp3'))
 // A video keeps this a mixed folder (only tracks would make it a music album, R-387/R-390), so the file list and
@@ -113,15 +114,17 @@ await fs.writeFile(
   })
 )
 const originals = new Map<string, Buffer>()
-for (const dir of [media, music])
-  for (const name of ['embedded.mp3', '.media-viewer/folder.json'])
+for (const dir of [media, music]) {
+  for (const name of ['embedded.mp3', '.media-viewer/folder.json']) {
     originals.set(path.join(dir, name), await fs.readFile(path.join(dir, name)))
+  }
+}
 originals.set(
   projectFile(music, legacy.projectId),
   await fs.readFile(projectFile(music, legacy.projectId))
 )
-const projects = library.snapshot().projects.map((link) => link.projectId),
-  store = new WorkspaceStore(local, ['zh-TW'])
+const projects = library.snapshot().projects.map((link) => link.projectId)
+const store = new WorkspaceStore(local, ['zh-TW'])
 await store.init()
 await store.update({ action: 'appearance', theme: 'glass', locale: 'zh-TW' }, projects)
 const env = Object.fromEntries(
@@ -147,8 +150,8 @@ if (server) {
   await server.listen()
   env.ELECTRON_RENDERER_URL = server.resolvedUrls!.local[0]
 }
-const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
-  page = await app.firstWindow()
+const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
+const page = await app.firstWindow()
 page.setDefaultTimeout(15000)
 await page.evaluate('window.__name=(target)=>target')
 const errors: string[] = []
@@ -242,16 +245,17 @@ try {
         throw error
       })
     const decoded = await page.locator('audio').evaluate(async (node) => {
-      const audio = node as HTMLAudioElement,
-        response = await fetch(audio.currentSrc, { headers: { Range: 'bytes=0-' } }),
-        bytes = await response.arrayBuffer(),
-        context = new AudioContext()
+      const audio = node as HTMLAudioElement
+      const response = await fetch(audio.currentSrc, { headers: { Range: 'bytes=0-' } })
+      const bytes = await response.arrayBuffer()
+      const context = new AudioContext()
       try {
-        const pcm = await context.decodeAudioData(bytes),
-          channel = pcm.getChannelData(0)
+        const pcm = await context.decodeAudioData(bytes)
+        const channel = pcm.getChannelData(0)
         let peak = 0
-        for (let i = 0; i < Math.min(channel.length, 44100); i++)
+        for (let i = 0; i < Math.min(channel.length, 44100); i++) {
           peak = Math.max(peak, Math.abs(channel[i]))
+        }
         return { status: response.status, peak, duration: pcm.duration }
       } finally {
         await context.close()
@@ -296,8 +300,8 @@ try {
     for (const theme of ['dark', 'glass', 'paper']) {
       const colors = await page.evaluate((theme) => {
         document.documentElement.dataset.theme = theme
-        const track = document.querySelector('.audio-viewer .mantine-Slider-track')!,
-          root = document.querySelector('.global-playback')!
+        const track = document.querySelector('.audio-viewer .mantine-Slider-track')!
+        const root = document.querySelector('.global-playback')!
         return {
           track: getComputedStyle(track, '::before').backgroundColor,
           background: getComputedStyle(root).backgroundColor,
@@ -421,8 +425,9 @@ try {
       // R-268: one play-order button cycles stop → next → loop all → loop one.
       const auto = page.locator('.playback-queue-head:visible .play-order')
       const playOrder = async (label: string) => {
-        for (let i = 0; i < 4 && (await auto.getAttribute('aria-label')) !== label; i++)
+        for (let i = 0; i < 4 && (await auto.getAttribute('aria-label')) !== label; i++) {
           await auto.click()
+        }
         assert.equal(await auto.getAttribute('aria-label'), label)
       }
       // R-390: with nothing chosen yet, the next track follows.
@@ -467,8 +472,8 @@ try {
         false
       )
       await page.getByRole('button', { name: '縮小播放', exact: true }).click()
-      const header = page.locator('.playback-mini>header'),
-        bounds = await header.boundingBox()
+      const header = page.locator('.playback-mini>header')
+      const bounds = await header.boundingBox()
       assert.ok(bounds)
       await page.mouse.move(bounds.x + 25, bounds.y + 20)
       await page.mouse.down()
@@ -527,13 +532,13 @@ try {
     )
     if (name === 'Audio media') {
       const statuses = await page.evaluate(async () => {
-        const snapshot = await window.media.request({ action: 'snapshot' }),
-          row = snapshot.snapshot.structure!.find((row) => row.name === 'Media')!,
-          content = await window.explorer.request({ action: 'content', rowId: row.rowId }),
-          results: number[] = []
+        const snapshot = await window.media.request({ action: 'snapshot' })
+        const row = snapshot.snapshot.structure!.find((row) => row.name === 'Media')!
+        const content = await window.explorer.request({ action: 'content', rowId: row.rowId })
+        const results: number[] = []
         for (const name of ['plain.mp3', 'blocked.ini']) {
-          const entry = content.content!.entries.find((entry) => entry.name === name)!,
-            url = new URL(entry.url)
+          const entry = content.content!.entries.find((entry) => entry.name === name)!
+          const url = new URL(entry.url)
           url.hostname = 'audio-cover'
           results.push((await fetch(url)).status)
         }
@@ -558,7 +563,7 @@ try {
     .locator('.error-boundary code')
     .textContent({ timeout: 1000 })
     .catch(() => null)
-  if (crash || errors.length)
+  if (crash || errors.length) {
     throw new Error(
       'Renderer crashed: ' +
         [crash, ...errors].join(' | ').replace(/\s*\n\s*/g, ' ← ') +
@@ -570,6 +575,7 @@ try {
           .replace(/\s*\n\s*/g, ' ← ')
           .slice(0, 4000)
     )
+  }
   throw error
 } finally {
   await app.evaluate(({ BrowserWindow }) => {

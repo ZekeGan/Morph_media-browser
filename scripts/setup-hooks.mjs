@@ -2,5 +2,6 @@
 import { spawnSync } from 'node:child_process'
 
 const result = spawnSync('git', ['config', 'core.hooksPath', '.githooks'], { stdio: 'ignore' })
-if (result.status === 0)
+if (result.status === 0) {
   console.log('git hooks: .githooks enabled (types, format and doc links before each commit)')
+}

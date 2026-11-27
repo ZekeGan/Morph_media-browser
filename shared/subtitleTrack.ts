@@ -9,15 +9,17 @@ const languageKey = (value?: string) => {
   return same[code] ?? code
 }
 const nameKey = (value?: string) => (value ?? '').trim().toLowerCase()
+
 export const trackPreference = (
   track: Pick<EmbeddedSubtitleInfo, 'name' | 'language'>
 ): SubtitleTrackPreference | undefined => {
-  const name = track.name?.trim().slice(0, 200),
-    language = track.language?.trim().slice(0, 35)
+  const name = track.name?.trim().slice(0, 200)
+  const language = track.language?.trim().slice(0, 35)
   return name || language
     ? { ...(name ? { name } : {}), ...(language ? { language } : {}) }
     : undefined
 }
+
 // Only tracks that can be shown (text, or a picture track that is drawn) are chosen.
 export function chooseSubtitleTrack(
   tracks: EmbeddedSubtitleInfo[],
@@ -25,10 +27,11 @@ export function chooseSubtitleTrack(
 ): EmbeddedSubtitleInfo | undefined {
   const shown = tracks.filter((track) => !track.graphic || track.picture)
   if (!preference || (!preference.name && !preference.language)) return shown.find((t) => t.default)
-  const name = nameKey(preference.name),
-    language = languageKey(preference.language),
-    sameName = (t: EmbeddedSubtitleInfo) => !!name && nameKey(t.name) === name,
-    sameLanguage = (t: EmbeddedSubtitleInfo) => !!language && languageKey(t.language) === language
+  const name = nameKey(preference.name)
+  const language = languageKey(preference.language)
+  const sameName = (t: EmbeddedSubtitleInfo) => !!name && nameKey(t.name) === name
+  const sameLanguage = (t: EmbeddedSubtitleInfo) =>
+    !!language && languageKey(t.language) === language
   // The same name wins; with the language also given, a track matching both is the best of those.
   const named = shown.filter(sameName)
   if (named.length) return named.find(sameLanguage) ?? named[0]

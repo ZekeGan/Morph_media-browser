@@ -1,5 +1,3 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import {
   ActionIcon,
   Button,
@@ -15,6 +13,9 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+
 import type {
   ExplorerRequest,
   ExplorerResponse,
@@ -24,12 +25,14 @@ import type {
 } from '../../shared/explorer'
 import type { FolderRow } from '../../shared/model'
 import { bookPercent } from '../../shared/novel'
-import { t as tr, useLocale } from '../i18n'
+
 import { Icon, type IconName } from '../common/icons'
 import { consume, focusNextFrame, useCapturedKeys, useWheel } from '../common/readerInput'
+import { t as tr, useLocale } from '../i18n'
 import { describeError } from '../notices/errors'
 import { MarkdownChapter } from './MarkdownChapter'
 import { chapterText, HtmlChapter, TextChapter } from './NovelContent'
+
 import './novel.css'
 
 // R-282: the novel reader. Reading settings are this computer's (they suit the screen and the reader, not the book);
@@ -44,6 +47,7 @@ type Settings = {
   chars: number
   theme: 'paper' | 'light' | 'dark'
 }
+
 const defaults: Settings = {
   vertical: false,
   paged: true,
@@ -55,6 +59,7 @@ const defaults: Settings = {
   theme: 'paper',
 }
 const settingsKey = 'morph.novel.settings'
+
 function loadSettings(): Settings {
   try {
     return { ...defaults, ...JSON.parse(localStorage.getItem(settingsKey) ?? '{}') }
@@ -62,6 +67,7 @@ function loadSettings(): Settings {
     return defaults
   }
 }
+
 type Run = (request: ExplorerRequest) => Promise<ExplorerResponse | undefined>
 
 export function NovelReader({
@@ -81,43 +87,43 @@ export function NovelReader({
   embedded?: boolean
 }) {
   useLocale()
-  const [book, setBook] = useState<NovelBook>(),
-    [error, setError] = useState(''),
-    [settings, setSettingsState] = useState(loadSettings),
-    saved = row.record?.details?.novels?.[file.name],
-    [chapter, setChapter] = useState(saved?.chapter ?? 0),
-    // R-427, R-442: the chapters scroll mode lays out, apart from the current one (progress, contents): crossing
-    // into a neighbour only changes the current chapter, and the laid-out range changes in fillWindow and trim.
-    [span, setSpan] = useState(() => ({
-      from: (saved?.chapter ?? 0) - 1,
-      to: (saved?.chapter ?? 0) + 1,
-    })),
-    [position, setPosition] = useState(saved?.position ?? 0),
-    [bookmarks, setBookmarks] = useState(saved?.bookmarks ?? []),
-    [panel, setPanel] = useState<'toc' | 'marks' | 'search'>(),
-    [settingsOpen, setSettingsOpen] = useState(false),
-    // R-399: a Markdown file is shown typeset until switched to its plain text.
-    [plainText, setPlainText] = useState(false),
-    [query, setQuery] = useState(''),
-    [hits, setHits] =
-      useState<{ chapter: number; at: number; before: string; match: string; after: string }[]>(),
-    // The next book (R-345) opens in a new reader while the window is still in fullscreen: it stays immersive.
-    [immersive, setImmersive] = useState(() => !!document.fullscreenElement),
-    // R-351: in immersive reading the toolbar and the progress bar come and go together.
-    [bars, setBars] = useState(false),
-    [ending, setEnding] = useState(false),
-    [box, setBox] = useState({ width: 1, height: 1 })
-  const scroller = useRef<HTMLDivElement>(null),
-    restore = useRef<number | 'end'>(saved?.position ?? 0),
-    findAfterRender = useRef<{ text: string; nth: number } | undefined>(undefined),
-    // Scroll mode: how far into the newly current chapter the view was when scrolling crossed into it.
-    anchor = useRef<number | undefined>(undefined),
-    // R-355: how far a glide still had to go when the chapters around the view changed.
-    glideRest = useRef<number | undefined>(undefined),
-    // R-442: the current chapter changed because scrolling crossed into it, or chapters after the view came or went;
-    // the view is already where it should be.
-    followed = useRef(false),
-    idleTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const [book, setBook] = useState<NovelBook>()
+  const [error, setError] = useState('')
+  const [settings, setSettingsState] = useState(loadSettings)
+  const saved = row.record?.details?.novels?.[file.name]
+  const [chapter, setChapter] = useState(saved?.chapter ?? 0)
+  // R-427, R-442: the chapters scroll mode lays out, apart from the current one (progress, contents): crossing
+  // into a neighbour only changes the current chapter, and the laid-out range changes in fillWindow and trim.
+  const [span, setSpan] = useState(() => ({
+    from: (saved?.chapter ?? 0) - 1,
+    to: (saved?.chapter ?? 0) + 1,
+  }))
+  const [position, setPosition] = useState(saved?.position ?? 0)
+  const [bookmarks, setBookmarks] = useState(saved?.bookmarks ?? [])
+  const [panel, setPanel] = useState<'toc' | 'marks' | 'search'>()
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  // R-399: a Markdown file is shown typeset until switched to its plain text.
+  const [plainText, setPlainText] = useState(false)
+  const [query, setQuery] = useState('')
+  const [hits, setHits] =
+    useState<{ chapter: number; at: number; before: string; match: string; after: string }[]>()
+  // The next book (R-345) opens in a new reader while the window is still in fullscreen: it stays immersive.
+  const [immersive, setImmersive] = useState(() => !!document.fullscreenElement)
+  // R-351: in immersive reading the toolbar and the progress bar come and go together.
+  const [bars, setBars] = useState(false)
+  const [ending, setEnding] = useState(false)
+  const [box, setBox] = useState({ width: 1, height: 1 })
+  const scroller = useRef<HTMLDivElement>(null)
+  const restore = useRef<number | 'end'>(saved?.position ?? 0)
+  const findAfterRender = useRef<{ text: string; nth: number } | undefined>(undefined)
+  // Scroll mode: how far into the newly current chapter the view was when scrolling crossed into it.
+  const anchor = useRef<number | undefined>(undefined)
+  // R-355: how far a glide still had to go when the chapters around the view changed.
+  const glideRest = useRef<number | undefined>(undefined)
+  // R-442: the current chapter changed because scrolling crossed into it, or chapters after the view came or went;
+  // the view is already where it should be.
+  const followed = useRef(false)
+  const idleTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const setSettings = (change: Partial<Settings>) =>
     setSettingsState((previous) => {
       const next = { ...previous, ...change }
@@ -154,8 +160,8 @@ export function NovelReader({
     const element = scroller.current
     if (!element) return
     const measure = () => {
-      const width = element.clientWidth,
-        height = element.clientHeight
+      const width = element.clientWidth
+      const height = element.clientHeight
       setBox((previous) => {
         if (previous.width === width && previous.height === height) return previous
         // R-351: a new size (fullscreen for immersive reading, a resized window) keeps the place in the chapter.
@@ -196,11 +202,11 @@ export function NovelReader({
           }
   }
   const sectionBox = (index: number) => {
-    const element = scroller.current,
-      section = element?.querySelector<HTMLElement>(`[data-chapter="${index}"]`)
+    const element = scroller.current
+    const section = element?.querySelector<HTMLElement>(`[data-chapter="${index}"]`)
     if (!element || !section) return undefined
-    const frame = element.getBoundingClientRect(),
-      rect = section.getBoundingClientRect()
+    const frame = element.getBoundingClientRect()
+    const rect = section.getBoundingClientRect()
     return vertical
       ? { start: frame.right - rect.right + Math.abs(element.scrollLeft), size: rect.width }
       : { start: rect.top - frame.top + element.scrollTop, size: rect.height }
@@ -223,8 +229,8 @@ export function NovelReader({
   }
   const glideBy = (delta: number) => {
     if (!scroller.current) return
-    const { at, max } = extent(),
-      target = Math.min(max, Math.max(0, (glide.current?.target ?? at) + delta))
+    const { at, max } = extent()
+    const target = Math.min(max, Math.max(0, (glide.current?.target ?? at) + delta))
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       stopGlide()
       scrollTo(target)
@@ -237,8 +243,8 @@ export function NovelReader({
     const step = () => {
       const state = glide.current
       if (!state || !scroller.current) return
-      const now = extent().at,
-        gap = state.target - now
+      const now = extent().at
+      const gap = state.target - now
       // Done, or the page would not move any further (an edge, or the text changed under it).
       if (Math.abs(gap) < 1 || now === state.last) {
         if (Math.abs(gap) < 1) scrollTo(state.target)
@@ -267,9 +273,9 @@ export function NovelReader({
     restore.current = 0
     const box = paged ? undefined : sectionBox(chapter)
     if (box) {
-      const span = Math.max(0, box.size - viewSize()),
-        crossed = anchor.current !== undefined,
-        into = anchor.current ?? (target === 'end' ? span : span * target)
+      const span = Math.max(0, box.size - viewSize())
+      const crossed = anchor.current !== undefined
+      const into = anchor.current ?? (target === 'end' ? span : span * target)
       const rest = glideRest.current
       anchor.current = glideRest.current = undefined
       scrollTo(box.start + into)
@@ -326,8 +332,8 @@ export function NovelReader({
   }
   const fillWindow = () => {
     if (!book || paged) return
-    const { at, max } = extent(),
-      view = viewSize()
+    const { at, max } = extent()
+    const view = viewSize()
     let { from, to } = laid
     if (to < book.chapters.length - 1 && max - at < view * 1.5) to++
     if (from > 0 && at < view * 1.5) from--
@@ -337,12 +343,12 @@ export function NovelReader({
   // far from the view (about 3 windows) go only once scrolling has stopped.
   const trim = () => {
     if (!book || paged || glide.current || !scroller.current) return
-    const { at, max } = extent(),
-      view = viewSize(),
-      size = (index: number) => sectionBox(index)?.size ?? 0
-    let { from, to } = laid,
-      above = at,
-      below = max - at
+    const { at, max } = extent()
+    const view = viewSize()
+    const size = (index: number) => sectionBox(index)?.size ?? 0
+    let { from, to } = laid
+    let above = at
+    let below = max - at
     // One neighbour stays on each side, as before.
     while (from < chapter - 1 && above - size(from) >= view * 3) above -= size(from++)
     while (to > chapter + 1 && below - size(to) >= view * 3) below -= size(to--)
@@ -358,14 +364,14 @@ export function NovelReader({
     clearTimeout(idleTimer.current)
     if (savePending.current) scheduleSave()
     idleTimer.current = setTimeout(() => latestTrim.current(), 400)
-    const view = viewSize(),
-      line = at + view * 0.1,
-      shown = Array.from({ length: laid.to - laid.from + 1 }, (_, k) => laid.from + k).find(
-        (index) => {
-          const box = index !== chapter && sectionBox(index)
-          return box && line >= box.start && line < box.start + box.size
-        }
-      )
+    const view = viewSize()
+    const line = at + view * 0.1
+    const shown = Array.from({ length: laid.to - laid.from + 1 }, (_, k) => laid.from + k).find(
+      (index) => {
+        const box = index !== chapter && sectionBox(index)
+        return box && line >= box.start && line < box.start + box.size
+      }
+    )
     if (shown !== undefined) {
       followed.current = true
       setEnding(false)
@@ -384,9 +390,9 @@ export function NovelReader({
   const latest = useRef({ chapter, position, bookmarks, lengths })
   latest.current = { chapter, position, bookmarks, lengths }
   const lastSaved = useRef(
-      JSON.stringify({ c: saved?.chapter, p: saved?.position, b: saved?.bookmarks ?? [] })
-    ),
-    target = useRef({ run, row })
+    JSON.stringify({ c: saved?.chapter, p: saved?.position, b: saved?.bookmarks ?? [] })
+  )
+  const target = useRef({ run, row })
   target.current = { run, row }
   // One stable function: it reads the latest place and is only marked saved once the write went through (a busy
   // window drops it, and the next chance tries again).
@@ -422,8 +428,8 @@ export function NovelReader({
   }, [save])
   // R-448: a chapter crossed while scrolling is saved once scrolling has stopped for a moment, not at every crossing
   // (the save redraws the app); scrolling on puts it off again. The half-minute save and the save on leaving still run.
-  const saveLater = useRef<ReturnType<typeof setTimeout>>(undefined),
-    savePending = useRef(false)
+  const saveLater = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const savePending = useRef(false)
   const scheduleSave = () => {
     clearTimeout(saveLater.current)
     saveLater.current = setTimeout(() => {
@@ -531,8 +537,8 @@ export function NovelReader({
       }
       return
     }
-    const forward = ['PageDown', 'ArrowDown', vertical ? 'ArrowLeft' : 'ArrowRight'],
-      back = ['PageUp', 'ArrowUp', vertical ? 'ArrowRight' : 'ArrowLeft']
+    const forward = ['PageDown', 'ArrowDown', vertical ? 'ArrowLeft' : 'ArrowRight']
+    const back = ['PageUp', 'ArrowUp', vertical ? 'ArrowRight' : 'ArrowLeft']
     let handled = true
     if (event.key === ' ') turn(event.shiftKey ? -1 : 1)
     else if (forward.includes(event.key)) turn(1)
@@ -584,8 +590,8 @@ export function NovelReader({
       []
     texts.forEach((text, index) => {
       const lower = text.toLowerCase()
-      let at = lower.indexOf(needle),
-        nth = 0
+      let at = lower.indexOf(needle)
+      let nth = 0
       while (at >= 0 && found.length < 500) {
         found.push({
           chapter: index,
@@ -617,14 +623,14 @@ export function NovelReader({
           const range = document.createRange()
           range.setStart(node, at)
           range.setEnd(node, at + needle.length)
-          const highlights = (CSS as unknown as { highlights?: Map<string, unknown> }).highlights,
-            Highlight = (window as unknown as { Highlight?: new (range: Range) => unknown })
-              .Highlight
+          const highlights = (CSS as unknown as { highlights?: Map<string, unknown> }).highlights
+          const Highlight = (window as unknown as { Highlight?: new (range: Range) => unknown })
+            .Highlight
           if (highlights && Highlight) highlights.set('novel-search', new Highlight(range))
-          const rect = range.getBoundingClientRect(),
-            element = scroller.current!,
-            frame = element.getBoundingClientRect(),
-            { page, max } = extent()
+          const rect = range.getBoundingClientRect()
+          const element = scroller.current!
+          const frame = element.getBoundingClientRect()
+          const { page, max } = extent()
           const offset = paged
             ? vertical
               ? element.scrollTop + rect.top - frame.top
@@ -720,9 +726,9 @@ export function NovelReader({
   useEffect(() => () => clearTimeout(hideBars.current), [])
   const barsShown = immersive && (bars || !!panel || settingsOpen)
   // R-353: in immersive reading the bars float over the page, so the side panel sits between them.
-  const toolbar = useRef<HTMLDivElement>(null),
-    progress = useRef<HTMLDivElement>(null),
-    [barSpace, setBarSpace] = useState({ top: 0, bottom: 0 })
+  const toolbar = useRef<HTMLDivElement>(null)
+  const progress = useRef<HTMLDivElement>(null)
+  const [barSpace, setBarSpace] = useState({ top: 0, bottom: 0 })
   useLayoutEffect(() => {
     if (!immersive) return
     const measure = () =>
@@ -737,18 +743,19 @@ export function NovelReader({
   }, [immersive])
   const followMouse = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!immersive) return
-    const frame = event.currentTarget.getBoundingClientRect(),
-      edge = 56,
-      atEdge =
-        event.clientY < frame.top + edge ||
-        event.clientY > frame.bottom - edge ||
-        !!(event.target as HTMLElement).closest('.novel-toolbar,.novel-progress')
+    const frame = event.currentTarget.getBoundingClientRect()
+    const edge = 56
+    const atEdge =
+      event.clientY < frame.top + edge ||
+      event.clientY > frame.bottom - edge ||
+      !!(event.target as HTMLElement).closest('.novel-toolbar,.novel-progress')
     if (atEdge) showBars(true)
-    else if (bars && hideBars.current === undefined)
+    else if (bars && hideBars.current === undefined) {
       hideBars.current = setTimeout(() => {
         hideBars.current = undefined
         setBars(false)
       }, 2000)
+    }
   }
   const left = (() => {
     if (!paged || !scroller.current) return undefined
@@ -758,12 +765,12 @@ export function NovelReader({
   // The list scrolls to the chapter being read when the contents open.
   const panelList = useRef<HTMLElement>(null)
   useEffect(() => {
-    const list = panelList.current,
-      item = panel === 'toc' ? list?.querySelector('[aria-current="true"]') : undefined
+    const list = panelList.current
+    const item = panel === 'toc' ? list?.querySelector('[aria-current="true"]') : undefined
     // R-346: moving the list itself keeps the tabs above it in place (scrollIntoView also scrolled the panel).
     if (list && item) {
-      const box = list.getBoundingClientRect(),
-        at = item.getBoundingClientRect()
+      const box = list.getBoundingClientRect()
+      const at = item.getBoundingClientRect()
       list.scrollTop += at.top - box.top - (list.clientHeight - at.height) / 2
     }
   }, [panel])
@@ -1103,10 +1110,10 @@ export function NovelReader({
             onScroll={track}
             onClick={(event) => {
               if ((event.target as HTMLElement).closest('a,button')) return
-              const bounds = event.currentTarget.getBoundingClientRect(),
-                middle =
-                  event.clientX > bounds.left + bounds.width / 3 &&
-                  event.clientX < bounds.right - bounds.width / 3
+              const bounds = event.currentTarget.getBoundingClientRect()
+              const middle =
+                event.clientX > bounds.left + bounds.width / 3 &&
+                event.clientX < bounds.right - bounds.width / 3
               // R-351: in immersive reading a click in the middle third (anywhere in scroll mode, but not the end of a
               // text selection) shows or hides the bars.
               if (immersive && (middle || !paged)) {

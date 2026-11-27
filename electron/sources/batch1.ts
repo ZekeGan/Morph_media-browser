@@ -1,11 +1,12 @@
 import { SourceError } from '../metadata-common'
-import { clean, type Adapter } from './site'
 import { itunesLanguage, pickByLanguage, pickFromMap } from './language'
+import { type Adapter, clean } from './site'
 
 // R-284: public JSON APIs that need no key. Each adapter validates the work ID from the pasted address and asks only
 // its own fixed host (see config.ts); covers must come from the site's image host.
 
 type Strings = Record<string, string | undefined>
+
 const pick = (titles: Strings | undefined, ...langs: string[]) =>
   langs.map((lang) => titles?.[lang]).find((value) => typeof value === 'string' && value.trim())
 
@@ -22,11 +23,11 @@ export const mangadex: Adapter = async (site) => {
     )
   ).data
   if (data?.id !== id) throw new SourceError('notFound')
-  const a = data.attributes ?? {},
-    related = (type: string) =>
-      (data.relationships ?? []).filter((r: { type?: string }) => r?.type === type) as {
-        attributes?: { name?: string; fileName?: string }
-      }[]
+  const a = data.attributes ?? {}
+  const related = (type: string) =>
+    (data.relationships ?? []).filter((r: { type?: string }) => r?.type === type) as {
+      attributes?: { name?: string; fileName?: string }
+    }[]
   const alt = (a.altTitles ?? []) as Strings[]
   site.text('TITLE_ORIGINAL', alt.map((t) => pick(t, 'ja', 'ko', 'zh')).find(Boolean))
   // R-381: the preferred languages first (title, then its alternative titles), else the site's own order.
@@ -111,8 +112,8 @@ export const kitsu: Adapter = async (site) => {
 
 // MangaUpdates: the address carries the series ID in base 36; the API wants the number.
 export const mangaupdates: Adapter = async (site) => {
-  const short = site.match(/^\/series\/([0-9a-z]{1,12})(?:\/[^/]*)?\/?$/i)[1].toLowerCase(),
-    id = parseInt(short, 36)
+  const short = site.match(/^\/series\/([0-9a-z]{1,12})(?:\/[^/]*)?\/?$/i)[1].toLowerCase()
+  const id = parseInt(short, 36)
   if (!Number.isSafeInteger(id) || id <= 0) throw new SourceError('notFound')
   const data = await site.json('https://api.mangaupdates.com/v1/series/' + id)
   if (Number(data.series_id) !== id) throw new SourceError('notFound')
@@ -208,8 +209,9 @@ export const itunes: Adapter = async (site) => {
 export const deezer: Adapter = async (site) => {
   const id = site.match(/^\/(?:[a-z]{2}\/)?album\/(\d{1,15})\/?$/i)[1]
   const data = await site.json('https://api.deezer.com/album/' + id)
-  if (data.error || String(data.id) !== id)
+  if (data.error || String(data.id) !== id) {
     throw new SourceError(data.error ? 'notFound' : 'format')
+  }
   site.list('ARTISTS', [
     data.artist?.name,
     ...(data.contributors ?? []).map((c: { name?: string }) => c?.name),
@@ -257,8 +259,8 @@ export const danbooru: Adapter = async (site) => {
     ({ g: 'general', s: 'sensitive', q: 'questionable', e: 'explicit' } as Strings)[data.rating]
   )
   site.text('RELEASE_DATE', typeof data.created_at === 'string' ? data.created_at.slice(0, 10) : '')
-  const copyright = split(data.tag_string_copyright)[0],
-    character = split(data.tag_string_character)[0]
+  const copyright = split(data.tag_string_copyright)[0]
+  const character = split(data.tag_string_character)[0]
   return {
     title: clean([character, copyright].filter(Boolean).join(' · ') || 'Danbooru #' + id),
     canonical: 'https://danbooru.donmai.us/posts/' + id,

@@ -1,24 +1,27 @@
-import { _electron as electron, type Locator } from 'playwright-core'
-import fs from 'node:fs/promises'
-import path from 'node:path'
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
-import { Library } from '../electron/library'
 import { createHash } from 'node:crypto'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import { promisify } from 'node:util'
+import { _electron as electron, type Locator } from 'playwright-core'
+
 import { DATA_DIR } from '../shared/model'
+
 import { folderFile } from '../electron/files'
+import { Library } from '../electron/library'
 import packageInfo from '../package.json'
 import { closeApp, openLayoutEditor } from './support/app'
+
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'workspace05-')),
-  local = path.join(root, 'local'),
-  album = path.join(root, 'Album'),
-  game = path.join(root, 'Games'),
-  video = path.join(root, 'Video'),
-  fresh = path.join(root, 'Fresh'),
-  screens = path.join(base, 'workspace05-screens')
+const root = await fs.mkdtemp(path.join(base, 'workspace05-'))
+const local = path.join(root, 'local')
+const album = path.join(root, 'Album')
+const game = path.join(root, 'Games')
+const video = path.join(root, 'Video')
+const fresh = path.join(root, 'Fresh')
+const screens = path.join(base, 'workspace05-screens')
 for (const p of [
   path.join(album, 'A', 'B'),
   path.join(album, 'C'),
@@ -26,10 +29,11 @@ for (const p of [
   video,
   fresh,
   screens,
-])
+]) {
   await fs.mkdir(p, { recursive: true })
+}
 const exec = promisify(execFile)
-for (const ext of ['png', 'jpg', 'webp', 'gif', 'bmp', 'avif', 'ico'])
+for (const ext of ['png', 'jpg', 'webp', 'gif', 'bmp', 'avif', 'ico']) {
   await exec(
     'ffmpeg',
     [
@@ -48,6 +52,7 @@ for (const ext of ['png', 'jpg', 'webp', 'gif', 'bmp', 'avif', 'ico'])
     ],
     { windowsHide: true }
   )
+}
 await exec(
   'ffmpeg',
   [
@@ -67,8 +72,9 @@ await exec(
   ],
   { windowsHide: true }
 )
-for (const name of ['Game.exe', 'UnityPlayer.dll'])
+for (const name of ['Game.exe', 'UnityPlayer.dll']) {
   await fs.writeFile(path.join(game, 'Game', name), 'ORIGINAL')
+}
 const lib = new Library(local, undefined, false)
 await lib.init()
 const input = { depth: { mode: 'through' as const, level: 1 }, scanAll: true }
@@ -81,9 +87,9 @@ const env: Record<string, string> = Object.fromEntries(
   )
 )
 delete env.ELECTRON_RUN_AS_NODE
-const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
-  page = await app.firstWindow(),
-  errors: string[] = []
+const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
+const page = await app.firstWindow()
+const errors: string[] = []
 page.on('pageerror', (e) => errors.push(e.message))
 page.setDefaultTimeout(15000)
 const open = async (name: string) => {
@@ -99,8 +105,8 @@ const open = async (name: string) => {
 // HTML5 drag-and-drop through real mouse moves; a single dragTo can miss the drop target, so retry until it lands.
 const dragUntil = async (source: Locator, target: Locator, landed: () => Promise<boolean>) => {
   for (let attempt = 0; attempt < 4; attempt++) {
-    const from = (await source.boundingBox())!,
-      to = (await target.boundingBox())!
+    const from = (await source.boundingBox())!
+    const to = (await target.boundingBox())!
     await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2)
     await page.mouse.down()
     await page.mouse.move(from.x + from.width / 2 + 8, from.y + from.height / 2 + 8, { steps: 4 })
@@ -145,9 +151,10 @@ try {
     }, i)
   }
   const formats = await page.evaluate(async () => {
-    const s = (await window.media.request({ action: 'snapshot' })).snapshot,
-      row = s.structure!.find((r) => r.path.endsWith('Album'))!,
-      content = (await window.explorer.request({ action: 'content', rowId: row.rowId })).content!
+    const s = (await window.media.request({ action: 'snapshot' })).snapshot
+    const row = s.structure!.find((r) => r.path.endsWith('Album'))!
+    const content = (await window.explorer.request({ action: 'content', rowId: row.rowId }))
+      .content!
     return Promise.all(
       content.entries
         .filter((e) => e.kind === 'image')
@@ -166,21 +173,21 @@ try {
     JSON.stringify(formats)
   )
   console.log('PASS original and thumbnail decode: PNG/JPEG/WebP/GIF/BMP/AVIF/ICO', formats)
-  const stat = await fs.stat(path.join(album, '測試.webp')),
-    cache = path.join(
-      local,
-      'thumbnails',
-      createHash('sha256')
-        .update(path.join(album, '測試.webp') + '/' + stat.size + '/' + stat.mtimeMs)
-        .digest('hex') + '.jpg'
-    )
+  const stat = await fs.stat(path.join(album, '測試.webp'))
+  const cache = path.join(
+    local,
+    'thumbnails',
+    createHash('sha256')
+      .update(path.join(album, '測試.webp') + '/' + stat.size + '/' + stat.mtimeMs)
+      .digest('hex') + '.jpg'
+  )
   await fs.writeFile(cache, 'broken cache')
   const recovered = await page.evaluate(async () => {
-    const s = (await window.media.request({ action: 'snapshot' })).snapshot,
-      row = s.structure!.find((r) => r.path.endsWith('Album'))!,
-      entries = (await window.explorer.request({ action: 'content', rowId: row.rowId })).content!
-        .entries,
-      url = entries.find((e) => e.name === '測試.webp')!.thumb!
+    const s = (await window.media.request({ action: 'snapshot' })).snapshot
+    const row = s.structure!.find((r) => r.path.endsWith('Album'))!
+    const entries = (await window.explorer.request({ action: 'content', rowId: row.rowId }))
+      .content!.entries
+    const url = entries.find((e) => e.name === '測試.webp')!.thumb!
     return Promise.all(
       Array.from({ length: 4 }, async () => {
         const response = await fetch(url)
@@ -428,8 +435,11 @@ try {
     document.querySelector('.statusbar')?.textContent?.includes('就緒')
   )
   for (let n = 0; n < 50; n++) {
-    if ((await fs.readFile(folderFile(path.join(game, 'Game')), 'utf8')).includes('bannerAssetId'))
+    if (
+      (await fs.readFile(folderFile(path.join(game, 'Game')), 'utf8')).includes('bannerAssetId')
+    ) {
       break
+    }
     await page.waitForTimeout(100)
   }
   const beforeCancel = await fs.readFile(folderFile(path.join(game, 'Game')), 'utf8')

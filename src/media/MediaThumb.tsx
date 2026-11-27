@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
+
 import type { MediaEntry } from '../../shared/explorer'
+
 import { Icon, type IconName } from '../common/icons'
 
 // Embedded audio covers are read once per file and kept for the session; a file without one is remembered too.
 const covers = new Map<string, Promise<string | undefined>>()
 const limit = 300
+
 export function audioCover(url: string) {
   let cover = covers.get(url)
   if (!cover) {
@@ -38,9 +41,9 @@ export function MediaThumb({
   icon?: IconName
   size?: number
 }) {
-  const box = useRef<HTMLSpanElement>(null),
-    still = entry.thumb && entry.mime !== 'image/gif' ? entry.thumb : undefined,
-    [cover, setCover] = useState<string>()
+  const box = useRef<HTMLSpanElement>(null)
+  const still = entry.thumb && entry.mime !== 'image/gif' ? entry.thumb : undefined
+  const [cover, setCover] = useState<string>()
   useEffect(() => {
     setCover(undefined)
     const node = box.current

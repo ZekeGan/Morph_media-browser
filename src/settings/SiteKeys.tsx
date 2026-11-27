@@ -1,14 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
 import { Alert, Badge, Button, Group, PasswordInput, Stack, Text } from '@mantine/core'
-import { keySites, type KeySite, type KeyStatus } from '../../shared/keys'
+import { useEffect, useRef, useState } from 'react'
+
+import { type KeySite, keySites, type KeyStatus } from '../../shared/keys'
+
 import { t as tr } from '../i18n'
 import { describeError } from '../notices/errors'
 
 // R-285: one row per website that needs (or can use) the user's own key. Keys go to main once and are never shown
 // back; the row only knows whether one is saved and how its last test went.
 export function SiteKeys({ opened, focus }: { opened: boolean; focus?: string }) {
-  const [status, setStatus] = useState<Record<string, KeyStatus>>({}),
-    [error, setError] = useState('')
+  const [status, setStatus] = useState<Record<string, KeyStatus>>({})
+  const [error, setError] = useState('')
   useEffect(() => {
     if (!opened) return
     void window.explorer
@@ -43,11 +45,11 @@ function KeyRow({
   focused: boolean
   onStatus: (status: Record<string, KeyStatus>) => void
 }) {
-  const [values, setValues] = useState<Record<string, string>>({}),
-    [pending, setPending] = useState(false),
-    [message, setMessage] = useState(''),
-    [help, setHelp] = useState(false),
-    row = useRef<HTMLElement>(null)
+  const [values, setValues] = useState<Record<string, string>>({})
+  const [pending, setPending] = useState(false)
+  const [message, setMessage] = useState('')
+  const [help, setHelp] = useState(false)
+  const row = useRef<HTMLElement>(null)
   useEffect(() => {
     if (focused) row.current?.scrollIntoView({ block: 'center' })
   }, [focused])

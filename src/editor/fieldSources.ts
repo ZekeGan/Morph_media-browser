@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
+
 import type { Attribute } from '../../shared/model'
 import { metadataSources, sourceForUrl } from '../../shared/sources'
+
 import { t as tr } from '../i18n'
 
 // Imported ids retain their website identity even after a manual edit removes the fetched-value provenance.
@@ -47,10 +49,10 @@ export function orderedFieldSourceGroups<T extends { attributeId: string }>(
 // not added yet are folded into one line; searching or filtering shows everything so nothing seems missing.
 export function useSourceFolding(showAll: boolean) {
   // What the user chose stays chosen, even when adding a field would change the source's default.
-  const [chosen, setChosen] = useState<Record<string, boolean>>({}),
-    [unfolded, setUnfolded] = useState<string[]>([]),
-    // Folded by hand during a search or filter; forgotten when it ends.
-    [foldedForNow, setFoldedForNow] = useState<string[]>([])
+  const [chosen, setChosen] = useState<Record<string, boolean>>({})
+  const [unfolded, setUnfolded] = useState<string[]>([])
+  // Folded by hand during a search or filter; forgotten when it ends.
+  const [foldedForNow, setFoldedForNow] = useState<string[]>([])
   useEffect(() => setFoldedForNow([]), [showAll])
   const isOpen = (source: string, hasAdded: boolean) =>
     showAll

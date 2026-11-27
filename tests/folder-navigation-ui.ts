@@ -1,19 +1,20 @@
-import { _electron as electron } from 'playwright-core'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { _electron as electron } from 'playwright-core'
+
+import { folderFile, projectFile } from '../electron/files'
 import { Library } from '../electron/library'
 import { WorkspaceStore } from '../electron/workspace'
-import { folderFile, projectFile } from '../electron/files'
-import { tinyPng, zipFixture } from './support/archive-fixture'
 import { closeApp } from './support/app'
+import { tinyPng, zipFixture } from './support/archive-fixture'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'folder-navigation-')),
-  media = path.join(root, 'Media'),
-  multi = path.join(root, 'Multi'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'folder-navigation-'))
+const media = path.join(root, 'Media')
+const multi = path.join(root, 'Multi')
+const local = path.join(root, 'local')
 await fs.mkdir(path.join(media, 'A', 'B'), { recursive: true })
 await fs.mkdir(path.join(media, 'C'))
 await fs.mkdir(path.join(multi, 'A', 'B'), { recursive: true })
@@ -33,16 +34,17 @@ await library.create(multi, {
   scanAll: true,
   depth: { mode: 'through', level: 3 },
 })
-const snapshot = library.snapshot(),
-  projects = snapshot.projects.map((link) => link.project!),
-  multiProject = projects.find((project) => project.name === 'Multi navigation')!
+const snapshot = library.snapshot()
+const projects = snapshot.projects.map((link) => link.project!)
+const multiProject = projects.find((project) => project.name === 'Multi navigation')!
 await fs.writeFile(
   projectFile(multi, multiProject.projectId),
   JSON.stringify({ ...multiProject, cardView: { mode: 'multi', level: 'all' } })
 )
 const originals = new Map<string, Buffer>()
-for (const row of snapshot.structure ?? snapshot.rows)
+for (const row of snapshot.structure ?? snapshot.rows) {
   if (row.record) originals.set(folderFile(row.path), await fs.readFile(folderFile(row.path)))
+}
 for (const project of projects) {
   const file = projectFile(
     project.projectId === multiProject.projectId ? multi : media,
@@ -63,15 +65,15 @@ const env = Object.fromEntries(
   )
 )
 delete env.ELECTRON_RUN_AS_NODE
-const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
-  page = await app.firstWindow()
+const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
+const page = await app.firstWindow()
 page.setDefaultTimeout(12000)
 await page.evaluate('window.__name=(target)=>target')
 const errors: string[] = []
 page.on('pageerror', (error) => errors.push(error.message))
 const button = (name: string) => page.getByRole('button', { name, exact: true })
-const center = () => page.locator('.workspace-breadcrumb'),
-  right = () => page.locator('.folder-panel-header')
+const center = () => page.locator('.workspace-breadcrumb')
+const right = () => page.locator('.folder-panel-header')
 const current = async (name: string) => {
   await page
     .waitForFunction(
@@ -185,10 +187,10 @@ const side = async (
   }
   const prevented = await app.evaluate(
     ({ BrowserWindow, screen }, { delta, point }) => {
-      const win = BrowserWindow.getAllWindows()[0],
-        bounds = win.getContentBounds(),
-        zoom = win.webContents.getZoomFactor(),
-        read = screen.getCursorScreenPoint
+      const win = BrowserWindow.getAllWindows()[0]
+      const bounds = win.getContentBounds()
+      const zoom = win.webContents.getZoomFactor()
+      const read = screen.getCursorScreenPoint
       let prevented = false
       screen.getCursorScreenPoint = () => ({
         x: Math.round(bounds.x + point.x * zoom),
@@ -321,8 +323,8 @@ try {
   await current('Media')
   await button('關閉媒體檢視器').click()
   await page.locator('.media-viewer-shell').waitFor({ state: 'detached' })
-  const missing = folderFile(path.join(media, 'A', 'B')),
-    backup = missing + '.navigation-test'
+  const missing = folderFile(path.join(media, 'A', 'B'))
+  const backup = missing + '.navigation-test'
   await fs.rename(missing, backup)
   try {
     await side(-1, '.react-flow')
@@ -379,8 +381,8 @@ try {
   const panelWidths = await page.evaluate(
     () =>
       new Promise<number[]>((resolve) => {
-        const seen: number[] = [],
-          start = performance.now()
+        const seen: number[] = []
+        const start = performance.now()
         const tick = () => {
           const slot = document.querySelector('.content-panel-slot')
           if (slot) seen.push(Math.round(slot.getBoundingClientRect().width))

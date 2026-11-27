@@ -1,10 +1,12 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
-import { folderFile, projectFile, readFolder, readJson } from '../electron/files'
+
 import type { Project } from '../shared/model'
-import { closeApp, launchApp, removeTestRoot, reportFailure, openLayoutEditor } from './support/app'
+
+import { folderFile, projectFile, readFolder, readJson } from '../electron/files'
+import { Library } from '../electron/library'
+import { closeApp, launchApp, openLayoutEditor, removeTestRoot, reportFailure } from './support/app'
 
 // The editor's "Your fields" section (source groups, not-yet-added rows, search, create from search, value filter,
 // reference only), a field group shown by a text component (made from the row menu, a tags member converted, order
@@ -12,10 +14,10 @@ import { closeApp, launchApp, removeTestRoot, reportFailure, openLayoutEditor } 
 // Folder records are never rewritten by the editor.
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'editor-fields-ui-')),
-  media = path.join(root, 'Library'),
-  child = path.join(media, 'B'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'editor-fields-ui-'))
+const media = path.join(root, 'Library')
+const child = path.join(media, 'B')
+const local = path.join(root, 'local')
 await fs.mkdir(child, { recursive: true })
 const library = new Library(local, undefined, false)
 await library.init()
@@ -138,8 +140,9 @@ try {
   // shows the group. The preview shows the tags as text, from the first member with a value.
   const menuPath = async (row: string, ...items: string[]) => {
     await button('欄位操作 ' + row).click()
-    for (const item of items.slice(0, -1))
+    for (const item of items.slice(0, -1)) {
       await page.getByRole('menuitem', { name: item, exact: true }).hover()
+    }
     await page.getByRole('menuitem', { name: items.at(-1)!, exact: true }).click()
   }
   const groupName = 'NAME 群組'

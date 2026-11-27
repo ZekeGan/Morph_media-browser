@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react'
 import { ActionIcon, Group, Tooltip } from '@mantine/core'
-import { Icon } from './icons'
+import type { ReactNode } from 'react'
+
 import { t as tr } from '../i18n'
+import { Icon } from './icons'
 
 // A small "?" that explains a control on hover or keyboard focus, so help text does not take up room in the layout.
 // Inside a form label the icon must not become part of the control's accessible name, so it is hover-only there.
@@ -31,6 +32,7 @@ export function HelpTip({ text, inLabel = false }: { text: string; inLabel?: boo
     </Tooltip>
   )
 }
+
 // A control label followed by its "?" help.
 export function HelpLabel({ label, help }: { label: ReactNode; help: string }) {
   return (

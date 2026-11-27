@@ -1,5 +1,6 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import { worksBelow } from '../shared/browse'
 import { emptySample } from '../shared/kind'
 import type { FolderRow } from '../shared/model'

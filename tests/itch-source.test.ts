@@ -1,10 +1,13 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { metadata } from '../electron/metadata'
+import { test } from 'node:test'
+
 import { sourceForUrl } from '../shared/sources'
+
+import { metadata } from '../electron/metadata'
 import { tinyPng } from './support/archive-fixture'
 
 type Reply = string | object | Buffer | number
+
 // A fake network: a URL maps to a body (or a status code); every request is recorded with its body.
 const network = (replies: Record<string, Reply>, seen: { url: string; body?: string }[] = []) =>
   (async (input: RequestInfo | URL, init?: RequestInit) => {

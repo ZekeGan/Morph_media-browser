@@ -1,6 +1,7 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
+
 import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
@@ -8,9 +9,9 @@ import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/ap
 // picture loaded, and the toolbar switches it back to the plain text.
 const base = path.resolve('.test-output')
 await fs.mkdir(path.join(base, 'shot'), { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'markdown-ui-')),
-  media = path.join(root, 'Notes'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'markdown-ui-'))
+const media = path.join(root, 'Notes')
+const local = path.join(root, 'local')
 await fs.mkdir(media)
 await fs.writeFile(
   path.join(media, 'note.md'),

@@ -12,6 +12,7 @@ const given = new Set([
   '一般 預設',
   '音樂／影片 預設',
 ])
+
 export const layoutName = (preset: { id: string; name: string }) =>
   given.has(preset.name) && (preset.id === 'default' || preset.id.startsWith('panel-'))
     ? tr(preset.name)

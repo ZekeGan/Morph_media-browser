@@ -1,17 +1,20 @@
 import { ActionIcon, Button, Group, Tooltip } from '@mantine/core'
+
 import {
-  gameActionTemplates,
   type ExplorerRequest,
   type ExplorerResponse,
+  gameActionTemplates,
   launchGap,
 } from '../../shared/explorer'
 import type { FolderRow, Project, Request, Response } from '../../shared/model'
+
+import { PanelCard } from '../cells/PanelContent'
 import { Icon } from '../common/icons'
+import { t as tr, useLocale } from '../i18n'
 import { FolderPage } from '../panel/FolderPage'
 import { GameExtraButtons } from './GameExtras'
-import { t as tr, useLocale } from '../i18n'
+
 import './game-actions.css'
-import { PanelCard } from '../cells/PanelContent'
 
 // The page of a game main folder (R-389: the fill-ins of the shared folder page). Main visual: the cover; actions:
 // confirming a possible game and the launch buttons. Its fields are in the folder details (R-390), which list every
@@ -128,8 +131,9 @@ export function GamePage({
                     if (
                       ['exe', 'file-app', 'shortcut'].includes(t.kind) &&
                       !window.confirm(tr('啟動「{0}」？', tr(t.label)))
-                    )
+                    ) {
                       return
+                    }
                     void run({ action: 'runTarget', rowId: row.rowId, templateId: t.id })
                   }}
                 >

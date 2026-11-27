@@ -2,15 +2,17 @@
 // it should FAIL on the old code and pass on the current one. The old code is checked out into a separate git
 // worktree under .test-output; the working tree is never touched, so a hang or crash cannot leave old code behind.
 //   pnpm verify:old <test name part> [--ref <commit>]     (default ref: HEAD, i.e. the last commit)
+import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
-import { spawnSync } from 'node:child_process'
 
 const root = path.resolve(import.meta.dirname, '..')
-const args = process.argv.slice(2),
-  refAt = args.indexOf('--ref'),
-  ref = refAt >= 0 ? args[refAt + 1] : 'HEAD',
-  words = args.filter((word, index) => !word.startsWith('--') && (refAt < 0 || index !== refAt + 1))
+const args = process.argv.slice(2)
+const refAt = args.indexOf('--ref')
+const ref = refAt >= 0 ? args[refAt + 1] : 'HEAD'
+const words = args.filter(
+  (word, index) => !word.startsWith('--') && (refAt < 0 || index !== refAt + 1)
+)
 if (!words.length) {
   console.error('Usage: pnpm verify:old <test name part> [--ref <commit>]')
   process.exit(2)
@@ -32,8 +34,9 @@ function cleanUp() {
       // Not created.
     }
   }
-  if (fs.existsSync(path.join(dir, 'node_modules')))
+  if (fs.existsSync(path.join(dir, 'node_modules'))) {
     throw new Error('node_modules link still present; leaving ' + dir + ' for manual removal')
+  }
   run('git', ['worktree', 'remove', '--force', JSON.stringify(dir)], { cwd: root })
   run('git', ['worktree', 'prune'], { cwd: root })
 }
@@ -57,12 +60,14 @@ try {
     'scripts/areas.mjs',
     'scripts/clean-test-output.mjs',
     'docs/areas.json',
-  ])
+  ]) {
     fs.cpSync(path.join(root, file), path.join(dir, file), { force: true })
+  }
   console.log(`Building ${ref} in ${path.relative(root, dir)} …`)
   const build = run('pnpm', ['build'], { cwd: dir, timeout: 5 * 60 * 1000 })
-  if (build.status !== 0)
+  if (build.status !== 0) {
     throw new Error('build of ' + ref + ' failed:\n' + (build.stdout + build.stderr).slice(-1500))
+  }
   console.log(`Running ${words.join(' ')} against ${ref} …`)
   // The runner in the worktree keeps its per-test timeout and Electron cleanup.
   const test = run('node', [path.join('scripts', 'run-ui-tests.mjs'), ...words], {

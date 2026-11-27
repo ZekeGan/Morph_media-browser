@@ -1,12 +1,14 @@
-import { useEffect, useState, type ReactNode } from 'react'
 import { ActionIcon, Button, Group, Progress, Text, Tooltip } from '@mantine/core'
+import { type ReactNode, useEffect, useState } from 'react'
+
 import type { MediaEntry, NovelBook } from '../../shared/explorer'
 import type { FolderRow } from '../../shared/model'
-import { currentLocale, t as tr, useLocale } from '../i18n'
-import { Icon, type IconName } from '../common/icons'
-import { audioCover } from '../media/MediaThumb'
-import { fileSize, friendlyType } from '../media/fileLabels'
 import { bookFinished, sortVolumes } from '../../shared/reader'
+
+import { Icon, type IconName } from '../common/icons'
+import { currentLocale, t as tr, useLocale } from '../i18n'
+import { fileSize, friendlyType } from '../media/fileLabels'
+import { audioCover } from '../media/MediaThumb'
 
 // R-337: one file in the right panel — a large preview, the kind and size in words, the main action for its kind,
 // and the details folded away. R-338: a text book shows its cover, title, author, chapters and the place it was left.
@@ -35,17 +37,18 @@ export function FilePage({
   children?: ReactNode
 }) {
   useLocale()
-  const [book, setBook] = useState<NovelBook>(),
-    [cover, setCover] = useState<string>()
+  const [book, setBook] = useState<NovelBook>()
+  const [cover, setCover] = useState<string>()
   useEffect(() => {
     setBook(undefined)
     setCover(undefined)
     let alive = true
-    if (file.kind === 'text')
+    if (file.kind === 'text') {
       void window.explorer
         .request({ action: 'novel', rowId: row.rowId, fileId: file.id, summary: true })
         .then((result) => alive && setBook(result.novel))
         .catch(() => {})
+    }
     if (file.kind === 'audio') void audioCover(file.url).then((url) => alive && setCover(url))
     return () => {
       alive = false
@@ -156,6 +159,7 @@ export function FilePage({
 // A comic archive the reader can open (CBZ, CBR and CB7, R-407).
 export const isComicArchive = (entry: { kind: string; name: string }) =>
   entry.kind === 'archive' && /\.(cbz|cbr|cb7)$/i.test(entry.name)
+
 const bookTitle = (name: string) => name.replace(/\.(txt|epub|md|cbz|cbr|cb7)$/i, '')
 
 // R-338: the text books (and other documents) in a folder, each with how far it has been read. R-407: comic archives
@@ -175,24 +179,23 @@ export function BookShelf({
   return (
     <ul className="book-shelf" aria-label={tr('文字書與文件')}>
       {listed.map((entry) => {
-        const text = entry.kind === 'text',
-          comic = isComicArchive(entry),
-          saved = text ? row.record?.details?.novels?.[entry.name] : undefined,
-          volume = comic ? row.record?.details?.volumes?.[entry.name] : undefined,
-          // R-426: a finished volume (its last page was on screen, the right page of a spread too) shows its last page.
-          volumeDone =
-            !!volume &&
-            bookFinished(volume.page, volume.total, row.record?.details?.reading?.spread),
-          volumePage = volume ? (volumeDone ? volume.total : volume.page + 1) : 0,
-          percent = saved
-            ? Math.round(saved.percent * 100)
-            : volume
-              ? Math.round((volumePage / volume.total) * 100)
-              : 0,
-          unfinished = saved
-            ? saved.percent > 0 && saved.percent < 1
-            : !!volume && volume.page > 0 && !volumeDone,
-          label = !text && !comic ? tr('開啟') : unfinished ? tr('繼續閱讀') : tr('開始閱讀')
+        const text = entry.kind === 'text'
+        const comic = isComicArchive(entry)
+        const saved = text ? row.record?.details?.novels?.[entry.name] : undefined
+        const volume = comic ? row.record?.details?.volumes?.[entry.name] : undefined
+        // R-426: a finished volume (its last page was on screen, the right page of a spread too) shows its last page.
+        const volumeDone =
+          !!volume && bookFinished(volume.page, volume.total, row.record?.details?.reading?.spread)
+        const volumePage = volume ? (volumeDone ? volume.total : volume.page + 1) : 0
+        const percent = saved
+          ? Math.round(saved.percent * 100)
+          : volume
+            ? Math.round((volumePage / volume.total) * 100)
+            : 0
+        const unfinished = saved
+          ? saved.percent > 0 && saved.percent < 1
+          : !!volume && volume.page > 0 && !volumeDone
+        const label = !text && !comic ? tr('開啟') : unfinished ? tr('繼續閱讀') : tr('開始閱讀')
         return (
           <li key={entry.id}>
             <Icon name={kindIcon[entry.kind] ?? 'file'} size={18} />

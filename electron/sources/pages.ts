@@ -1,5 +1,5 @@
 import { SourceError, sourceJson } from '../metadata-common'
-import { clean, type Adapter } from './site'
+import { type Adapter, clean } from './site'
 import { attribute, blocks } from './web'
 
 // R-292: sites without an API, read from what their pages already carry (no script runs). Checked 2026-11-12:

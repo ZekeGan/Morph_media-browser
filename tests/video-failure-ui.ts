@@ -1,15 +1,16 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
+
 import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
 // A "video" that is really a ZIP: the player names the cause and offers ways forward instead of a generic message.
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'video-failure-ui-')),
-  media = path.join(root, 'Videos'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'video-failure-ui-'))
+const media = path.join(root, 'Videos')
+const local = path.join(root, 'local')
 await fs.mkdir(media, { recursive: true })
 await fs.writeFile(
   path.join(media, 'zipped.mp4'),

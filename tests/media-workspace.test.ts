@@ -1,15 +1,11 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { execFile } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { execFile } from 'node:child_process'
+import { test } from 'node:test'
 import { promisify } from 'node:util'
-import { Library } from '../electron/library'
-import { Explorer } from '../electron/explorer'
-import { hiddenFileNames } from '../electron/hidden'
-import { folderFile } from '../electron/files'
-import { validateWorkspace } from '../electron/workspace'
-import { defaultWorkspace } from '../shared/workspace'
+
+import type { MediaEntry } from '../shared/explorer'
 import {
   isGameFolder,
   matchesMedia,
@@ -18,8 +14,14 @@ import {
   sortMedia,
   visibleFile,
 } from '../shared/media'
-import type { MediaEntry } from '../shared/explorer'
 import type { FolderRow } from '../shared/model'
+import { defaultWorkspace } from '../shared/workspace'
+
+import { Explorer } from '../electron/explorer'
+import { folderFile } from '../electron/files'
+import { hiddenFileNames } from '../electron/hidden'
+import { Library } from '../electron/library'
+import { validateWorkspace } from '../electron/workspace'
 
 const entry = (
   id: string,
@@ -27,8 +29,8 @@ const entry = (
   extra: Partial<MediaEntry> = {}
 ): MediaEntry => ({ id, name: id, kind, url: id, mime: 'test', size: 1, modified: 0, ...extra })
 test('identical file IDs from different source folders retain separate identities', () => {
-  const first = { ...entry('same'), rowId: 'A' },
-    second = { ...entry('same'), rowId: 'B' }
+  const first = { ...entry('same'), rowId: 'A' }
+  const second = { ...entry('same'), rowId: 'B' }
   assert.notEqual(mediaIdentity(first), mediaIdentity(second))
   assert.equal(mediaIdentity(entry('same')), 'same')
 })
@@ -88,9 +90,9 @@ test('candidate UI qualification does not override an explicit not-game record',
 test('new media projects reopen without migration, enumerate audio and hidden flags, and preserve original files', async (t) => {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'mixed-contract-')),
-    media = path.join(root, 'Media'),
-    local = path.join(root, 'local')
+  const root = await fs.mkdtemp(path.join(base, 'mixed-contract-'))
+  const media = path.join(root, 'Media')
+  const local = path.join(root, 'local')
   await fs.mkdir(media)
   const originals = {
     'song.mp3': 'CONTROLLED MP3 PLACEHOLDER',
@@ -99,12 +101,14 @@ test('new media projects reopen without migration, enumerate audio and hidden fl
     'secret.txt': 'HIDDEN ORIGINAL',
     '.dot': 'DOT ORIGINAL',
   }
-  for (const [name, bytes] of Object.entries(originals))
+  for (const [name, bytes] of Object.entries(originals)) {
     await fs.writeFile(path.join(media, name), bytes)
-  if (process.platform === 'win32')
+  }
+  if (process.platform === 'win32') {
     await promisify(execFile)('attrib.exe', ['+H', path.join(media, 'secret.txt')], {
       windowsHide: true,
     })
+  }
   const library = new Library(local, undefined, false)
   await library.init()
   await library.create(media, {
@@ -123,8 +127,8 @@ test('new media projects reopen without migration, enumerate audio and hidden fl
     thumbnail: async () => Buffer.alloc(0),
   })
   t.after(() => explorer.close())
-  const row = library.snapshot().rows[0],
-    before = await fs.readFile(folderFile(media))
+  const row = library.snapshot().rows[0]
+  const before = await fs.readFile(folderFile(media))
   let cursor: string | undefined
   const entries: MediaEntry[] = []
   do {
@@ -133,12 +137,12 @@ test('new media projects reopen without migration, enumerate audio and hidden fl
     cursor = result.nextCursor
   } while (cursor)
   assert.equal(entries.filter((file) => file.kind === 'audio').length, 2)
-  const audio = entries.find((file) => file.name === 'sound.wav')!,
-    response = await explorer.stream(
-      row.rowId,
-      audio.id,
-      new Request(audio.url, { headers: { Range: 'bytes=0-3' } })
-    )
+  const audio = entries.find((file) => file.name === 'sound.wav')!
+  const response = await explorer.stream(
+    row.rowId,
+    audio.id,
+    new Request(audio.url, { headers: { Range: 'bytes=0-3' } })
+  )
   assert.equal(response.status, 206)
   assert.equal(response.headers.get('Content-Type'), 'audio/wav')
   assert.equal(await response.text(), 'CONT')
@@ -146,14 +150,16 @@ test('new media projects reopen without migration, enumerate audio and hidden fl
   assert.equal((await explorer.stream(row.rowId, config.id, new Request(config.url))).status, 415)
   assert.ok(!entries.some((file) => file.name === '.media-viewer'))
   assert.equal(visibleFile(entries.find((file) => file.name === 'normal.ini')!), true)
-  if (process.platform === 'win32')
+  if (process.platform === 'win32') {
     assert.equal(entries.find((file) => file.name === 'secret.txt')?.hidden, true)
+  }
   const reopened = new Library(local, undefined, false)
   await reopened.init()
   assert.equal((await hiddenFileNames(media)).has('normal.ini'), false)
   assert.deepEqual(await fs.readFile(folderFile(media)), before)
-  for (const [name, bytes] of Object.entries(originals))
+  for (const [name, bytes] of Object.entries(originals)) {
     assert.equal(await fs.readFile(path.join(media, name), 'utf8'), bytes)
+  }
 })
 test('R-486: the file list sorts by one field and a direction, ties by natural name, empty values last', () => {
   const file = (name: string, size = 0, modified = 0, kind: MediaEntry['kind'] = 'image') =>

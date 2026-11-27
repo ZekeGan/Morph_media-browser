@@ -1,19 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
+
 import { t as tr } from '../i18n'
+
 type AudioPrefs = {
   volume: number
   muted: boolean
 }
 
 export function useVideoAudio() {
-  const [value, setValue] = useState<AudioPrefs>({ volume: 1, muted: false }),
-    [ready, setReady] = useState(false),
-    [error, setError] = useState('')
+  const [value, setValue] = useState<AudioPrefs>({ volume: 1, muted: false })
+  const [ready, setReady] = useState(false)
+  const [error, setError] = useState('')
 
-  const current = useRef(value),
-    mounted = useRef(false),
-    blocked = useRef(false),
-    timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const current = useRef(value)
+  const mounted = useRef(false)
+  const blocked = useRef(false)
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const persist = () => {
     timer.current = undefined

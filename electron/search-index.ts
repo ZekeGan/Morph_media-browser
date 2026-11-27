@@ -1,21 +1,22 @@
-import { calendarDate, readDate } from '../shared/fields'
-import { DatabaseSync } from 'node:sqlite'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
-import { createHash } from 'node:crypto'
-import type { Snapshot } from '../shared/model'
-import { fieldValue } from '../shared/model'
+import { DatabaseSync } from 'node:sqlite'
+
 import { cellLists } from '../shared/cellLists'
 import type { SearchResult } from '../shared/explorer'
+import { calendarDate, readDate } from '../shared/fields'
+import { fieldValue, type Snapshot } from '../shared/model'
 import {
-  parseQuery,
   describeQuery,
   normalizeValue,
+  parseQuery,
   queryField,
-  restoreQuery,
   queryText,
+  restoreQuery,
   type StableQuery,
 } from '../shared/query'
+
 export class SearchIndex {
   private db: DatabaseSync
   private versions = new Map<string, string>()
@@ -38,9 +39,11 @@ export class SearchIndex {
       CREATE INDEX IF NOT EXISTS grams_doc ON grams(doc);
       DELETE FROM grams; DELETE FROM vals; DELETE FROM docs;`)
   }
+
   close() {
     this.db.close()
   }
+
   sync(snapshot: Snapshot, force = false) {
     this.snapshot = snapshot
     const keys = new Map<string, SearchResult['fields'][number]>()
@@ -62,23 +65,24 @@ export class SearchIndex {
         },
       ])
     )
-    const rows = snapshot.rows,
-      present = new Set(rows.map((r) => r.rowId))
-    const insertDoc = this.db.prepare('INSERT INTO docs VALUES(?,?,?,?)'),
-      insertVal = this.db.prepare('INSERT INTO vals VALUES(?,?,?,?,?)'),
-      insertGram = this.db.prepare('INSERT OR IGNORE INTO grams VALUES(?,?,?)'),
-      remove = this.db.prepare('DELETE FROM docs WHERE id=?')
+    const rows = snapshot.rows
+    const present = new Set(rows.map((r) => r.rowId))
+    const insertDoc = this.db.prepare('INSERT INTO docs VALUES(?,?,?,?)')
+    const insertVal = this.db.prepare('INSERT INTO vals VALUES(?,?,?,?,?)')
+    const insertGram = this.db.prepare('INSERT OR IGNORE INTO grams VALUES(?,?,?)')
+    const remove = this.db.prepare('DELETE FROM docs WHERE id=?')
     const nextVersions = new Map(this.versions)
     this.db.exec('BEGIN')
     try {
-      for (const id of this.versions.keys())
+      for (const id of this.versions.keys()) {
         if (!present.has(id)) {
           remove.run(id)
           nextVersions.delete(id)
         }
+      }
       for (const row of rows) {
-        const linked = projects.get(row.projectId),
-          project = linked?.project
+        const linked = projects.get(row.projectId)
+        const project = linked?.project
         const values: { field: string; key: string; type: string; value: unknown }[] = [
           { field: '@name', key: 'folder_name', type: 'string', value: row.name },
           { field: '@path', key: 'path', type: 'string', value: row.path },
@@ -89,17 +93,17 @@ export class SearchIndex {
             ...(row.record?.projectOverrides[row.projectId] ?? []),
           ].map((a) => [a.attributeId, a])
         )
-        for (const a of all.values())
+        for (const a of all.values()) {
           if (
             ['string', 'tags', 'number', 'datetime', 'boolean', 'enum', 'url', 'date'].includes(
               a.type
             )
           ) {
-            const binding = linked?.bindings.get(a.attributeId),
-              alias = binding?.alias ?? a.key,
-              value = fieldValue(row, a.attributeId),
-              dateType =
-                binding?.type === 'date' || binding?.type === 'datetime' ? binding.type : undefined
+            const binding = linked?.bindings.get(a.attributeId)
+            const alias = binding?.alias ?? a.key
+            const value = fieldValue(row, a.attributeId)
+            const dateType =
+              binding?.type === 'date' || binding?.type === 'datetime' ? binding.type : undefined
             // Text in a date field is indexed as the date it reads as, so date comparisons find it (R-240).
             values.push({
               field: a.attributeId,
@@ -114,15 +118,17 @@ export class SearchIndex {
               attributeId: a.attributeId,
             })
           }
-        for (const f of project?.fieldBindings ?? [])
+        }
+        for (const f of project?.fieldBindings ?? []) {
           keys.set(`${row.projectId}/${f.attributeId}`, {
             key: f.alias,
             type: f.type,
             projectId: row.projectId,
             attributeId: f.attributeId,
           })
+        }
         // A field group can be searched by its name; any member holding the value finds the folder.
-        for (const g of project?.fieldGroups ?? [])
+        for (const g of project?.fieldGroups ?? []) {
           keys.set(`${row.projectId}/${g.groupId}`, {
             key: g.name,
             type:
@@ -131,6 +137,7 @@ export class SearchIndex {
             projectId: row.projectId,
             attributeId: g.groupId,
           })
+        }
         // Compare all searchable inputs before normalizing text/grams. This still
         // detects in-place value, path and alias edits without relying on revisions.
         const signature = createHash('sha256')
@@ -157,6 +164,7 @@ export class SearchIndex {
       throw e
     }
   }
+
   search(
     query: string,
     projectId?: string,
@@ -170,40 +178,48 @@ export class SearchIndex {
       !Number.isInteger(limit) ||
       limit < 1 ||
       limit > 500
-    )
+    ) {
       throw new Error('查詢分頁不合法')
-    if (projectId && !this.snapshot?.projects.some((p) => p.projectId === projectId))
+    }
+    if (projectId && !this.snapshot?.projects.some((p) => p.projectId === projectId)) {
       throw new Error('搜尋專案未連結')
-    const params: (string | number)[] = [],
-      available = this.fields.filter((f) => !projectId || f.projectId === projectId)
+    }
+    const params: (string | number)[] = []
+    const available = this.fields.filter((f) => !projectId || f.projectId === projectId)
     // A field that a cell lists first with fallback fields also finds what is stored in those fallbacks (one value
     // that may come from several source sites). Only the set of fields in the query grows; nothing more is indexed.
-    const chains = new Map<string, Set<string>>(),
-      groupMembers = new Map<string, string[]>()
-    for (const linked of this.snapshot?.projects ?? [])
+    const chains = new Map<string, Set<string>>()
+    const groupMembers = new Map<string, string[]>()
+    for (const linked of this.snapshot?.projects ?? []) {
       for (const group of linked.project?.fieldGroups ?? []) {
         chains.set(group.groupId, new Set(group.memberIds))
         groupMembers.set(group.groupId, group.memberIds)
       }
-    for (const linked of this.snapshot?.projects ?? [])
-      for (const { cells } of linked.project ? cellLists(linked.project) : [])
-        for (const cell of cells)
+    }
+    for (const linked of this.snapshot?.projects ?? []) {
+      for (const { cells } of linked.project ? cellLists(linked.project) : []) {
+        for (const cell of cells) {
           if (cell.attributeId && cell.fallbackIds?.length) {
             const set = chains.get(cell.attributeId) ?? new Set<string>()
             for (const id of cell.fallbackIds) set.add(id)
             chains.set(cell.attributeId, set)
           }
+        }
+      }
+    }
     const yesNoWording = (text: string, ids: string[]) => {
       const key = text.trim().toLocaleLowerCase()
       // Only the searched project's wording counts (the same field ID can carry other words elsewhere).
-      for (const linked of this.snapshot?.projects ?? [])
+      for (const linked of this.snapshot?.projects ?? []) {
         for (const field of !projectId || linked.projectId === projectId
           ? (linked.project?.fieldBindings ?? [])
-          : [])
+          : []) {
           if (ids.includes(field.attributeId)) {
             if (field.trueLabel?.trim().toLocaleLowerCase() === key) return 'true'
             if (field.falseLabel?.trim().toLocaleLowerCase() === key) return 'false'
           }
+        }
+      }
       return text
     }
     const groups = saved ? restoreQuery(saved, available) : parseQuery(query)
@@ -213,8 +229,8 @@ export class SearchIndex {
           '(' +
           (g
             .map((t) => {
-              let fields: string[] | undefined,
-                type = 'string'
+              let fields: string[] | undefined
+              let type = 'string'
               if (t.fieldId) {
                 fields = [t.fieldId]
                 type = t.expectedType ?? 'string'
@@ -229,15 +245,17 @@ export class SearchIndex {
                   : null
               if (comparison) {
                 const value = normalizeValue(comparison[2], type)
-                if (type === 'number' && (!value.trim() || !Number.isFinite(Number(value))))
+                if (type === 'number' && (!value.trim() || !Number.isFinite(Number(value)))) {
                   throw new Error('數值比較條件不合法')
+                }
                 if (type === 'date' && value.length !== 10) throw new Error('日期比較條件不合法')
                 if (
                   type !== 'number' &&
                   (!calendarDate(value.slice(0, 10)) ||
                     !/^\d{4}-\d{2}-\d{2}(?:T(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?)?$/i.test(value))
-                )
+                ) {
                   throw new Error('日期比較條件不合法')
+                }
                 const compared = groupMembers.get(fields![0]) ?? [fields![0]]
                 params.push(...compared, type === 'number' ? Number(value) : value)
                 const column =
@@ -262,8 +280,8 @@ export class SearchIndex {
                 type === 'boolean' && fields
                   ? yesNoWording(t.value, [fields[0], ...(chains.get(fields[0]) ?? [])])
                   : t.value
-              const value = normalizeValue(wording, type),
-                gram = [...value].slice(0, 3).join('')
+              const value = normalizeValue(wording, type)
+              const gram = [...value].slice(0, 3).join('')
               let sql = 'v.doc=d.id'
               if (fields) {
                 const searched = [fields[0], ...(chains.get(fields[0]) ?? [])]
@@ -283,8 +301,8 @@ export class SearchIndex {
           ')'
       )
       .join(' OR ')
-    const where = (projectId ? 'd.project=? AND ' : '') + `(${conditions})`,
-      args = projectId ? [projectId, ...params] : params
+    const where = (projectId ? 'd.project=? AND ' : '') + `(${conditions})`
+    const args = projectId ? [projectId, ...params] : params
     // The same folder (same path) in several projects is one result that lists every project (R-477).
     const same = process.platform === 'win32' ? 'path COLLATE NOCASE' : 'path'
     const total = Number(

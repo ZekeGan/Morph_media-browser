@@ -1,6 +1,8 @@
 import { startTransition, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
+
 import type { Snapshot } from '../shared/model'
+
 import { keepUnchanged } from './common/keepUnchanged'
 
 const empty: Snapshot = {
@@ -15,8 +17,8 @@ export function useSnapshot() {
   const [snapshot, setSnapshot] = useState(empty)
   // R-448: the newest snapshot generation taken in (from main), and a reading save's snapshot waiting for an idle
   // moment. A snapshot older than what is shown is never taken in.
-  const shownGeneration = useRef(0),
-    waiting = useRef<Snapshot | undefined>(undefined)
+  const shownGeneration = useRef(0)
+  const waiting = useRef<Snapshot | undefined>(undefined)
   const takeSnapshot = (next: Snapshot) => {
     // One without a number (not from main's library) is taken in as it is, leaving the mark where it was.
     if (next.generation !== undefined) {

@@ -3,9 +3,9 @@
 //   node scripts/clean-test-output.mjs                    everything except fixtures
 //   node scripts/clean-test-output.mjs --older-than 24    only entries untouched for 24 hours (what pnpm test, pnpm shot
 //                                                         and the UI runner do on start, so failure artifacts last a day)
+import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { spawnSync } from 'node:child_process'
 
 const directory = resolve('.test-output')
 const index = process.argv.indexOf('--older-than')
@@ -19,8 +19,8 @@ const remove = (path) =>
     : (rmSync(path, { recursive: true, force: true }), true)
 let removed = 0
 try {
-  if (existsSync(directory))
-    for (const entry of readdirSync(directory))
+  if (existsSync(directory)) {
+    for (const entry of readdirSync(directory)) {
       if (entry !== 'fixtures') {
         const path = join(directory, entry)
         try {
@@ -36,6 +36,8 @@ try {
           console.log(`Could not remove ${entry} (still in use?)`)
         }
       }
+    }
+  }
 } catch (error) {
   console.log('Cleanup skipped: ' + String(error))
 }

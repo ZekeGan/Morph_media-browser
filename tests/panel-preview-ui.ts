@@ -1,15 +1,16 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
+
 import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
 // One click shows a folder's details in the right panel; only a double click moves the center into it.
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'panel-preview-ui-')),
-  media = path.join(root, 'Games'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'panel-preview-ui-'))
+const media = path.join(root, 'Games')
+const local = path.join(root, 'local')
 for (const name of ['Game A', 'Game B']) {
   await fs.mkdir(path.join(media, name, 'Game_Data'), { recursive: true })
   await fs.writeFile(path.join(media, name, 'Game.exe'), 'x')

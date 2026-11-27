@@ -1,16 +1,23 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
-import { Explorer, type DesktopOperations } from '../electron/explorer'
-import { folderFile, readFolder } from '../electron/files'
+import { test } from 'node:test'
+
 import { launchChoice, launchTemplate, launchTemplates } from '../shared/explorer'
 
+import { type DesktopOperations, Explorer } from '../electron/explorer'
+import { folderFile, readFolder } from '../electron/files'
+import { Library } from '../electron/library'
+
 test('launch actions: the cell picks its own action, falls back to the default, then to any launcher', () => {
-  const le = { id: 'le', label: '用 LE 啟動', kind: 'shortcut' as const, color: '#123456' },
-    web = { id: 'web', label: 'Website', kind: 'url' as const, color: '#123456' },
-    plain = { id: 'default-launch-game', label: '啟動遊戲', kind: 'exe' as const, color: '#168c77' }
+  const le = { id: 'le', label: '用 LE 啟動', kind: 'shortcut' as const, color: '#123456' }
+  const web = { id: 'web', label: 'Website', kind: 'url' as const, color: '#123456' }
+  const plain = {
+    id: 'default-launch-game',
+    label: '啟動遊戲',
+    kind: 'exe' as const,
+    color: '#168c77',
+  }
   assert.equal(launchTemplate({}, undefined)?.id, 'default-launch-game')
   assert.equal(launchTemplate({ actionTemplates: [plain, le] }, 'le')?.id, 'le')
   assert.equal(
@@ -25,15 +32,17 @@ test('launch actions: the cell picks its own action, falls back to the default, 
 
 test('a launch cell falls back to the next action this folder has a target for', () => {
   const exe = {
-      id: 'default-launch-game',
-      label: '啟動遊戲',
-      kind: 'exe' as const,
-      color: '#168c77',
-    },
-    le = { id: 'le', label: '用 LE 啟動', kind: 'shortcut' as const, color: '#123456' },
-    project = { actionTemplates: [exe, le] },
-    pick = (targets: Record<string, { kind: string }>, fallbacks: string[] | undefined = ['le']) =>
-      launchChoice(project, undefined, fallbacks, targets).id
+    id: 'default-launch-game',
+    label: '啟動遊戲',
+    kind: 'exe' as const,
+    color: '#168c77',
+  }
+  const le = { id: 'le', label: '用 LE 啟動', kind: 'shortcut' as const, color: '#123456' }
+  const project = { actionTemplates: [exe, le] }
+  const pick = (
+    targets: Record<string, { kind: string }>,
+    fallbacks: string[] | undefined = ['le']
+  ) => launchChoice(project, undefined, fallbacks, targets).id
   assert.equal(pick({ 'default-launch-game': { kind: 'exe' } }), 'default-launch-game')
   assert.equal(pick({ le: { kind: 'shortcut' } }), 'le', 'only the shortcut is bound here')
   assert.equal(
@@ -58,8 +67,8 @@ test('a launch cell falls back to the next action this folder has a target for',
 test('shortcut actions are chosen from the folder, opened through the system and never rewrite files', async (t) => {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'game-shortcut-')),
-    media = path.join(root, 'game')
+  const root = await fs.mkdtemp(path.join(base, 'game-shortcut-'))
+  const media = path.join(root, 'game')
   await fs.mkdir(path.join(media, 'sub'), { recursive: true })
   const original = {
     'Game.exe': 'controlled fake EXE',
@@ -68,12 +77,13 @@ test('shortcut actions are chosen from the folder, opened through the system and
     'readme.txt': 'ORIGINAL',
     'sub/Other.lnk': 'nested shortcut',
   }
-  for (const [name, value] of Object.entries(original))
+  for (const [name, value] of Object.entries(original)) {
     await fs.writeFile(path.join(media, name), value)
+  }
   const library = new Library(path.join(root, 'local'), undefined, false)
   await library.init()
-  const opened: string[] = [],
-    launched: string[] = []
+  const opened: string[] = []
+  const launched: string[] = []
   const desktop: DesktopOperations = {
     choose: async () => {
       throw new Error('shortcuts must not use a file dialog')
@@ -131,8 +141,9 @@ test('shortcut actions are chosen from the folder, opened through the system and
     '',
     undefined,
     'Missing.lnk',
-  ])
+  ]) {
     await assert.rejects(bind(bad), Error, String(bad))
+  }
   await assert.rejects(bind('Store.url', ['--extra']), /參數不合法/)
   const before = await fs.readFile(folderFile(media), 'utf8')
   assert.equal(
@@ -151,8 +162,9 @@ test('shortcut actions are chosen from the folder, opened through the system and
   await explorer.request({ action: 'runTarget', rowId: row().rowId, templateId: 'le' })
   assert.deepEqual(opened, [path.join(media, 'Game - Locale Emulator.lnk')])
   assert.deepEqual(launched, [], 'a shortcut is opened by the system, not spawned with arguments')
-  for (const [name, value] of Object.entries(original))
+  for (const [name, value] of Object.entries(original)) {
     assert.equal(await fs.readFile(path.join(media, name), 'utf8'), value, name)
+  }
   // A button can be hidden from this folder's action row; it stays bound and the record stays valid.
   const visible = (templateId: string, flag: boolean, revision = row().record!.revision) =>
     explorer.request({

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+
 import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
 
@@ -8,9 +9,9 @@ import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/ap
 // the protection notes of game folders are not counted as problems.
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'problems-')),
-  media = path.join(root, 'Library'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'problems-'))
+const media = path.join(root, 'Library')
+const local = path.join(root, 'local')
 await fs.mkdir(path.join(media, 'Game A', 'Game_Data'), { recursive: true })
 await fs.writeFile(path.join(media, 'Game A', 'Game.exe'), 'x')
 const library = new Library(local, undefined, false)

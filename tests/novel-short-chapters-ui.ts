@@ -1,18 +1,19 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
+
 import { Library } from '../electron/library'
-import { tinyPng, zipFixture } from './support/archive-fixture'
 import { closeApp, launchApp, reportFailure } from './support/app'
+import { tinyPng, zipFixture } from './support/archive-fixture'
 
 // R-427: in scroll mode a book whose first chapters are shorter than the window (a cover picture page, the cover, the
 // contents, a one-line first chapter) can be read on with the wheel: the view is not pinned to the start, and the
 // reading goes on into the first long chapter.
 const base = path.resolve('.test-output')
 await fs.mkdir(path.join(base, 'shot'), { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'novel-short-')),
-  media = path.join(root, 'Novels'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'novel-short-'))
+const media = path.join(root, 'Novels')
+const local = path.join(root, 'local')
 await fs.mkdir(media)
 const xml = (name: string, value: string) => ({ name, bytes: Buffer.from(value) })
 const page = (body: string) =>
@@ -52,8 +53,9 @@ await fs.writeFile(
   ])
 )
 // A real book to check by hand (NOVEL_REAL_EPUB=path): copied here, the original is never opened.
-if (process.env.NOVEL_REAL_EPUB)
+if (process.env.NOVEL_REAL_EPUB) {
   await fs.copyFile(process.env.NOVEL_REAL_EPUB, path.join(media, 'real.epub'))
+}
 const library = new Library(local, undefined, false)
 await library.init()
 await library.create(media, {
@@ -95,11 +97,12 @@ try {
     6,
     'the wheel reaches the first long chapter: ' + seen.join(',')
   )
-  for (let i = 1; i < seen.length; i++)
+  for (let i = 1; i < seen.length; i++) {
     assert.ok(
       seen[i] >= seen[i - 1],
       'the chapter never goes back while reading on: ' + seen.join(',')
     )
+  }
   // In the long chapter the text moves with the wheel.
   const top = await win.evaluate(() => document.querySelector('.novel-page')!.scrollTop)
   await win.mouse.wheel(0, 400)

@@ -1,33 +1,37 @@
+import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { randomUUID } from 'node:crypto'
-import SevenZip from '7z-wasm'
-import type { SevenZipModule } from '7z-wasm'
+import SevenZip, { type SevenZipModule } from '7z-wasm'
+
 import { identifyImage, imageTypes } from '../shared/images'
+
+import { type ArchiveImage, archiveImage, type ArchiveIndex, archiveIndex, crc32 } from './archive'
 import { probeFile } from './media-files'
-import { archiveImage, archiveIndex, crc32, type ArchiveImage, type ArchiveIndex } from './archive'
 
 // R-407: comic archives that are RAR (CBR) or 7z (CB7). They are read by 7-Zip compiled to WebAssembly (7z-wasm), which
 // runs in the main process on its own in-memory file system: the archive is copied into that memory, listed, and one
 // picture at a time is extracted into memory and handed to the reader. Nothing is written to the media tree or to any
 // real disk path, and nothing is executed. Zip files (also CBZ/CBR with a misleading name) keep using archive.ts.
-const maxArchive = 512 * 1024 * 1024,
-  maxEntry = 64 * 1024 * 1024,
-  maxEntries = 20000,
-  maxTotal = 2 * 1024 * 1024 * 1024
+const maxArchive = 512 * 1024 * 1024
+const maxEntry = 64 * 1024 * 1024
+const maxEntries = 20000
+const maxTotal = 2 * 1024 * 1024 * 1024
+
 type Engine = { module: SevenZipModule; log: string[] }
+
 let engine: Promise<Engine> | undefined
 const started = () =>
   (engine ??= (async () => {
-    const log: string[] = [],
-      module = await SevenZip({
-        print: (line) => log.push(line),
-        printErr: (line) => log.push(line),
-      })
+    const log: string[] = []
+    const module = await SevenZip({
+      print: (line) => log.push(line),
+      printErr: (line) => log.push(line),
+    })
     module.FS.mkdir('/arc')
     module.FS.mkdir('/out')
     return { module, log }
   })())
+
 // One 7-Zip command; its console lines come back. A failing command throws or prints an error.
 function run(engine: Engine, args: string[]) {
   engine.log.length = 0
@@ -42,9 +46,11 @@ function run(engine: Engine, args: string[]) {
   }
   return [...engine.log]
 }
+
 const isOk = (lines: string[]) =>
   lines.some((line) => /Everything is Ok/.test(line)) &&
   !lines.some((line) => /^(ERROR|Open ERROR|WARNING)/.test(line))
+
 function removeTree(module: SevenZipModule, dir: string) {
   try {
     for (const name of module.FS.readdir(dir)) {
@@ -97,9 +103,9 @@ export function parseListing(lines: string[]): { type: string; entries: Record<s
 export async function foreignIndex(file: string, format: 'rar' | '7z'): Promise<ArchiveIndex> {
   const stat = await fs.stat(file)
   if (stat.size > maxArchive) throw new Error('RAR／7z 壓縮檔超過大小上限（512 MiB）')
-  const engine = await started(),
-    id = randomUUID(),
-    memory = `/arc/${id}`
+  const engine = await started()
+  const id = randomUUID()
+  const memory = `/arc/${id}`
   const data = await fs.readFile(file)
   if (data.length !== stat.size) throw new Error('壓縮檔已變更，請重新開啟')
   engine.module.FS.writeFile(memory, data)
@@ -107,8 +113,8 @@ export async function foreignIndex(file: string, format: 'rar' | '7z'): Promise<
     const lines = run(engine, ['l', '-slt', '-bd', memory])
     const { type, entries } = parseListing(lines)
     if (!(format === 'rar' ? /^Rar5?$/ : /^7z$/).test(type)) throw new Error('壓縮檔格式不符')
-    const images: ArchiveImage[] = [],
-      names = new Set<string>()
+    const images: ArchiveImage[] = []
+    const names = new Set<string>()
     let total = 0
     if (entries.length > maxEntries) throw new Error('壓縮檔目錄超出限制')
     for (const entry of entries) {
@@ -123,8 +129,9 @@ export async function foreignIndex(file: string, format: 'rar' | '7z'): Promise<
       if (!mime) continue
       if (entry.Encrypted === '+') throw new Error('壓縮檔已加密，無法開啟')
       const size = Number(entry.Size)
-      if (!Number.isInteger(size) || size <= 0 || size > maxEntry || (total += size) > maxTotal)
+      if (!Number.isInteger(size) || size <= 0 || size > maxEntry || (total += size) > maxTotal) {
         throw new Error('壓縮圖片大小超出限制')
+      }
       const crc = entry.CRC ? Number.parseInt(entry.CRC, 16) : undefined
       images.push({
         name,
@@ -166,10 +173,11 @@ export async function foreignDispose(index: ArchiveIndex) {
 
 export async function foreignImage(file: string, index: ArchiveIndex, entry: ArchiveImage) {
   const stat = await fs.stat(file)
-  if (!index.memory || stat.size !== index.size || stat.mtimeMs !== index.modified)
+  if (!index.memory || stat.size !== index.size || stat.mtimeMs !== index.modified) {
     throw new Error('壓縮檔已變更，請重新開啟')
-  const engine = await started(),
-    out = `/out/${randomUUID()}`
+  }
+  const engine = await started()
+  const out = `/out/${randomUUID()}`
   engine.module.FS.mkdir(out)
   try {
     // -spd: names are taken literally (no wildcards); -o is the in-memory folder; nothing reaches a real disk.
@@ -180,8 +188,9 @@ export async function foreignImage(file: string, index: ArchiveIndex, entry: Arc
       bytes.length !== entry.size ||
       (entry.crc >= 0 && crc32(bytes) !== entry.crc) ||
       identifyImage(bytes)?.mime !== entry.mime
-    )
+    ) {
       throw new Error('壓縮圖片內容或校驗不符')
+    }
     return bytes
   } finally {
     removeTree(engine.module, out)
@@ -195,6 +204,7 @@ export async function openArchive(file: string): Promise<ArchiveIndex> {
   if (kind === 'rar' || kind === '7z') return foreignIndex(file, kind)
   throw new Error('不是支援的漫畫壓縮檔（ZIP／CBZ、RAR／CBR、7z／CB7）')
 }
+
 export function readArchiveImage(file: string, index: ArchiveIndex, entry: ArchiveImage) {
   return index.memory ? foreignImage(file, index, entry) : archiveImage(file, index, entry)
 }

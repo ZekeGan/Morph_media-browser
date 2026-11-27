@@ -1,23 +1,25 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
+import { test } from 'node:test'
+
+import { parseQuery, queryText, restoreQuery, stabilizeQuery } from '../shared/query'
+import { defaultWorkspace } from '../shared/workspace'
+
+import { archiveImage, archiveIndex } from '../electron/archive'
 import { Explorer } from '../electron/explorer'
-import { archiveIndex, archiveImage } from '../electron/archive'
+import { folderFile, readFolder } from '../electron/files'
+import { Library } from '../electron/library'
 import { metadata } from '../electron/metadata'
-import { stabilizeQuery, restoreQuery, queryText, parseQuery } from '../shared/query'
-import { readFolder, folderFile } from '../electron/files'
 import { writeSettingsFile } from '../electron/settings-file'
 import { exportSettings } from '../electron/settings-package'
-import { defaultWorkspace } from '../shared/workspace'
-import { zipFixture, tinyPng } from './support/archive-fixture'
+import { tinyPng, zipFixture } from './support/archive-fixture'
 
 async function fixture(t: { after: (fn: () => Promise<void>) => void }) {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'decided-media-')),
-    media = path.join(root, 'media')
+  const root = await fs.mkdtemp(path.join(base, 'decided-media-'))
+  const media = path.join(root, 'media')
   await fs.mkdir(media)
   const lib = new Library(path.join(root, 'local'), undefined, false)
   await lib.init()
@@ -34,6 +36,7 @@ async function fixture(t: { after: (fn: () => Promise<void>) => void }) {
   })
   return { root, media, lib, explorer }
 }
+
 test('public metadata adapters use no credentials, retain source identities and reject hostile sources', async () => {
   const uuid = '12345678-1234-1234-1234-123456789abc'
   const cases: [string, string, unknown][] = [
@@ -186,8 +189,9 @@ test('public metadata adapters use no credentials, retain source identities and 
         false
       )
     }
-    if (provider === 'commons')
+    if (provider === 'commons') {
       assert.equal((await metadata(result.preview.source, fetcher)).preview.title, 'Title')
+    }
     await assert.rejects(
       metadata(url, (async () => new Response('{}', { status: 403 })) as typeof fetch)
     )
@@ -212,24 +216,26 @@ test('public metadata adapters use no credentials, retain source identities and 
     'https://www.dlsite.com/evil/work/=/product_id/RJ123456.html',
     'https://www.dlsite.com/maniax/work/=/product_id/rj123456.html',
     'https://www.fanza.example/x',
-  ])
+  ]) {
     await assert.rejects(
       metadata(source, (async () => {
         throw new Error('MUST NOT FETCH')
       }) as typeof fetch),
       (error) => !String(error).includes('MUST NOT FETCH')
     )
+  }
   // Keyed sources (R-285) stop before any request when no key is set.
   for (const source of [
     'https://www.themoviedb.org/movie/12',
     'https://www.steamgriddb.com/game/1',
-  ])
+  ]) {
     await assert.rejects(
       metadata(source, (async () => {
         throw new Error('MUST NOT FETCH')
       }) as typeof fetch),
       /網站金鑰/
     )
+  }
   await assert.rejects(
     metadata(
       'https://hitomi.la/reader/12.html',
@@ -298,8 +304,9 @@ test('public metadata adapters use no credentials, retain source identities and 
       /找不到這個作品/,
     ],
   ]
-  for (const [url, fetcher, expected] of kinds)
+  for (const [url, fetcher, expected] of kinds) {
     await assert.rejects(metadata(url, fetcher), expected)
+  }
   const cover = await metadata(
     'https://bgm.tv/subject/12',
     (async () =>
@@ -315,24 +322,24 @@ test('public metadata adapters use no credentials, retain source identities and 
   assert.ok(cover.preview.values.some((value) => value.key === 'COVER_STATUS'))
 })
 test('archive viewing supports stored and deflated images with readonly ranges and fails closed', async (t) => {
-  const { root, media, lib, explorer } = await fixture(t),
-    file = path.join(media, 'book.cbz'),
-    bytes = zipFixture([
-      { name: 'page10.png', bytes: tinyPng },
-      { name: 'page2.png', bytes: tinyPng, method: 0 },
-      { name: 'notes.txt', bytes: Buffer.from('unchanged') },
-    ])
+  const { root, media, lib, explorer } = await fixture(t)
+  const file = path.join(media, 'book.cbz')
+  const bytes = zipFixture([
+    { name: 'page10.png', bytes: tinyPng },
+    { name: 'page2.png', bytes: tinyPng, method: 0 },
+    { name: 'notes.txt', bytes: Buffer.from('unchanged') },
+  ])
   await fs.writeFile(file, bytes)
   const snapshot = await lib.create(media, {
-      name: 'Archive',
-      depth: { mode: 'through', level: 1 },
-    }),
-    row = snapshot.rows[0],
-    before = await readFolder(media)
-  const content = await explorer.content(row.rowId),
-    entry = content.entries.find((entry) => entry.kind === 'archive')!
-  const result = await explorer.request({ action: 'archive', rowId: row.rowId, fileId: entry.id }),
-    images = result.content!.entries
+    name: 'Archive',
+    depth: { mode: 'through', level: 1 },
+  })
+  const row = snapshot.rows[0]
+  const before = await readFolder(media)
+  const content = await explorer.content(row.rowId)
+  const entry = content.entries.find((entry) => entry.kind === 'archive')!
+  const result = await explorer.request({ action: 'archive', rowId: row.rowId, fileId: entry.id })
+  const images = result.content!.entries
   assert.deepEqual(
     images.map((image) => image.name),
     ['page2.png', 'page10.png']
@@ -375,15 +382,16 @@ test('file overview preserves source identity, pagination, boundaries and portab
   const { media, lib, explorer } = await fixture(t)
   for (const name of ['A', 'B', 'Unmanaged']) {
     await fs.mkdir(path.join(media, name))
-    for (let i = 0; i < 5; i++)
+    for (let i = 0; i < 5; i++) {
       await fs.writeFile(path.join(media, name, 'same' + i + '.png'), tinyPng)
+    }
   }
   const snapshot = await lib.create(media, {
-      name: 'Images',
-      depth: { mode: 'through', level: 2 },
-    }),
-    root = snapshot.rows.find((row) => row.path === media)!,
-    unmanaged = snapshot.rows.find((row) => row.name === 'Unmanaged')!
+    name: 'Images',
+    depth: { mode: 'through', level: 2 },
+  })
+  const root = snapshot.rows.find((row) => row.path === media)!
+  const unmanaged = snapshot.rows.find((row) => row.name === 'Unmanaged')!
   const before = await Promise.all(
     snapshot.rows
       .filter((row) => row.rowId !== unmanaged.rowId)
@@ -429,10 +437,10 @@ test('file overview preserves source identity, pagination, boundaries and portab
 test('saved queries keep field identities through alias changes and support number and calendar comparisons', async (t) => {
   const { media, lib, explorer } = await fixture(t)
   let state = await lib.create(media, {
-      name: 'Search',
-      depth: { mode: 'through', level: 1 },
-    }),
-    project = state.projects[0].project!
+    name: 'Search',
+    depth: { mode: 'through', level: 1 },
+  })
+  let project = state.projects[0].project!
   state = await lib.saveProject({
     ...project,
     fieldBindings: [
@@ -454,10 +462,12 @@ test('saved queries keep field identities through alias changes and support numb
       { attributeId: 'flag', key: 'flag', type: 'boolean', value: false, source: 'manual' },
     ],
   })
-  for (const query of ['score:>=-2', 'score:<0', 'day:>=20240229', 'flag:否', 'flag:no'])
+  for (const query of ['score:>=-2', 'score:<0', 'day:>=20240229', 'flag:否', 'flag:no']) {
     assert.equal((await explorer.request({ action: 'search', query })).search!.total, 1, query)
-  for (const query of ['flag:yes', 'flag:是', 'score:>0', 'day:>2024-02-29'])
+  }
+  for (const query of ['flag:yes', 'flag:是', 'score:>0', 'day:>2024-02-29']) {
     assert.equal((await explorer.request({ action: 'search', query })).search!.total, 0, query)
+  }
   await assert.rejects(explorer.request({ action: 'search', query: 'day:>2023-02-29' }), /日期/)
   const stable = stabilizeQuery(
     'score:>=-2',
@@ -479,8 +489,8 @@ test('saved queries keep field identities through alias changes and support numb
       field.attributeId === 'score' ? { ...field, alias: 'rating' } : field
     ),
   })
-  const renamed = lib.snapshot().projects[0].project!,
-    ast = renamed.savedSearches![0].queryAst!
+  const renamed = lib.snapshot().projects[0].project!
+  const ast = renamed.savedSearches![0].queryAst!
   assert.deepEqual(ast, stable)
   const search = (await explorer.request({ action: 'search', query: 'score:>=-2', queryAst: ast }))
     .search!
@@ -528,13 +538,14 @@ test('saved queries keep field identities through alias changes and support numb
     private: false,
     values: [{ attributeId: 'flag', key: 'flag', type: 'boolean', value: true, source: 'manual' }],
   })
-  for (const query of ['flag:yes', 'flag:sí', 'flag:はい', 'flag:是'])
+  for (const query of ['flag:yes', 'flag:sí', 'flag:はい', 'flag:是']) {
     assert.equal((await explorer.request({ action: 'search', query })).search!.total, 1, query)
+  }
 })
 test('settings export supports safe overwrite with a recoverable backup and refuses unrelated files', async (t) => {
-  const { root } = await fixture(t),
-    file = path.join(root, 'settings.json'),
-    settings = exportSettings(defaultWorkspace())
+  const { root } = await fixture(t)
+  const file = path.join(root, 'settings.json')
+  const settings = exportSettings(defaultWorkspace())
   await writeSettingsFile(file, settings)
   const before = await fs.readFile(file)
   await writeSettingsFile(file, { ...settings, prefs: { ...settings.prefs, theme: 'paper' } })
@@ -549,8 +560,8 @@ test('settings export supports safe overwrite with a recoverable backup and refu
   assert.equal(await fs.readFile(unrelated, 'utf8'), '{"data":"KEEP"}')
 })
 test('source preview and fill/replace protect manual edits, preserve provenance, and roll back covers on failure', async (t) => {
-  const { media, lib, explorer } = await fixture(t),
-    originalFetch = globalThis.fetch
+  const { media, lib, explorer } = await fixture(t)
+  const originalFetch = globalThis.fetch
   let title = 'First'
   globalThis.fetch = (async (input: RequestInfo | URL) =>
     String(input).includes('lain.bgm.tv')
@@ -583,10 +594,10 @@ test('source preview and fill/replace protect manual edits, preserve provenance,
       { attributeId: 'title', key: 'TITLE', type: 'string', value: 'MANUAL', source: 'manual' },
     ],
   })
-  const before = await fs.readFile(folderFile(media)),
-    first = (
-      await explorer.request({ action: 'metadataPreview', source: 'https://bgm.tv/subject/12' })
-    ).preview!
+  const before = await fs.readFile(folderFile(media))
+  const first = (
+    await explorer.request({ action: 'metadataPreview', source: 'https://bgm.tv/subject/12' })
+  ).preview!
   assert.deepEqual(await fs.readFile(folderFile(media)), before, 'preview must not write')
   const apply = async (token: string, mode: 'fill' | 'replace' = 'fill', image = false) => {
     row = lib.snapshot().rows[0]
@@ -628,8 +639,8 @@ test('source preview and fill/replace protect manual edits, preserve provenance,
   const backup = folderFile(media) + '.bak'
   await fs.unlink(backup)
   await fs.mkdir(backup)
-  const unchanged = await fs.readFile(folderFile(media)),
-    assets = await fs.readdir(path.join(media, '.media-viewer', 'assets'))
+  const unchanged = await fs.readFile(folderFile(media))
+  const assets = await fs.readdir(path.join(media, '.media-viewer', 'assets'))
   await assert.rejects(apply(second.token, 'replace', true))
   assert.deepEqual(await fs.readFile(folderFile(media)), unchanged)
   assert.deepEqual(await fs.readdir(path.join(media, '.media-viewer', 'assets')), assets)

@@ -1,19 +1,20 @@
-import { _electron as electron } from 'playwright-core'
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
+import { _electron as electron } from 'playwright-core'
+
 import { folderFile, projectFile } from '../electron/files'
+import { Library } from '../electron/library'
 import { closeApp } from './support/app'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'game-actions-ui-')),
-  media = path.join(root, 'Games'),
-  local = path.join(root, 'local'),
-  game = path.join(media, 'Game'),
-  screens = path.join(root, 'screens'),
-  album = path.join(root, 'Album')
+const root = await fs.mkdtemp(path.join(base, 'game-actions-ui-'))
+const media = path.join(root, 'Games')
+const local = path.join(root, 'local')
+const game = path.join(media, 'Game')
+const screens = path.join(root, 'screens')
+const album = path.join(root, 'Album')
 await fs.mkdir(path.join(game, 'Game_Data'), { recursive: true })
 await fs.mkdir(screens)
 for (const [name, value] of Object.entries({
@@ -23,21 +24,22 @@ for (const [name, value] of Object.entries({
   // R-306 / R-307: a bundled manual and a Steam App ID file.
   'manual.pdf': 'CONTROLLED MANUAL',
   'steam_appid.txt': '620',
-}))
+})) {
   await fs.writeFile(path.join(game, name), value)
+}
 const library = new Library(local, undefined, false)
 await library.init()
 const snapshot = await library.create(media, {
-    name: 'Game actions test',
-    depth: { mode: 'through', level: 3 },
-  }),
-  project = snapshot.projects[0].project!
+  name: 'Game actions test',
+  depth: { mode: 'through', level: 3 },
+})
+const project = snapshot.projects[0].project!
 await fs.mkdir(album)
-const imageName = 'A very long controlled image filename '.repeat(4) + '.png',
-  pixel = Buffer.from(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jB5kAAAAASUVORK5CYII=',
-    'base64'
-  )
+const imageName = 'A very long controlled image filename '.repeat(4) + '.png'
+const pixel = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jB5kAAAAASUVORK5CYII=',
+  'base64'
+)
 await fs.writeFile(path.join(album, imageName), pixel)
 await library.create(album, {
   name: 'Image title test',
@@ -51,9 +53,9 @@ const env: Record<string, string> = Object.fromEntries(
   )
 )
 delete env.ELECTRON_RUN_AS_NODE
-const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
-  page = await app.firstWindow(),
-  errors: string[] = []
+const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
+const page = await app.firstWindow()
+const errors: string[] = []
 page.on('pageerror', (error) => errors.push(error.message))
 page.setDefaultTimeout(15000)
 await page.evaluate('window.__name=(target)=>target')
@@ -172,15 +174,15 @@ try {
     'https://example.test/game'
   )
   // The eye hides a button from this folder's action row; the binding stays.
-  const row = page.locator('.game-actions'),
-    inRow = async (visible: boolean) => {
-      await page.getByRole('tab', { name: '內容', exact: true }).click()
-      await row
-        .getByRole('button', { name: 'Website', exact: true })
-        .waitFor({ state: visible ? 'visible' : 'detached' })
-      await page.getByRole('tab', { name: /^設定/ }).click()
-      await drawer.getByRole('tab', { name: '遊戲操作', exact: true }).click()
-    }
+  const row = page.locator('.game-actions')
+  const inRow = async (visible: boolean) => {
+    await page.getByRole('tab', { name: '內容', exact: true }).click()
+    await row
+      .getByRole('button', { name: 'Website', exact: true })
+      .waitFor({ state: visible ? 'visible' : 'detached' })
+    await page.getByRole('tab', { name: /^設定/ }).click()
+    await drawer.getByRole('tab', { name: '遊戲操作', exact: true }).click()
+  }
   await inRow(true)
   await drawer.getByRole('button', { name: '隱藏按鈕 Website', exact: true }).click()
   await drawer.getByRole('button', { name: '顯示按鈕 Website', exact: true }).waitFor()
@@ -236,8 +238,9 @@ try {
     'Game.exe': 'CONTROLLED FAKE EXE',
     'UnityPlayer.dll': 'CONTROLLED MARKER',
     'notes.txt': 'ORIGINAL NOTES',
-  }))
+  })) {
     assert.equal(await fs.readFile(path.join(game, name), 'utf8'), value)
+  }
   await assert.rejects(fs.access(path.join(game, 'Game_Data', '.media-viewer')))
   assert.deepEqual(errors, [])
   console.log(

@@ -1,18 +1,19 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
 import zlib from 'node:zlib'
+
 import { Library } from '../electron/library'
-import { zipFixture } from './support/archive-fixture'
 import { closeApp, launchApp, reportFailure } from './support/app'
+import { zipFixture } from './support/archive-fixture'
 
 // R-442: in scroll mode, with several short chapters on the screen at once, the text never jumps back while reading
 // on: every chapter on the screen only moves up from one frame to the next.
 const base = path.resolve('.test-output')
 await fs.mkdir(path.join(base, 'shot'), { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'novel-steady-')),
-  media = path.join(root, 'Novels'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'novel-steady-'))
+const media = path.join(root, 'Novels')
+const local = path.join(root, 'local')
 await fs.mkdir(media)
 const xml = (name: string, value: string) => ({ name, bytes: Buffer.from(value) })
 const page = (body: string) =>
@@ -22,8 +23,8 @@ const png = (width: number, height: number) => {
   const chunk = (type: string, data: Buffer) => {
     const head = Buffer.alloc(4)
     head.writeUInt32BE(data.length)
-    const body = Buffer.concat([Buffer.from(type), data]),
-      crc = Buffer.alloc(4)
+    const body = Buffer.concat([Buffer.from(type), data])
+    const crc = Buffer.alloc(4)
     crc.writeUInt32BE(zlib.crc32(body))
     return Buffer.concat([head, body, crc])
   }
@@ -104,8 +105,9 @@ try {
   await win.waitForFunction(() => !!document.querySelector('.novel-info strong')?.textContent)
   const choose = async (...names: string[]) => {
     await reader().getByRole('button', { name: '閱讀設定', exact: true }).click()
-    for (const name of names)
+    for (const name of names) {
       await reader().locator('.novel-settings label').getByText(name, { exact: true }).click()
+    }
     await win.keyboard.press('Escape')
     await reader().locator('.novel-settings').waitFor({ state: 'hidden' })
   }
@@ -128,19 +130,20 @@ try {
       const sample = () => {
         const view = document.querySelector('.novel-page')
         if (view) {
-          const frame = view.getBoundingClientRect(),
-            vertical = view.classList.contains('vertical'),
-            starts: Record<string, number> = {}
+          const frame = view.getBoundingClientRect()
+          const vertical = view.classList.contains('vertical')
+          const starts: Record<string, number> = {}
           // Only what is on the screen: a picture loading further on moves the text after it, out of sight.
           for (const section of view.querySelectorAll<HTMLElement>('[data-chapter]')) {
             const rect = section.getBoundingClientRect()
             const shown = vertical
               ? rect.left < frame.right && rect.right > frame.left
               : rect.bottom > frame.top && rect.top < frame.bottom
-            if (shown)
+            if (shown) {
               starts[section.dataset.chapter!] = vertical
                 ? frame.right - rect.right
                 : rect.top - frame.top
+            }
           }
           frames.push(starts)
           motion.push([
@@ -170,10 +173,10 @@ try {
     await win.evaluate(
       () =>
         new Promise<void>((resolve) => {
-          const element = document.querySelector('.novel-page')!,
-            at = () => element.scrollTop - Math.abs(element.scrollLeft)
-          let last = NaN,
-            still = 0
+          const element = document.querySelector('.novel-page')!
+          const at = () => element.scrollTop - Math.abs(element.scrollLeft)
+          let last = NaN
+          let still = 0
           const check = () => {
             const now = at()
             still = now === last ? still + 1 : 0
@@ -196,10 +199,10 @@ try {
     )
     // The wheel turns faster than a glide settles, so from the first move to the last the text never stands still: a
     // glide that stopped when a chapter was added after the view waited for the next notch (the lag of R-442).
-    const moving = motion.map(([, at], i) => i > 0 && at !== motion[i - 1][1]),
-      first = moving.indexOf(true),
-      last = moving.lastIndexOf(true),
-      stalls: string[] = []
+    const moving = motion.map(([, at], i) => i > 0 && at !== motion[i - 1][1])
+    const first = moving.indexOf(true)
+    const last = moving.lastIndexOf(true)
+    const stalls: string[] = []
     for (let i = first, still = 0; i <= last; i++) {
       still = moving[i] ? 0 : still + 1
       if (still === 3) {
@@ -211,14 +214,16 @@ try {
     }
     await win.screenshot({ path: path.join(base, 'shot', `r442-steady-${layout}.png`) })
     const jumps: string[] = []
-    for (let i = 1; i < frames.length; i++)
+    for (let i = 1; i < frames.length; i++) {
       for (const [index, start] of Object.entries(frames[i])) {
         const before = frames[i - 1][index]
-        if (before !== undefined && start > before + 0.05)
+        if (before !== undefined && start > before + 0.05) {
           jumps.push(
             `frame ${i} chapter ${Number(index) + 1}: ${Math.round(before)} → ${Math.round(start)}`
           )
+        }
       }
+    }
     assert.ok(
       reached >= 8,
       `${layout}: the wheel reads on through the short chapters: reached ${reached}`

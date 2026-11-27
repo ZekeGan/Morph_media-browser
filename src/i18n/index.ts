@@ -1,7 +1,10 @@
 import { useSyncExternalStore } from 'react'
+
 import type { LocaleId } from '../../shared/locales'
-import { catalog } from './catalog'
 import { hasMessage, renderMessages } from '../../shared/message'
+
+import { catalog } from './catalog'
+
 let language: LocaleId = 'en'
 const listeners = new Set<() => void>()
 const subscribe = (listener: () => void) => {
@@ -11,20 +14,24 @@ const subscribe = (listener: () => void) => {
   }
 }
 export const currentLocale = () => language
+
 export function setLocale(locale: LocaleId) {
   language = locale
   if (typeof document !== 'undefined') document.documentElement.lang = locale
   for (const listener of listeners) listener()
 }
+
 export const useLocale = () => useSyncExternalStore(subscribe, currentLocale)
+
 export function t(source: string, ...values: unknown[]): string {
   // Main-process messages sent with their values (R-281): translate each sentence, then fill its values in.
-  if (hasMessage(source))
+  if (hasMessage(source)) {
     return renderMessages(source, (key, sent) =>
       t(key, ...sent.map((value) => (hasMessage(value) ? t(value) : value)))
     )
-  const key = source.replace(/\s+/g, ' ').trim(),
-    translated = catalog[language][key]
+  }
+  const key = source.replace(/\s+/g, ' ').trim()
+  const translated = catalog[language][key]
   const message =
     translated === undefined
       ? source

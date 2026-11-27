@@ -3,21 +3,23 @@
 // Nested objects (a project, attributes, reading or playback settings, browse state) are only checked to be
 // objects or arrays here; their contents are validated by the code that writes them (validateProject,
 // validateDetails, WorkspaceStore).
-import { localeProfileId, type Request } from '../shared/model'
 import type { ExplorerRequest } from '../shared/explorer'
-import type { WorkspaceCommand } from '../shared/workspace'
 import { folderKinds } from '../shared/kind'
 import { mediaSortFields } from '../shared/media'
+import { localeProfileId, type Request } from '../shared/model'
 import { isSearchSource, searchableSources } from '../shared/sources'
+import type { WorkspaceCommand } from '../shared/workspace'
 
 type Check = (v: unknown) => boolean
 type Shape = Record<string, Check>
 
 const plain = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === 'object' && [Object.prototype, null].includes(Object.getPrototypeOf(v))
+
 // Identifiers and tokens: a non-empty string of reasonable length.
 export const ref = (v: unknown): v is string =>
   typeof v === 'string' && v.length > 0 && v.length <= 1000 && !v.includes('\0')
+
 // Free text (names, search queries, URLs); may be empty.
 const text: Check = (v) => typeof v === 'string' && v.length <= 100_000 && !v.includes('\0')
 const num: Check = (v) => typeof v === 'number' && Number.isFinite(v)

@@ -1,8 +1,9 @@
 import type { MetadataPreview } from '../../shared/explorer'
+
 import { fetchImageUrl } from '../image-url'
 import { SourceError } from '../metadata-common'
 import { clean, tags as tagList } from './site'
-import { fetchPage, pageMeta, type PageMeta, type WebOptions } from './web'
+import { fetchPage, type PageMeta, pageMeta, type WebOptions } from './web'
 
 export type WebResult = {
   preview: Omit<MetadataPreview, 'token'>
@@ -31,13 +32,15 @@ export async function webPreview(
   ]
   const text = (key: string, value: string | undefined) => {
     const result = clean(value)
-    if (result && !values.some((v) => v.key === key))
+    if (result && !values.some((v) => v.key === key)) {
       values.push({ key, type: 'string', value: result })
+    }
   }
   const list = (key: string, value: unknown) => {
     const result = tagList(value)
-    if (result.length && !values.some((v) => v.key === key))
+    if (result.length && !values.some((v) => v.key === key)) {
       values.push({ key, type: 'tags', value: result })
+    }
   }
   for (const value of extra) if (!values.some((v) => v.key === value.key)) values.push(value)
   text('DESCRIPTION', meta.description)
@@ -56,7 +59,7 @@ export async function webPreview(
   // The cover can be on any host, so it goes through the safe image download: HTTPS, no private addresses,
   // limited size and redirects, and the bytes must be a known image format.
   const image = options.image ?? meta.image
-  if (image && image.startsWith('https://'))
+  if (image && image.startsWith('https://')) {
     try {
       const picture = await fetchImageUrl(image, {
         lookup: options.lookup,
@@ -67,6 +70,7 @@ export async function webPreview(
     } catch {
       values.push({ key: 'COVER_STATUS', type: 'string', value: '封面無法取得；可略過或手動匯入' })
     }
+  }
   return result
 }
 

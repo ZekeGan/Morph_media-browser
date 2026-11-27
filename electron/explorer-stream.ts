@@ -1,17 +1,18 @@
-import os from 'node:os'
-import { readArchiveImage } from './archive-foreign'
-import fs from 'node:fs/promises'
-import path from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
-import { createReadStream } from 'node:fs'
+import { createReadStream, openAsBlob } from 'node:fs'
+import fs from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 import { Readable } from 'node:stream'
+import { parseBlob, selectCover } from 'music-metadata'
+
+import type { AudioTags } from '../shared/album'
+import { identifyImage } from '../shared/images'
+
+import { readArchiveImage } from './archive-foreign'
+import type { Explorer } from './explorer'
 import { exists, safePath } from './files'
 import { THUMB_EDGE, thumbVersion } from './media-files'
-import { identifyImage } from '../shared/images'
-import { openAsBlob } from 'node:fs'
-import { parseBlob, selectCover } from 'music-metadata'
-import type { Explorer } from './explorer'
-import type { AudioTags } from '../shared/album'
 
 export async function audioCover(
   ex: Explorer,
@@ -35,6 +36,7 @@ const tagNumber = (value: unknown, max: number) =>
   typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= max
     ? value
     : undefined
+
 export async function audioTags(ex: Explorer, rowId: string, fileIds: string[]) {
   const result: Record<string, AudioTags> = Object.create(null)
   for (const id of [...new Set(fileIds)]) {
@@ -132,8 +134,9 @@ export async function stream(
   try {
     const entry = await ex.file(rowId, id)
     if (thumbnail) {
-      if (!/^(image|video)\//.test(entry.mime))
+      if (!/^(image|video)\//.test(entry.mime)) {
         return new globalThis.Response(null, { status: 415 })
+      }
       const file = await thumbCachePath(ex, entry)
       const bytes = await ex.thumbnail(
         file,
@@ -164,26 +167,28 @@ export async function stream(
         },
       })
     }
-    if (!/^(image|video|audio)\//.test(entry.mime) && entry.mime !== 'application/pdf')
+    if (!/^(image|video|audio)\//.test(entry.mime) && entry.mime !== 'application/pdf') {
       return new globalThis.Response(null, { status: 415 })
-    const size = entry.stat.size,
-      headers: Record<string, string> = {
-        'Content-Type': entry.mime,
-        'Accept-Ranges': 'bytes',
-        'Cache-Control': 'no-store',
-        'X-Content-Type-Options': 'nosniff',
-      }
+    }
+    const size = entry.stat.size
+    const headers: Record<string, string> = {
+      'Content-Type': entry.mime,
+      'Accept-Ranges': 'bytes',
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff',
+    }
     const range = request.headers.get('range')
-    let start = 0,
-      end = size - 1,
-      status = 200
+    let start = 0
+    let end = size - 1
+    let status = 200
     if (range) {
       const m = /^bytes=(\d*)-(\d*)$/.exec(range)
-      if (!m || (!m[1] && !m[2]))
+      if (!m || (!m[1] && !m[2])) {
         return new globalThis.Response(null, {
           status: 416,
           headers: { 'Content-Range': `bytes */${size}` },
         })
+      }
       if (!m[1]) start = Math.max(0, size - Number(m[2]))
       else start = Number(m[1])
       if (m[2] && m[1]) end = Math.min(end, Number(m[2]))
@@ -192,17 +197,19 @@ export async function stream(
         !Number.isSafeInteger(end) ||
         start > end ||
         start >= size
-      )
+      ) {
         return new globalThis.Response(null, {
           status: 416,
           headers: { 'Content-Range': `bytes */${size}` },
         })
+      }
       status = 206
       headers['Content-Range'] = `bytes ${start}-${end}/${size}`
     }
     headers['Content-Length'] = String(Math.max(0, end - start + 1))
-    if (request.method === 'HEAD' || !size)
+    if (request.method === 'HEAD' || !size) {
       return new globalThis.Response(null, { status, headers })
+    }
     const stream = createReadStream(entry.file, { start, end })
     request.signal.addEventListener('abort', () => stream.destroy(), { once: true })
     return new globalThis.Response(Readable.toWeb(stream) as ReadableStream, { status, headers })
@@ -219,9 +226,9 @@ export async function archiveStream(
   number: string
 ): Promise<globalThis.Response> {
   try {
-    const file = await ex.file(rowId, fileId),
-      cached = ex.archives.get(token),
-      index = cached?.index
+    const file = await ex.file(rowId, fileId)
+    const cached = ex.archives.get(token)
+    const index = cached?.index
     if (
       ![
         'application/zip',
@@ -232,8 +239,9 @@ export async function archiveStream(
       !index ||
       cached?.file !== file.file ||
       !/^\d{1,5}$/.test(number)
-    )
+    ) {
       throw new Error('找不到壓縮檔裡的這一頁')
+    }
     const entry = index.images[Number(number)]
     if (!entry) throw new Error('壓縮頁面不存在')
     const bytes = await readArchiveImage(file.file, index, entry)
@@ -256,9 +264,10 @@ export async function archiveStream(
 // one burst; the newest burst goes first (while scrolling, that is what is on the screen), and inside a burst small
 // files go first, then the order the window asked, so pictures appear from the top instead of from the bottom.
 export const THUMBNAIL_WORKERS = Math.max(2, Math.min(4, Math.floor(os.cpus().length / 2)))
-export const THUMBNAIL_BURST_MS = 50,
-  THUMBNAIL_SMALL_BYTES = 512 * 1024
+export const THUMBNAIL_BURST_MS = 50
+export const THUMBNAIL_SMALL_BYTES = 512 * 1024
 export type ThumbnailJob = { run: () => void; burst: number; small: boolean }
+
 export function queueThumbnail(
   ex: Explorer,
   make: () => Promise<Buffer>,
@@ -285,13 +294,14 @@ export function queueThumbnail(
     pumpThumbnails(ex)
   })
 }
+
 function pumpThumbnails(ex: Explorer) {
   while (ex.thumbnailActive < THUMBNAIL_WORKERS && ex.thumbnailQueue.length) {
     const queue = ex.thumbnailQueue
     let pick = 0
     for (let i = 1; i < queue.length; i++) {
-      const a = queue[i],
-        b = queue[pick]
+      const a = queue[i]
+      const b = queue[pick]
       if (a.burst > b.burst || (a.burst === b.burst && a.small && !b.small)) pick = i
     }
     queue.splice(pick, 1)[0].run()
@@ -334,8 +344,9 @@ export async function thumbnail(
         const cached = await fs.readFile(cache)
         if (jpeg(cached)) return cached
       } catch {}
-      if (mime.startsWith('image/') && size > 100 * 1024 * 1024)
+      if (mime.startsWith('image/') && size > 100 * 1024 * 1024) {
         throw new Error('圖片過大，請直接檢視原圖')
+      }
       const bytes = await ex.desktop.thumbnail(source, mime, url)
       if (!jpeg(bytes)) throw new Error('縮圖解碼失敗')
       const temp = cache + '.' + randomUUID() + '.tmp'
@@ -359,21 +370,23 @@ export async function thumbnail(
 
 // R-502: how much the thumbnail cache keeps, least recently used dropped first. A 640 px thumbnail is about 63 KB,
 // so the size limit holds about 16,000 of them (3,000 before was always full and kept remaking thumbnails).
-export const THUMB_CACHE_FILES = 20000,
-  THUMB_CACHE_BYTES = 1024 * 1024 * 1024
+export const THUMB_CACHE_FILES = 20000
+export const THUMB_CACHE_BYTES = 1024 * 1024 * 1024
+
 export async function trimThumbnails(ex: Explorer) {
   const cache = path.join(ex.root, 'thumbnails')
   await safePath(ex.root, cache)
   if (!(await exists(cache))) return
   const files: { file: string; size: number; time: number }[] = []
-  for (const entry of await fs.readdir(cache, { withFileTypes: true }))
+  for (const entry of await fs.readdir(cache, { withFileTypes: true })) {
     if (entry.isFile() && !entry.isSymbolicLink() && /^[0-9a-f]{64}\.jpg$/.test(entry.name)) {
-      const file = path.join(cache, entry.name),
-        stat = await fs.stat(file)
+      const file = path.join(cache, entry.name)
+      const stat = await fs.stat(file)
       files.push({ file, size: stat.size, time: stat.mtimeMs })
     }
-  let size = files.reduce((sum, f) => sum + f.size, 0),
-    count = files.length
+  }
+  let size = files.reduce((sum, f) => sum + f.size, 0)
+  let count = files.length
   for (const f of files.sort((a, b) => a.time - b.time)) {
     if (count <= THUMB_CACHE_FILES && size <= THUMB_CACHE_BYTES) break
     await safePath(cache, f.file)

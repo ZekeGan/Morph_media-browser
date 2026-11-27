@@ -1,13 +1,15 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import {
   validateDetails,
   validateFolder,
   validateProject,
   withoutGroupCells,
 } from '../shared/model'
-import { modelDetails, modelFolder, modelProject } from './support/model-fixtures'
 import { NewerFormatError } from '../shared/upgrade'
+
+import { modelDetails, modelFolder, modelProject } from './support/model-fixtures'
 
 const reject = (check: (value: unknown) => void, value: unknown, message: string) => {
   assert.throws(
@@ -84,12 +86,13 @@ test('CELL bounds, required field bindings, aliases and overlap keep distinct fa
     { x: 0, y: 0.5, w: 1, h: 1 },
     { x: 11, y: 0, w: 2, h: 1 },
     { x: 0, y: 99, w: 1, h: 2 },
-  ])
+  ]) {
     reject(
       validateProject,
       { ...project, cells: [{ ...cell, grid }] },
       '專案設定不合法或版本不支援'
     )
+  }
   assert.doesNotThrow(() =>
     validateProject({ ...project, cells: [{ ...cell, grid: { x: 11, y: 99, w: 1, h: 1 } }] })
   )
@@ -141,8 +144,8 @@ test('optional project rules preserve CARD limits, presets and first error order
 })
 
 test('subtitle, playback and launch validation retain numeric and path boundaries', () => {
-  const details = modelDetails(),
-    playback = details.playback!.video
+  const details = modelDetails()
+  const playback = details.playback!.video
   for (const time of [NaN, Infinity, -1, 1e9]) {
     reject(
       validateDetails,
@@ -229,10 +232,11 @@ test('image fit is limited to image cells and valid values', () => {
   }
   project.cells.push(cell)
   assert.doesNotThrow(() => validateProject(project))
-  for (const imageFit of ['contain', 'cover', 'blur'] as const)
+  for (const imageFit of ['contain', 'cover', 'blur'] as const) {
     assert.doesNotThrow(() =>
       validateProject({ ...project, cells: [...project.cells.slice(0, -1), { ...cell, imageFit }] })
     )
+  }
   reject(
     validateProject,
     { ...project, cells: [...project.cells.slice(0, -1), { ...cell, imageFit: 'stretch' }] },
@@ -342,8 +346,9 @@ test('shortcut targets stay inside the game folder, take no arguments, and launc
     { path: '..\\Game.lnk' },
     { relative: false, path: 'D:\\Game.lnk' },
     { args: ['--x'] },
-  ])
+  ]) {
     assert.throws(() => validateDetails(shortcut(bad) as never), Error, JSON.stringify(bad))
+  }
 
   const project = modelProject()
   const launch = {
@@ -388,6 +393,7 @@ test('a project keeps named styles; bad, duplicate or too many styles are reject
     [{ id: 'a', name: 'Title', style: { ...style, textColor: 'red' } }],
     [{ id: 'a', name: '   ', style }],
     Array.from({ length: 21 }, (_, i) => ({ id: 'p' + i, name: 'S' + i, style })),
-  ])
+  ]) {
     assert.throws(() => validateProject(project(bad)), /自訂樣式不合法或名稱重複/)
+  }
 })

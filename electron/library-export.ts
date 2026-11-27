@@ -1,20 +1,23 @@
-import { fmt } from '../shared/message'
+import { execFile } from 'node:child_process'
+import { createHash, randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { randomUUID, createHash } from 'node:crypto'
+
+import { fmt } from '../shared/message'
 import { DATA_DIR, validateFolder, validateProject } from '../shared/model'
 import {
+  checkManifest,
   EXPORT_KIND,
   EXPORT_VERSION,
-  checkManifest,
+  type ExportManifest,
   exportPathRole,
   migrateRecord,
-  type ExportManifest,
   type ProjectExportResult,
   type ProjectImportPreview,
 } from '../shared/project-export'
+import { isNewerFormat, upgradeStored } from '../shared/upgrade'
+
 import {
   atomicJson,
   exists,
@@ -27,9 +30,8 @@ import {
   safePath,
   within,
 } from './files'
-import { managedTree } from './maintenance'
 import type { Library } from './library'
-import { isNewerFormat, upgradeStored } from '../shared/upgrade'
+import { managedTree } from './maintenance'
 
 const sha = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex')
 const inBundle = (bundle: string, rel: string) => path.join(bundle, 'files', ...rel.split('/'))
@@ -50,6 +52,7 @@ export interface ImportPlan {
     existing?: string
   }[]
 }
+
 export interface ProjectImportResult {
   written: number
   kept: number
@@ -71,8 +74,8 @@ export async function exportProject(
   if (within(root, dest)) throw new Error('匯出位置不能在專案資料夾內，請選擇其他位置')
   const tree = await managedTree(root)
   const selected = tree.files.filter((file) => {
-    const rel = relPath(root, file.path),
-      role = exportPathRole(rel)
+    const rel = relPath(root, file.path)
+    const role = exportPathRole(rel)
     if (!role) return false
     return role !== 'project' || rel === `${DATA_DIR}/projects/${projectId}.json`
   })
@@ -89,9 +92,9 @@ export async function exportProject(
   try {
     const files: ExportManifest['files'] = []
     for (const file of selected) {
-      const rel = relPath(root, file.path),
-        bytes = await fs.readFile(file.path),
-        target = inBundle(out, rel)
+      const rel = relPath(root, file.path)
+      const bytes = await fs.readFile(file.path)
+      const target = inBundle(out, rel)
       if (sha(bytes) !== file.hash) throw new Error(fmt('匯出期間檔案已改變，請重試：{0}', rel))
       await fs.mkdir(path.dirname(target), { recursive: true })
       await fs.writeFile(target, bytes, { flag: 'wx' })
@@ -123,25 +126,28 @@ export async function previewProjectImport(
 ): Promise<ProjectImportPreview> {
   bundle = await fs.realpath(bundle)
   targetRoot = await fs.realpath(targetRoot)
-  if (within(bundle, targetRoot) || within(targetRoot, bundle))
+  if (within(bundle, targetRoot) || within(targetRoot, bundle)) {
     throw new Error('匯出資料夾與目標資料夾不能互相包含')
+  }
   const manifestFile = path.join(bundle, 'manifest.json')
   await safePath(bundle, manifestFile)
   if ((await fs.stat(manifestFile)).size > 16 * 1024 * 1024) throw new Error('匯出清單過大')
-  const manifest = checkManifest(await readJson(manifestFile)),
-    warnings: string[] = []
+  const manifest = checkManifest(await readJson(manifestFile))
+  const warnings: string[] = []
   let blocker: string | undefined
   const protectedBy = await ex.protectedAncestor(targetRoot)
-  if (protectedBy)
+  if (protectedBy) {
     blocker = fmt('目標位置在受保護的遊戲或 App 裡面，請選擇外層資料夾：{0}', protectedBy)
+  }
   const linked = ex.refs.find((ref) => ref.projectId === manifest.projectId)
-  if (linked && keyPath(linked.root) !== keyPath(targetRoot) && (await exists(linked.root)))
+  if (linked && keyPath(linked.root) !== keyPath(targetRoot) && (await exists(linked.root))) {
     blocker = fmt('同一專案仍連結在另一個位置：{0}。若要搬移，請先取消那個連結', linked.root)
-  const entries: ImportPlan['entries'] = [],
-    missingDirs = new Set<string>(),
-    protectedDirs = new Set<string>(),
-    okDirs = new Map<string, boolean>(),
-    keptDirs = new Set<string>()
+  }
+  const entries: ImportPlan['entries'] = []
+  const missingDirs = new Set<string>()
+  const protectedDirs = new Set<string>()
+  const okDirs = new Map<string, boolean>()
+  const keptDirs = new Set<string>()
   const usable = async (dir: string) => {
     const cached = okDirs.get(dir)
     if (cached !== undefined) return cached
@@ -164,20 +170,22 @@ export async function previewProjectImport(
     const source = inBundle(bundle, file.path)
     await safePath(bundle, source)
     const stat = await fs.stat(source).catch(() => undefined)
-    if (!stat?.isFile() || stat.size !== file.size)
+    if (!stat?.isFile() || stat.size !== file.size) {
       throw new Error(fmt('匯出資料不完整：{0}', file.path))
-    if ((await fingerprint(source)) !== file.sha256)
+    }
+    if ((await fingerprint(source)) !== file.sha256) {
       throw new Error(fmt('匯出資料已損壞：{0}', file.path))
-    const segments = file.path.split('/'),
-      meta = segments.findIndex((s) => s.toLowerCase() === DATA_DIR),
-      dir = path.join(targetRoot, ...segments.slice(0, meta))
+    }
+    const segments = file.path.split('/')
+    const meta = segments.findIndex((s) => s.toLowerCase() === DATA_DIR)
+    const dir = path.join(targetRoot, ...segments.slice(0, meta))
     if (!(await usable(dir))) continue
-    const target = path.join(targetRoot, ...segments),
-      role = exportPathRole(file.path)!
+    const target = path.join(targetRoot, ...segments)
+    const role = exportPathRole(file.path)!
     if (role === 'project' && meta !== 0) continue
     await safePath(targetRoot, target)
-    let state: ImportPlan['entries'][number]['state'] = 'add',
-      existing: string | undefined
+    let state: ImportPlan['entries'][number]['state'] = 'add'
+    let existing: string | undefined
     if (await exists(target)) {
       existing = await fingerprint(target)
       state = existing === file.sha256 ? 'same' : 'conflict'
@@ -185,13 +193,15 @@ export async function previewProjectImport(
     if (state !== 'add' && role === 'folder') keptDirs.add(dir)
     entries.push({ rel: file.path, role, sha256: file.sha256, target, state, existing })
   }
-  if (!entries.some((entry) => entry.role === 'project'))
+  if (!entries.some((entry) => entry.role === 'project')) {
     warnings.push('這個位置沒有可放入專案定義的資料夾，無法匯入')
+  }
   const conflicts = entries.filter((entry) => entry.state === 'conflict').length
-  if (conflicts)
+  if (conflicts) {
     warnings.push(
       '部分檔案在目標位置已有不同內容；預設保留現有內容。勾選取代會先備份，但已有資訊的資料夾一律保留現有資訊'
     )
+  }
   if (missingDirs.size) warnings.push('匯出資料中的部分資料夾在目標位置不存在，已略過')
   if (protectedDirs.size) warnings.push('有些資料夾在遊戲裡面，為了保護已略過')
   const token = randomUUID()
@@ -244,14 +254,17 @@ export async function applyProjectImport(
     bytes.set(entry.rel, data)
     await safePath(plan.root, entry.target)
     const now = (await exists(entry.target)) ? await fingerprint(entry.target) : undefined
-    if (now !== entry.existing)
+    if (now !== entry.existing) {
       throw new Error(fmt('目標檔案在預覽後已改變，請重新預覽：{0}', entry.rel))
+    }
     // A record (or its backup) a newer version wrote is never replaced; nothing is written then.
-    if (entry.role !== 'asset')
-      for (const file of [entry.target, `${entry.target}.bak`])
+    if (entry.role !== 'asset') {
+      for (const file of [entry.target, `${entry.target}.bak`]) {
         await readJson(file).catch((error) => {
           if (isNewerFormat(error)) throw error
         })
+      }
+    }
   }
   // Existing folder records keep their identity and content even when overwrite is chosen.
   const todo = plan.entries.filter(
@@ -300,11 +313,11 @@ export async function applyProjectImport(
   const order = { asset: 0, folder: 1, project: 2 } as const
   try {
     for (const entry of [...todo].sort((a, b) => order[a.role] - order[b.role])) {
-      const segments = entry.rel.split('/'),
-        metaDir = path.join(
-          plan.root,
-          ...segments.slice(0, segments.findIndex((s) => s.toLowerCase() === DATA_DIR) + 1)
-        )
+      const segments = entry.rel.split('/')
+      const metaDir = path.join(
+        plan.root,
+        ...segments.slice(0, segments.findIndex((s) => s.toLowerCase() === DATA_DIR) + 1)
+      )
       const metaExisted = await exists(metaDir)
       // Anything this write could replace (the file and its last-known-good copy) is saved first.
       const existed = entry.state === 'conflict'
@@ -313,10 +326,11 @@ export async function applyProjectImport(
       await safePath(plan.root, path.dirname(entry.target))
       await fs.mkdir(path.dirname(entry.target), { recursive: true })
       await safePath(plan.root, entry.target)
-      if (!metaExisted && ex.hide && process.platform === 'win32')
+      if (!metaExisted && ex.hide && process.platform === 'win32') {
         await promisify(execFile)('attrib.exe', ['+H', metaDir], { windowsHide: true }).catch(
           () => {}
         )
+      }
       if (entry.role === 'asset') {
         const tmp = `${entry.target}.${randomUUID()}.tmp`
         try {
@@ -332,8 +346,9 @@ export async function applyProjectImport(
       const old = existed ? await revisionOf(entry.target) : undefined
       if (old !== undefined) value.revision = Math.max(old, value.revision) + 1
       if (entry.role === 'project') {
-        if (!(await exists(path.join(plan.root, DATA_DIR, 'folder.json'))))
+        if (!(await exists(path.join(plan.root, DATA_DIR, 'folder.json')))) {
           throw new Error('目標根資料夾沒有記錄，無法連結專案')
+        }
         value.rootFolderId = (await readFolder(plan.root)).folderId
         validateProject(value)
       }
@@ -343,7 +358,7 @@ export async function applyProjectImport(
     await ex.link(plan.root)
   } catch (error) {
     let incomplete = false
-    for (const item of written.reverse())
+    for (const item of written.reverse()) {
       try {
         if (item.existed) await restore(item.target)
         else await fs.rm(item.target, { force: true })
@@ -352,10 +367,12 @@ export async function applyProjectImport(
       } catch {
         incomplete = true
       }
-    if (!hadRef && ex.refs.some((ref) => ref.projectId === plan.manifest.projectId))
+    }
+    if (!hadRef && ex.refs.some((ref) => ref.projectId === plan.manifest.projectId)) {
       await ex.unlink(plan.manifest.projectId).catch(() => {
         incomplete = true
       })
+    }
     throw new Error(
       fmt(
         '匯入失敗：{0}{1}{2}',

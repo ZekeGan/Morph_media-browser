@@ -1,8 +1,8 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { systemLocale } from '../shared/locales'
+import { test } from 'node:test'
+
 import { validFieldValue } from '../shared/fields'
 import {
   addPreset,
@@ -13,14 +13,16 @@ import {
   selectPreset,
   syncPresetDraft,
 } from '../shared/layouts'
+import { systemLocale } from '../shared/locales'
 import { fieldValue, validateProject } from '../shared/model'
-import { WorkspaceStore, pruneSettingBackups } from '../electron/workspace'
-import { Library } from '../electron/library'
+import { defaultWorkspace } from '../shared/workspace'
+
 import { Explorer } from '../electron/explorer'
 import { readFolder } from '../electron/files'
-import { modelProject } from './support/model-fixtures'
-import { defaultWorkspace } from '../shared/workspace'
+import { Library } from '../electron/library'
 import { exportSettings } from '../electron/settings-package'
+import { pruneSettingBackups, WorkspaceStore } from '../electron/workspace'
+import { modelProject } from './support/model-fixtures'
 
 async function directory(
   t: { after: (fn: () => Promise<void>) => void },
@@ -37,6 +39,7 @@ async function directory(
   })
   return root
 }
+
 test('first-use language follows supported system preferences and remains saved', async (t) => {
   for (const [languages, expected] of [
     [['zh-Hant-HK'], 'zh-TW'],
@@ -45,10 +48,11 @@ test('first-use language follows supported system preferences and remains saved'
     [['es-MX'], 'es'],
     [['fr-FR', 'ja'], 'ja'],
     [['fr-FR'], 'en'],
-  ] as const)
+  ] as const) {
     assert.equal(systemLocale(languages), expected)
-  const root = await directory(t),
-    store = new WorkspaceStore(root, ['ja-JP'])
+  }
+  const root = await directory(t)
+  const store = new WorkspaceStore(root, ['ja-JP'])
   await store.init()
   assert.equal((await store.read([])).prefs.locale, 'ja')
   const reopened = new WorkspaceStore(root, ['es'])
@@ -69,8 +73,8 @@ test('new field values preserve unknown and false and reject unsafe URLs and inv
   assert.equal(validFieldValue('date', '2025-01-01T00:00'), false)
 })
 test('preset drafts keep unsaved copies independent, reject duplicate names, and fall back after deletion', () => {
-  const project = modelProject(),
-    before = structuredClone(project)
+  const project = modelProject()
+  const before = structuredClone(project)
   let draft = presetDraft(project)
   draft.cells[0].grid.w = 7
   draft = addPreset(draft, 'Copy', 'copy', true)
@@ -90,8 +94,8 @@ test('preset drafts keep unsaved copies independent, reject duplicate names, and
 })
 test('new portable fields save through real library paths without changing schema or original media', async (t) => {
   let close = () => {}
-  const root = await directory(t, () => close()),
-    media = path.join(root, 'media')
+  const root = await directory(t, () => close())
+  const media = path.join(root, 'media')
   await fs.mkdir(media)
   await fs.writeFile(path.join(media, 'original.bin'), 'ORIGINAL')
   const lib = new Library(path.join(root, 'local'), undefined, false)
@@ -164,8 +168,8 @@ test('new portable fields save through real library paths without changing schem
   assert.deepEqual(rowCells(assigned, row), [])
 })
 test('settings packages omit machine paths and credentials, preview without writes, and support backup restoration', async (t) => {
-  const root = await directory(t),
-    store = new WorkspaceStore(root, ['ja'])
+  const root = await directory(t)
+  const store = new WorkspaceStore(root, ['ja'])
   await store.init()
   await store.read(['p1'])
   const original = await fs.readFile(store.file, 'utf8')
@@ -228,11 +232,11 @@ test('settings packages omit machine paths and credentials, preview without writ
   )
 })
 test('failed settings backup prevents import and leaves the previous disk and memory state intact', async (t) => {
-  const root = await directory(t),
-    store = new WorkspaceStore(root, ['en'])
+  const root = await directory(t)
+  const store = new WorkspaceStore(root, ['en'])
   await store.init()
-  const before = await fs.readFile(store.file, 'utf8'),
-    state = await store.read([])
+  const before = await fs.readFile(store.file, 'utf8')
+  const state = await store.read([])
   const packageValue = exportSettings({ ...defaultWorkspace(), locale: 'es' })
   const preview = await store.update({ action: 'previewPackage', value: packageValue }, [])
   await fs.writeFile(path.join(root, 'workspace-backups'), 'CONTROLLED BLOCKER')
@@ -251,8 +255,8 @@ test('failed settings backup prevents import and leaves the previous disk and me
 })
 
 test('settings backups keep only the newest ones and never touch other files', async (t) => {
-  const root = await directory(t),
-    dir = path.join(root, 'workspace-backups')
+  const root = await directory(t)
+  const dir = path.join(root, 'workspace-backups')
   await fs.mkdir(dir, { recursive: true })
   const ids = Array.from(
     { length: 35 },

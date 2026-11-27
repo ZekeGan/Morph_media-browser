@@ -1,17 +1,19 @@
-import { fmt } from '../shared/message'
-import { mediaTypes } from './media-files'
-import { imageTypes } from '../shared/images'
-import { countFile, emptySample, pageNumbered } from '../shared/kind'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { createHash } from 'node:crypto'
+
+import { imageTypes } from '../shared/images'
+import { countFile, emptySample, pageNumbered } from '../shared/kind'
+import { fmt } from '../shared/message'
 import {
   DATA_DIR,
   type FolderRecord,
   type FolderRow,
-  type ScanProgress,
   type LinkedProject,
+  type ScanProgress,
 } from '../shared/model'
+import { isNewerFormat } from '../shared/upgrade'
+
 import {
   atomicJson,
   ensureFolder,
@@ -24,10 +26,10 @@ import {
   safePath,
   within,
 } from './files'
+import { detectGame, GameProbeLimit, insideAppBundle } from './game-detection'
 import { hideDirectories } from './hidden'
-import { detectGame, insideAppBundle, GameProbeLimit } from './game-detection'
-import { isNewerFormat } from '../shared/upgrade'
 import type { Library } from './library'
+import { mediaTypes } from './media-files'
 
 export async function scan(ex: Library) {
   ex.cancelled = false
@@ -38,10 +40,10 @@ export async function scan(ex: Library) {
     active: true,
     cancelled: false,
   }
-  const rows: FolderRow[] = [],
-    structure: FolderRow[] = [],
-    projects: LinkedProject[] = [],
-    problems: string[] = []
+  const rows: FolderRow[] = []
+  const structure: FolderRow[] = []
+  const projects: LinkedProject[] = []
+  const problems: string[] = []
   const cache = new Map<string, { record?: FolderRecord; error?: string }>()
   ex.progress({ ...progress })
   for (const ref of ex.refs) {
@@ -49,21 +51,23 @@ export async function scan(ex: Library) {
     projects.push(linked)
     try {
       linked.project = await ex.currentProject(linked)
-      if (await ex.protectedAncestor(ref.root))
+      if (await ex.protectedAncestor(ref.root)) {
         throw new Error('專案在受保護的遊戲或 App 裡面；資料保留，請改用外層的專案')
+      }
       const rootRecord = await readFolder(ref.root)
-      if (rootRecord.folderId !== linked.project.rootFolderId)
+      if (rootRecord.folderId !== linked.project.rootFolderId) {
         throw new Error('根資料夾身分已改變，請重新連結')
+      }
     } catch (e) {
       linked.error = message(e)
       problems.push(`${ref.root}: ${message(e)}`)
     }
   }
   const exclusions = new Set<string>()
-  for (const linked of projects)
+  for (const linked of projects) {
     if (linked.project && !linked.error) {
-      const p = linked.project,
-        keep: string[] = []
+      const p = linked.project
+      const keep: string[] = []
       for (const rel of p.excludedRelativePaths) {
         const target = path.join(linked.root, rel)
         try {
@@ -90,16 +94,19 @@ export async function scan(ex: Library) {
         }
       }
     }
+  }
   for (const linked of projects) {
     const p = linked.project
     if (!p || linked.error || ex.cancelled) continue
+
     type ScanEntry = { dir: string; depth: number; readonly?: boolean }
+
     const walk = async ({ dir, depth, readonly = false }: ScanEntry): Promise<ScanEntry[]> => {
       if (ex.cancelled) return []
-      const stopped = exclusions.has(keyPath(dir)),
-        cacheKey = keyPath(dir)
-      let boundary: FolderRow['boundary'],
-        probeError = ''
+      const stopped = exclusions.has(keyPath(dir))
+      const cacheKey = keyPath(dir)
+      let boundary: FolderRow['boundary']
+      let probeError = ''
       try {
         await safePath(linked.root, dir)
         const existing = await readFolder(dir).catch((e) => {
@@ -114,13 +121,14 @@ export async function scan(ex: Library) {
               ? saved
               : ((await detectGame(dir, { sources: keyPath(dir) !== keyPath(linked.root) })) ??
                 saved)
-          if (detected)
+          if (detected) {
             boundary = { ...detected, state: saved?.state === 'root' ? 'root' : 'candidate' }
+          }
         }
       } catch (e) {
-        if (e instanceof GameProbeLimit)
+        if (e instanceof GameProbeLimit) {
           boundary = { state: 'candidate', engines: [], evidence: [e.message] }
-        else {
+        } else {
           probeError = message(e)
           // A folder a newer version manages is left as it is, children included, until the app is updated.
           problems.push(
@@ -136,14 +144,14 @@ export async function scan(ex: Library) {
       if (!result) {
         try {
           await safePath(linked.root, dir)
-          if (stopped || readonly)
+          if (stopped || readonly) {
             result = {
               record: await readFolder(dir).catch((e) => {
                 if (missing(e)) return undefined
                 throw e
               }),
             }
-          else {
+          } else {
             const found = await ensureFolder(dir, false)
             result = { record: found.record }
             if (found.created) {
@@ -195,8 +203,8 @@ export async function scan(ex: Library) {
       }
       if ((!p.scanAll && depth >= p.depth.level) || ex.cancelled) return []
       const children: ScanEntry[] = []
-      const contents = emptySample(),
-        pictures: string[] = []
+      const contents = emptySample()
+      const pictures: string[] = []
       try {
         for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
           if (entry.name.toLowerCase() === DATA_DIR) continue
@@ -215,12 +223,13 @@ export async function scan(ex: Library) {
             problems.push(fmt('{0}: 略過連結', path.join(dir, entry.name)))
             continue
           }
-          if (entry.isDirectory())
+          if (entry.isDirectory()) {
             children.push({
               dir: path.join(dir, entry.name),
               depth: depth + 1,
               readonly: readonly || !!boundary,
             })
+          }
         }
         contents.pages = pageNumbered(pictures)
         row.contents = contents
@@ -232,15 +241,16 @@ export async function scan(ex: Library) {
     }
     const pending: ScanEntry[] = [{ dir: linked.root, depth: 1 }]
     // Eight independent directories at most; complete in-flight writes on cancellation.
-    while (pending.length && !ex.cancelled)
+    while (pending.length && !ex.cancelled) {
       pending.push(...(await Promise.all(pending.splice(0, 8).map(walk))).flat())
+    }
   }
   if (ex.hide) {
     const dirs = [...cache]
       .filter(([dir, value]) => value.record && !ex.hiddenKnown.has(dir))
       .map(([dir]) => dir)
-    const failures = await hideDirectories(dirs),
-      failed = new Set(failures.map((f) => keyPath(f.dir)))
+    const failures = await hideDirectories(dirs)
+    const failed = new Set(failures.map((f) => keyPath(f.dir)))
     for (const dir of dirs) if (!failed.has(keyPath(dir))) ex.hiddenKnown.add(dir)
     for (const failure of failures) {
       problems.push(fmt('{0}: 設定隱藏屬性失敗，下次掃描重試：{1}', failure.dir, failure.error))
@@ -248,14 +258,17 @@ export async function scan(ex: Library) {
     }
   }
   const ids = new Map<string, Set<string>>()
-  for (const [dir, value] of cache)
-    if (value.record)
+  for (const [dir, value] of cache) {
+    if (value.record) {
       ids.set(value.record.folderId, new Set([...(ids.get(value.record.folderId) ?? []), dir]))
-  for (const row of structure)
+    }
+  }
+  for (const row of structure) {
     if (row.record && (ids.get(row.record.folderId)?.size ?? 0) > 1) {
       row.duplicate = true
       row.error = '重複 ID：暫停寫入，確認搬移或將副本分配新 ID'
     }
+  }
   progress.active = false
   progress.cancelled = ex.cancelled
   ex.progress({ ...progress })
@@ -271,8 +284,8 @@ export async function scan(ex: Library) {
 
 // Navigation is read-only: missing records are reported, never initialized here.
 export async function visit(ex: Library, rowId: string) {
-  const row = ex.row(rowId),
-    root = ex.linked(row.projectId).root
+  const row = ex.row(rowId)
+  const root = ex.linked(row.projectId).root
   await safePath(root, row.path)
   if (
     row.readonly ||
@@ -284,8 +297,9 @@ export async function visit(ex: Library, rowId: string) {
         r.boundary &&
         within(r.path, row.path)
     )
-  )
+  ) {
     throw new Error('這是遊戲裡面的資料夾，受保護，不能加資訊')
+  }
   if (row.stopped) throw new Error('此資料夾尚未建立資料或已停止記錄')
   let record: FolderRecord
   try {
@@ -294,13 +308,14 @@ export async function visit(ex: Library, rowId: string) {
     if (missing(e)) throw new Error('此資料夾尚未建立資料，請先明確重新掃描或建立記錄')
     throw e
   }
-  if (row.record && record.folderId !== row.record.folderId)
+  if (row.record && record.folderId !== row.record.folderId) {
     throw new Error('目前位置已是另一資料夾，請重新掃描')
+  }
   if (row.error || row.duplicate) throw new Error(row.error ?? '記錄需要復原')
   row.record = record
   const saved = record.details?.boundary
   if (saved?.state === 'not-game') row.boundary = undefined
-  else
+  else {
     try {
       const boundary =
         saved?.state === 'root'
@@ -311,10 +326,11 @@ export async function visit(ex: Library, rowId: string) {
         ? { ...boundary, state: saved?.state === 'root' ? 'root' : 'candidate' }
         : undefined
     } catch (error) {
-      if (error instanceof GameProbeLimit)
+      if (error instanceof GameProbeLimit) {
         row.boundary = { state: 'candidate', engines: [], evidence: [error.message] }
-      else throw error
+      } else throw error
     }
+  }
   if (row.boundary) {
     const beneath = (item: FolderRow) =>
       item.projectId === row.projectId &&
@@ -328,19 +344,23 @@ export async function visit(ex: Library, rowId: string) {
   }
   const structure = ex.state.structure ?? ex.state.rows
   for (const entry of await fs.readdir(row.path, { withFileTypes: true })) {
-    if (entry.name.toLowerCase() === DATA_DIR || entry.isSymbolicLink() || !entry.isDirectory())
+    if (entry.name.toLowerCase() === DATA_DIR || entry.isSymbolicLink() || !entry.isDirectory()) {
       continue
+    }
     const dir = path.join(row.path, entry.name)
-    if (structure.some((r) => r.projectId === row.projectId && keyPath(r.path) === keyPath(dir)))
+    if (structure.some((r) => r.projectId === row.projectId && keyPath(r.path) === keyPath(dir))) {
       continue
+    }
     await safePath(root, dir)
-    let childRecord: FolderRecord | undefined, error: string | undefined
-    if (!row.boundary)
+    let childRecord: FolderRecord | undefined
+    let error: string | undefined
+    if (!row.boundary) {
       try {
         childRecord = await readFolder(dir)
       } catch (e) {
         if (!missing(e)) error = message(e)
       }
+    }
     const duplicate =
       !!childRecord &&
       structure.some(

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+
 import type { Asset, FolderRow } from '../shared/model'
+
 import { folderCoverAsset, folderCoverPicture } from '../src/cells/folderCover'
 
 const asset = (assetId: string, role?: Asset['role']): Asset => ({

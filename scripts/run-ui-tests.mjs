@@ -9,9 +9,10 @@
 //   node scripts/run-ui-tests.mjs novel --verbose also show everything the tests print (console.log while debugging)
 // The output stays short: the build says only that it ran (its full output only when it fails), and a failed test
 // shows its error, the line of the test it stopped at and where its screenshots are, not the whole log.
+import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { spawnSync } from 'node:child_process'
+
 import { areasOf, isSource, smoke, uiTestsOf } from './areas.mjs'
 import { failureSummary, plain } from './test-report.mjs'
 
@@ -45,6 +46,7 @@ function stopStrayElectron() {
     stdio: 'ignore',
   })
 }
+
 stopStrayElectron()
 
 // The tests launch `electron .` against out/, so a build older than its sources shows the old UI. Rebuild first when
@@ -58,6 +60,7 @@ function newestMtime(path) {
     0
   )
 }
+
 const buildInputs = [
   'src',
   'shared',
@@ -71,8 +74,8 @@ if (!builtAt || buildInputs.some((path) => newestMtime(path) > builtAt)) {
   console.log(
     `Build is ${builtAt ? 'older than the sources' : 'missing'}; running pnpm build first.`
   )
-  const started = Date.now(),
-    build = spawnSync('pnpm', ['build'], { encoding: 'utf8', shell: true })
+  const started = Date.now()
+  const build = spawnSync('pnpm', ['build'], { encoding: 'utf8', shell: true })
   if (build.status !== 0) {
     console.log(
       plain((build.stdout ?? '') + (build.stderr ?? ''))
@@ -89,8 +92,8 @@ console.log('Build time:', new Date(newestMtime('out')).toLocaleString())
 
 const args = process.argv.slice(2)
 const verbose = args.includes('--verbose')
-const repeatAt = args.indexOf('--repeat'),
-  repeat = repeatAt >= 0 ? Math.max(1, Math.min(50, Number(args[repeatAt + 1]) || 1)) : 1
+const repeatAt = args.indexOf('--repeat')
+const repeat = repeatAt >= 0 ? Math.max(1, Math.min(50, Number(args[repeatAt + 1]) || 1)) : 1
 const words = args.filter(
   (word, index) => !word.startsWith('--') && (repeatAt < 0 || index !== repeatAt + 1)
 )
@@ -110,11 +113,12 @@ else if (args.includes('--changed')) {
   // A new source file not yet in docs/areas.json still gets the smoke set, and is named so it can be added.
   const unmapped = files.filter((file) => isSource(file) && !areasOf(file).length)
   chosen = [...new Set([...direct, ...mapped, ...(unmapped.length ? smoke : [])])]
-  if (unmapped.length)
+  if (unmapped.length) {
     console.log(
       'Not in any area of docs/areas.json (running smoke; add them there):\n  ' +
         unmapped.join('\n  ')
     )
+  }
   console.log('Changed files:', files.length, '-> tests:', chosen.join(', ') || '(none)')
 } else if (words.length) chosen = all.filter((name) => words.some((word) => name.includes(word)))
 else chosen = all
@@ -140,15 +144,16 @@ const execute = (name) => {
   // Killing the shell leaves its Electron behind, which would stall the next test.
   if (timedOut) stopStrayElectron()
   const output = { ...run, stdout: run.stdout ?? '', stderr: run.stderr ?? '', timedOut }
-  if (verbose)
+  if (verbose) {
     console.log(`--- ${name} output ---\n` + plain(output.stdout + output.stderr).trimEnd())
+  }
   return output
 }
 // Repeat mode: every run counts, nothing is retried, so the pass count shows how flaky a test really is.
 for (const name of repeat > 1 ? files : []) {
   const started = Date.now()
-  let passed = 0,
-    firstFailure
+  let passed = 0
+  let firstFailure
   for (let round = 1; round <= repeat; round++) {
     const run = execute(name)
     const verdict = run.status === 0 ? 'PASS' : run.timedOut ? 'TIMEOUT' : 'FAIL'
@@ -165,8 +170,8 @@ for (const name of repeat > 1 ? files : []) {
 }
 for (const name of repeat > 1 ? [] : files) {
   const started = Date.now()
-  let run = execute(name),
-    flaky = false
+  let run = execute(name)
+  let flaky = false
   if (run.status !== 0 && !run.timedOut) {
     const first = run
     run = execute(name)
@@ -179,16 +184,17 @@ for (const name of repeat > 1 ? [] : files) {
   results.push({ name, ok: run.status === 0, seconds, flaky })
   const verdict = run.status === 0 ? (flaky ? 'FLAKY' : 'PASS') : run.timedOut ? 'TIMEOUT' : 'FAIL'
   console.log(`${verdict} ${name} (${seconds}s)`)
-  if (run.status !== 0)
+  if (run.status !== 0) {
     console.log(
       run.timedOut
         ? `Stopped after ${limit / 1000}s (waiting on a prompt?). ` +
             failureSummary(run.stdout + run.stderr, name)
         : failureSummary(run.stdout + run.stderr, name)
     )
+  }
 }
 const failed = results.filter((r) => !r.ok)
-if (results.some((r) => r.flaky))
+if (results.some((r) => r.flaky)) {
   console.log(
     'Passed only on the second run:',
     results
@@ -196,15 +202,19 @@ if (results.some((r) => r.flaky))
       .map((r) => r.name)
       .join(', ')
   )
+}
 console.log(
   `${results.length - failed.length}/${results.length} passed in ${results.reduce((a, r) => a + r.seconds, 0)}s`
 )
-if (!failed.length && existsSync(outputDir))
-  for (const entry of readdirSync(outputDir))
-    if (!existing.has(entry) && entry !== 'fixtures')
+if (!failed.length && existsSync(outputDir)) {
+  for (const entry of readdirSync(outputDir)) {
+    if (!existing.has(entry) && entry !== 'fixtures') {
       try {
         rmSync(join(outputDir, entry), { recursive: true, force: true })
       } catch {
         // A folder still held by a process is left for the next `pnpm clean:test`.
       }
+    }
+  }
+}
 process.exit(failed.length ? 1 : 0)

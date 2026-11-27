@@ -1,24 +1,30 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { exists } from './files'
+
+import type { Explorer } from './explorer'
 import { folderFiles, imageMime, serveFile } from './explorer-content'
 import { THUMB_CACHE_FILES, thumbCachePath } from './explorer-stream'
-import type { Explorer } from './explorer'
+import { exists } from './files'
 
 // R-505: while the window is idle, the pictures of the folders it lists get their thumbnails made in the background,
 // so opening one of them shows its pictures at once. Only the first pictures of each folder, one thumbnail at a time,
 // and only while no thumbnail the window asked for is waiting or being made. A new request replaces the old one; an
 // empty list just stops it (the window sends one as soon as the user does anything).
-export const WARM_FOLDERS = 60,
-  WARM_PER_FOLDER = 48,
-  // A folder the scan counted this many files in is left alone (listing it is slow, and it is rarely browsed whole).
-  WARM_MAX_FILES = 5000,
-  // With this many thumbnails kept, warming stops, so it never pushes out ones the user has looked at.
-  WARM_CACHE_FULL = Math.floor(THUMB_CACHE_FILES * 0.6)
+export const WARM_FOLDERS = 60
+export const WARM_PER_FOLDER = 48
+// A folder the scan counted this many files in is left alone (listing it is slow, and it is rarely browsed whole).
+export const WARM_MAX_FILES = 5000
+// With this many thumbnails kept, warming stops, so it never pushes out ones the user has looked at.
+export const WARM_CACHE_FULL = Math.floor(THUMB_CACHE_FILES * 0.6)
 
 export function warmThumbnails(ex: Explorer, rowIds: string[]) {
-  if (!Array.isArray(rowIds) || rowIds.length > 100 || rowIds.some((id) => typeof id !== 'string'))
+  if (
+    !Array.isArray(rowIds) ||
+    rowIds.length > 100 ||
+    rowIds.some((id) => typeof id !== 'string')
+  ) {
     throw new Error('縮圖預備範圍不合法')
+  }
   ex.warming?.abort()
   ex.warming = undefined
   if (!rowIds.length) return
@@ -33,8 +39,9 @@ export function warmThumbnails(ex: Explorer, rowIds: string[]) {
 
 // Resolves when nothing the window asked for is waiting or being made (checked a few times a second).
 async function foregroundIdle(ex: Explorer, signal: AbortSignal) {
-  while (!signal.aborted && (ex.thumbnailQueue.length || ex.thumbnailActive))
+  while (!signal.aborted && (ex.thumbnailQueue.length || ex.thumbnailActive)) {
     await new Promise((resolve) => setTimeout(resolve, 250))
+  }
 }
 
 async function warm(ex: Explorer, rowIds: string[], signal: AbortSignal) {
@@ -59,9 +66,9 @@ async function warm(ex: Explorer, rowIds: string[], signal: AbortSignal) {
       await foregroundIdle(ex, signal)
       if (signal.aborted) return
       try {
-        const id = await serveFile(ex, row, rowId, name, imageMime(name)),
-          entry = await ex.file(rowId, id),
-          thumb = await thumbCachePath(ex, entry)
+        const id = await serveFile(ex, row, rowId, name, imageMime(name))
+        const entry = await ex.file(rowId, id)
+        const thumb = await thumbCachePath(ex, entry)
         if (await exists(thumb)) continue
         await ex.thumbnail(
           thumb,

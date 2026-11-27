@@ -1,12 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
 import { Button, Tooltip } from '@mantine/core'
+import { useEffect, useRef, useState } from 'react'
+
 import type { GameExtra } from '../../shared/explorer'
-import type { FolderRow } from '../../shared/model'
 import { isGameFolder } from '../../shared/media'
-import { useGameAvailability } from '../game/gameAvailability'
-import { describeError } from '../notices/errors'
+import type { FolderRow } from '../../shared/model'
+
 import { Icon } from '../common/icons'
+import { useGameAvailability } from '../game/gameAvailability'
 import { t as tr } from '../i18n'
+import { describeError } from '../notices/errors'
 
 // R-409 (provisional): a game's extra button as a component: open the save folder, start through Steam, or open the
 // store page. Whether it can be used is asked only once the card is on screen; until the answer it is faint and
@@ -16,11 +18,13 @@ export const gameExtraLabels: Record<GameExtra, string> = {
   steam: '用 Steam 啟動',
   store: '在商店開啟',
 }
+
 const icons: Record<GameExtra, 'folder' | 'play' | 'external'> = {
   save: 'folder',
   steam: 'play',
   store: 'external',
 }
+
 export function GameExtraCell({
   extra,
   row,
@@ -30,9 +34,9 @@ export function GameExtraCell({
   row?: FolderRow
   preview: boolean
 }) {
-  const box = useRef<HTMLSpanElement>(null),
-    [visible, setVisible] = useState(false),
-    [error, setError] = useState('')
+  const box = useRef<HTMLSpanElement>(null)
+  const [visible, setVisible] = useState(false)
+  const [error, setError] = useState('')
   const game = !!row && isGameFolder(row)
   useEffect(() => {
     const node = box.current
@@ -44,20 +48,18 @@ export function GameExtraCell({
     return () => observer.disconnect()
   }, [preview, game])
   const state = useGameAvailability(game && !preview ? row : undefined, visible)
-  const answer = state?.[extra],
-    label =
-      extra === 'store' && answer?.site
-        ? tr('在 {0} 開啟', answer.site)
-        : tr(gameExtraLabels[extra]),
-    reason = !row
-      ? undefined
-      : !game
-        ? tr('不是遊戲資料夾')
-        : state === null
-          ? tr('無法讀取這個遊戲資料夾')
-          : answer && !answer.ok
-            ? tr(answer.reason ?? '')
-            : undefined
+  const answer = state?.[extra]
+  const label =
+    extra === 'store' && answer?.site ? tr('在 {0} 開啟', answer.site) : tr(gameExtraLabels[extra])
+  const reason = !row
+    ? undefined
+    : !game
+      ? tr('不是遊戲資料夾')
+      : state === null
+        ? tr('無法讀取這個遊戲資料夾')
+        : answer && !answer.ok
+          ? tr(answer.reason ?? '')
+          : undefined
   return (
     <span
       ref={box}

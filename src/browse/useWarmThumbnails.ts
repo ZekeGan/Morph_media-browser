@@ -10,8 +10,8 @@ export function useWarmThumbnails(rowIds: string[]) {
   const key = rowIds.join('\n')
   useEffect(() => {
     if (!rowIds.length) return
-    let timer: number | undefined,
-      running = false
+    let timer: number | undefined
+    let running = false
     const send = (ids: string[]) =>
       void window.explorer.request({ action: 'warmThumbnails', rowIds: ids }).catch(() => {})
     const schedule = () => {
@@ -30,8 +30,9 @@ export function useWarmThumbnails(rowIds: string[]) {
       }
       schedule()
     }
-    for (const type of INPUT)
+    for (const type of INPUT) {
       window.addEventListener(type, interrupt, { capture: true, passive: true })
+    }
     schedule()
     return () => {
       window.clearTimeout(timer)

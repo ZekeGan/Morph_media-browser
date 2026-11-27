@@ -1,11 +1,12 @@
 // R-278: every saved sample from a released version (tests/compat/<version>/) opens in this version with the same
 // projects, folder records and local settings, and opening it writes nothing.
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { createHash } from 'node:crypto'
-import { files, placeCompatSample, summariseCompatSample, SHELF } from './support/compat-sample'
+import { test } from 'node:test'
+
+import { files, placeCompatSample, SHELF, summariseCompatSample } from './support/compat-sample'
 
 const samples = path.resolve('tests', 'compat')
 const versions = (await fs.readdir(samples).catch(() => [] as string[])).sort()
@@ -14,7 +15,7 @@ test('there is at least one saved sample from a released version', () => {
   assert.ok(versions.length > 0, 'run tests/support/make-compat-sample.ts when releasing')
 })
 
-for (const version of versions)
+for (const version of versions) {
   test(`data saved by ${version} opens unchanged`, async (t) => {
     const base = path.resolve('.test-output')
     await fs.mkdir(base, { recursive: true })
@@ -46,3 +47,4 @@ for (const version of versions)
     assert.deepEqual(summary, expected)
     assert.deepEqual(await digest(), before, 'opening old data must not rewrite it')
   })
+}

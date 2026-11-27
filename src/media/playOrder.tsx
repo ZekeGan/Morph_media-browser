@@ -1,16 +1,17 @@
-import { useSyncExternalStore } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
+import { useSyncExternalStore } from 'react'
+
+import { isPlayOrder, type PlayOrder, playOrders } from '../../shared/workspace'
+
 import { Icon, type IconName } from '../common/icons'
 import { t as tr } from '../i18n'
-
-import { isPlayOrder, playOrders, type PlayOrder } from '../../shared/workspace'
 
 // What happens when a track or video ends, shared by every player in the window (R-268) and kept in the local
 // workspace settings. A failed save keeps the choice for this session. Until the user picks one, the next track
 // follows (R-390); a stored choice, including "stop", is kept.
-let order: PlayOrder = 'next',
-  loaded = false,
-  chosen = false
+let order: PlayOrder = 'next'
+let loaded = false
+let chosen = false
 const listeners = new Set<() => void>()
 const notify = () => {
   for (const listener of listeners) listener()
@@ -55,6 +56,7 @@ const icons: Record<PlayOrder, IconName> = {
   all: 'repeat',
   one: 'repeat-one',
 }
+
 export const playOrderLabel = (value: PlayOrder) =>
   value === 'next'
     ? tr('播放順序：接續下一首')
@@ -76,9 +78,9 @@ const orderName = (value: PlayOrder) =>
 // One button, one click per step: stop → next → loop all → loop one → stop. The tooltip names the current order and
 // the one a click switches to; it sits above the player overlays (R-273).
 export function PlayOrderButton({ zIndex = 450 }: { zIndex?: number }) {
-  const value = usePlayOrder(),
-    label = playOrderLabel(value),
-    following = playOrders[(playOrders.indexOf(value) + 1) % playOrders.length]
+  const value = usePlayOrder()
+  const label = playOrderLabel(value)
+  const following = playOrders[(playOrders.indexOf(value) + 1) % playOrders.length]
   return (
     <Tooltip label={tr('{0}（按一下改為{1}）', label, orderName(following))} zIndex={zIndex}>
       <ActionIcon

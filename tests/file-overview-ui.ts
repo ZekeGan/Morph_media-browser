@@ -1,34 +1,35 @@
-import { _electron as electron } from 'playwright-core'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { _electron as electron } from 'playwright-core'
+
+import { folderFile, projectFile } from '../electron/files'
 import { Library } from '../electron/library'
 import { WorkspaceStore } from '../electron/workspace'
-import { folderFile, projectFile } from '../electron/files'
+import { closeApp } from './support/app'
 import { tinyPng } from './support/archive-fixture'
 import { videoFixture } from './support/video-fixture'
-import { closeApp } from './support/app'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'file-overview-large-')),
-  local = path.join(root, 'local'),
-  screens = path.join(root, 'screens')
+const root = await fs.mkdtemp(path.join(base, 'file-overview-large-'))
+const local = path.join(root, 'local')
+const screens = path.join(root, 'screens')
 await fs.mkdir(screens)
-const count = 1200,
-  video = await videoFixture(),
-  library = new Library(local, undefined, false)
+const count = 1200
+const video = await videoFixture()
+const library = new Library(local, undefined, false)
 await library.init()
 const workspace = new WorkspaceStore(local, ['zh-TW'])
 await workspace.init()
-const originals = new Map<string, Buffer>(),
-  names = new Map<string, string[]>()
+const originals = new Map<string, Buffer>()
+const names = new Map<string, string[]>()
 const projects = []
 for (const category of ['album', 'video'] as const) {
-  const media = path.join(root, category),
-    name = category === 'album' ? '圖片大量 QA' : '影片大量 QA'
+  const media = path.join(root, category)
+  const name = category === 'album' ? '圖片大量 QA' : '影片大量 QA'
   await fs.mkdir(media)
-  for (let start = 0; start < count; start += 32)
+  for (let start = 0; start < count; start += 32) {
     await Promise.all(
       Array.from({ length: Math.min(32, count - start) }, async (_, offset) => {
         const file = path.join(
@@ -37,16 +38,18 @@ for (const category of ['album', 'video'] as const) {
         )
         if (category === 'album') await fs.writeFile(file, tinyPng)
         else await fs.copyFile(video, file)
-        if ([0, Math.floor(count / 2), count - 1].includes(start + offset))
+        if ([0, Math.floor(count / 2), count - 1].includes(start + offset)) {
           originals.set(file, await fs.readFile(file))
+        }
       })
     )
+  }
   let snapshot = await library.create(media, {
     name,
     depth: { mode: 'through', level: 1 },
   })
-  const linked = snapshot.projects.at(-1)!,
-    project = linked.project!
+  const linked = snapshot.projects.at(-1)!
+  const project = linked.project!
   snapshot = await library.saveProject(project)
   const row = snapshot.rows.find(
     (row) => row.projectId === project.projectId && row.path === media
@@ -71,8 +74,9 @@ for (const category of ['album', 'video'] as const) {
     },
     ids
   )
-  for (const file of [folderFile(media), projectFile(media, project.projectId)])
+  for (const file of [folderFile(media), projectFile(media, project.projectId)]) {
     originals.set(file, await fs.readFile(file))
+  }
   names.set(media, (await fs.readdir(media)).sort())
   projects.push({ category, name })
 }
@@ -82,9 +86,9 @@ const env: Record<string, string> = Object.fromEntries(
   )
 )
 delete env.ELECTRON_RUN_AS_NODE
-const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
-  page = await app.firstWindow(),
-  errors: string[] = []
+const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
+const page = await app.firstWindow()
+const errors: string[] = []
 page.on('pageerror', (error) => errors.push(error.message))
 page.setDefaultTimeout(20000)
 await page.setViewportSize({ width: 1440, height: 900 })
@@ -234,10 +238,12 @@ try {
       `PASS ${category}: ${count} files; paging, scroll bursts, three presentations, filters, resize and refresh`
     )
   }
-  for (const [file, bytes] of originals)
+  for (const [file, bytes] of originals) {
     assert.deepEqual(await fs.readFile(file), bytes, 'modified original: ' + file)
-  for (const [media, expected] of names)
+  }
+  for (const [media, expected] of names) {
     assert.deepEqual((await fs.readdir(media)).sort(), expected)
+  }
   assert.deepEqual(errors, [])
   console.log('PASS original media and portable records unchanged; ' + screens)
 } catch (error) {

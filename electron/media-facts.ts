@@ -1,10 +1,11 @@
-import { DatabaseSync } from 'node:sqlite'
-import fs from 'node:fs'
+import fs, { openAsBlob } from 'node:fs'
 import fsp from 'node:fs/promises'
 import path from 'node:path'
-import { openAsBlob } from 'node:fs'
+import { DatabaseSync } from 'node:sqlite'
 import { parseBlob } from 'music-metadata'
+
 import type { FolderFacts } from '../shared/explorer'
+
 import { safePath } from './files'
 import { hiddenFileNames } from './hidden'
 import { mediaNames, mediaTypes } from './media-files'
@@ -26,7 +27,9 @@ const agreed = <T>(values: (T | undefined)[]) =>
 interface Stored extends FolderFacts {
   sig: string
 }
+
 type Track = { name: string; kind: [string, string] }
+
 // A length stored as -1 is known not to be readable for this signature (not asked again until the folder changes).
 const UNKNOWN = -1
 const strip = ({ sig: _sig, ...facts }: Stored): FolderFacts => ({
@@ -84,6 +87,7 @@ export class MediaFacts {
       folder TEXT PRIMARY KEY, sig TEXT NOT NULL, audio INTEGER NOT NULL, video INTEGER NOT NULL,
       album TEXT, artist TEXT, year INTEGER, duration REAL);`)
   }
+
   private closed = false
   close() {
     if (this.closed) return
@@ -91,6 +95,7 @@ export class MediaFacts {
     this.waiting = []
     this.db.close()
   }
+
   private get(folder: string): Stored | undefined {
     const row = this.db.prepare('SELECT * FROM facts WHERE folder=?').get(folder) as
       Record<string, unknown> | undefined
@@ -105,6 +110,7 @@ export class MediaFacts {
       duration: (row.duration as number | null) ?? undefined,
     }
   }
+
   private put(folder: string, value: Stored) {
     this.db
       .prepare('INSERT OR REPLACE INTO facts VALUES(?,?,?,?,?,?,?,?)')
@@ -119,11 +125,13 @@ export class MediaFacts {
         value.duration ?? null
       )
   }
+
   private later<T>(job: () => Promise<T>): Promise<T> {
     const task = this.tail.then(job)
     this.tail = task.catch(() => {})
     return task
   }
+
   private async header(folder: string, name: string, mime: string, duration: boolean) {
     const file = path.join(folder, name)
     await safePath(folder, file)
@@ -135,6 +143,7 @@ export class MediaFacts {
       skipPostHeaders: !duration,
     })
   }
+
   // The facts of one folder: from the index when it is still valid, else read again.
   async read(folder: string): Promise<FolderFacts> {
     // Hidden files are left out, as the folder's own listing does (R-455).
@@ -154,17 +163,18 @@ export class MediaFacts {
       })
       .slice(0, MAX_FILES)
     const audio = names
-        .filter((entry) => entry.kind[0] === 'audio')
-        .sort((a, b) => mediaNames.compare(a.name, b.name)),
-      video = names.filter((entry) => entry.kind[0] === 'video')
-    const mtime = (await fsp.stat(folder)).mtimeMs,
-      key = `${mtime}:${audio.length}:${video.length}`,
-      recent = this.sizes.get(folder)
+      .filter((entry) => entry.kind[0] === 'audio')
+      .sort((a, b) => mediaNames.compare(a.name, b.name))
+    const video = names.filter((entry) => entry.kind[0] === 'video')
+    const mtime = (await fsp.stat(folder)).mtimeMs
+    const key = `${mtime}:${audio.length}:${video.length}`
+    const recent = this.sizes.get(folder)
     let size = 0
     if (recent?.key === key && Date.now() - recent.at < SIZE_FRESH_MS) size = recent.size
     else {
-      for (const entry of names)
+      for (const entry of names) {
         size += (await fsp.stat(path.join(folder, entry.name)).catch(() => ({ size: 0 }))).size
+      }
       this.sizes.delete(folder)
       this.sizes.set(folder, { key, size, at: Date.now() })
       if (this.sizes.size > 2000) this.sizes.delete(this.sizes.keys().next().value!)
@@ -179,11 +189,12 @@ export class MediaFacts {
     if (audio.length) {
       const tags = await this.later(async () => {
         const read = []
-        for (const entry of audio.slice(0, TAG_TRACKS))
+        for (const entry of audio.slice(0, TAG_TRACKS)) {
           read.push(
             (await this.header(folder, entry.name, entry.kind[1], false).catch(() => undefined))
               ?.common
           )
+        }
         return read
       })
       fresh.album = agreed(tags.map((tag) => text(tag?.album)))
@@ -198,6 +209,7 @@ export class MediaFacts {
     if (audio.length) this.fill(folder, audio, sig)
     return strip(fresh)
   }
+
   // The total length, one track at a time in the background. Nothing is stored until every track is known, so a
   // partial sum is never shown; a folder with too many tracks stays without one.
   private fill(folder: string, audio: Track[], sig: string) {
@@ -208,6 +220,7 @@ export class MediaFacts {
     if (this.waiting.length > MAX_WAITING) this.waiting.shift()
     void this.drain()
   }
+
   private async drain() {
     if (this.running) return
     this.running = true
@@ -217,6 +230,7 @@ export class MediaFacts {
       this.running = false
     }
   }
+
   private async length(folder: string, audio: Track[], sig: string) {
     this.filling.add(folder)
     try {

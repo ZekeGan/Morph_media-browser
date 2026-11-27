@@ -1,9 +1,9 @@
 import { SourceError } from '../metadata-common'
-import { clean, type Adapter } from './site'
+import { type Adapter, clean } from './site'
 
 export const openlibrary: Adapter = async (site) => {
-  const parts = site.match(/^\/(works|books)\/(OL[1-9]\d{0,12}[WM])(?:\/[^/]*)?\/?$/),
-    canonical = 'https://openlibrary.org/' + parts[1] + '/' + parts[2]
+  const parts = site.match(/^\/(works|books)\/(OL[1-9]\d{0,12}[WM])(?:\/[^/]*)?\/?$/)
+  const canonical = 'https://openlibrary.org/' + parts[1] + '/' + parts[2]
   const data = await site.json(canonical + '.json')
   if (data.key !== '/' + parts[1] + '/' + parts[2]) throw new SourceError('notFound')
   site.text(
@@ -17,10 +17,11 @@ export const openlibrary: Adapter = async (site) => {
   const authors = []
   for (const author of (data.authors ?? []).slice(0, 3)) {
     const key = author.author?.key ?? author.key
-    if (typeof key === 'string' && /^\/authors\/OL[1-9]\d{0,12}A$/.test(key))
+    if (typeof key === 'string' && /^\/authors\/OL[1-9]\d{0,12}A$/.test(key)) {
       try {
         authors.push((await site.json('https://openlibrary.org' + key + '.json')).name)
       } catch {}
+    }
   }
   site.list('AUTHORS', authors)
   return {

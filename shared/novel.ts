@@ -29,6 +29,7 @@ export function packagePath(base: string, href: string) {
 // Ruby as web novels write it: ｜漢字《かんじ》 (or |漢字《かんじ》) marks the base explicitly; otherwise the kanji run
 // right before 《…》 is the base. Returns plain pieces and ruby pieces in order.
 export type TextPiece = string | { base: string; ruby: string }
+
 export function rubyPieces(line: string): TextPiece[] {
   const pieces: TextPiece[] = []
   const pattern =

@@ -1,5 +1,5 @@
 import { SourceError } from '../metadata-common'
-import { clean, type Adapter } from './site'
+import { type Adapter, clean } from './site'
 
 // R-367: nhentai's own API (v2, checked 2026-11-13: a single gallery is public without a key, 20 requests a minute
 // without one; the old /api/gallery answers 403 and the pages sit behind a bot check). Fields are named the way
@@ -8,8 +8,9 @@ import { clean, type Adapter } from './site'
 export const nhentai: Adapter = async (site) => {
   const id = site.match(/^\/g\/([1-9]\d{0,9})\/?$/)[1]
   const data = await site.json('https://nhentai.net/api/v2/galleries/' + id)
-  if (!data || String(data.id) !== id || !data.title || typeof data.title !== 'object')
+  if (!data || String(data.id) !== id || !data.title || typeof data.title !== 'object') {
     throw new SourceError('notFound')
+  }
   const tags: { type?: unknown; name?: unknown }[] = Array.isArray(data.tags) ? data.tags : []
   const ofType = (type: string) => tags.filter((tag) => tag?.type === type).map((tag) => tag.name)
   site.text('TITLE_ORIGINAL', data.title.japanese)
@@ -36,8 +37,9 @@ export const nhentai: Adapter = async (site) => {
   // The upload time is a Unix time; stored like E-Hentai's posting time (a date with its time).
   const posted =
     typeof data.upload_date === 'number' ? new Date(data.upload_date * 1000) : undefined
-  if (posted && !Number.isNaN(posted.getTime()))
+  if (posted && !Number.isNaN(posted.getTime())) {
     site.text('GALLERY_POSTED_UTC', posted.toISOString())
+  }
   const cover = typeof data.cover?.path === 'string' ? data.cover.path : ''
   return {
     title: clean(data.title.english || data.title.japanese || data.title.pretty),

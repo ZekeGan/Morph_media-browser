@@ -1,8 +1,10 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
+import { parseDate } from '../shared/fields'
+
 import { metadata } from '../electron/metadata'
 import { steamLanguage } from '../electron/sources/language'
-import { parseDate } from '../shared/fields'
 import { tinyPng } from './support/archive-fixture'
 
 // R-418: VNDB tags, play time, rating, links, engine and screenshots; Steam in the preferred language with screenshots.
@@ -44,11 +46,11 @@ const vnReply = {
 test('R-418: a VNDB work adds visible tags, play time, rating, links, engine and safe screenshot addresses', async () => {
   const asked: { url: string; body: any }[] = []
   const fetcher = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input),
-      body = init?.body ? JSON.parse(String(init.body)) : undefined
+    const url = String(input)
+    const body = init?.body ? JSON.parse(String(init.body)) : undefined
     asked.push({ url, body })
     if (url === 'https://api.vndb.org/kana/vn') return json({ results: [vnReply] })
-    if (url === 'https://api.vndb.org/kana/release')
+    if (url === 'https://api.vndb.org/kana/release') {
       return json({
         results: [
           { engine: 'KID Engine' },
@@ -57,6 +59,7 @@ test('R-418: a VNDB work adds visible tags, play time, rating, links, engine and
           { engine: 'KID Engine' },
         ],
       })
+    }
     return new Response('', { status: 404 })
   }) as typeof fetch
   const result = await metadata('https://vndb.org/v17', fetcher)
@@ -86,7 +89,7 @@ test('R-418: a failed release lookup only leaves out the engine; a release addre
   assert.equal(one.preview.title, 'Ever17')
   assert.equal(value(one, 'ENGINE'), undefined)
   const fetcher = (async (input: RequestInfo | URL) => {
-    if (String(input).endsWith('/release'))
+    if (String(input).endsWith('/release')) {
       return json({
         results: [
           {
@@ -98,6 +101,7 @@ test('R-418: a failed release lookup only leaves out the engine; a release addre
           },
         ],
       })
+    }
     return new Response('', { status: 404 })
   }) as typeof fetch
   const release = await metadata('https://vndb.org/r5', fetcher)
@@ -111,7 +115,7 @@ test('R-418: Steam asks in the first preferred language, keeps the App ID and li
   const fetcher = (async (input: RequestInfo | URL) => {
     const url = String(input)
     requests.push(url)
-    if (url.includes('/api/appdetails'))
+    if (url.includes('/api/appdetails')) {
       return json({
         '620': {
           success: true,
@@ -135,6 +139,7 @@ test('R-418: Steam asks in the first preferred language, keeps the App ID and li
           },
         },
       })
+    }
     return new Response(tinyPng)
   }) as typeof fetch
   const result = await metadata('620', fetcher, undefined, { languages: ['zh-TW', 'en'] })

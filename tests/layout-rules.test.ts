@@ -1,14 +1,15 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import type { FolderRow, Project } from '../shared/model'
+import { test } from 'node:test'
+
 import {
   chooseLayout,
+  choosePanel,
   dropLayout,
   editLayoutRules,
   layoutLevel,
-  choosePanel,
   type LayoutRule,
 } from '../shared/layoutRules'
+import type { FolderRow, Project } from '../shared/model'
 
 // A folder `depth` rows deep (the project root is depth 1); `kind` set by hand makes it a work of that kind.
 const folder = (id: string, depth: number, kind?: string) =>

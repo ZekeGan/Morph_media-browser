@@ -1,19 +1,23 @@
 import type { MetadataPreview } from '../shared/explorer'
+
 import {
-  limitedBytes,
   decode,
   imageType,
+  limitedBytes,
   SourceError,
   sourceJson,
   sourceRequest,
 } from './metadata-common'
+
 export { limitedBytes } from './metadata-common'
-import { sourceForUrl, type MetadataSourceId } from '../shared/sources'
-import { publicMetadata } from './metadata-public'
+import { type MetadataSourceId, sourceForUrl } from '../shared/sources'
+
 import { steamLanguage } from './sources/language'
-import { webMetadata } from './sources/webSource'
-import { downloadSourceImages, type SourceImage } from './source-images'
 import type { WebOptions } from './sources/web'
+import { webMetadata } from './sources/webSource'
+import { publicMetadata } from './metadata-public'
+import { downloadSourceImages, type SourceImage } from './source-images'
+
 // E-Hentai tags are "namespace:name". Besides the full list, each namespace becomes its own field so that
 // artist, parody, language, characters… can be shown and filtered on their own.
 const tagNamespaces = [
@@ -29,21 +33,23 @@ const tagNamespaces = [
   'other',
   'reclass',
 ] as const
+
 function galleryTagGroups(tags: unknown): MetadataPreview['values'] {
   if (!Array.isArray(tags)) return []
   const groups = new Map<string, string[]>()
   for (const tag of tags) {
     if (typeof tag !== 'string') continue
     const split = tag.indexOf(':')
-    const space = tag.slice(0, split),
-      name = tag.slice(split + 1).trim()
+    const space = tag.slice(0, split)
+    const name = tag.slice(split + 1).trim()
     if (
       split <= 0 ||
       !name ||
       name.length > 100 ||
       !(tagNamespaces as readonly string[]).includes(space)
-    )
+    ) {
       continue
+    }
     groups.set(space, [...(groups.get(space) ?? []), name])
   }
   return tagNamespaces
@@ -54,6 +60,7 @@ function galleryTagGroups(tags: unknown): MetadataPreview['values'] {
       value: [...new Set(groups.get(space))].slice(0, 200),
     }))
 }
+
 export async function ehMetadata(
   source: string,
   fetcher: typeof fetch = fetch
@@ -76,10 +83,11 @@ export async function ehMetadata(
     url.username ||
     url.password ||
     !match
-  )
+  ) {
     throw new Error(
       '只接受 E-Hentai／ExHentai 的完整公開圖庫網址（/g/ID/token/）；其他頁面連結未支援'
     )
+  }
   const reply = await sourceRequest(fetcher, 'https://api.e-hentai.org/api.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -98,10 +106,12 @@ export async function ehMetadata(
     Number(data.gid) !== Number(match[1]) ||
     String(data.token).toLowerCase() !== match[2].toLowerCase()
   )
-    // "Key missing, or incorrect key provided" means a wrong gallery token; other API errors are access limits.
+  // "Key missing, or incorrect key provided" means a wrong gallery token; other API errors are access limits.
+  {
     throw new SourceError(
       data?.error && !/\bkey\b/i.test(String(data.error)) ? 'restricted' : 'notFound'
     )
+  }
   const title = decode(data.title).slice(0, 10000)
   if (!title) throw new SourceError('format')
   const values: MetadataPreview['values'] = [
@@ -125,14 +135,16 @@ export async function ehMetadata(
       value: `https://${url.hostname}/g/${match[1]}/${match[2]}/`,
     },
   ]
-  if (Number.isFinite(Number(data.posted)) && Number(data.posted) > 0)
+  if (Number.isFinite(Number(data.posted)) && Number(data.posted) > 0) {
     values.push({
       key: 'GALLERY_POSTED_UTC',
       type: 'string',
       value: new Date(Number(data.posted) * 1000).toISOString(),
     })
-  if (Number.isSafeInteger(Number(data.filecount)) && Number(data.filecount) >= 0)
+  }
+  if (Number.isSafeInteger(Number(data.filecount)) && Number(data.filecount) >= 0) {
     values.push({ key: 'PAGE_COUNT', type: 'number', value: Number(data.filecount) })
+  }
   let cover: { bytes: Buffer; mime: string; ext: string } | undefined
   const preview: Omit<MetadataPreview, 'token'> = {
     title: title.slice(0, 200),
@@ -149,8 +161,9 @@ export async function ehMetadata(
         image.port ||
         image.username ||
         image.password
-      )
+      ) {
         throw new Error('封面來源未允許')
+      }
       const bytes = await limitedBytes(
         await fetcher(image, { signal: AbortSignal.timeout(15000), redirect: 'error' }),
         10 * 1024 * 1024
@@ -179,6 +192,7 @@ const STEAM_IMAGE_HOSTS = [
   'cdn.cloudflare.steamstatic.com',
   'cdn.fastly.steamstatic.com',
 ]
+
 export async function steamMetadata(
   source: string,
   fetcher: typeof fetch = fetch,
@@ -187,8 +201,9 @@ export async function steamMetadata(
   preview: Omit<MetadataPreview, 'token'>
   cover?: { bytes: Buffer; mime: string; ext: string }
 }> {
-  if (typeof source !== 'string' || source.length > 2048)
+  if (typeof source !== 'string' || source.length > 2048) {
     throw new Error('Steam 網址或 App ID 不合法')
+  }
   let appId = source.trim()
   if (!/^[1-9]\d{0,9}$/.test(appId)) {
     let url: URL
@@ -205,8 +220,9 @@ export async function steamMetadata(
       url.username ||
       url.password ||
       !match
-    )
+    ) {
       throw new Error('只接受 Steam 官方 /app/ 商店網址或 App ID')
+    }
     appId = match[1]
   }
   if (Number(appId) > 4294967295) throw new Error('Steam App ID 超出範圍')
@@ -218,16 +234,17 @@ export async function steamMetadata(
       steamLanguage(languages[0]),
     { signal: AbortSignal.timeout(15000), redirect: 'error' }
   )
-  const item = sourceJson(reply.toString())?.[appId],
-    data = item?.data
+  const item = sourceJson(reply.toString())?.[appId]
+  const data = item?.data
   if (
     item?.success !== true ||
     !data ||
     String(data.steam_appid) !== appId ||
     typeof data.name !== 'string' ||
     !data.name.trim()
-  )
+  ) {
     throw new Error('無法取得 Steam 商店資料：遊戲可能尚未公開、已下架或此地區無法查看')
+  }
   const clean = (value: unknown) =>
     decode(value)
       .replace(/<[^>]*>/g, '')
@@ -258,8 +275,9 @@ export async function steamMetadata(
       ),
     },
   ]
-  if (typeof data.release_date?.date === 'string' && data.release_date.date)
+  if (typeof data.release_date?.date === 'string' && data.release_date.date) {
     values.push({ key: 'STORE_RELEASE_DATE', type: 'string', value: clean(data.release_date.date) })
+  }
   const shots = (Array.isArray(data.screenshots) ? data.screenshots : [])
     .map((shot: { path_full?: unknown }) => {
       try {
@@ -280,8 +298,9 @@ export async function steamMetadata(
     .filter((url: string | undefined): url is string => !!url)
     .slice(0, 12)
   if (shots.length) values.push({ key: 'SCREENSHOTS', type: 'tags', value: shots })
-  if (data.release_date?.coming_soon === true)
+  if (data.release_date?.coming_soon === true) {
     values.push({ key: 'RELEASE_STATUS', type: 'string', value: '尚未發售' })
+  }
   const preview: Omit<MetadataPreview, 'token'> = {
     provider: 'steam',
     title: clean(data.name).slice(0, 200),
@@ -301,8 +320,9 @@ export async function steamMetadata(
         image.password ||
         (!image.pathname.startsWith('/store_item_assets/steam/apps/' + appId + '/') &&
           !image.pathname.startsWith('/steam/apps/' + appId + '/'))
-      )
+      ) {
         throw new Error('Steam 封面來源未允許')
+      }
       const bytes = await limitedBytes(
         await fetcher(image, { signal: AbortSignal.timeout(15000), redirect: 'error' }),
         10 * 1024 * 1024
@@ -326,6 +346,7 @@ export async function steamMetadata(
   }
   return { preview, cover }
 }
+
 export async function metadata(
   source: string,
   fetcher: typeof fetch = fetch,
@@ -347,8 +368,9 @@ export async function metadata(
   if (typeof source !== 'string' || source.length > 2048) throw new Error('來源網址不合法')
   source = source.trim()
   const provider = sourceForUrl(source)
-  if (!provider || (expected && provider !== expected))
+  if (!provider || (expected && provider !== expected)) {
     throw new Error('來源網址與選定來源不符或未支援')
+  }
   if (provider === 'eh' || provider === 'exh') return ehMetadata(source, fetcher)
   if (provider === 'web') return webMetadata(source, fetcher, options)
   const result =

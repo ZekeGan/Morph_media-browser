@@ -1,7 +1,9 @@
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef } from 'react'
+
 import type { MediaEntry } from '../../shared/explorer'
-import { t as tr } from '../i18n'
+
 import { useWheel } from '../common/readerInput'
+import { t as tr } from '../i18n'
 
 // R-256: webtoon reading. Every page in one column without gaps, as wide as the chosen share of the window; the page
 // number is the page under the middle of the window. Pages around the current one load ahead of the reader (R-375),
@@ -14,12 +16,16 @@ export interface WebtoonHandle {
   screen(direction: 1 | -1): boolean
   edge(end: boolean): void
 }
-export const WEBTOON_MIN = 10,
-  WEBTOON_MAX = 100
+
+export const WEBTOON_MIN = 10
+export const WEBTOON_MAX = 100
+
 export const clampWidth = (value: number) =>
   Math.round(Math.min(WEBTOON_MAX, Math.max(WEBTOON_MIN, value)))
+
 // The width used for a book that has none of its own: the last one chosen on this computer.
 const widthKey = 'morph.webtoonWidth'
+
 export function lastWebtoonWidth() {
   try {
     const value = Number(localStorage.getItem(widthKey))
@@ -28,11 +34,13 @@ export function lastWebtoonWidth() {
     return 60
   }
 }
+
 export function rememberWebtoonWidth(value: number) {
   try {
     localStorage.setItem(widthKey, String(clampWidth(value)))
   } catch {}
 }
+
 // A book probably is a webtoon when one of its first pages is much taller than wide.
 export const looksLikeWebtoon = (sizes: { width: number; height: number }[]) =>
   sizes.some((size) => size.width > 0 && size.height > size.width * 2.5)
@@ -49,15 +57,15 @@ export const Webtoon = forwardRef<
     onEnd?: (atEnd: boolean) => void
   }
 >(function Webtoon({ images, start, width, onPage, onWidth, onEnd }, handle) {
-  const scroller = useRef<HTMLDivElement>(null),
-    pages = useRef<(HTMLImageElement | null)[]>([]),
-    current = useRef(start),
-    frame = useRef(0),
-    atEnd = useRef(false),
-    anchor = useRef<{ index: number; ratio: number } | undefined>(undefined)
+  const scroller = useRef<HTMLDivElement>(null)
+  const pages = useRef<(HTMLImageElement | null)[]>([])
+  const current = useRef(start)
+  const frame = useRef(0)
+  const atEnd = useRef(false)
+  const anchor = useRef<{ index: number; ratio: number } | undefined>(undefined)
   const toPage = (index: number) => {
-    const element = scroller.current,
-      page = pages.current[index]
+    const element = scroller.current
+    const page = pages.current[index]
     if (!element || !page) return
     element.scrollTop = page.offsetTop
     current.current = index
@@ -84,11 +92,11 @@ export const Webtoon = forwardRef<
   // The page under the middle of the window, and how far down that page the middle is.
   const middleOf = (element: HTMLDivElement) => {
     const middle = element.scrollTop + element.clientHeight / 2
-    let low = 0,
-      high = pages.current.length - 1
+    let low = 0
+    let high = pages.current.length - 1
     while (low < high) {
-      const mid = Math.ceil((low + high) / 2),
-        top = pages.current[mid]?.offsetTop ?? 0
+      const mid = Math.ceil((low + high) / 2)
+      const top = pages.current[mid]?.offsetTop ?? 0
       if (top <= middle) low = mid
       else high = mid - 1
     }
@@ -106,13 +114,14 @@ export const Webtoon = forwardRef<
     if (scroller.current) anchor.current = middleOf(scroller.current)
   }
   useLayoutEffect(() => {
-    const element = scroller.current,
-      held = anchor.current
+    const element = scroller.current
+    const held = anchor.current
     anchor.current = undefined
     if (!element || !held) return
     const page = pages.current[held.index]
-    if (page)
+    if (page) {
       element.scrollTop = page.offsetTop + held.ratio * page.offsetHeight - element.clientHeight / 2
+    }
   }, [width])
   // The page under the middle of the window is the current page.
   const track = () => {

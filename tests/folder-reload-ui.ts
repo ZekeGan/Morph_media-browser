@@ -1,9 +1,10 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
+
 import { Library } from '../electron/library'
-import { tinyPng } from './support/archive-fixture'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
+import { tinyPng } from './support/archive-fixture'
 
 // (File names that are not page numbers, so the folder is a general one with the file list, R-479.)
 // Coming back to a folder listed before: its complete list stays on screen while the folder is read again and is
@@ -11,14 +12,15 @@ import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/ap
 // part, re-sorting each time, so the page visibly jumped.
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'folder-reload-ui-')),
-  media = path.join(root, 'Media'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'folder-reload-ui-'))
+const media = path.join(root, 'Media')
+const local = path.join(root, 'local')
 await fs.mkdir(path.join(media, 'Sub'), { recursive: true })
 await fs.writeFile(path.join(media, 'Sub', 'only.png'), tinyPng)
 const count = 300
-for (let i = 0; i < count; i++)
+for (let i = 0; i < count; i++) {
   await fs.writeFile(path.join(media, `pic_${String(i).padStart(3, '0')}_x.png`), tinyPng)
+}
 const library = new Library(local, undefined, false)
 await library.init()
 await library.create(media, {

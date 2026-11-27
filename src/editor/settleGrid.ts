@@ -1,4 +1,5 @@
 import { verticalCompactor } from 'react-grid-layout'
+
 import type { Cell } from '../../shared/model'
 
 // R-361: the editor's grid pulls every component up into free rows as it draws them, so the stored positions are

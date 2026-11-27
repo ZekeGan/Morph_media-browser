@@ -1,19 +1,23 @@
+import { ActionIcon, FocusTrap, Tooltip } from '@mantine/core'
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ActionIcon, FocusTrap, Tooltip } from '@mantine/core'
+
 import type {
   ExplorerRequest,
   ExplorerResponse,
   MediaEntry,
   ReadingPrefs,
 } from '../../shared/explorer'
-import type { FolderRow, Project, Request, Response } from '../../shared/model'
-import { canPreviewMedia, mediaQueue } from '../../shared/media'
 import { effectiveKind } from '../../shared/kind'
-import { MediaQueue } from './MediaQueue'
+import { canPreviewMedia, mediaQueue } from '../../shared/media'
+import type { FolderRow, Project, Request, Response } from '../../shared/model'
+
 import { Icon } from '../common/icons'
 import { t as tr } from '../i18n'
+import { MediaQueue } from './MediaQueue'
+
 import './media-workspace.css'
+
 const Reader = lazy(() => import('../reader/Reader').then((module) => ({ default: module.Reader })))
 const VideoViewer = lazy(() =>
   import('../video/VideoViewer').then((module) => ({ default: module.VideoViewer }))
@@ -63,21 +67,21 @@ export function MediaViewer({
   resume?: boolean
 }) {
   const [queueView, setQueueView] = useState<'list' | 'images'>('list')
-  const [selected, setSelected] = useState(file.id),
-    [showQueue, setShowQueue] = useState(false),
-    [immersive, setImmersive] = useState(false),
-    [queueMounted, setQueueMounted] = useState(false)
+  const [selected, setSelected] = useState(file.id)
+  const [showQueue, setShowQueue] = useState(false)
+  const [immersive, setImmersive] = useState(false)
+  const [queueMounted, setQueueMounted] = useState(false)
   // R-411: the folder's type decides the mode (a book reads as manga); it is changed only in the folder settings.
   const manga = mangaHint ?? effectiveKind(row) === 'book'
-  const queueSlot = useRef<HTMLDivElement>(null),
-    queueToggle = useRef<HTMLButtonElement>(null)
+  const queueSlot = useRef<HTMLDivElement>(null)
+  const queueToggle = useRef<HTMLButtonElement>(null)
   const supported = canPreviewMedia(file)
-  const returnFocus = useRef(document.activeElement as HTMLElement),
-    closing = useRef(close)
+  const returnFocus = useRef(document.activeElement as HTMLElement)
+  const closing = useRef(close)
   closing.current = close
-  const queue = mediaQueue(entries, file),
-    current = queue.find((entry) => entry.id === selected),
-    index = queue.findIndex((entry) => entry.id === selected)
+  const queue = mediaQueue(entries, file)
+  const current = queue.find((entry) => entry.id === selected)
+  const index = queue.findIndex((entry) => entry.id === selected)
   const unavailable = !loading && !current
   useEffect(() => {
     if (!supported) return
@@ -100,8 +104,9 @@ export function MediaViewer({
   useLayoutEffect(() => {
     const slot = queueSlot.current
     if (!slot) return
-    if (!showQueue && slot.contains(document.activeElement))
+    if (!showQueue && slot.contains(document.activeElement)) {
       queueToggle.current?.focus({ preventScroll: true })
+    }
     slot.inert = !showQueue && !immersive
   }, [showQueue, supported, immersive])
   const queueButton = (
@@ -184,13 +189,14 @@ export function MediaViewer({
                   prefs={row.record?.details?.reading ?? inheritedPrefs}
                   close={close}
                   save={(prefs) => {
-                    if (row.record && !row.readonly && !row.stopped && !row.error)
+                    if (row.record && !row.readonly && !row.stopped && !row.error) {
                       void run({
                         action: 'reading',
                         rowId: row.rowId,
                         revision: row.record.revision,
                         prefs,
                       })
+                    }
                   }}
                   extraTools={
                     <>

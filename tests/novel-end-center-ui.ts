@@ -1,17 +1,18 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
+
 import { Library } from '../electron/library'
-import { tinyPng, zipFixture } from './support/archive-fixture'
 import { closeApp, launchApp, reportFailure } from './support/app'
+import { tinyPng, zipFixture } from './support/archive-fixture'
 
 // R-428: the button that goes on at the end of a chapter sits in the middle of the page: the end card of paged
 // reading and the next-book button of scroll reading, in horizontal and vertical text, wide and narrow windows.
 const base = path.resolve('.test-output')
 await fs.mkdir(path.join(base, 'shot'), { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'novel-center-')),
-  media = path.join(root, 'Novels'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'novel-center-'))
+const media = path.join(root, 'Novels')
+const local = path.join(root, 'local')
 await fs.mkdir(media)
 const xml = (name: string, value: string) => ({ name, bytes: Buffer.from(value) })
 const page = (body: string) =>
@@ -62,15 +63,15 @@ const choose = async (name: string) => {
 // How far the middle of the thing is from the middle of the reading area, in px (horizontal, vertical).
 const offCentre = (selector: string) =>
   win.evaluate((query) => {
-    const frame = document.querySelector('.novel-page')!.getBoundingClientRect(),
-      box = document.querySelector(query)!.getBoundingClientRect()
+    const frame = document.querySelector('.novel-page')!.getBoundingClientRect()
+    const box = document.querySelector(query)!.getBoundingClientRect()
     return {
       x: Math.round(box.left + box.width / 2 - (frame.left + frame.width / 2)),
       y: Math.round(box.top + box.height / 2 - (frame.top + frame.height / 2)),
     }
   }, selector)
-const results: string[] = [],
-  problems: string[] = []
+const results: string[] = []
+const problems: string[] = []
 try {
   await win.getByRole('button', { name: '開啟專案 Center test', exact: true }).first().click()
   await win.getByRole('button', { name: /^(開始|繼續)閱讀 a.epub$/ }).click()
@@ -98,8 +99,9 @@ try {
       const card = await offCentre('button.novel-end-card')
       results.push(`paged ${label} ${width}: ${JSON.stringify(card)}`)
       await win.screenshot({ path: path.join(base, 'shot', `r428-paged-${label}-${width}.png`) })
-      if (Math.abs(card.x) > 3 || Math.abs(card.y) > 3)
+      if (Math.abs(card.x) > 3 || Math.abs(card.y) > 3) {
         problems.push(`paged ${label} ${width}: ${JSON.stringify(card)}`)
+      }
       // Scroll: the next-book button at the end of the last chapters.
       await choose('捲動')
       await win.locator('.novel-page').focus()
@@ -115,8 +117,9 @@ try {
         await win.screenshot({ path: path.join(base, 'shot', `r428-scroll-${label}-${width}.png`) })
         // Scroll mode lays the button out in the text flow (the cross axis is the one that must be centred).
         const cross = label === 'vertical' ? button.y : button.x
-        if (Math.abs(cross) > 3)
+        if (Math.abs(cross) > 3) {
           problems.push(`scroll ${label} ${width}: ${JSON.stringify(button)}`)
+        }
       } else results.push(`scroll ${label} ${width}: no next book button reached`)
     }
   }

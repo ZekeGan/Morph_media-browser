@@ -11,6 +11,7 @@ export function folderCoverAsset(row?: FolderRow): Asset | undefined {
     assets.find((asset) => !asset.role)
   )
 }
+
 // `full` (R-499): the original picture instead of the thumbnail, for the right panel where it is drawn large.
 export function folderCoverPicture(
   row?: FolderRow,

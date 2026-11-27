@@ -1,4 +1,5 @@
 import { type Cell, type FolderRow } from './modelTypes'
+
 export function defaultCells(makeId: () => string, attributeId?: string): Cell[] {
   return (
     ['name', 'path', ...(attributeId ? ['field-text' as const] : []), 'open-folder'] as const
@@ -10,6 +11,7 @@ export function defaultCells(makeId: () => string, attributeId?: string): Cell[]
     style: { textColor: '#e4e6e8', backgroundColor: 'transparent' },
   }))
 }
+
 // Removing a field from layouts: cells that show it alone and cells whose condition reads it go away,
 // a cell with fallbacks moves on to its next field, and a fallback entry is simply dropped.
 export function cellsWithoutField(cells: Cell[], attributeId: string): Cell[] {
@@ -50,6 +52,7 @@ export function cellsWithoutField(cells: Cell[], attributeId: string): Cell[] {
     return [rest.length ? { ...plain, fallbackIds: rest } : plain]
   })
 }
+
 export function fieldValue(row: FolderRow, attributeId: string): unknown {
   const override = row.record?.projectOverrides[row.projectId]?.find(
     (a) => a.attributeId === attributeId

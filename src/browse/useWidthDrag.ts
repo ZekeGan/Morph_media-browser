@@ -1,4 +1,4 @@
-import { useRef, type PointerEvent } from 'react'
+import { type PointerEvent, useRef } from 'react'
 
 // A width being dragged: the right panel ('panel') or a table column (its id). R-500: while dragging, the width is
 // written straight to the page once per frame (the panel's --panel-width, the table's --col-<id>); nothing renders
@@ -29,11 +29,12 @@ export function useWidthDrag(keep: (id: string, width: number) => void) {
     if (r.target && r.id === 'panel') r.target.dataset.resizing = 'true'
     r.frame ??= requestAnimationFrame(() => {
       r.frame = undefined
-      if (r.live !== undefined)
+      if (r.live !== undefined) {
         r.target?.style.setProperty(
           r.id === 'panel' ? '--panel-width' : '--col-' + r.id,
           r.live + 'px'
         )
+      }
     })
   }
   const stopWidth = () => {

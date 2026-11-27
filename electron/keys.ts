@@ -1,7 +1,9 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { atomicJson, readJson, safePath } from './files'
+
 import { keySite, type KeyStatus } from '../shared/keys'
+
+import { atomicJson, readJson, safePath } from './files'
 
 // R-285: website keys, encrypted with the operating system's protection (Electron safeStorage, DPAPI on Windows)
 // and kept in this computer's app data only. They never go into portable records, settings packages or the window.
@@ -10,6 +12,7 @@ export interface KeyCipher {
   encrypt(text: string): Buffer
   decrypt(data: Buffer): string
 }
+
 type Stored = {
   schemaVersion: 1
   sites: Record<string, { values: Record<string, string>; test?: 'ok' | 'failed' }>
@@ -25,6 +28,7 @@ export class KeyStore {
   ) {
     this.file = path.join(root, 'site-keys.json')
   }
+
   private async load() {
     if (this.loaded) return
     this.loaded = true
@@ -38,20 +42,25 @@ export class KeyStore {
       }
     } catch {}
   }
+
   private async save() {
     await fs.mkdir(this.root, { recursive: true })
     await safePath(this.root, this.file)
     await atomicJson(this.file, this.data)
   }
+
   // A key that can no longer be decrypted (another user profile) counts as not set.
   async status(): Promise<Record<string, KeyStatus>> {
     await this.load()
     const result: Record<string, KeyStatus> = {}
-    for (const [site, entry] of Object.entries(this.data.sites))
-      if (await this.get(site))
+    for (const [site, entry] of Object.entries(this.data.sites)) {
+      if (await this.get(site)) {
         result[site] = { set: true, ...(entry.test ? { test: entry.test } : {}) }
+      }
+    }
     return result
   }
+
   async set(site: string, values: Record<string, string>) {
     const definition = keySite(site)
     if (!definition) throw new Error('沒有這個網站')
@@ -67,11 +76,13 @@ export class KeyStore {
     this.data.sites[site] = { values: clean }
     await this.save()
   }
+
   async clear(site: string) {
     await this.load()
     delete this.data.sites[site]
     await this.save()
   }
+
   async mark(site: string, test: 'ok' | 'failed') {
     await this.load()
     const entry = this.data.sites[site]
@@ -79,6 +90,7 @@ export class KeyStore {
     entry.test = test
     await this.save()
   }
+
   // The decrypted values of one site, for main's requests only.
   async get(site: string): Promise<Record<string, string> | undefined> {
     await this.load()

@@ -1,11 +1,13 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { test } from 'node:test'
 import ts from 'typescript'
-import { catalog } from '../src/i18n/catalog'
-import { setLocale, t as tr, fieldTypeLabel } from '../src/i18n'
-import { cellColors } from '../src/cells/cellStyle'
+
 import { defaultCells } from '../shared/model'
+
+import { cellColors } from '../src/cells/cellStyle'
+import { fieldTypeLabel, setLocale, t as tr } from '../src/i18n'
+import { catalog } from '../src/i18n/catalog'
 
 test('every UI message has complete translations and preserves substitution values', () => {
   const sources = new Set<string>()
@@ -25,8 +27,9 @@ test('every UI message has complete translations and preserves substitution valu
         ts.isCallExpression(node) &&
         node.expression.getText(sf) === 'tr' &&
         ts.isStringLiteral(node.arguments[0])
-      )
+      ) {
         sources.add(node.arguments[0].text.replace(/\s+/g, ' ').trim())
+      }
       ts.forEachChild(node, walk)
     }
     walk(sf)
@@ -56,9 +59,11 @@ test('every UI message has complete translations and preserves substitution valu
 })
 test('translations contain no corrupted characters', () => {
   const garbled = /[\u0000-\u0008\u000b\u000c\u000e-\u001fᄀ-ᇿ᐀-ᙿ가-힯-�翿]/
-  for (const [locale, messages] of Object.entries(catalog))
-    for (const [source, text] of Object.entries(messages))
+  for (const [locale, messages] of Object.entries(catalog)) {
+    for (const [source, text] of Object.entries(messages)) {
       assert.ok(!garbled.test(text), locale + ': "' + source + '" has garbled text')
+    }
+  }
 })
 
 test('only the shipped neutral transparent CELL baseline follows theme colors', () => {

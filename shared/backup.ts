@@ -13,6 +13,7 @@ export interface BackupManifest {
   settings?: string
   projects: { projectId: string; name: string; root: string; dir: string }[]
 }
+
 // One backup kept in the app's own data folder.
 export interface BackupEntry {
   id: string
@@ -21,7 +22,9 @@ export interface BackupEntry {
   size: number
   projects: number
 }
+
 export const BACKUP_ID = /^M-orph-backup-[0-9T]{15}(-\d{1,3})?$/
+
 export interface BackupProjectPreview {
   projectId: string
   name: string
@@ -30,12 +33,14 @@ export interface BackupProjectPreview {
   message?: string
   folders?: number
 }
+
 export interface BackupPreview {
   token: string
   createdAt: string
   settings?: { changes: number }
   projects: BackupProjectPreview[]
 }
+
 const relative = (value: unknown) =>
   typeof value === 'string' &&
   value.length > 0 &&
@@ -70,7 +75,8 @@ export function checkBackupManifest(value: unknown): BackupManifest {
         relative(p.dir)
     ) ||
     new Set(v.projects.map((p) => p.projectId)).size !== v.projects.length
-  )
+  ) {
     throw new Error('不是有效的 M:orph 備份')
+  }
   return v as BackupManifest
 }

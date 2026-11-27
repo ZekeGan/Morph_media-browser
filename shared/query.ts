@@ -1,4 +1,5 @@
 import { fmt } from './message'
+
 export interface Term {
   key?: string
   value: string
@@ -6,34 +7,40 @@ export interface Term {
   fieldId?: string
   expectedType?: string
 }
+
 export interface QueryField {
   key: string
   type: string
   attributeId: string
   projectId: string
 }
+
 export interface StableQuery {
   version: 1
   groups: { field?: string; type?: string; value: string; exclude: boolean }[][]
 }
+
 export function queryField(key: string, available: QueryField[]): { field: string; type: string } {
-  const marker = key.lastIndexOf('@'),
-    exact = available.some((field) => field.key.toLocaleLowerCase() === key),
-    alias = marker < 0 || exact ? key : key.slice(0, marker),
-    explicit = marker < 0 || exact ? undefined : key.slice(marker + 1)
+  const marker = key.lastIndexOf('@')
+  const exact = available.some((field) => field.key.toLocaleLowerCase() === key)
+  const alias = marker < 0 || exact ? key : key.slice(0, marker)
+  const explicit = marker < 0 || exact ? undefined : key.slice(marker + 1)
   const found = available.filter(
-      (field) =>
-        field.key.toLocaleLowerCase() === alias &&
-        (!explicit || field.attributeId.toLocaleLowerCase() === explicit)
-    ),
-    ids = [...new Set(found.map((field) => field.attributeId))]
-  if (!ids.length && ['name', 'folder_name', 'path'].includes(alias) && !explicit)
+    (field) =>
+      field.key.toLocaleLowerCase() === alias &&
+      (!explicit || field.attributeId.toLocaleLowerCase() === explicit)
+  )
+  const ids = [...new Set(found.map((field) => field.attributeId))]
+  if (!ids.length && ['name', 'folder_name', 'path'].includes(alias) && !explicit) {
     return { field: alias === 'path' ? '@path' : '@name', type: 'string' }
+  }
   if (!ids.length) throw new Error(fmt('找不到欄位「{0}」，可從欄位提示選擇', key))
-  if (ids.length > 1 || new Set(found.map((field) => field.type)).size > 1)
+  if (ids.length > 1 || new Set(found.map((field) => field.type)).size > 1) {
     throw new Error(fmt('欄位「{0}」有多個身分；請使用提示中的 key@完整屬性ID', alias))
+  }
   return { field: ids[0], type: found[0].type }
 }
+
 export function stabilizeQuery(query: string, fields: QueryField[]): StableQuery {
   return {
     version: 1,
@@ -49,6 +56,7 @@ export function stabilizeQuery(query: string, fields: QueryField[]): StableQuery
     ),
   }
 }
+
 export function validStableQuery(value: unknown): value is StableQuery {
   if (!value || typeof value !== 'object') return false
   const query = value as StableQuery
@@ -77,12 +85,13 @@ export function validStableQuery(value: unknown): value is StableQuery {
     query.groups.flat().reduce((sum, term) => sum + term.value.length, 0) <= 2000
   )
 }
+
 export function restoreQuery(query: StableQuery, fields: QueryField[]): Term[][] {
   if (!validStableQuery(query)) throw new Error('常用搜尋格式不合法')
   return query.groups.map((group) =>
     group.map((term) => {
       if (!term.field) return { value: term.value, exclude: term.exclude }
-      if (['@name', '@path'].includes(term.field))
+      if (['@name', '@path'].includes(term.field)) {
         return {
           key: term.field === '@name' ? 'name' : 'path',
           fieldId: term.field,
@@ -90,15 +99,17 @@ export function restoreQuery(query: StableQuery, fields: QueryField[]): Term[][]
           value: term.value,
           exclude: term.exclude,
         }
+      }
       const found = fields.filter((field) => field.attributeId === term.field)
-      if (!found.length || found.some((field) => field.type !== term.type))
+      if (!found.length || found.some((field) => field.type !== term.type)) {
         throw new Error('常用搜尋的欄位已移除或格式改了，請重新確認條件')
-      const alias = found[0].key,
-        ambiguous = fields.some(
-          (field) =>
-            field.attributeId !== term.field &&
-            field.key.toLocaleLowerCase() === alias.toLocaleLowerCase()
-        )
+      }
+      const alias = found[0].key
+      const ambiguous = fields.some(
+        (field) =>
+          field.attributeId !== term.field &&
+          field.key.toLocaleLowerCase() === alias.toLocaleLowerCase()
+      )
       return {
         key: alias + (ambiguous ? '@' + term.field : ''),
         fieldId: term.field,
@@ -109,6 +120,7 @@ export function restoreQuery(query: StableQuery, fields: QueryField[]): Term[][]
     })
   )
 }
+
 export const queryText = (groups: Term[][]) =>
   groups
     .map((group) =>
@@ -122,23 +134,25 @@ export const queryText = (groups: Term[][]) =>
         .join(' ')
     )
     .join(' ~ ')
+
 export function parseQuery(source: string): Term[][] {
   if (typeof source !== 'string' || source.length > 2000) throw new Error('搜尋字串最多 2,000 字')
   const groups: Term[][] = [[]]
-  let token = '',
-    quote = false,
-    escaped = false
+  let token = ''
+  let quote = false
+  let escaped = false
   const push = () => {
     if (!token) return
     const exclude = token.startsWith('-')
     if (exclude) token = token.slice(1)
     const restore = (s: string) => s.replaceAll('\u0002', ':').replaceAll('\u0003', '-')
-    const colon = token.indexOf(':'),
-      key = colon < 0 ? undefined : restore(token.slice(0, colon)).toLocaleLowerCase()
+    const colon = token.indexOf(':')
+    const key = colon < 0 ? undefined : restore(token.slice(0, colon)).toLocaleLowerCase()
     const values = (colon < 0 ? token : token.slice(colon + 1)).split('\u0001').map(restore)
     if (key === '' || values.some((v) => !v)) throw new Error('條件缺少欄位或值')
-    for (const value of values)
+    for (const value of values) {
       groups.at(-1)!.push({ key, value: value.toLocaleLowerCase(), exclude })
+    }
     token = ''
   }
   for (const char of source.trim()) {
@@ -180,6 +194,7 @@ export function parseQuery(source: string): Term[][] {
   if (groups.flat().length > 50) throw new Error('一次最多 50 個條件')
   return groups
 }
+
 export const describeQuery = (groups: Term[][]) =>
   groups
     .map((g) =>
@@ -190,6 +205,7 @@ export const describeQuery = (groups: Term[][]) =>
         .join(' AND ')
     )
     .join(' OR ') || '全部資料夾'
+
 export function normalizeValue(value: unknown, type: string) {
   const raw = Array.isArray(value) ? value.join('\n') : value == null ? '' : String(value)
   if (type === 'boolean') {

@@ -1,5 +1,6 @@
-import { currentLocale, t as tr } from '../i18n'
 import type { EmbeddedSubtitleInfo } from '../../shared/explorer'
+
+import { currentLocale, t as tr } from '../i18n'
 
 // R-412: Matroska names a track's language with ISO 639-2 codes; the bibliographic ones (chi, fre, ger…) are not
 // accepted by Intl, so they are mapped to their terminology codes first.
@@ -19,6 +20,7 @@ const terminology: Record<string, string> = {
   geo: 'kat',
   bur: 'mya',
 }
+
 export function languageName(code?: string) {
   if (!code) return ''
   try {
@@ -31,6 +33,7 @@ export function languageName(code?: string) {
     return code
   }
 }
+
 // "內嵌：日本語／Signs": the language and the track's own name, whichever the file gives.
 export const embeddedLabel = (track: Pick<EmbeddedSubtitleInfo, 'number' | 'language' | 'name'>) =>
   tr(

@@ -1,12 +1,14 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { KeyStore, type KeyCipher } from '../electron/keys'
-import { metadata } from '../electron/metadata'
-import { Library } from '../electron/library'
-import { Explorer } from '../electron/explorer'
+import { test } from 'node:test'
+
 import { KEY_MAYBE_NSFW, KEY_MISSING, KEY_REJECTED, keySites } from '../shared/keys'
+
+import { Explorer } from '../electron/explorer'
+import { type KeyCipher, KeyStore } from '../electron/keys'
+import { Library } from '../electron/library'
+import { metadata } from '../electron/metadata'
 
 const base = path.resolve('.test-output')
 // A stand-in for the operating system's encryption: reversible, but never the plain text.
@@ -15,17 +17,20 @@ const cipher: KeyCipher = {
   encrypt: (text) => Buffer.from('enc:' + [...text].reverse().join('')),
   decrypt: (data) => [...data.toString().slice(4)].reverse().join(''),
 }
+
 type Reply = string | object | { status: number; body?: unknown }
+
 const fake = (replies: Record<string, Reply>, seen: { url: string; init?: RequestInit }[] = []) =>
   (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
     seen.push({ url, init })
     const reply = replies[decodeURI(url)] ?? replies[url]
     if (reply === undefined) return new Response('', { status: 404 })
-    if (typeof reply === 'object' && 'status' in reply)
+    if (typeof reply === 'object' && 'status' in reply) {
       return new Response(JSON.stringify(reply.body ?? {}), {
         status: (reply as { status: number }).status,
       })
+    }
     return new Response(typeof reply === 'string' ? reply : JSON.stringify(reply))
   }) as typeof fetch
 const keysOf = (values: Record<string, Record<string, string>>) => ({
@@ -113,8 +118,9 @@ test('keyed sources: missing keys stop before any request, keys travel the way e
     'https://www.imdb.com/title/tt0133093/',
     'https://myanimelist.net/anime/1',
     'https://www.igdb.com/games/portal-2',
-  ])
+  ]) {
     assert.equal(sourceForUrl(url), 'web', url)
+  }
   // FANZA: the content ID from the address.
   const fanza = await metadata(
     'https://www.dmm.co.jp/dc/doujin/-/detail/=/cid=d_123456/',

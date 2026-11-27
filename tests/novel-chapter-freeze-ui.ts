@@ -1,22 +1,24 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
+
 import { readFolder } from '../electron/files'
-import { zipFixture } from './support/archive-fixture'
+import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure, withoutFlush } from './support/app'
+import { zipFixture } from './support/archive-fixture'
 
 // R-448: reading on through long chapters in scroll mode, in a project the size of a real collection, never freezes
 // at a chapter crossing: no frame takes much longer than a few frames (it froze about 0.25 s and then jumped).
 const base = path.resolve('.test-output')
 await fs.mkdir(path.join(base, 'shot'), { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'novel-freeze-')),
-  media = path.join(root, 'Shelf'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'novel-freeze-'))
+const media = path.join(root, 'Shelf')
+const local = path.join(root, 'local')
 await fs.mkdir(media, { recursive: true })
 // Many folders, so the project snapshot is as big as a real one.
-for (let i = 0; i < 1500; i++)
+for (let i = 0; i < 1500; i++) {
   await fs.mkdir(path.join(media, 'Folder ' + String(i).padStart(4, '0')))
+}
 const xml = (name: string, value: string) => ({ name, bytes: Buffer.from(value) })
 const page = (body: string) =>
   `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>t</title></head><body>${body}</body></html>`
@@ -75,8 +77,9 @@ try {
   await win.waitForFunction(() => !!document.querySelector('.novel-info strong')?.textContent)
   const choose = async (...names: string[]) => {
     await reader().getByRole('button', { name: '閱讀設定', exact: true }).click()
-    for (const name of names)
+    for (const name of names) {
       await reader().locator('.novel-settings label').getByText(name, { exact: true }).click()
+    }
     await win.keyboard.press('Escape')
     await reader().locator('.novel-settings').waitFor({ state: 'hidden' })
   }

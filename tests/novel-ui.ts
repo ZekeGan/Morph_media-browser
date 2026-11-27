@@ -1,18 +1,19 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
+
 import { readFolder } from '../electron/files'
-import { tinyPng, zipFixture } from './support/archive-fixture'
+import { Library } from '../electron/library'
 import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
+import { tinyPng, zipFixture } from './support/archive-fixture'
 
 // R-282: the novel reader. A TXT book with chapter headings and ruby, and an EPUB with a picture, in a folder of
 // text books: pages turn, vertical text, contents, search and bookmarks work, and the place is kept.
 const base = path.resolve('.test-output')
 await fs.mkdir(path.join(base, 'shot'), { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'novel-ui-')),
-  media = path.join(root, 'Novels'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'novel-ui-'))
+const media = path.join(root, 'Novels')
+const local = path.join(root, 'local')
 await fs.mkdir(media)
 const paragraph = '吾輩は猫である。名前はまだ無い。どこで生れたかとんと見当がつかぬ。'.repeat(6)
 const story =
@@ -131,18 +132,18 @@ try {
   await page.waitForTimeout(300)
   assert.ok(
     await page.evaluate(() => {
-      const page = document.querySelector('.novel-page')!,
-        walker = document.createTreeWalker(
-          document.querySelector('.novel-content')!,
-          NodeFilter.SHOW_TEXT
-        )
+      const page = document.querySelector('.novel-page')!
+      const walker = document.createTreeWalker(
+        document.querySelector('.novel-content')!,
+        NodeFilter.SHOW_TEXT
+      )
       let node = walker.nextNode()
       while (node && !node.textContent?.trim()) node = walker.nextNode()
       const range = document.createRange()
       range.setStart(node!, 0)
       range.setEnd(node!, 1)
-      const first = range.getBoundingClientRect(),
-        frame = page.getBoundingClientRect()
+      const first = range.getBoundingClientRect()
+      const frame = page.getBoundingClientRect()
       return (
         first.right <= frame.right + 1 && first.left >= frame.left - 1 && first.top >= frame.top - 1
       )
@@ -175,8 +176,8 @@ try {
   const trail = await page.evaluate(
     () =>
       new Promise<number[]>((resolve) => {
-        const element = document.querySelector('.novel-page')!,
-          list: number[] = []
+        const element = document.querySelector('.novel-page')!
+        const list: number[] = []
         const frame = () => {
           list.push(Math.abs(element.scrollLeft))
           if (list.length < 45) requestAnimationFrame(frame)
@@ -203,8 +204,8 @@ try {
   const wheelTrail = await page.evaluate(
     () =>
       new Promise<number[]>((resolve) => {
-        const element = document.querySelector('.novel-page')!,
-          list: number[] = []
+        const element = document.querySelector('.novel-page')!
+        const list: number[] = []
         const frame = () => {
           list.push(Math.abs(element.scrollLeft))
           if (list.length < 45) requestAnimationFrame(frame)
@@ -219,16 +220,19 @@ try {
   await page.waitForTimeout(800)
   // Spinning on into the next chapter keeps the distance: 40 notches move the text 4000px, no more.
   await page.evaluate(() => {
-    const element = document.querySelector('.novel-page')!,
-      next = element.querySelector('[data-chapter="3"]')!
+    const element = document.querySelector('.novel-page')!
+    const next = element.querySelector('[data-chapter="3"]')!
     element.scrollLeft -=
       element.getBoundingClientRect().right - next.getBoundingClientRect().right - 2000
   })
   await page.waitForTimeout(300)
   const markedAt = await page.evaluate(() => {
-    const element = document.querySelector('.novel-page')!,
-      frame = element.getBoundingClientRect(),
-      node = document.elementFromPoint(frame.left + frame.width / 2, frame.top + frame.height / 2)!
+    const element = document.querySelector('.novel-page')!
+    const frame = element.getBoundingClientRect()
+    const node = document.elementFromPoint(
+      frame.left + frame.width / 2,
+      frame.top + frame.height / 2
+    )!
     node.setAttribute('data-glide-mark', '')
     return node.getBoundingClientRect().right
   })
@@ -263,9 +267,9 @@ try {
   )
   // Scrolling on until the next chapter passes the reading line makes it the current one, and the text stays put.
   const placed = await page.evaluate(() => {
-    const element = document.querySelector('.novel-page')!,
-      next = element.querySelector('[data-chapter="3"]')!,
-      frame = element.getBoundingClientRect()
+    const element = document.querySelector('.novel-page')!
+    const next = element.querySelector('[data-chapter="3"]')!
+    const frame = element.getBoundingClientRect()
     element.scrollLeft -=
       frame.right - next.getBoundingClientRect().right - element.clientWidth * 0.05
     return frame.right - next.getBoundingClientRect().right
@@ -304,8 +308,8 @@ try {
   await page.keyboard.press('End')
   const endCard = reader().locator('.novel-end-card')
   await endCard.getByText('全書完', { exact: true }).waitFor()
-  const cardBox = (await endCard.boundingBox())!,
-    pageBox = (await reader().locator('.novel-page').boundingBox())!
+  const cardBox = (await endCard.boundingBox())!
+  const pageBox = (await reader().locator('.novel-page').boundingBox())!
   assert.ok(
     cardBox.y >= pageBox.y - 1 && cardBox.y + cardBox.height <= pageBox.y + pageBox.height + 1,
     'the end page is on screen'
@@ -343,10 +347,10 @@ try {
   // R-347: the toolbar's last button sits at its right end.
   assert.ok(
     await page.evaluate(() => {
-      const bar = document.querySelector('.novel-toolbar')!.getBoundingClientRect(),
-        close = document
-          .querySelector('.novel-toolbar [aria-label="退出 · ESC"]')!
-          .getBoundingClientRect()
+      const bar = document.querySelector('.novel-toolbar')!.getBoundingClientRect()
+      const close = document
+        .querySelector('.novel-toolbar [aria-label="退出 · ESC"]')!
+        .getBoundingClientRect()
       return bar.right - close.right < 24
     }),
     'close button at the right end of the toolbar'
@@ -359,8 +363,9 @@ try {
       )
     )
   const waitBars = async (opacity: string) => {
-    for (let i = 0; i < 30 && (await barsVisible()).some((value) => value !== opacity); i++)
+    for (let i = 0; i < 30 && (await barsVisible()).some((value) => value !== opacity); i++) {
       await page.waitForTimeout(50)
+    }
     assert.deepEqual(await barsVisible(), [opacity, opacity])
   }
   const middle = async () => {
@@ -392,9 +397,9 @@ try {
   await page.waitForTimeout(250)
   const between = await page.evaluate(() => {
     const box = (selector: string) => document.querySelector(selector)!.getBoundingClientRect()
-    const panel = box('.novel-panel'),
-      bar = box('.novel-toolbar'),
-      progress = box('.novel-progress')
+    const panel = box('.novel-panel')
+    const bar = box('.novel-toolbar')
+    const progress = box('.novel-progress')
     return { top: panel.top - bar.bottom, bottom: progress.top - panel.bottom }
   })
   assert.ok(
@@ -477,11 +482,11 @@ try {
     .getByRole('button', { name: '第80章　長80', exact: true }) // ui-names: ignore
     .waitFor({ state: 'attached' })
   const panelLayout = await page.evaluate(() => {
-    const panel = document.querySelector('.novel-panel')!.getBoundingClientRect(),
-      tabs = document
-        .querySelector('.novel-panel .mantine-SegmentedControl-root')!
-        .getBoundingClientRect(),
-      list = document.querySelector<HTMLElement>('.novel-panel .novel-list')!
+    const panel = document.querySelector('.novel-panel')!.getBoundingClientRect()
+    const tabs = document
+      .querySelector('.novel-panel .mantine-SegmentedControl-root')!
+      .getBoundingClientRect()
+    const list = document.querySelector<HTMLElement>('.novel-panel .novel-list')!
     return {
       tabs: tabs.height,
       listTop: list.getBoundingClientRect().top,

@@ -1,5 +1,6 @@
-import { t as tr } from '../i18n'
 import type { CommonFieldNames } from '../../shared/layouts'
+
+import { t as tr } from '../i18n'
 
 export const commonFieldNames = (): CommonFieldNames => ({
   rating: tr('評分'),

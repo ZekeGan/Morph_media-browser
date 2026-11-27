@@ -1,13 +1,15 @@
-import { plainMessage } from '../shared/message'
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
-import { Explorer, type DesktopOperations } from '../electron/explorer'
-import { fetchImageUrl, privateAddress } from '../electron/image-url'
+import { test } from 'node:test'
+
+import { plainMessage } from '../shared/message'
 import { DATA_DIR } from '../shared/model'
+
+import { type DesktopOperations, Explorer } from '../electron/explorer'
 import { exists, readFolder } from '../electron/files'
+import { fetchImageUrl, privateAddress } from '../electron/image-url'
+import { Library } from '../electron/library'
 
 const png = Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.alloc(64, 1)])
 const pub = async () => ['93.184.216.34']
@@ -48,8 +50,9 @@ test('image URL download rejects unsafe targets, non-images, oversize content an
     'http://[::1]/a.png',
     'http://192.168.1.5/a.png',
     'not a url',
-  ])
+  ]) {
     await assert.rejects(fetchImageUrl(url, { fetcher: never, lookup: pub }), Error, url)
+  }
   await assert.rejects(
     fetchImageUrl('https://internal.example.test/a.png', {
       fetcher: never,
@@ -105,18 +108,20 @@ test('image URL download rejects unsafe targets, non-images, oversize content an
     'fd00::1',
     'fe80::1',
     '::ffff:10.0.0.1',
-  ])
+  ]) {
     assert.equal(privateAddress(ip), true, ip)
-  for (const ip of ['93.184.216.34', '8.8.8.8', '2606:4700:4700::1111'])
+  }
+  for (const ip of ['93.184.216.34', '8.8.8.8', '2606:4700:4700::1111']) {
     assert.equal(privateAddress(ip), false, ip)
+  }
 })
 
 test('cover from image URL is saved as a portable asset, and failures keep the original cover', async (t) => {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'image-url-')),
-    media = path.join(root, 'media'),
-    local = path.join(root, 'local')
+  const root = await fs.mkdtemp(path.join(base, 'image-url-'))
+  const media = path.join(root, 'media')
+  const local = path.join(root, 'local')
   await fs.mkdir(path.join(media, 'Game A'), { recursive: true })
   await fs.writeFile(path.join(media, 'Game A', 'game.txt'), 'ORIGINAL')
   const lib = new Library(local, undefined, false)

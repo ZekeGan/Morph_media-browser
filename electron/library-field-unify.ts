@@ -1,11 +1,13 @@
-import { fmt } from '../shared/message'
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
+
+import { fmt } from '../shared/message'
 import type { FieldUnifyPreview, FolderRecord } from '../shared/model'
 import { textAsDate, unifyTarget } from '../shared/unifyDates'
+
 import { fingerprint, folderFile, keyPath, readFolder, safePath } from './files'
-import { applyMaintenance } from './maintenance'
 import type { Library } from './library'
+import { applyMaintenance } from './maintenance'
 
 // R-364: a field stored as text in some folders and as a date in others (imports before R-240 kept dates as text) is
 // unified in one step: a preview counts what would change and lists what cannot be read, and only a confirmed preview
@@ -39,8 +41,8 @@ export async function previewUnifyField(
   for (const row of rows) {
     const file = folderFile(row.path)
     await safePath(row.path, file)
-    const hash = await fingerprint(file),
-      record = await readFolder(row.path)
+    const hash = await fingerprint(file)
+    const record = await readFolder(row.path)
     if ((await fingerprint(file)) !== hash) throw new Error('資料正在變更，請稍後再預覽')
     records.set(row.path, { record, hash })
   }
@@ -53,22 +55,23 @@ export async function previewUnifyField(
   // (text, for example) would see its values change, so then nothing is changed.
   for (const other of ex.state.projects) {
     const binding = other.project?.fieldBindings.find((field) => field.attributeId === attributeId)
-    if (binding && binding.type !== to)
+    if (binding && binding.type !== to) {
       throw new Error(fmt('專案「{0}」把這個欄位當成其他格式使用，不能統一', other.project!.name))
-  }
-  const token = randomUUID(),
-    preview: FieldUnifyPreview = {
-      token,
-      attributeId,
-      name: found[0]?.key ?? attributeId,
-      to,
-      folders: 0,
-      values: 0,
-      unreadable: [],
-      recoveryPath: path.join(ex.userData, 'maintenance-backups', token),
     }
-  const changes: Parameters<typeof applyMaintenance>[0] = [],
-    guards: { root: string; path: string; hash: string }[] = []
+  }
+  const token = randomUUID()
+  const preview: FieldUnifyPreview = {
+    token,
+    attributeId,
+    name: found[0]?.key ?? attributeId,
+    to,
+    folders: 0,
+    values: 0,
+    unreadable: [],
+    recoveryPath: path.join(ex.userData, 'maintenance-backups', token),
+  }
+  const changes: Parameters<typeof applyMaintenance>[0] = []
+  const guards: { root: string; path: string; hash: string }[] = []
   for (const [folder, { record, hash }] of records) {
     const guard = { root: folder, path: folderFile(folder), hash }
     let changed = 0
@@ -81,8 +84,9 @@ export async function previewUnifyField(
             typeof value.value === 'string' &&
             value.value.trim() &&
             preview.unreadable.length < 50
-          )
+          ) {
             preview.unreadable.push({ path: folder, value: value.value.slice(0, 200) })
+          }
           return value
         }
         changed++
@@ -114,17 +118,20 @@ export async function previewUnifyField(
 export async function unifyField(ex: Library, token: string) {
   const plan = ex.unifyPlans.get(token)
   ex.unifyPlans.delete(token)
-  if (!plan || plan.refs !== JSON.stringify(ex.refs) || plan.scope !== ex.fieldScope())
+  if (!plan || plan.refs !== JSON.stringify(ex.refs) || plan.scope !== ex.fieldScope()) {
     throw new Error('欄位統一預覽已過期，請重新預覽')
+  }
   if (!plan.changes.length) throw new Error('沒有可統一的值')
   const check = async () => {
     for (const guard of plan.guards) {
       await safePath(guard.root, guard.path)
-      if ((await fingerprint(guard.path)) !== guard.hash)
+      if ((await fingerprint(guard.path)) !== guard.hash) {
         throw new Error('預覽後資料已變更，未執行統一')
+      }
     }
-    for (const root of new Set(plan.changes.map((change) => change.root)))
+    for (const root of new Set(plan.changes.map((change) => change.root))) {
       if (await ex.protectedAncestor(root)) throw new Error('受保護的範圍變了，沒有統一')
+    }
   }
   await check()
   const recovery = await ex.maintenanceRecovery(

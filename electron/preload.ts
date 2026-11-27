@@ -1,7 +1,9 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
+
 import type { ExplorerApi, SubtitleProgress } from '../shared/explorer'
 import type { MediaApi, Request, Response, ScanProgress } from '../shared/model'
 import type { DesktopApi, FolderNavigation, WindowState } from '../shared/workspace'
+
 const api: MediaApi = {
   request: (request: Request): Promise<Response> => ipcRenderer.invoke('library:request', request),
   onProgress(callback) {
@@ -36,19 +38,22 @@ const desktop: DesktopApi = {
       // A side press must not dismiss a menu before its native command arrives.
       event.stopPropagation()
       // Some drivers deliver only DOM events. Match native/DOM pairs in either order.
-      if (event.type === 'mouseup')
+      if (event.type === 'mouseup') {
         navigate(
           { delta: event.button === 3 ? -1 : 1, x: event.clientX, y: event.clientY },
           'mouse'
         )
+      }
     }
     ipcRenderer.on('folder:navigate', listener)
-    for (const type of ['mousedown', 'mouseup', 'auxclick'] as const)
+    for (const type of ['mousedown', 'mouseup', 'auxclick'] as const) {
       window.addEventListener(type, mouse, true)
+    }
     return () => {
       ipcRenderer.removeListener('folder:navigate', listener)
-      for (const type of ['mousedown', 'mouseup', 'auxclick'] as const)
+      for (const type of ['mousedown', 'mouseup', 'auxclick'] as const) {
         window.removeEventListener(type, mouse, true)
+      }
     }
   },
   workspace: () => ipcRenderer.invoke('workspace:read'),

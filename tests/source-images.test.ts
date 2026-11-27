@@ -1,13 +1,15 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
-import { Explorer, type DesktopOperations } from '../electron/explorer'
+import { test } from 'node:test'
+
+import { DATA_DIR, validateFolder } from '../shared/model'
+
+import { type DesktopOperations, Explorer } from '../electron/explorer'
 import { readFolder } from '../electron/files'
+import { Library } from '../electron/library'
 import { metadata } from '../electron/metadata'
 import { downloadSourceImages, MAX_TOTAL_BYTES } from '../electron/source-images'
-import { DATA_DIR, validateFolder } from '../shared/model'
 
 // R-422: the picture lists of VNDB, Steam and SteamGridDB are downloaded for the preview and imported by position.
 // Every request is answered by a fixed reply; nothing touches the network.
@@ -19,9 +21,9 @@ const json = (body: unknown) =>
 async function fixture(t: { after: (fn: () => Promise<void>) => void }) {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'source-images-')),
-    media = path.join(root, 'media'),
-    local = path.join(root, 'local')
+  const root = await fs.mkdtemp(path.join(base, 'source-images-'))
+  const media = path.join(root, 'media')
+  const local = path.join(root, 'local')
   await fs.mkdir(media)
   const lib = new Library(local, undefined, false)
   await lib.init()
@@ -50,6 +52,7 @@ const vndbReply = {
     violence: 0,
   })),
 }
+
 function vndbFetcher(asked: { url: string; init?: RequestInit }[]) {
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
@@ -77,8 +80,9 @@ test('R-422: only the source picture hosts, https, a picture type and the size c
   const fetcher = (async (input: RequestInfo | URL) => {
     const url = String(input)
     fetched.push(url)
-    if (url.endsWith('/big.jpg'))
+    if (url.endsWith('/big.jpg')) {
       return new Response(jpg(16), { headers: { 'content-length': String(11 * 1024 * 1024) } })
+    }
     if (url.endsWith('/text.jpg')) return new Response('not a picture')
     return new Response(jpg(16))
   }) as typeof fetch
@@ -126,8 +130,8 @@ test('R-422: at most 12 screenshots; R-511: no hero, logo or icon from SteamGrid
   assert.deepEqual(grid, [])
   assert.deepEqual(fetched, [])
   fetched.length = 0
-  const steamHost = 'shared.fastly.steamstatic.com',
-    many = Array.from({ length: 20 }, (_, n) => `https://${steamHost}/steam/apps/9/s${n}.jpg`)
+  const steamHost = 'shared.fastly.steamstatic.com'
+  const many = Array.from({ length: 20 }, (_, n) => `https://${steamHost}/steam/apps/9/s${n}.jpg`)
   const steam = await downloadSourceImages(
     'steam',
     [{ key: 'SCREENSHOTS', type: 'tags', value: many }],
@@ -149,9 +153,9 @@ test('R-422: at most 12 screenshots; R-511: no hero, logo or icon from SteamGrid
 })
 
 test('R-422: the pictures of one preview are capped in total', async () => {
-  const size = 9 * 1024 * 1024,
-    fetcher = (async () => new Response(jpg(size))) as typeof fetch,
-    urls = Array.from({ length: 10 }, (_, n) => `https://t.vndb.org/sf/${n}/${n}.jpg`)
+  const size = 9 * 1024 * 1024
+  const fetcher = (async () => new Response(jpg(size))) as typeof fetch
+  const urls = Array.from({ length: 10 }, (_, n) => `https://t.vndb.org/sf/${n}/${n}.jpg`)
   const images = await downloadSourceImages(
     'vndb',
     [{ key: 'SCREENSHOTS', type: 'tags', value: urls }],
@@ -169,20 +173,20 @@ test('R-422: importing stores only the checked pictures with their roles; forged
   globalThis.fetch = vndbFetcher([])
   try {
     const candidate = await explorer.request({
-        action: 'metadataPreview',
-        source: 'https://vndb.org/v17',
-      }),
-      preview = candidate.preview!
+      action: 'metadataPreview',
+      source: 'https://vndb.org/v17',
+    })
+    const preview = candidate.preview!
     assert.equal(preview.images?.length, 3)
     assert.ok(preview.images!.every((i) => i.image.startsWith('data:image/jpeg;base64,')))
     assert.deepEqual(
       preview.images!.map((i) => i.n),
       [1, 2, 3]
     )
-    const row = lib.snapshot().rows[0],
-      base = { action: 'metadataApply' as const, rowId: row.rowId, token: preview.token },
-      before = await readFolder(media)
-    for (const images of [[3], [-1], [1.5], [0, 0], [99]])
+    const row = lib.snapshot().rows[0]
+    const base = { action: 'metadataApply' as const, rowId: row.rowId, token: preview.token }
+    const before = await readFolder(media)
+    for (const images of [[3], [-1], [1.5], [0, 0], [99]]) {
       await assert.rejects(
         explorer.request({
           ...base,
@@ -193,6 +197,7 @@ test('R-422: importing stores only the checked pictures with their roles; forged
         }),
         /匯入圖片不合法/
       )
+    }
     assert.deepEqual((await readFolder(media)).assets, before.assets, 'nothing was written')
     await explorer.request({
       ...base,
@@ -211,19 +216,20 @@ test('R-422: importing stores only the checked pictures with their roles; forged
       'only the checked ones, with their roles'
     )
     validateFolder(record)
-    for (const asset of record.assets)
+    for (const asset of record.assets) {
       assert.ok(await fs.stat(path.join(media, DATA_DIR, asset.relativePath)))
+    }
     assert.equal(
       (await fs.readdir(path.join(media, DATA_DIR, 'assets'))).length,
       2,
       'no other file was written'
     )
     // A second import of the same picture does not add it again.
-    const next = lib.snapshot().rows[0],
-      again = await explorer.request({
-        action: 'metadataPreview',
-        source: 'https://vndb.org/v17',
-      })
+    const next = lib.snapshot().rows[0]
+    const again = await explorer.request({
+      action: 'metadataPreview',
+      source: 'https://vndb.org/v17',
+    })
     await explorer.request({
       action: 'metadataApply',
       rowId: next.rowId,

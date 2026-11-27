@@ -1,10 +1,13 @@
 import { bookCover, panelCover, visibleCells } from './layouts'
+
 export { bookCover }
-import type { MetadataSourceId, SearchSourceId } from './sources'
-import type { StableQuery } from './query'
+import type { AssetRole, Attribute, Cell, Snapshot } from './model'
 import type { Notice } from './notifications'
-import type { Attribute, AssetRole, Cell, Snapshot } from './model'
+import type { StableQuery } from './query'
+import type { MetadataSourceId, SearchSourceId } from './sources'
+
 export type BrowseMode = 'CARD' | 'TREE' | 'TABLE'
+
 // The file list's own choices in the right panel, kept per project so they survive closing the panel or the project.
 export interface MediaPrefs {
   scope?: 'current' | 'descendants'
@@ -14,6 +17,7 @@ export interface MediaPrefs {
   // R-486: one field and a direction; absent means the order the files are listed in.
   sort?: { field: 'name' | 'kind' | 'size' | 'modified'; asc: boolean }
 }
+
 export interface BrowseState {
   mode: BrowseMode
   location: string
@@ -41,6 +45,7 @@ export interface BrowseState {
   scrolls?: Partial<Record<BrowseMode, number>>
   viewport?: { x: number; y: number; zoom: number }
 }
+
 export interface GameBoundary {
   state: 'root' | 'not-game' | 'candidate'
   engines: string[]
@@ -49,6 +54,7 @@ export interface GameBoundary {
   // as a game.
   role?: 'tool'
 }
+
 export interface ReadingPrefs {
   mode?: 'image' | 'manga'
   page?: number
@@ -62,6 +68,7 @@ export interface ReadingPrefs {
   webtoonWidth?: number
   webtoonAsked?: boolean
 }
+
 // R-407 (tentative): the page a comic archive (CBZ, CBR, CB7) in the folder was left on, counted from 0, the number of
 // pages it had, and when it was last read.
 export interface VolumeProgress {
@@ -69,6 +76,7 @@ export interface VolumeProgress {
   total: number
   updated: string
 }
+
 // R-282: the place in a text book (chapter, and the share of that chapter read), the share of the whole book, when
 // it was last read, and the user's bookmarks.
 export interface NovelProgress {
@@ -78,6 +86,7 @@ export interface NovelProgress {
   updated: string
   bookmarks?: { chapter: number; position: number; label: string }[]
 }
+
 // A text book as the novel reader gets it: plain text chapters (TXT) or chapter XHTML with image addresses (EPUB).
 export interface NovelBook {
   format: 'txt' | 'epub'
@@ -93,6 +102,7 @@ export interface NovelBook {
   chapters: { title: string; text?: string; html?: string; path?: string }[]
   images?: Record<string, string>
 }
+
 export interface SubtitlePrefs {
   offset: number
   size: number
@@ -101,13 +111,16 @@ export interface SubtitlePrefs {
   background: string
   encoding: 'utf-8' | 'big5' | 'shift_jis'
 }
+
 // R-432: a track is known by its own name and language, since its number differs from video to video.
 export interface SubtitleTrackPreference {
   name?: string
   language?: string
 }
+
 export const gameExtras = ['steam', 'store', 'save'] as const
 export type GameExtra = (typeof gameExtras)[number]
+
 export interface FolderDetails {
   // Set by hand; without it the kind is detected (see shared/kind.ts).
   kind?: import('./kind').FolderKind
@@ -152,21 +165,25 @@ export interface FolderDetails {
   saveFolder?: { path: string; relative: boolean }
   subtitles?: { id: string; name: string; relativePath: string }[]
 }
+
 // 'shortcut': a .lnk/.url file inside the game folder, opened through the system so its own arguments and compatibility settings apply.
 // 'file': a file inside the game folder (a manual, a readme) opened with the system's default application (R-306).
 export type ActionKind = 'exe' | 'folder' | 'file-app' | 'url' | 'shortcut' | 'file'
 // A 'file' action opens documents only: opening a program or script this way would run it. CHM help files are left out:
 // they can carry scripts and start programs.
 export const documentFile = (name: string) => /\.(pdf|html?|txt|md|rtf)$/i.test(name)
+
 export interface ActionTemplate {
   id: string
   label: string
   kind: ActionKind
   color: string
 }
+
 // Actions that start the game (as opposed to opening a folder or a web page); the launch cell offers these.
 export const launchTemplates = (project: { actionTemplates?: ActionTemplate[] }) =>
   gameActionTemplates(project).filter((t) => ['exe', 'file-app', 'shortcut'].includes(t.kind))
+
 // The action a launch cell starts: its chosen one, else the default launch action, else the first one that can launch.
 export const launchTemplate = (
   project: { actionTemplates?: ActionTemplate[] },
@@ -177,6 +194,7 @@ export const launchTemplate = (
     all.find((t) => t.id === actionId) ?? all.find((t) => t.id === 'default-launch-game') ?? all[0]
   )
 }
+
 // What a launch cell starts for one folder: its action, or the first fallback action that this folder has a target for
 // (some games start from an EXE, others from a shortcut). With none bound, the main action is reported so the cell
 // shows it as not bound yet.
@@ -188,14 +206,14 @@ export const launchChoice = (
 ) => {
   // R-409: the cell may name any game action (a folder, a page, a manual), not only one that starts the game.
   const main =
-      gameActionTemplates(project).find((t) => t.id === actionId) ??
-      launchTemplate(project, actionId),
-    all = launchTemplates(project),
-    chain = [main, ...(fallbackIds ?? []).map((id) => all.find((t) => t.id === id))].filter(
-      (t): t is ActionTemplate => !!t
-    )
+    gameActionTemplates(project).find((t) => t.id === actionId) ?? launchTemplate(project, actionId)
+  const all = launchTemplates(project)
+  const chain = [main, ...(fallbackIds ?? []).map((id) => all.find((t) => t.id === id))].filter(
+    (t): t is ActionTemplate => !!t
+  )
   return chain.find((t) => targets?.[t.id]?.kind === t.kind) ?? main
 }
+
 // R-397: what a game folder still lacks to start: 'action' when the project has no launch action at all, 'target' when
 // the main launch action has nothing bound for this folder, else undefined. Does not depend on the default action's id,
 // since a project may have replaced or removed it.
@@ -207,12 +225,14 @@ export const launchGap = (
   if (!main) return 'action'
   return targets?.[main.id]?.kind === main.kind ? undefined : 'target'
 }
+
 export const gameActionTemplates = (project: {
   actionTemplates?: ActionTemplate[]
 }): ActionTemplate[] =>
   project.actionTemplates ?? [
     { id: 'default-launch-game', label: '啟動遊戲', kind: 'exe', color: '#168c77' },
   ]
+
 export interface MediaEntry {
   id: string
   name: string
@@ -224,6 +244,7 @@ export interface MediaEntry {
   thumb?: string
   hidden?: boolean
 }
+
 export interface ContentResult {
   entries: MediaEntry[]
   notices: string[]
@@ -232,11 +253,13 @@ export interface ContentResult {
   // R-494: what the whole folder holds (from every name, before all batches have come), for its kind.
   sample?: import('./kind').KindSample
 }
+
 export interface OverviewEntry extends MediaEntry {
   rowId: string
   folderName: string
   sourcePath: string
 }
+
 export interface OverviewResult {
   entries: OverviewEntry[]
   notices: string[]
@@ -245,6 +268,7 @@ export interface OverviewResult {
   foldersVisited: number
   foldersTotal: number
 }
+
 export interface SearchHit {
   rowId: string
   projectId: string
@@ -254,6 +278,7 @@ export interface SearchHit {
   projects: { projectId: string; rowId: string }[]
   matched: string[]
 }
+
 export interface SearchResult {
   resolvedQuery?: string
   hits: SearchHit[]
@@ -263,6 +288,7 @@ export interface SearchResult {
   parsed: string
   index: string
 }
+
 export interface MetadataPreview {
   provider?: MetadataSourceId
   token: string
@@ -283,6 +309,7 @@ export interface MetadataPreview {
   versionPick?: 'match' | 'fallback' | 'chosen'
   albumImage?: string
 }
+
 // R-449: one version of an album as the version menu lists it.
 export interface MetadataVersion {
   id: string
@@ -295,6 +322,7 @@ export interface MetadataVersion {
   official: boolean
   matches?: boolean
 }
+
 export type ExplorerRequest =
   | { action: 'archive'; rowId: string; fileId: string }
   | {
@@ -496,6 +524,7 @@ export type ExplorerRequest =
       albumImage?: boolean
     }
   | { action: 'rebuildIndex' }
+
 export interface ExplorerResponse {
   overview?: OverviewResult
   snapshot?: Snapshot
@@ -526,6 +555,7 @@ export interface ExplorerResponse {
   cancelled?: boolean
   notice?: Notice
 }
+
 // R-418: one search result; picking it previews its address like a pasted one.
 export interface MetadataCandidate {
   provider: MetadataSourceId
@@ -536,9 +566,11 @@ export interface MetadataCandidate {
   // C-143: the source says the work is adult.
   adult?: boolean
 }
+
 // Game page extras (R-305–R-310). Paths stay in main; the window only learns what can be offered.
 // R-409: whether each extra button of a game can be used now; `reason` (a sentence to translate) says why not.
 export type GameAvailability = Record<GameExtra, { ok: boolean; reason?: string; site?: string }>
+
 export interface GameExtras {
   // Steam App ID from steam_appid.txt or the folder's Steam source; steamReady is false when no Steam is installed.
   steamAppId?: string
@@ -558,6 +590,7 @@ export interface GameExtras {
   // R-320: whether a Flash player is set, so an .swf action can start.
   flashPlayer?: boolean
 }
+
 // R-412: one subtitle track of a video. A graphic track (PGS, VobSub) is listed but has nothing to show as text.
 export interface EmbeddedSubtitleInfo {
   number: number
@@ -573,6 +606,7 @@ export interface EmbeddedSubtitleInfo {
   truncated?: boolean
   cues: number
 }
+
 // R-421: a stretch of a picture track. Cues are placed in a frame of width × height and drawn with the palette
 // (0xRRGGBB); data is one VobSub packet in base64, decoded by the window. The stretch covers from–until seconds
 // (no until: to the end of the track); partial = the track is still being read.
@@ -587,17 +621,20 @@ export interface EmbeddedPictures {
   cues: { start: number; end: number; data: string }[]
   partial?: boolean
 }
+
 export interface SubtitleProgress {
   rowId: string
   fileId: string
   fraction: number
 }
+
 export interface ExplorerApi {
   request(request: ExplorerRequest): Promise<ExplorerResponse>
   // R-412: how far the reading of a video's subtitle tracks has come (0 to 1).
   onSubtitleProgress(callback: (progress: SubtitleProgress) => void): () => void
   dropSubtitle(rowId: string, file: File): Promise<ExplorerResponse>
 }
+
 // R-438: see electron/media-facts.ts. `duration` is missing until every track's length has been read.
 export interface FolderFacts {
   audio: number
@@ -607,7 +644,9 @@ export interface FolderFacts {
   year?: number
   duration?: number
 }
+
 export const newDetails = (): FolderDetails => ({ schemaVersion: 1 })
+
 export const defaultSubtitle = (): SubtitlePrefs => ({
   offset: 0,
   size: 24,
@@ -616,7 +655,9 @@ export const defaultSubtitle = (): SubtitlePrefs => ({
   background: '#000000',
   encoding: 'utf-8',
 })
+
 export const isFieldKind = (kind: string) => kind.startsWith('field-')
+
 export const cellType = (kind: string) =>
   ({
     'field-text': 'string',
@@ -628,6 +669,7 @@ export const cellType = (kind: string) =>
     'field-url': 'url',
     'field-date-only': 'date',
   })[kind] ?? 'string'
+
 // R-409, R-469: the right panel a kind shows until a layout is chosen for it, laid out by the shape of its cover: music
 // a square cover on the left (5 × 4) with the album name, artist · year and tracks · length beside it; a book or a video
 // a tall cover on the left (4 × 6) with the name and that kind's small components; a game a wide cover on top (12 × 6)
@@ -666,6 +708,7 @@ const gamePanel = (): Cell[] => [
   { ...panelCover('game-cover', { x: 0, y: 0, w: 12, h: 6 }), imageFit: 'blur' },
   panelCell('name', 'name', { x: 0, y: 6, w: 12, h: 1 }),
 ]
+
 export const builtinPanel = (project: { cells: Cell[] }, kind: string): Cell[] =>
   kind === 'book'
     ? bookTemplate(project)
@@ -676,6 +719,7 @@ export const builtinPanel = (project: { cells: Cell[] }, kind: string): Cell[] =
         : kind === 'game'
           ? gamePanel()
           : []
+
 // The built-in panel of a page that has listed the folder: another folder holding audio (not a video one, whose panel
 // has the cover already) also shows its cover (R-294), found by the one cover rule.
 export const builtinPanelFor = (
@@ -690,12 +734,14 @@ export const builtinPanelFor = (
     ...cells.map((cell) => ({ ...cell, grid: { ...cell.grid, y: cell.grid.y + 4 } })),
   ]
 }
+
 export const panelEditorStart = (project: { cells: Cell[] }, kind: string): Cell[] => {
   const cells = builtinPanel(project, kind)
   return cells.length
     ? cells
     : visibleCells(project).filter((c) => ['name', 'path'].includes(c.kind))
 }
+
 // A folder of text books with one EPUB (and no pictures) shows that book's title and author under the name (R-469).
 export const withBookCard = (cells: Cell[]): Cell[] => [
   ...cells.map((cell) =>
@@ -718,8 +764,8 @@ export function bookTemplate(project: { cells: Cell[] }): Cell[] {
     y += cell.grid.h
   }
   // The card's fields keep their ids; the template's own components step aside when one is taken.
-  const taken = new Set(fields.map((cell) => cell.cellId)),
-    own = (id: string) => (taken.has(id) ? id + '-panel' : id)
+  const taken = new Set(fields.map((cell) => cell.cellId))
+  const own = (id: string) => (taken.has(id) ? id + '-panel' : id)
   return [
     bookCover({ x: 0, y: 0, w: 4, h: 6 }),
     panelCell(own('name'), 'name', { x: 4, y: 0, w: 8, h: 1 }),

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
+import { type KeyboardEvent, type MouseEvent, useEffect, useRef, useState } from 'react'
+
 import type { FolderRow } from '../../shared/model'
 
 // What the gestures need from the browse view, read when a gesture happens (so the view may define these later in
@@ -18,8 +19,8 @@ export interface MarkContext {
 // clears the marks.
 export function useFolderMarks(context: () => MarkContext) {
   const [marked, setMarked] = useState<string[]>([])
-  const anchor = useRef<string>(undefined),
-    clearTimer = useRef<number | undefined>(undefined)
+  const anchor = useRef<string>(undefined)
+  const clearTimer = useRef<number | undefined>(undefined)
   const cancelClear = () => {
     window.clearTimeout(clearTimer.current)
     clearTimer.current = undefined
@@ -34,8 +35,8 @@ export function useFolderMarks(context: () => MarkContext) {
         setMarked((now) => (now.includes(id) ? now.filter((m) => m !== id) : [...now, id]))
         return
       }
-      const from = current.findIndex((r) => r.rowId === anchor.current),
-        to = current.findIndex((r) => r.rowId === id)
+      const from = current.findIndex((r) => r.rowId === anchor.current)
+      const to = current.findIndex((r) => r.rowId === id)
       if (e.shiftKey && from >= 0 && to >= 0) {
         setMarked(current.slice(Math.min(from, to), Math.max(from, to) + 1).map((r) => r.rowId))
         return

@@ -1,9 +1,12 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { test } from 'node:test'
+
+import { sectionIds, sectionProjects, type WorkspaceCommand } from '../shared/workspace'
+
 import { WorkspaceStore } from '../electron/workspace'
-import { sectionProjects, sectionIds, type WorkspaceCommand } from '../shared/workspace'
+
 const unclassified = (ids: string[], prefs: Parameters<typeof sectionProjects>[1]) =>
   sectionProjects(ids, prefs, 'unclassified')
 
@@ -20,9 +23,10 @@ async function fixture(t: { after: (fn: () => Promise<void>) => void }) {
   await store.init()
   return { root, store }
 }
+
 test('sidebar classification, favorite, deletion and layout survive reload without losing placement', async (t) => {
-  const { root, store } = await fixture(t),
-    ids = ['p1', 'p2']
+  const { root, store } = await fixture(t)
+  const ids = ['p1', 'p2']
   let s = await store.read(ids)
   assert.deepEqual(unclassified(ids, s.prefs), ['p1', 'p2'])
   s = await store.update({ action: 'createGroup', name: '動作遊戲' }, ids)
@@ -46,8 +50,8 @@ test('sidebar classification, favorite, deletion and layout survive reload witho
   assert.deepEqual(unclassified(ids, s.prefs), ['p1', 'p2'])
 })
 test('invalid commands do not persist and queued updates retain both results', async (t) => {
-  const { store } = await fixture(t),
-    ids = ['p1']
+  const { store } = await fixture(t)
+  const ids = ['p1']
   await store.read(ids)
   await Promise.all([
     store.update({ action: 'createGroup', name: 'A' }, ids),
@@ -70,8 +74,8 @@ test('invalid commands do not persist and queued updates retain both results', a
 })
 
 test('global theme and language save together, survive unrelated changes, and reject invalid or failed writes', async (t) => {
-  const { root, store } = await fixture(t),
-    ids = ['p1']
+  const { root, store } = await fixture(t)
+  const ids = ['p1']
   let state = await store.read(ids)
   assert.equal(state.prefs.theme, undefined)
   assert.equal(state.prefs.locale, undefined)
@@ -102,8 +106,8 @@ test('global theme and language save together, survive unrelated changes, and re
 })
 
 test('play order is kept locally and only the four known orders are accepted', async (t) => {
-  const { root, store } = await fixture(t),
-    ids = ['p1']
+  const { root, store } = await fixture(t)
+  const ids = ['p1']
   await store.read(ids)
   await store.update({ action: 'playOrder', value: 'one' }, ids)
   const reopened = new WorkspaceStore(root)
@@ -117,8 +121,8 @@ test('play order is kept locally and only the four known orders are accepted', a
 })
 
 test('video audio is local, survives other preferences, and invalid or failed saves preserve the last value', async (t) => {
-  const { root, store } = await fixture(t),
-    ids = ['p1']
+  const { root, store } = await fixture(t)
+  const ids = ['p1']
   await store.read(ids)
   await store.update({ action: 'videoAudio', value: { volume: 0.35, muted: true } }, ids)
   await store.update({ action: 'appearance', theme: 'paper', locale: 'en' }, ids)
@@ -147,8 +151,8 @@ test('video audio is local, survives other preferences, and invalid or failed sa
 })
 
 test('manual group/project order persists; favorites remain independent from unclassified', async (t) => {
-  const { root, store } = await fixture(t),
-    ids = ['p1', 'p2', 'p3']
+  const { root, store } = await fixture(t)
+  const ids = ['p1', 'p2', 'p3']
   await store.read(ids)
   let state = await store.update({ action: 'createGroup', name: 'G' }, ids)
   const id = state.prefs.groups[0].id
@@ -200,8 +204,8 @@ test('manual group/project order persists; favorites remain independent from unc
   )
 })
 test('real write failure leaves previous disk and memory state intact', async (t) => {
-  const { store } = await fixture(t),
-    ids = ['p1']
+  const { store } = await fixture(t)
+  const ids = ['p1']
   await store.read(ids)
   const before = await fs.readFile(store.file, 'utf8')
   await fs.unlink(`${store.file}.bak`)
@@ -212,8 +216,8 @@ test('real write failure leaves previous disk and memory state intact', async (t
 })
 
 test('optional table column order survives reload; invalid orders leave previous settings intact', async (t) => {
-  const { root, store } = await fixture(t),
-    ids = ['p1']
+  const { root, store } = await fixture(t)
+  const ids = ['p1']
   await store.read(ids)
   const value = {
     mode: 'TABLE' as const,
@@ -250,8 +254,8 @@ test('corrupt UI settings remain untouched while projects can still be displayed
 })
 
 test('TREE branch visibility is a local project preference and survives reload', async (t) => {
-  const { root, store } = await fixture(t),
-    ids = ['p1']
+  const { root, store } = await fixture(t)
+  const ids = ['p1']
   await store.read(ids)
   const value = {
     mode: 'TREE' as const,
@@ -279,8 +283,8 @@ test('TREE branch visibility is a local project preference and survives reload',
   }
 })
 test('R-467: the sort keys and folders first are a local project preference, checked on save', async (t) => {
-  const { root, store } = await fixture(t),
-    ids = ['p1']
+  const { root, store } = await fixture(t)
+  const ids = ['p1']
   await store.read(ids)
   const value = {
     mode: 'CARD' as const,
@@ -324,8 +328,8 @@ test('R-467: the sort keys and folders first are a local project preference, che
   }
 })
 test('table visibility preserves names and saves independently of column order', async (t) => {
-  const { root, store } = await fixture(t),
-    ids = ['p1']
+  const { root, store } = await fixture(t)
+  const ids = ['p1']
   await store.read(ids)
   const value = {
     mode: 'TABLE' as const,
@@ -352,8 +356,8 @@ test('table visibility preserves names and saves independently of column order',
 })
 
 test('R-381: the source language order is local, follows the interface when empty, and rejects bad lists', async (t) => {
-  const { root, store } = await fixture(t),
-    ids = ['p1']
+  const { root, store } = await fixture(t)
+  const ids = ['p1']
   await store.read(ids)
   await store.update({ action: 'appearance', theme: 'glass', locale: 'ja' }, ids)
   assert.deepEqual(store.sourceLanguages(), ['ja'])
@@ -363,10 +367,11 @@ test('R-381: the source language order is local, follows the interface when empt
   assert.deepEqual((await reopened.read(ids)).prefs.sourceLanguages, ['en', 'zh-TW'])
   assert.deepEqual(reopened.sourceLanguages(), ['en', 'zh-TW'])
   const before = await fs.readFile(store.file)
-  for (const value of [undefined, 'en', ['fr'], ['en', 'en'], [1]])
+  for (const value of [undefined, 'en', ['fr'], ['en', 'en'], [1]]) {
     await assert.rejects(
       reopened.update({ action: 'sourceLanguages', value } as WorkspaceCommand, ids)
     )
+  }
   assert.deepEqual(await fs.readFile(store.file), before)
   await reopened.update({ action: 'sourceLanguages', value: [] }, ids)
   assert.equal((await reopened.read(ids)).prefs.sourceLanguages, undefined)
@@ -374,8 +379,8 @@ test('R-381: the source language order is local, follows the interface when empt
 })
 
 test('R-424: the name-search sources are kept per folder kind on this computer and reject bad lists', async (t) => {
-  const { root, store } = await fixture(t),
-    ids = ['p1']
+  const { root, store } = await fixture(t)
+  const ids = ['p1']
   assert.equal((await store.read(ids)).prefs.searchSources, undefined)
   await store.update({ action: 'searchSources', kind: 'game', value: ['vndb', 'steam'] }, ids)
   await store.update({ action: 'searchSources', kind: 'video', value: [] }, ids)
@@ -391,7 +396,8 @@ test('R-424: the name-search sources are kept per folder kind on this computer a
     { action: 'searchSources', kind: 'game', value: ['vndb', 'vndb'] },
     { action: 'searchSources', kind: 'comic', value: ['vndb'] },
     { action: 'searchSources', kind: 'game', value: 'vndb' },
-  ])
+  ]) {
     await assert.rejects(reopened.update(command as WorkspaceCommand, ids))
+  }
   assert.deepEqual(await fs.readFile(store.file), before)
 })

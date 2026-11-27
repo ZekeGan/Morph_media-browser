@@ -1,15 +1,17 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
-import { Explorer, type DesktopOperations } from '../electron/explorer'
-import { isExplorerRequest } from '../electron/ipc-requests'
-import { readFolder } from '../electron/files'
+import { test } from 'node:test'
+
+import type { EmbeddedSubtitleInfo } from '../shared/explorer'
 import { validateDetails } from '../shared/modelValidation'
 import { chooseSubtitleTrack, trackPreference } from '../shared/subtitleTrack'
 import { externalPlayerArgs, externalPlayerKind } from '../shared/videoPlayer'
-import type { EmbeddedSubtitleInfo } from '../shared/explorer'
+
+import { type DesktopOperations, Explorer } from '../electron/explorer'
+import { readFolder } from '../electron/files'
+import { isExplorerRequest } from '../electron/ipc-requests'
+import { Library } from '../electron/library'
 
 const track = (
   number: number,
@@ -46,9 +48,11 @@ test('PotPlayer gets /seek=HH:MM:SS after the file, mpv gets --start=<seconds> b
 
 test('a position that is not a sane positive number is left out, and nothing is ever joined into a shell string', () => {
   const file = 'D:\\Videos\\a & b "c".mkv'
-  for (const time of [undefined, 0, -1, NaN, Infinity, 1e9, '30' as unknown as number])
-    for (const program of ['C:\\p\\PotPlayerMini64.exe', 'C:\\p\\mpv.exe'])
+  for (const time of [undefined, 0, -1, NaN, Infinity, 1e9, '30' as unknown as number]) {
+    for (const program of ['C:\\p\\PotPlayerMini64.exe', 'C:\\p\\mpv.exe']) {
       assert.deepEqual(externalPlayerArgs(program, file, time), [file])
+    }
+  }
   // The file stays one untouched element however odd its name.
   assert.equal(externalPlayerArgs('C:\\p\\mpv.exe', file, 10)[1], file)
 })
@@ -120,8 +124,9 @@ test('the IPC shapes of the external player and the track preference refuse bad 
     { action: 'subtitleTrack', rowId: 'r', revision: 1, name: 5 },
     { action: 'subtitleTrack', rowId: 'r', revision: 1, language: {} },
     { action: 'subtitleTrack', rowId: 'r', revision: 1, name: 'a\0b' },
-  ])
+  ]) {
     assert.equal(isExplorerRequest(bad), false, JSON.stringify(bad))
+  }
 })
 
 test('the remembered subtitle track is validated with size caps', () => {
@@ -152,16 +157,16 @@ test('the remembered subtitle track is validated with size caps', () => {
 async function fixture(t: { after: (fn: () => Promise<void>) => void }, player?: string) {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'video-external-')),
-    media = path.join(root, 'media'),
-    local = path.join(root, 'local')
+  const root = await fs.mkdtemp(path.join(base, 'video-external-'))
+  const media = path.join(root, 'media')
+  const local = path.join(root, 'local')
   await fs.mkdir(media)
   const lib = new Library(local, undefined, false)
   await lib.init()
-  let chosen: string | undefined,
-    configured = player
-  const opened: string[] = [],
-    launched: { file: string; args: string[] }[] = []
+  let chosen: string | undefined
+  let configured = player
+  const opened: string[] = []
+  const launched: { file: string; args: string[] }[] = []
   const desktop: DesktopOperations = {
     choose: async () => chosen,
     open: async (file) => {
@@ -201,8 +206,8 @@ test('the explorer writes the track preference with the revision check and keeps
   const { media, lib, explorer } = await fixture(t)
   await fs.writeFile(path.join(media, 'clip.mp4'), 'x')
   await lib.create(media, { name: 'P', depth: { mode: 'through', level: 1 } })
-  const row = lib.snapshot().rows[0],
-    revision = row.record!.revision
+  const row = lib.snapshot().rows[0]
+  const revision = row.record!.revision
   await explorer.request({
     action: 'subtitleTrack',
     rowId: row.rowId,
@@ -244,10 +249,10 @@ test('openExternalPlayer starts the configured program with an argument array, e
   await fs.writeFile(path.join(media, 'clip.mp4'), 'x')
   await fs.writeFile(path.join(media, 'note.txt'), 'x')
   await lib.create(media, { name: 'P', depth: { mode: 'through', level: 1 } })
-  const row = lib.snapshot().rows[0],
-    entries = (await explorer.content(row.rowId)).entries,
-    video = entries.find((e) => e.name === 'clip.mp4')!,
-    note = entries.find((e) => e.name === 'note.txt')!
+  const row = lib.snapshot().rows[0]
+  const entries = (await explorer.content(row.rowId)).entries
+  const video = entries.find((e) => e.name === 'clip.mp4')!
+  const note = entries.find((e) => e.name === 'note.txt')!
   // Nothing set: the system default opens the file as before.
   await explorer.request({
     action: 'openExternalPlayer',

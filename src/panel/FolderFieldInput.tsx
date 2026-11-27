@@ -1,4 +1,3 @@
-import { readDate } from '../../shared/fields'
 import {
   Button,
   Group,
@@ -7,12 +6,15 @@ import {
   Stack,
   TagsInput,
   Text,
-  TextInput,
   Textarea,
+  TextInput,
 } from '@mantine/core'
+
+import { readDate } from '../../shared/fields'
 import type { Project } from '../../shared/model'
-import { t as tr } from '../i18n'
+
 import { yesNo } from '../editor/fieldTypes'
+import { t as tr } from '../i18n'
 
 type FieldBinding = Project['fieldBindings'][number]
 
@@ -49,9 +51,10 @@ export function FolderFieldInput({
 }) {
   // R-223 stage 1: switching a text field's "multiple values" / "fixed options" does not rewrite saved values, so
   // a folder may still hold the old type; it is edited in that type and the note says why.
-  if (binding && binding.type !== f.type && ['string', 'tags', 'enum'].includes(binding.type))
+  if (binding && binding.type !== f.type && ['string', 'tags', 'enum'].includes(binding.type)) {
     note = [note, tr('這個值是舊格式，保存時照舊格式存')].filter(Boolean).join(' · ')
-  if (f.type === 'boolean')
+  }
+  if (f.type === 'boolean') {
     return (
       <Select
         label={f.key}
@@ -67,11 +70,12 @@ export function FolderFieldInput({
         onChange={(value) => onChange(value === null ? null : value === 'true')}
       />
     )
+  }
   if (f.type === 'enum') {
-    const options = binding?.options ?? [],
-      draft = draftOption.trim(),
-      known = options.includes(draft),
-      full = options.length >= 100
+    const options = binding?.options ?? []
+    const draft = draftOption.trim()
+    const known = options.includes(draft)
+    const full = options.length >= 100
     return (
       <Stack gap={6}>
         <Select
@@ -120,7 +124,7 @@ export function FolderFieldInput({
       </Stack>
     )
   }
-  if (f.type === 'url' || f.type === 'date')
+  if (f.type === 'url' || f.type === 'date') {
     return (
       <TextInput
         label={f.key}
@@ -132,7 +136,8 @@ export function FolderFieldInput({
         onChange={(event) => onChange(event.currentTarget.value || null)}
       />
     )
-  if (f.type === 'tags')
+  }
+  if (f.type === 'tags') {
     return (
       <TagsInput
         label={f.key}
@@ -144,7 +149,8 @@ export function FolderFieldInput({
         splitChars={[',', '，']}
       />
     )
-  if (f.type === 'number')
+  }
+  if (f.type === 'number') {
     return (
       <NumberInput
         label={f.key}
@@ -154,7 +160,8 @@ export function FolderFieldInput({
         onChange={(v) => onChange(v)}
       />
     )
-  if (f.type === 'datetime')
+  }
+  if (f.type === 'datetime') {
     return (
       <TextInput
         label={f.key}
@@ -165,7 +172,8 @@ export function FolderFieldInput({
         onChange={(e) => onChange(e.currentTarget.value)}
       />
     )
-  if (f.type === 'string')
+  }
+  if (f.type === 'string') {
     return (
       <Textarea
         label={f.key}
@@ -178,6 +186,7 @@ export function FolderFieldInput({
         onChange={(e) => onChange(e.currentTarget.value)}
       />
     )
+  }
   return (
     <Text size="sm">
       {f.key}

@@ -1,4 +1,5 @@
-import { useLayoutEffect, useState, type RefObject } from 'react'
+import { type RefObject, useLayoutEffect, useState } from 'react'
+
 import { t as tr } from './i18n'
 
 // R-243: the drafts not saved yet (a folder's fields, the layout editor, the shell's group or project editing, the
@@ -14,12 +15,12 @@ export function useDrafts({
   creating: boolean
   busy: RefObject<boolean>
 }) {
-  const [detailDirty, setDetailDirty] = useState(false),
-    [editorDirty, setEditorDirty] = useState(false),
-    [shellDirty, setShellDirty] = useState(false),
-    [appearanceDirty, setAppearanceDirty] = useState(false)
-  const unsaved = detailDirty || editorDirty || settingsDirty || shellDirty || appearanceDirty,
-    dirty = unsaved || creating
+  const [detailDirty, setDetailDirty] = useState(false)
+  const [editorDirty, setEditorDirty] = useState(false)
+  const [shellDirty, setShellDirty] = useState(false)
+  const [appearanceDirty, setAppearanceDirty] = useState(false)
+  const unsaved = detailDirty || editorDirty || settingsDirty || shellDirty || appearanceDirty
+  const dirty = unsaved || creating
   const confirmLeave = () => !dirty || window.confirm(tr('離開後，還沒保存的修改會不見，確定嗎？'))
   useLayoutEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => {

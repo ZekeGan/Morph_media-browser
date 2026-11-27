@@ -1,14 +1,18 @@
-import { fmt } from '../shared/message'
-import { parseQuery, stabilizeQuery, type QueryField } from '../shared/query'
-import path from 'node:path'
 import { randomUUID } from 'node:crypto'
+import path from 'node:path'
+
+import { cellLists } from '../shared/cellLists'
+import { fmt } from '../shared/message'
 import {
   cellConditions,
+  type FieldDeletionPreview,
+  type FolderRecord,
+  type Project,
   validateFolder,
   validateProject,
-  type Project,
-  type FolderRecord,
 } from '../shared/model'
+import { parseQuery, type QueryField, stabilizeQuery } from '../shared/query'
+
 import {
   exists,
   fingerprint,
@@ -21,10 +25,8 @@ import {
   safePath,
   within,
 } from './files'
-import type { FieldDeletionPreview } from '../shared/model'
-import { applyMaintenance, withoutField, type Change, type ManagedFile } from './maintenance'
-import { cellLists } from '../shared/cellLists'
 import type { Library } from './library'
+import { applyMaintenance, type Change, type ManagedFile, withoutField } from './maintenance'
 
 export function fieldScope(ex: Library) {
   return JSON.stringify(
@@ -47,8 +49,8 @@ export async function stableRead<T>(
   file: string,
   read: () => Promise<T>
 ): Promise<{ value: T; hash: string }> {
-  const hash = await fingerprint(file),
-    value = await read()
+  const hash = await fingerprint(file)
+  const value = await read()
   if ((await fingerprint(file)) !== hash) throw new Error('資料正在變更，請稍後再預覽')
   return { value, hash }
 }
@@ -58,30 +60,30 @@ export async function previewDeleteField(
   projectId: string,
   attributeId: string
 ): Promise<FieldDeletionPreview> {
-  const linked = ex.linked(projectId),
-    binding = linked.project!.fieldBindings.find((field) => field.attributeId === attributeId)
+  const linked = ex.linked(projectId)
+  const binding = linked.project!.fieldBindings.find((field) => field.attributeId === attributeId)
   if (!binding) throw new Error('找不到自訂欄位，請重新載入')
-  const token = randomUUID(),
-    preview: FieldDeletionPreview = {
-      token,
-      attributeId,
-      name: binding.alias,
-      fields: 0,
-      folders: 0,
-      values: 0,
-      references: 0,
-      layouts: 0,
-      tables: 0,
-      searches: 0,
-      backups: 0,
-      projects: [],
-      skipped: ['只處理已連結且已納入的可存取記錄；離線、未索引及外部副本不在範圍。'],
-      recoveryPath: path.join(ex.userData, 'maintenance-backups', token),
-    }
-  const changes: Change[] = [],
-    guards: ManagedFile[] = [],
-    affected = new Set<string>(),
-    linkedIds = new Set(ex.refs.map((ref) => ref.projectId))
+  const token = randomUUID()
+  const preview: FieldDeletionPreview = {
+    token,
+    attributeId,
+    name: binding.alias,
+    fields: 0,
+    folders: 0,
+    values: 0,
+    references: 0,
+    layouts: 0,
+    tables: 0,
+    searches: 0,
+    backups: 0,
+    projects: [],
+    skipped: ['只處理已連結且已納入的可存取記錄；離線、未索引及外部副本不在範圍。'],
+    recoveryPath: path.join(ex.userData, 'maintenance-backups', token),
+  }
+  const changes: Change[] = []
+  const guards: ManagedFile[] = []
+  const affected = new Set<string>()
+  const linkedIds = new Set(ex.refs.map((ref) => ref.projectId))
   const fields: QueryField[] = []
   for (const ref of ex.state.projects) {
     const known = new Map(
@@ -97,18 +99,21 @@ export async function previewDeleteField(
     )
     for (const row of (ex.state.structure ?? ex.state.rows).filter(
       (row) => row.projectId === ref.projectId
-    ))
+    )) {
       for (const attribute of [
         ...(row.record?.attributes ?? []),
         ...(row.record?.projectOverrides[ref.projectId] ?? []),
-      ])
-        if (!known.has(attribute.attributeId))
+      ]) {
+        if (!known.has(attribute.attributeId)) {
           known.set(attribute.attributeId, {
             key: attribute.key,
             type: attribute.type,
             attributeId: attribute.attributeId,
             projectId: ref.projectId,
           })
+        }
+      }
+    }
     fields.push(...known.values())
   }
   const resolveSearches = (project: Project) => ({
@@ -144,10 +149,11 @@ export async function previewDeleteField(
           keys.some(
             (key) => aliases.includes(key) || key.endsWith('@' + attributeId.toLocaleLowerCase())
           )
-        )
+        ) {
           throw new Error(
             fmt('常用搜尋「{0}」的欄位身分不明，請先修正：{1}', search.name, message(error))
           )
+        }
         preview.skipped.push(
           fmt('常用搜尋「{0}」看不懂，原樣保留；裡面用到的欄位可能沒清掉', search.name)
         )
@@ -162,8 +168,8 @@ export async function previewDeleteField(
     }
     const file = projectFile(ref.root, ref.projectId)
     await safePath(ref.root, file)
-    const { value: project, hash } = await stableRead(file, () => ex.currentProject(ref)),
-      guard = { root: ref.root, path: file, hash }
+    const { value: project, hash } = await stableRead(file, () => ex.currentProject(ref))
+    const guard = { root: ref.root, path: file, hash }
     guards.push(guard)
     const next = withoutField(resolveSearches(project), attributeId)
     let changed =
@@ -209,8 +215,9 @@ export async function previewDeleteField(
       await safePath(ref.root, backup)
       const { value: old, hash: backupHash } = await stableRead(backup, () => readJson(backup))
       validateProject(old)
-      if (old.projectId !== project.projectId || old.rootFolderId !== project.rootFolderId)
+      if (old.projectId !== project.projectId || old.rootFolderId !== project.rootFolderId) {
         throw new Error('專案備份身分不符')
+      }
       const backupGuard = { root: ref.root, path: backup, hash: backupHash }
       guards.push(backupGuard)
       const stripped = withoutField(resolveSearches(old), attributeId)
@@ -224,8 +231,9 @@ export async function previewDeleteField(
       }
     }
     if (changed) {
-      if (await ex.protectedAncestor(ref.root))
+      if (await ex.protectedAncestor(ref.root)) {
         throw new Error('受影響的專案在受保護的遊戲裡面，不能刪除欄位')
+      }
       affected.add(ref.projectId)
     }
   }
@@ -239,9 +247,9 @@ export async function previewDeleteField(
   for (const row of rows) {
     await safePath(row.path, folderFile(row.path))
     const { value: record, hash } = await stableRead(folderFile(row.path), () =>
-        readFolder(row.path)
-      ),
-      guard = { root: row.path, path: folderFile(row.path), hash }
+      readFolder(row.path)
+    )
+    const guard = { root: row.path, path: folderFile(row.path), hash }
     guards.push(guard)
     const attributes = [
       ...record.attributes,
@@ -249,23 +257,26 @@ export async function previewDeleteField(
         .filter(([id]) => linkedIds.has(id))
         .flatMap(([, values]) => values),
     ].filter((value) => value.attributeId === attributeId)
-    for (const [id, values] of Object.entries(record.projectOverrides))
-      if (!linkedIds.has(id) && values.some((value) => value.attributeId === attributeId))
+    for (const [id, values] of Object.entries(record.projectOverrides)) {
+      if (!linkedIds.has(id) && values.some((value) => value.attributeId === attributeId)) {
         preview.skipped.push(
           fmt('{0}：專案 {1} 沒有連結，只在它自己的資訊保留、沒有刪除', row.path, id)
         )
+      }
+    }
     const strip = (source: FolderRecord) => {
       const next = structuredClone(source)
       next.attributes = next.attributes.filter((value) => value.attributeId !== attributeId)
       for (const id of Object.keys(next.projectOverrides)) {
-        if (linkedIds.has(id))
+        if (linkedIds.has(id)) {
           next.projectOverrides[id] = next.projectOverrides[id].filter(
             (value) => value.attributeId !== attributeId
           )
-        else if (next.projectOverrides[id].some((value) => value.attributeId === attributeId))
+        } else if (next.projectOverrides[id].some((value) => value.attributeId === attributeId)) {
           preview.skipped.push(
             fmt('{0}：專案 {1} 沒有連結，只在它自己的資訊保留、沒有刪除', row.path, id)
           )
+        }
       }
       if (next.details?.cellImages) delete next.details.cellImages[attributeId]
       return next
@@ -298,11 +309,13 @@ export async function previewDeleteField(
       }
     }
     if (changed) {
-      if (await ex.protectedAncestor(row.path))
+      if (await ex.protectedAncestor(row.path)) {
         throw new Error('受影響的資料夾在受保護的遊戲裡面，不能刪除欄位')
+      }
       preview.folders++
-      for (const ref of ex.state.projects)
+      for (const ref of ex.state.projects) {
         if (within(ref.root, row.path)) affected.add(ref.projectId)
+      }
     }
   }
   preview.projects = ex.state.projects
@@ -315,8 +328,9 @@ export async function previewDeleteField(
   preview.references = preview.layouts + preview.tables + preview.searches
   preview.skipped = [...new Set(preview.skipped)]
   const absent: string[] = []
-  for (const guard of guards.filter((guard) => !guard.path.endsWith('.bak')))
+  for (const guard of guards.filter((guard) => !guard.path.endsWith('.bak'))) {
     if (!(await exists(guard.path + '.bak'))) absent.push(guard.path + '.bak')
+  }
   ex.fieldPlans.clear()
   ex.fieldPlans.set(token, {
     preview,
@@ -332,18 +346,22 @@ export async function previewDeleteField(
 export async function deleteField(ex: Library, token: string) {
   const plan = ex.fieldPlans.get(token)
   ex.fieldPlans.delete(token)
-  if (!plan || plan.refs !== JSON.stringify(ex.refs) || plan.scope !== ex.fieldScope())
+  if (!plan || plan.refs !== JSON.stringify(ex.refs) || plan.scope !== ex.fieldScope()) {
     throw new Error('欄位刪除預覽已過期，請重新預覽')
+  }
   const check = async () => {
-    for (const file of plan.absent)
+    for (const file of plan.absent) {
       if (await exists(file)) throw new Error('預覽後備份已變更，刪除未執行')
+    }
     for (const guard of plan.guards) {
       await safePath(guard.root, guard.path)
-      if ((await fingerprint(guard.path)) !== guard.hash)
+      if ((await fingerprint(guard.path)) !== guard.hash) {
         throw new Error('預覽後資料已變更，刪除未執行')
+      }
     }
-    for (const root of new Set(plan.changes.map((change) => change.root)))
+    for (const root of new Set(plan.changes.map((change) => change.root))) {
       if (await ex.protectedAncestor(root)) throw new Error('受保護的範圍變了，沒有刪除')
+    }
   }
   await check()
   const recovery = await ex.maintenanceRecovery(

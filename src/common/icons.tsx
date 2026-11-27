@@ -292,6 +292,7 @@ const paths = {
 } satisfies Record<string, ReactNode>
 
 export type IconName = keyof typeof paths
+
 export function Icon({
   name,
   size = 18,

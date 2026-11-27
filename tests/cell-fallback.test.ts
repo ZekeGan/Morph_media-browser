@@ -1,18 +1,20 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { cellField, isFilled } from '../shared/cells'
+import { test } from 'node:test'
+
 import { columnValue, fallbackColumns, sortRows } from '../shared/browse'
+import { cellField, isFilled } from '../shared/cells'
 import { addCommonFields, extremePreviewRow, rowCells, samplePreviewRow } from '../shared/layouts'
 import {
+  type Cell,
   cellsWithoutField,
   fieldValue,
-  validateProject,
-  type Cell,
   type FolderRow,
   type Project,
+  validateProject,
 } from '../shared/model'
-import { modelProject } from './support/model-fixtures'
+
 import { fieldSource, fieldSourceGroups, rowFieldAttributes } from '../src/editor/fieldSources'
+import { modelProject } from './support/model-fixtures'
 
 const row = (values: Record<string, unknown>): FolderRow =>
   ({
@@ -61,16 +63,16 @@ test('a field cell shows the first field in order that has a value', () => {
 })
 
 test('fallback fields are validated and follow field deletion', () => {
-  const base = modelProject(),
-    project = (fallbackIds?: string[], extra: Project['fieldBindings'] = []) => ({
-      ...base,
-      layoutPresets: undefined,
-      activeLayoutId: undefined,
-      fieldBindings: [...base.fieldBindings, ...extra],
-      cells: [{ ...base.cells.find((c) => c.kind === 'field-text')!, fallbackIds }],
-    })
-  const other = { alias: 'OTHER', attributeId: 'other', type: 'string' },
-    count = { alias: 'COUNT', attributeId: 'count', type: 'number' }
+  const base = modelProject()
+  const project = (fallbackIds?: string[], extra: Project['fieldBindings'] = []) => ({
+    ...base,
+    layoutPresets: undefined,
+    activeLayoutId: undefined,
+    fieldBindings: [...base.fieldBindings, ...extra],
+    cells: [{ ...base.cells.find((c) => c.kind === 'field-text')!, fallbackIds }],
+  })
+  const other = { alias: 'OTHER', attributeId: 'other', type: 'string' }
+  const count = { alias: 'COUNT', attributeId: 'count', type: 'number' }
   assert.doesNotThrow(() => validateProject(project(['other'], [other])))
   assert.doesNotThrow(() => validateProject(project(['other'], [{ ...other, type: 'tags' }])))
   assert.throws(() => validateProject(project(['other'], [count, { ...other, type: 'number' }])))
@@ -93,10 +95,10 @@ test('fallback fields are validated and follow field deletion', () => {
 })
 
 test('text and tags share fallback displays without changing source values', () => {
-  const values = { steam: ['甲, 工作室', '乙'], dlsite: '完整文字, 不拆分' },
-    original = row(values),
-    text = cell({ fallbackIds: ['dlsite'] }),
-    tags = cell({ kind: 'field-tags', attributeId: 'dlsite', fallbackIds: ['steam'] })
+  const values = { steam: ['甲, 工作室', '乙'], dlsite: '完整文字, 不拆分' }
+  const original = row(values)
+  const text = cell({ fallbackIds: ['dlsite'] })
+  const tags = cell({ kind: 'field-tags', attributeId: 'dlsite', fallbackIds: ['steam'] })
   assert.equal(cellField(text, original).value, '甲, 工作室, 乙')
   assert.deepEqual(cellField(tags, original).value, ['完整文字, 不拆分'])
   assert.deepEqual(fieldValue(original, 'steam'), values.steam)
@@ -108,17 +110,17 @@ test('text and tags share fallback displays without changing source values', () 
   assert.equal(isFilled(0), true)
   assert.equal(isFilled(false), true)
   assert.equal(cellField(text, row({ steam: ['  '], dlsite: '備用' })).attributeId, 'dlsite')
-  const base = modelProject(),
-    project = {
-      ...base,
-      layoutPresets: undefined,
-      activeLayoutId: undefined,
-      fieldBindings: [
-        { alias: '文字', attributeId: 'dlsite', type: 'string' },
-        { alias: '標籤', attributeId: 'steam', type: 'tags' },
-      ],
-      cells: [text],
-    }
+  const base = modelProject()
+  const project = {
+    ...base,
+    layoutPresets: undefined,
+    activeLayoutId: undefined,
+    fieldBindings: [
+      { alias: '文字', attributeId: 'dlsite', type: 'string' },
+      { alias: '標籤', attributeId: 'steam', type: 'tags' },
+    ],
+    cells: [text],
+  }
   validateProject(project)
   assert.throws(
     () => validateProject({ ...project, cells: [{ ...text, attributeId: 'missing' }] }),
@@ -175,18 +177,18 @@ test('field website identity survives manual editing and stays separate from pri
 })
 
 test('launch cells validate their fallback actions', () => {
-  const base = modelProject(),
-    launch = (patch: Partial<Cell>) => ({
-      ...base,
-      layoutPresets: undefined,
-      activeLayoutId: undefined,
-      cells: [
-        {
-          ...cell({ kind: 'game-launch', attributeId: undefined, fallbackIds: undefined }),
-          ...patch,
-        },
-      ],
-    })
+  const base = modelProject()
+  const launch = (patch: Partial<Cell>) => ({
+    ...base,
+    layoutPresets: undefined,
+    activeLayoutId: undefined,
+    cells: [
+      {
+        ...cell({ kind: 'game-launch', attributeId: undefined, fallbackIds: undefined }),
+        ...patch,
+      },
+    ],
+  })
   assert.doesNotThrow(() => validateProject(launch({ fallbackActionIds: ['le'] })))
   assert.doesNotThrow(() => validateProject(launch({ actionId: 'a', fallbackActionIds: ['le'] })))
   assert.throws(() => validateProject(launch({ fallbackActionIds: [] })))
@@ -198,14 +200,14 @@ test('launch cells validate their fallback actions', () => {
 })
 
 test('only long text and tag cells can scroll', () => {
-  const base = modelProject(),
-    withCell = (c: Cell) => ({
-      ...base,
-      layoutPresets: undefined,
-      activeLayoutId: undefined,
-      fieldBindings: [...base.fieldBindings, { alias: 'TAGS', attributeId: 'steam', type: 'tags' }],
-      cells: [c],
-    })
+  const base = modelProject()
+  const withCell = (c: Cell) => ({
+    ...base,
+    layoutPresets: undefined,
+    activeLayoutId: undefined,
+    fieldBindings: [...base.fieldBindings, { alias: 'TAGS', attributeId: 'steam', type: 'tags' }],
+    cells: [c],
+  })
   assert.doesNotThrow(() =>
     validateProject(withCell(cell({ kind: 'field-tags', fallbackIds: undefined, scroll: true })))
   )
@@ -227,18 +229,19 @@ test('only long text and tag cells can scroll', () => {
 })
 
 test('growMax is a bounded option for tall-content kinds and excludes scroll (R-398)', () => {
-  const base = modelProject(),
-    withCell = (c: Cell) => ({
-      ...base,
-      layoutPresets: undefined,
-      activeLayoutId: undefined,
-      cells: [c],
-    }),
-    text = (patch: Partial<Cell>) => cell({ fallbackIds: undefined, ...patch })
+  const base = modelProject()
+  const withCell = (c: Cell) => ({
+    ...base,
+    layoutPresets: undefined,
+    activeLayoutId: undefined,
+    cells: [c],
+  })
+  const text = (patch: Partial<Cell>) => cell({ fallbackIds: undefined, ...patch })
   assert.doesNotThrow(() => validateProject(withCell(text({ growMax: 3 }))))
   assert.doesNotThrow(() => validateProject(withCell(text({ growMax: 20 }))))
-  for (const growMax of [0, 21, 1.5, '3'])
+  for (const growMax of [0, 21, 1.5, '3']) {
     assert.throws(() => validateProject(withCell(text({ growMax: growMax as number }))))
+  }
   assert.throws(() => validateProject(withCell(text({ growMax: 2, scroll: true }))))
   assert.throws(() =>
     validateProject(
@@ -250,19 +253,19 @@ test('growMax is a bounded option for tall-content kinds and excludes scroll (R-
 })
 
 test('optional text, box and colour styles are validated', () => {
-  const base = modelProject(),
-    withStyle = (style: Record<string, unknown>, patch: Record<string, unknown> = {}) => ({
-      ...base,
-      layoutPresets: undefined,
-      activeLayoutId: undefined,
-      cells: [
-        {
-          ...base.cells.find((c) => c.kind === 'name')!,
-          style: { textColor: '#ffffff', backgroundColor: 'transparent', ...style },
-          ...patch,
-        },
-      ],
-    })
+  const base = modelProject()
+  const withStyle = (style: Record<string, unknown>, patch: Record<string, unknown> = {}) => ({
+    ...base,
+    layoutPresets: undefined,
+    activeLayoutId: undefined,
+    cells: [
+      {
+        ...base.cells.find((c) => c.kind === 'name')!,
+        style: { textColor: '#ffffff', backgroundColor: 'transparent', ...style },
+        ...patch,
+      },
+    ],
+  })
   assert.doesNotThrow(() =>
     validateProject(
       withStyle({
@@ -292,8 +295,9 @@ test('optional text, box and colour styles are validated', () => {
     { borderColor: 'green' },
     { borderWidth: 'wide' },
     { opacity: 0.5 },
-  ])
+  ]) {
     assert.throws(() => validateProject(withStyle(bad)), JSON.stringify(bad))
+  }
   // Tag styles only belong to tag cells.
   assert.throws(() => validateProject(withStyle({}, { tagColors: 'namespace' })))
   assert.throws(() => validateProject(withStyle({}, { tagPrefix: false })))

@@ -1,7 +1,8 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { test } from 'node:test'
+
 import { probeFile } from '../electron/explorer'
 
 test('probeFile tells disguised and empty files from real media by their first bytes', async (t) => {

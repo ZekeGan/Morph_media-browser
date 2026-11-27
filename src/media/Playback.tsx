@@ -1,27 +1,30 @@
+import { ActionIcon, Button, FocusTrap, Slider, Tabs } from '@mantine/core'
 import {
   createContext,
+  type ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
-  useCallback,
-  useMemo,
-  type ReactNode,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { ActionIcon, Button, Slider, Tabs, FocusTrap } from '@mantine/core'
-import type { FolderRow, Project } from '../../shared/model'
+
 import type { MediaEntry } from '../../shared/explorer'
-import { AudioViewer } from './AudioViewer'
-import { VideoViewer } from '../video/VideoViewer'
+import type { FolderRow, Project } from '../../shared/model'
+
+import { ViewToggle } from '../browse/ViewToggle'
 import { Icon } from '../common/icons'
+import { t as tr, useLocale } from '../i18n'
+import { VideoViewer } from '../video/VideoViewer'
+import { AudioViewer } from './AudioViewer'
 import { FileMenu } from './FileMenu'
 import { MediaThumb } from './MediaThumb'
 import { PlayOrderButton, usePlayOrder } from './playOrder'
 import { episodePlace, isPodcast, podcastFolder, saveEpisodePlace } from './podcast'
-import { ViewToggle } from '../browse/ViewToggle'
-import { t as tr, useLocale } from '../i18n'
+
 import './media-workspace.css'
 
 type Source = { row: FolderRow; project: Project; entries: MediaEntry[] }
@@ -45,36 +48,38 @@ type PlaybackApi = {
   openQueue: () => void
   count: number
 }
+
 const Context = createContext<PlaybackApi | null>(null)
 export const usePlayback = () => useContext(Context)
 const clock = (value: number) =>
   Number.isFinite(value)
     ? `${Math.floor(value / 60)}:${String(Math.floor(value % 60)).padStart(2, '0')}`
     : '0:00'
+
 export function PlaybackProvider({ children }: { children: ReactNode }) {
   useLocale()
   const order = usePlayOrder()
-  const [items, setItems] = useState<Item[]>([]),
-    [current, setCurrent] = useState<Item>(),
-    [folder, setFolder] = useState<Source>(),
-    [mini, setMini] = useState(false),
-    [tab, setTab] = useState<string | null>('queue'),
-    [showQueue, setShowQueue] = useState(false),
-    [error, setError] = useState(''),
-    [pending, setPending] = useState(false),
-    [queueView, setQueueView] = useState<'list' | 'images'>('list'),
-    [picked, setPicked] = useState<string[]>([]),
-    [menu, setMenu] = useState<{ x: number; y: number }>()
-  const [state, setState] = useState({ time: 0, duration: 0, paused: true }),
-    [position, setPosition] = useState<{ x: number; y: number }>()
+  const [items, setItems] = useState<Item[]>([])
+  const [current, setCurrent] = useState<Item>()
+  const [folder, setFolder] = useState<Source>()
+  const [mini, setMini] = useState(false)
+  const [tab, setTab] = useState<string | null>('queue')
+  const [showQueue, setShowQueue] = useState(false)
+  const [error, setError] = useState('')
+  const [pending, setPending] = useState(false)
+  const [queueView, setQueueView] = useState<'list' | 'images'>('list')
+  const [picked, setPicked] = useState<string[]>([])
+  const [menu, setMenu] = useState<{ x: number; y: number }>()
+  const [state, setState] = useState({ time: 0, duration: 0, paused: true })
+  const [position, setPosition] = useState<{ x: number; y: number }>()
   const queuePanel = useRef<HTMLElement>(null)
   useLayoutEffect(() => {
     if (queuePanel.current) queuePanel.current.inert = !showQueue
   }, [showQueue, mini, current])
-  const focus = useRef<HTMLElement | null>(null),
-    itemsRef = useRef(items),
-    currentRef = useRef(current),
-    pickAnchor = useRef<number | undefined>(undefined)
+  const focus = useRef<HTMLElement | null>(null)
+  const itemsRef = useRef(items)
+  const currentRef = useRef(current)
+  const pickAnchor = useRef<number | undefined>(undefined)
   itemsRef.current = items
   currentRef.current = current
   // R-451: where a podcast episode goes on from, read once when it becomes the current item; the stored place may
@@ -86,10 +91,10 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
         : undefined,
     [current?.id]
   )
-  const body = useRef<HTMLDivElement>(null),
-    sequence = useRef(0),
-    drag = useRef<{ x: number; y: number; left: number; top: number } | undefined>(undefined),
-    dragged = useRef<string | undefined>(undefined)
+  const body = useRef<HTMLDivElement>(null)
+  const sequence = useRef(0)
+  const drag = useRef<{ x: number; y: number; left: number; top: number } | undefined>(undefined)
+  const dragged = useRef<string | undefined>(undefined)
   useEffect(() => {
     const resize = () => setPosition((value) => (value ? constrain(value.x, value.y) : value))
     window.addEventListener('resize', resize)
@@ -114,8 +119,9 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     const wanted = files.filter((file) => ['audio', 'video'].includes(file.kind))
     if (!wanted.length) return
     // Adding the file that is playing as a trial turns the trial into that queue entry (R-266).
-    const trial = currentRef.current,
-      adopt = trial && !itemsRef.current.some((item) => item.id === trial.id) ? trial : undefined
+    const trial = currentRef.current
+    const adopt =
+      trial && !itemsRef.current.some((item) => item.id === trial.id) ? trial : undefined
     let adopted = false
     const added = wanted.map((file) => {
       const item = make(value, file)
@@ -136,12 +142,14 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
       const row = (visited.snapshot?.structure ?? visited.snapshot?.rows)?.find(
         (row) => row.rowId === item.row.rowId
       )
-      if (!row?.record || row.error || row.readonly || row.stopped)
+      if (!row?.record || row.error || row.readonly || row.stopped) {
         throw Error(tr('媒體不存在或需重新載入'))
-      const result = await window.explorer.request({ action: 'content', rowId: row.rowId }),
-        file = result.content?.entries.find((file) => file.id === item.file.id)
-      if (!file || !['audio', 'video'].includes(file.kind))
+      }
+      const result = await window.explorer.request({ action: 'content', rowId: row.rowId })
+      const file = result.content?.entries.find((file) => file.id === item.file.id)
+      if (!file || !['audio', 'video'].includes(file.kind)) {
         throw Error(tr('媒體不存在或需重新載入'))
+      }
       if (token === sequence.current) {
         media()?.pause()
         setCurrent({ ...item, row, file, entries: result.content!.entries })
@@ -171,8 +179,8 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
   const replace = useCallback((value: Source, files: MediaEntry[], start: number, big = false) => {
     const wanted = files.filter((file) => ['audio', 'video'].includes(file.kind))
     if (!wanted.length) return undefined
-    const previous = itemsRef.current,
-      next = wanted.map((file) => make(value, file))
+    const previous = itemsRef.current
+    const next = wanted.map((file) => make(value, file))
     itemsRef.current = next
     setItems(next)
     setFolder(value)
@@ -197,10 +205,10 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     if (item) void select(item)
   }
   // R-390: a podcast episode's place is kept on this computer every few seconds and whenever it pauses or ends.
-  const savedAt = useRef(-1),
-    // R-451: the item whose playback has started. Before that the element still sits at 0:00 (its length arriving
-    // fires durationchange first), and saving then wiped the place it was about to go back to.
-    started = useRef<string>(undefined)
+  const savedAt = useRef(-1)
+  // R-451: the item whose playback has started. Before that the element still sits at 0:00 (its length arriving
+  // fires durationchange first), and saving then wiped the place it was about to go back to.
+  const started = useRef<string>(undefined)
   const sync = () => {
     const node = media()
     if (!node) return
@@ -224,11 +232,11 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     y: Math.max(0, Math.min(y, window.innerHeight - 300)),
   })
   const snap = (x: number, y: number) => {
-    const point = constrain(x, y),
-      right = Math.max(0, window.innerWidth - 380),
-      bottom = Math.max(0, window.innerHeight - 300)
-    const edges = [point.x, right - point.x, point.y, bottom - point.y],
-      edge = edges.indexOf(Math.min(...edges))
+    const point = constrain(x, y)
+    const right = Math.max(0, window.innerWidth - 380)
+    const bottom = Math.max(0, window.innerHeight - 300)
+    const edges = [point.x, right - point.x, point.y, bottom - point.y]
+    const edge = edges.indexOf(Math.min(...edges))
     return constrain(
       edge === 0 ? 8 : edge === 1 ? right - 8 : point.x,
       edge === 2 ? 8 : edge === 3 ? bottom - 8 : point.y
@@ -248,8 +256,8 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     [items, current]
   )
   // Time updates stay inside the player; they must not rerender the folder workspace.
-  const playingRow = current?.row.rowId,
-    playingFile = current?.file.id
+  const playingRow = current?.row.rowId
+  const playingFile = current?.file.id
   const api = useMemo(
     () => ({
       open,
@@ -331,13 +339,14 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
                 }}
                 onPointerMove={(event) => {
                   const start = drag.current
-                  if (start)
+                  if (start) {
                     setPosition(
                       constrain(
                         start.left + event.clientX - start.x,
                         start.top + event.clientY - start.y
                       )
                     )
+                  }
                 }}
                 onPointerUp={(event) => {
                   const start = drag.current
@@ -493,14 +502,15 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
                                 const id = dragged.current
                                 if (!id || id === item.id) return
                                 setItems((list) => {
-                                  const copy = list.filter((value) => value.id !== id),
-                                    moving = list.find((value) => value.id === id)
-                                  if (moving)
+                                  const copy = list.filter((value) => value.id !== id)
+                                  const moving = list.find((value) => value.id === id)
+                                  if (moving) {
                                     copy.splice(
                                       copy.findIndex((value) => value.id === item.id),
                                       0,
                                       moving
                                     )
+                                  }
                                   return copy
                                 })
                               }}

@@ -1,7 +1,9 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import { fmt, hasMessage, plainMessage, renderMessages } from '../shared/message'
 import { errorMessage } from '../shared/notifications'
+
 import { setLocale, t } from '../src/i18n'
 
 test('marked messages fill their values back in for plain text', () => {

@@ -1,17 +1,19 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
-import { ensureFolder, folderFile, readFolder } from '../electron/files'
+
 import type { Cell } from '../shared/model'
-import { closeApp, launchApp, removeTestRoot, reportFailure, openLayoutEditor } from './support/app'
+
+import { ensureFolder, folderFile, readFolder } from '../electron/files'
+import { Library } from '../electron/library'
+import { closeApp, launchApp, openLayoutEditor, removeTestRoot, reportFailure } from './support/app'
 
 // Tag and text cells can keep their height and scroll; without the option the extra content stays cut off.
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'cell-scroll-ui-')),
-  media = path.join(root, 'Library'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'cell-scroll-ui-'))
+const media = path.join(root, 'Library')
+const local = path.join(root, 'local')
 await fs.mkdir(path.join(media, 'Many'), { recursive: true })
 const lib = new Library(local, undefined, false)
 await lib.init()
@@ -20,26 +22,26 @@ await lib.create(media, {
   scanAll: true,
   depth: { mode: 'through', level: 2 },
 })
-const project = lib.snapshot().projects[0].project!,
-  style = { textColor: '#e4e6e8', backgroundColor: 'transparent' },
-  cells: Cell[] = [
-    { cellId: 'name', kind: 'name', grid: { x: 0, y: 0, w: 12, h: 1 }, style },
-    {
-      cellId: 'scrolling',
-      kind: 'field-tags',
-      attributeId: 'tags',
-      scroll: true,
-      grid: { x: 0, y: 1, w: 12, h: 2 },
-      style,
-    },
-    {
-      cellId: 'cut',
-      kind: 'field-tags',
-      attributeId: 'tags',
-      grid: { x: 0, y: 3, w: 12, h: 2 },
-      style,
-    },
-  ]
+const project = lib.snapshot().projects[0].project!
+const style = { textColor: '#e4e6e8', backgroundColor: 'transparent' }
+const cells: Cell[] = [
+  { cellId: 'name', kind: 'name', grid: { x: 0, y: 0, w: 12, h: 1 }, style },
+  {
+    cellId: 'scrolling',
+    kind: 'field-tags',
+    attributeId: 'tags',
+    scroll: true,
+    grid: { x: 0, y: 1, w: 12, h: 2 },
+    style,
+  },
+  {
+    cellId: 'cut',
+    kind: 'field-tags',
+    attributeId: 'tags',
+    grid: { x: 0, y: 3, w: 12, h: 2 },
+    style,
+  },
+]
 await lib.saveProject({
   ...project,
   fieldBindings: [{ alias: '標籤', attributeId: 'tags', type: 'tags' }],

@@ -1,23 +1,25 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { metadata } from '../electron/metadata'
-import { pace, pickVersion } from '../electron/sources/musicbrainz'
-import type { MetadataVersion } from '../shared/explorer'
-import { tinyPng } from './support/archive-fixture'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { Library } from '../electron/library'
+import { test } from 'node:test'
+
+import type { MetadataVersion } from '../shared/explorer'
+import { validateFolder } from '../shared/model'
+
 import { Explorer } from '../electron/explorer'
 import { readFolder } from '../electron/files'
-import { validateFolder } from '../shared/model'
+import { Library } from '../electron/library'
+import { metadata } from '../electron/metadata'
+import { pace, pickVersion } from '../electron/sources/musicbrainz'
+import { tinyPng } from './support/archive-fixture'
 
 // R-449: a MusicBrainz album (release-group) lists its versions (releases), picks the one whose track count matches
 // the folder's music files, and merges it in: work data from the album, version data from the release.
 pace.ms = 0
-const group = '11111111-2222-3333-4444-000000000001',
-  cd = '11111111-2222-3333-4444-00000000000a',
-  digital = '11111111-2222-3333-4444-00000000000b',
-  bootleg = '11111111-2222-3333-4444-00000000000c'
+const group = '11111111-2222-3333-4444-000000000001'
+const cd = '11111111-2222-3333-4444-00000000000a'
+const digital = '11111111-2222-3333-4444-00000000000b'
+const bootleg = '11111111-2222-3333-4444-00000000000c'
 const version = (id: string, date: string, status: string, tracks: number[], format = 'CD') => ({
   id,
   date,
@@ -33,12 +35,13 @@ const releases = [
   version(digital, '2010-01-01', 'Official', [12], 'Digital Media'),
   version(bootleg, '2003-01-01', 'Bootleg', [10, 2]),
 ]
+
 function sourceFetch(seen: string[]) {
   return (async (input: RequestInfo | URL) => {
     const url = String(input)
     seen.push(url)
     const json = (body: unknown) => new Response(JSON.stringify(body))
-    if (url.startsWith('https://musicbrainz.org/ws/2/release-group/' + group))
+    if (url.startsWith('https://musicbrainz.org/ws/2/release-group/' + group)) {
       return json({
         id: group,
         title: 'Album',
@@ -47,11 +50,13 @@ function sourceFetch(seen: string[]) {
         'artist-credit': [{ name: 'Band' }],
         genres: [{ name: 'rock' }],
       })
+    }
     if (
       url ===
       `https://musicbrainz.org/ws/2/release?release-group=${group}&inc=media+labels&limit=100&fmt=json`
-    )
+    ) {
       return json({ releases })
+    }
     const release = /\/ws\/2\/release\/([0-9a-f-]{36})\?/.exec(url)?.[1]
     if (release) {
       const raw = releases.find((r) => r.id === release)!
@@ -71,6 +76,7 @@ function sourceFetch(seen: string[]) {
     return new Response('', { status: 404 })
   }) as typeof fetch
 }
+
 const value = (item: { preview: { values: { key: string; value: unknown }[] } }, key: string) =>
   item.preview.values.find((v) => v.key === key)?.value
 
@@ -211,9 +217,9 @@ test('no version matches: the earliest official one, marked as a fallback; a pas
 test('importing keeps the version cover, the album cover or both, as ticked', async (t) => {
   const base = path.resolve('.test-output')
   await fs.mkdir(base, { recursive: true })
-  const root = await fs.mkdtemp(path.join(base, 'mb-versions-')),
-    media = path.join(root, 'media'),
-    local = path.join(root, 'local')
+  const root = await fs.mkdtemp(path.join(base, 'mb-versions-'))
+  const media = path.join(root, 'media')
+  const local = path.join(root, 'local')
   await fs.mkdir(media)
   const lib = new Library(local, undefined, false)
   await lib.init()
@@ -233,13 +239,13 @@ test('importing keeps the version cover, the album cover or both, as ticked', as
   globalThis.fetch = sourceFetch([])
   const apply = async (image: boolean, albumImage: boolean) => {
     const preview = (
-        await explorer.request({
-          action: 'metadataPreview',
-          source: 'https://musicbrainz.org/release-group/' + group,
-          trackCount: 10,
-        })
-      ).preview!,
-      row = lib.snapshot().rows[0]
+      await explorer.request({
+        action: 'metadataPreview',
+        source: 'https://musicbrainz.org/release-group/' + group,
+        trackCount: 10,
+      })
+    ).preview!
+    const row = lib.snapshot().rows[0]
     await explorer.request({
       action: 'metadataApply',
       rowId: row.rowId,

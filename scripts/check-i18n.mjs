@@ -10,10 +10,11 @@
 //   node scripts/check-i18n.mjs                     fail on new untranslated text
 //   node scripts/check-i18n.mjs --update-baseline   rewrite the baseline (after translating or removing messages)
 //   node scripts/check-i18n.mjs --update-wording    rewrite the wording baseline (after rewording sentences, R-515)
+import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
-import { execFileSync } from 'node:child_process'
 import ts from 'typescript'
+
 import { LONG, wordingProblems } from './text-rules.mjs'
 
 const root = path.resolve(import.meta.dirname, '..')
@@ -31,8 +32,8 @@ const walk = (dir) =>
 // Translation data itself, and lines a developer marks on purpose (`// i18n-ignore: why`).
 const skippedFiles = /^(src\/i18n\/|shared\/native-messages\.ts$)/
 const ignored = (sf, node) => {
-  const line = sf.getLineAndCharacterOfPosition(node.getStart()).line,
-    lines = sf.text.split('\n')
+  const line = sf.getLineAndCharacterOfPosition(node.getStart()).line
+  const lines = sf.text.split('\n')
   return [lines[line], lines[line - 1]].some((text) => text?.includes('i18n-ignore'))
 }
 const translateCall = (sf, node) =>
@@ -43,8 +44,8 @@ const translateCall = (sf, node) =>
 const templateText = (node) =>
   [node.head.text, ...node.templateSpans.map((span) => span.literal.text)].join('')
 
-const windowProblems = [],
-  mainMessages = []
+const windowProblems = []
+const mainMessages = []
 for (const dir of ['src', 'electron', 'shared']) {
   for (const file of walk(path.join(root, dir))) {
     const name = slash(file)
@@ -57,21 +58,23 @@ for (const dir of ['src', 'electron', 'shared']) {
       file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
     )
     const visit = (node) => {
-      let text,
-        template = false
+      let text
+      let template = false
       if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) text = node.text
       else if (ts.isTemplateExpression(node)) {
         text = templateText(node)
         template = true
       } else if (ts.isJsxText(node)) text = node.text.trim()
       if (text && han.test(text) && !ignored(sf, node)) {
-        const line = sf.getLineAndCharacterOfPosition(node.getStart()).line + 1,
-          where = `${name}:${line}`
+        const line = sf.getLineAndCharacterOfPosition(node.getStart()).line + 1
+        const where = `${name}:${line}`
         if (dir === 'src') {
-          if (!translateCall(sf, node) && !keys.has(squash(text)))
+          if (!translateCall(sf, node) && !keys.has(squash(text))) {
             windowProblems.push(`${where}  ${squash(text).slice(0, 70)}`)
-        } else if (template || !keys.has(squash(text)))
+          }
+        } else if (template || !keys.has(squash(text))) {
           mainMessages.push({ file: name, text: squash(text) })
+        }
       }
       ts.forEachChild(node, visit)
     }
@@ -89,8 +92,8 @@ if (process.argv.includes('--update-baseline')) {
 const baseline = new Set(
   fs.existsSync(baselineFile) ? JSON.parse(fs.readFileSync(baselineFile, 'utf8')) : []
 )
-const fresh = current.filter((entry) => !baseline.has(entry)),
-  gone = [...baseline].filter((entry) => !current.includes(entry))
+const fresh = current.filter((entry) => !baseline.has(entry))
+const gone = [...baseline].filter((entry) => !current.includes(entry))
 let failed = false
 if (windowProblems.length) {
   failed = true
@@ -120,13 +123,14 @@ if (process.argv.includes('--update-wording')) {
 const wordingBaseline = new Set(
   fs.existsSync(wordingFile) ? JSON.parse(fs.readFileSync(wordingFile, 'utf8')) : []
 )
-const badWording = worded.filter((key) => !wordingBaseline.has(key)),
-  wordingGone = [...wordingBaseline].filter((key) => !worded.includes(key))
+const badWording = worded.filter((key) => !wordingBaseline.has(key))
+const wordingGone = [...wordingBaseline].filter((key) => !worded.includes(key))
 if (badWording.length) {
   failed = true
   console.error('Interface text with words people do not understand (docs/UI_RULES.md#介面文字):')
-  for (const key of badWording)
+  for (const key of badWording) {
     console.error(`  ${key.slice(0, 60)}  ${wordingProblems(key).join('、')}`)
+  }
 }
 // Long sentences added since the last commit: only a warning, help is meant to stay within two lines.
 const committed = (() => {

@@ -1,5 +1,7 @@
 import type { CSSProperties } from 'react'
+
 import type { Cell } from '../../shared/model'
+
 // The shipped neutral/transparent baseline follows the app. Explicit custom
 // backgrounds and other text colors retain their portable appearance.
 const scale = { xsmall: 0.72, small: 0.85, medium: 1, large: 1.4, xlarge: 1.8 } as const
@@ -14,8 +16,10 @@ const lineHeights = { tight: 1.15, loose: 1.7 } as const
 
 // Every optional style is a plain CSS property or variable on the cell, so cards and the editor look the same.
 export const cellColors = (cell: Cell): CSSProperties => {
-  const style = cell.style,
-    decorations = [style.underline && 'underline', style.strike && 'line-through'].filter(Boolean)
+  const style = cell.style
+  const decorations = [style.underline && 'underline', style.strike && 'line-through'].filter(
+    Boolean
+  )
   return {
     color:
       style.backgroundColor === 'transparent' && style.textColor.toLowerCase() === '#e4e6e8'

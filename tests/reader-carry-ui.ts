@@ -1,19 +1,20 @@
 // R-426 / R-430: a two-page book read to its last spread counts as finished (the list says the last page and the book
 // opens from the start again), and the next book without settings of its own takes the previous book's direction and
 // two-page mode, and starts reading once its pictures are listed.
-import fs from 'node:fs/promises'
-import path from 'node:path'
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import { promisify } from 'node:util'
+
 import { Library } from '../electron/library'
 import { closeApp, launchApp, reportFailure } from './support/app'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'reader-carry-')),
-  shelf = path.join(root, 'Shelf'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'reader-carry-'))
+const shelf = path.join(root, 'Shelf')
+const local = path.join(root, 'local')
 const exec = promisify(execFile)
 for (const [book, color] of [
   ['Book 1', '#526c85'],
@@ -27,8 +28,9 @@ for (const [book, color] of [
     ['-v', 'error', '-f', 'lavfi', '-i', `color=c=${color}:s=100x160`, '-frames:v', '1', first],
     { windowsHide: true }
   )
-  for (let i = 2; i <= 6; i++)
+  for (let i = 2; i <= 6; i++) {
     await fs.copyFile(first, path.join(folder, String(i).padStart(3, '0') + '.png'))
+  }
 }
 const library = new Library(local, undefined, false)
 await library.init()

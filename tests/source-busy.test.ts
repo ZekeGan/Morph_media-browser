@@ -1,5 +1,6 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import { busyWait, SourceError, sourceRequest } from '../electron/metadata-common'
 import { musicBrainzTurn, pace } from '../electron/sources/musicbrainz'
 import { searchSources } from '../electron/sources/search'

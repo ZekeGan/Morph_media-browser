@@ -1,5 +1,6 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import { metadata } from '../electron/metadata'
 import { decodePage, pageMeta } from '../electron/sources/web'
 import { tinyPng } from './support/archive-fixture'
@@ -11,7 +12,9 @@ const lookup = async (host: string) =>
     : host.startsWith('loop')
       ? ['127.0.0.1']
       : ['93.184.216.34']
+
 type Reply = { status?: number; headers?: Record<string, string>; body?: string | Buffer }
+
 const site = (pages: Record<string, Reply>, seen: string[] = []) =>
   (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
@@ -69,8 +72,9 @@ test('pages on local or private addresses, plain HTTP and redirects into the int
     'https://loop.example/x',
     'https://127.0.0.1/x',
     'https://localhost/x',
-  ])
+  ]) {
     await assert.rejects(metadata(source, never, undefined, { lookup }), /內網/)
+  }
   await assert.rejects(metadata('http://shop.example/x', never, undefined, { lookup }))
   await assert.rejects(
     metadata(
@@ -281,15 +285,17 @@ test('every IPv6 spelling of a private IPv4 address counts as private', async ()
     '198.18.0.1',
     '192.0.0.8',
     '203.0.113.5',
-  ])
+  ]) {
     assert.equal(privateAddress(ip), true, ip)
+  }
   for (const ip of [
     '93.184.216.34',
     '::ffff:5db8:d822',
     '2606:4700::6810:84e5',
     '64:ff9b::5db8:d822',
-  ])
+  ]) {
     assert.equal(privateAddress(ip), false, ip)
+  }
   // The URL parser rewrites the dotted form into hex; such a page address is refused before any request.
   await assert.rejects(
     metadata('https://[::ffff:127.0.0.1]/x', (async () => {

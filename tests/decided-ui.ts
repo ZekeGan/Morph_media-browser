@@ -1,26 +1,30 @@
-import { _electron as electron } from 'playwright-core'
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
-import { folderFile } from '../electron/files'
-import { zipFixture, tinyPng } from './support/archive-fixture'
-import { exportSettings } from '../electron/settings-package'
+import { _electron as electron } from 'playwright-core'
+
 import { defaultWorkspace } from '../shared/workspace'
+
+import { folderFile } from '../electron/files'
+import { Library } from '../electron/library'
+import { exportSettings } from '../electron/settings-package'
 import { closeApp, openLayoutEditor } from './support/app'
+import { tinyPng, zipFixture } from './support/archive-fixture'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'decided-ui-')),
-  local = path.join(root, 'local'),
-  media = path.join(root, 'Library'),
-  screens = path.join(root, 'screens')
+const root = await fs.mkdtemp(path.join(base, 'decided-ui-'))
+const local = path.join(root, 'local')
+const media = path.join(root, 'Library')
+const screens = path.join(root, 'screens')
 await fs.mkdir(screens)
 await fs.mkdir(path.join(media, 'A'), { recursive: true })
 await fs.mkdir(path.join(media, 'B'))
-for (const folder of ['A', 'B'])
-  for (let index = 0; index < 120; index++)
+for (const folder of ['A', 'B']) {
+  for (let index = 0; index < 120; index++) {
     await fs.writeFile(path.join(media, folder, `page${index}.png`), tinyPng)
+  }
+}
 const zip = path.join(media, 'A', 'book.cbz')
 await fs.writeFile(
   zip,
@@ -37,8 +41,8 @@ const objects = [
   '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
   '<< /Length 45 >>\nstream\nBT /F1 24 Tf 40 400 Td (PDF QA VERIFIED) Tj ET\nendstream',
 ]
-let pdf = '%PDF-1.4\n',
-  offsets = [0]
+let pdf = '%PDF-1.4\n'
+let offsets = [0]
 for (const [index, object] of objects.entries()) {
   offsets.push(Buffer.byteLength(pdf))
   pdf += `${index + 1} 0 obj\n${object}\nendobj\n`
@@ -53,18 +57,19 @@ await fs.writeFile(pdfFile, pdf)
 const library = new Library(local, undefined, false)
 await library.init()
 const state = await library.create(media, {
-    name: 'Decided QA',
-    depth: { mode: 'through', level: 2 },
-  }),
-  project = state.projects[0].project!
+  name: 'Decided QA',
+  depth: { mode: 'through', level: 2 },
+})
+const project = state.projects[0].project!
 const originals = new Map<string, Buffer>()
 for (const file of [
   zip,
   pdfFile,
   path.join(media, 'A', 'page0.png'),
   path.join(media, 'B', 'page0.png'),
-])
+]) {
   originals.set(file, await fs.readFile(file))
+}
 const incoming = path.join(root, 'incoming.json')
 await fs.writeFile(
   incoming,
@@ -82,15 +87,15 @@ const env: Record<string, string> = Object.fromEntries(
   )
 )
 delete env.ELECTRON_RUN_AS_NODE
-const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
-  page = await app.firstWindow(),
-  errors: string[] = []
+const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
+const page = await app.firstWindow()
+const errors: string[] = []
 page.on('pageerror', (error) => errors.push(error.message))
 page.setDefaultTimeout(15000)
 await page.setViewportSize({ width: 1600, height: 950 })
-const button = (name: string) => page.getByRole('button', { name, exact: true }),
-  open = () => button('開啟專案 Decided QA').first().click(),
-  settings = () => page.getByRole('dialog', { name: '應用程式設定', exact: true })
+const button = (name: string) => page.getByRole('button', { name, exact: true })
+const open = () => button('開啟專案 Decided QA').first().click()
+const settings = () => page.getByRole('dialog', { name: '應用程式設定', exact: true })
 const presentation = async (name: string) => {
   const short: Record<string, string> = {
     平鋪縮圖: '縮圖',
@@ -141,10 +146,10 @@ try {
   // The empty canvas's templates step aside while a component is dragged over the canvas and come back when it
   // leaves; a drop near the top lands there instead of below the templates.
   {
-    const empty = page.locator('.canvas-empty'),
-      canvas = (await page.locator('.canvas').boundingBox())!,
-      palette = page.locator('.basic-palette .palette-item').first(),
-      transfer = await page.evaluateHandle(() => new DataTransfer())
+    const empty = page.locator('.canvas-empty')
+    const canvas = (await page.locator('.canvas').boundingBox())!
+    const palette = page.locator('.basic-palette .palette-item').first()
+    const transfer = await page.evaluateHandle(() => new DataTransfer())
     const over = (x: number, y: number) =>
       page
         .locator('body')
@@ -223,8 +228,8 @@ try {
     .waitFor()
   await drawer.getByRole('tab', { name: /^資料/ }).click()
   // The source is recognised from the address; the preview button is enabled only for a known site.
-  const address = drawer.getByRole('textbox', { name: '作品網址或 ID', exact: true }),
-    preview = drawer.getByRole('button', { name: '取得預覽', exact: true })
+  const address = drawer.getByRole('textbox', { name: '作品網址或 ID', exact: true })
+  const preview = drawer.getByRole('button', { name: '取得預覽', exact: true })
   assert.equal(await preview.isDisabled(), true)
   // Text that is not an address cannot be previewed; any other HTTPS page is read as a generic web page (R-283).
   await address.fill('not an address')

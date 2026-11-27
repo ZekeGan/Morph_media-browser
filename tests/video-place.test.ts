@@ -1,16 +1,17 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import {
-  VIDEO_PLACES,
   clockText,
   continueTarget,
   placeProgress,
   remembers,
   resumeAt,
   trimPlaces,
+  VIDEO_PLACES,
+  type VideoPlaces,
   watchState,
   withPlace,
-  type VideoPlaces,
 } from '../src/media/videoPlace'
 
 test('videos under five minutes are not remembered (R-405)', () => {

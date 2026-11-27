@@ -8,9 +8,9 @@
 //   pnpm item accept R-1 [R-2 …]                                       delete items the user accepted (from 待查收)
 //   pnpm item confirm docs/X.md [docs/Y.md …] [--refs R-1,R-2]         set the cards' 最後確認 date to today
 //   pnpm item confirm --limits novel,reader                            same for known limits in those areas
+import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
-import { spawnSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
 
 export const sections = {
@@ -21,17 +21,19 @@ export const sections = {
   logged: '已登記（未核定）',
   parked: '擱置',
 }
-const sizes = ['小', '中', '大'],
-  risks = ['一般', '資料寫入', '安全邊界'],
-  data = ['無', '設定', '新增欄位', '改結構']
+
+const sizes = ['小', '中', '大']
+const risks = ['一般', '資料寫入', '安全邊界']
+const data = ['無', '設定', '新增欄位', '改結構']
 
 export const today = () => new Date().toLocaleDateString('en-CA')
 
 // The highest R number used anywhere it could have been (open items, the changelog, commit subjects), plus one.
 export function nextId(...texts) {
   let max = 200
-  for (const text of texts)
+  for (const text of texts) {
     for (const match of text.matchAll(/R-(\d+)/g)) max = Math.max(max, Number(match[1]))
+  }
   return 'R-' + (max + 1)
 }
 
@@ -43,6 +45,7 @@ function findItem(lines, id) {
   while (end < lines.length && /^ {2}\S/.test(lines[end])) end++
   return { start, end }
 }
+
 function sectionOf(lines, index) {
   for (let i = index; i >= 0; i--) {
     const heading = /^## (.+)$/.exec(lines[i])
@@ -50,12 +53,14 @@ function sectionOf(lines, index) {
   }
   return undefined
 }
+
 function removeBlock(lines, { start, end }) {
   const block = lines.slice(start, end)
   // Drop the blank line that separated it from what follows.
   lines.splice(start, end - start + (lines[end] === '' ? 1 : 0))
   return block
 }
+
 function insertBlock(lines, section, block) {
   const heading = lines.findIndex((line) => line === '## ' + section)
   if (heading < 0) throw new Error(`沒有「${section}」這一節`)
@@ -102,8 +107,9 @@ export function acceptItems(text, ids, force = false) {
     const found = findItem(lines, id)
     if (!found) throw new Error(`找不到 ${id}`)
     const section = sectionOf(lines, found.start)
-    if (section !== sections.review && !force)
+    if (section !== sections.review && !force) {
       throw new Error(`${id} 在「${section}」，不在待查收（確定要刪就加 --force）`)
+    }
     removeBlock(lines, found)
   }
   return lines.join('\n')
@@ -135,6 +141,7 @@ function option(args, name) {
   const at = args.indexOf('--' + name)
   return at >= 0 ? args[at + 1] : undefined
 }
+
 function positional(args) {
   const valued = new Set([
     'size',
@@ -155,11 +162,11 @@ function positional(args) {
 }
 
 function main() {
-  const root = path.resolve(import.meta.dirname, '..'),
-    file = path.join(root, 'docs/WORK_ITEMS.md')
+  const root = path.resolve(import.meta.dirname, '..')
+  const file = path.join(root, 'docs/WORK_ITEMS.md')
   const [command, ...args] = process.argv.slice(2)
-  const read = () => fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n'),
-    write = (text) => fs.writeFileSync(file, text)
+  const read = () => fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n')
+  const write = (text) => fs.writeFileSync(file, text)
   const ids = positional(args).filter((arg) => /^R-\d+$/.test(arg))
   switch (command) {
     case 'add': {
@@ -245,10 +252,12 @@ function main() {
       process.exit(command ? 2 : 0)
   }
 }
-if (import.meta.url === pathToFileURL(process.argv[1]).href)
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     main()
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))
     process.exit(1)
   }
+}

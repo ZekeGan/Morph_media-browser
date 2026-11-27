@@ -1,53 +1,49 @@
-import { fmt } from '../shared/message'
-import { isFolderKind } from '../shared/kind'
-import { sameData } from '../shared/sameData'
-import { archiveIndex, type ArchiveIndex } from './archive'
-import { foreignDispose, openArchive } from './archive-foreign'
-import { dateOrText, httpUrl, validFieldValue } from '../shared/fields'
-import { type MetadataSourceId, metadataSources } from '../shared/sources'
+import { createHash, randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { createHash, randomUUID } from 'node:crypto'
-import type { Library } from './library'
-import { readFolder, relPath, safePath, saveFolder, within } from './files'
+
 import {
-  DATA_DIR,
-  localeProfileId,
-  validateDetails,
-  type Attribute,
-  type FolderRecord,
-} from '../shared/model'
-import {
-  documentFile,
-  gameActionTemplates,
-  gameExtras,
-  newDetails,
   type ContentResult,
+  documentFile,
   type ExplorerRequest,
   type ExplorerResponse,
   type FolderFacts,
+  gameActionTemplates,
   type GameAvailability,
+  gameExtras,
   type MetadataPreview,
+  newDetails,
   type OverviewResult,
 } from '../shared/explorer'
-import { SearchIndex } from './search-index'
-import { MediaFacts } from './media-facts'
-import { isGameFolder } from '../shared/media'
-import { completionNotice } from '../shared/notifications'
+import { dateOrText, httpUrl, validFieldValue } from '../shared/fields'
+import { KEY_REJECTED, keySite } from '../shared/keys'
+import { isFolderKind } from '../shared/kind'
 import { projectImageCells } from '../shared/layouts'
-import { type ImageUrlOptions, type RemoteImage } from './image-url'
-import type { SourceImage } from './source-images'
+import { isGameFolder } from '../shared/media'
+import { fmt } from '../shared/message'
+import {
+  type Attribute,
+  DATA_DIR,
+  type FolderRecord,
+  localeProfileId,
+  validateDetails,
+} from '../shared/model'
+import { completionNotice } from '../shared/notifications'
+import { sameData } from '../shared/sameData'
+import { type MetadataSourceId, metadataSources } from '../shared/sources'
 import { parseSubtitles } from '../shared/subtitles'
 import { externalPlayerArgs } from '../shared/videoPlayer'
-import { key, probeFile } from './media-files'
-import * as contentFns from './explorer-content'
-import * as streamFns from './explorer-stream'
-import type { ThumbnailJob } from './explorer-stream'
-import { warmThumbnails } from './thumbnail-warm'
+
+import { type ArchiveIndex, archiveIndex } from './archive'
+import { foreignDispose, openArchive } from './archive-foreign'
 import * as embeddedFns from './embedded-subtitles'
-import type { EmbeddedTrack } from './mkv-subtitles'
-import * as sourceFns from './explorer-source'
+import * as contentFns from './explorer-content'
 import * as overviewFns from './explorer-overview'
+import * as sourceFns from './explorer-source'
+import type { ThumbnailJob } from './explorer-stream'
+import * as streamFns from './explorer-stream'
+import { readFolder, relPath, safePath, saveFolder, within } from './files'
+import { detectGame } from './game-detection'
 import {
   bundledSuggestions,
   engineSave,
@@ -56,12 +52,19 @@ import {
   store,
   storeUrl,
 } from './game-extras'
-import { detectGame } from './game-detection'
-import { readNovel } from './novel'
+import { type ImageUrlOptions, type RemoteImage } from './image-url'
 import type { KeyStore } from './keys'
-import { keySite, KEY_REJECTED } from '../shared/keys'
+import type { Library } from './library'
+import { MediaFacts } from './media-facts'
+import { key, probeFile } from './media-files'
 import { metadata } from './metadata'
 import { SourceError } from './metadata-common'
+import type { EmbeddedTrack } from './mkv-subtitles'
+import { readNovel } from './novel'
+import { SearchIndex } from './search-index'
+import type { SourceImage } from './source-images'
+import { warmThumbnails } from './thumbnail-warm'
+
 export { probeFile }
 
 export interface DesktopOperations {
@@ -99,8 +102,10 @@ export interface DesktopOperations {
   played?(folderId: string, started: number, ended: number): void
   thumbnail(file: string, mime?: string, url?: string): Promise<Buffer>
 }
+
 // R-412: ASS and SSA scripts are read as text like SRT and VTT.
 const subtitleExtensions = ['.srt', '.vtt', '.ass', '.ssa']
+
 export class Explorer {
   readonly index: SearchIndex
   readonly facts: MediaFacts
@@ -108,12 +113,14 @@ export class Explorer {
   // At most four opened archives are kept; the oldest goes first, and a RAR/7z one gives its in-memory copy back.
   // Only one RAR/7z copy (up to 512 MiB) stays in the WebAssembly memory at a time, so several never add up.
   remember(token: string, value: { file: string; index: ArchiveIndex }) {
-    if (value.index.memory)
-      for (const [key, kept] of [...this.archives])
+    if (value.index.memory) {
+      for (const [key, kept] of [...this.archives]) {
         if (kept.index.memory) {
           void foreignDispose(kept.index)
           this.archives.delete(key)
         }
+      }
+    }
     while (this.archives.size >= 4) {
       const oldest = this.archives.keys().next().value!
       void foreignDispose(this.archives.get(oldest)!.index)
@@ -121,6 +128,7 @@ export class Explorer {
     }
     this.archives.set(token, value)
   }
+
   overviewPages = new Map<
     string,
     {
@@ -134,10 +142,12 @@ export class Explorer {
       expires: number
     }
   >()
+
   files = new Map<
     string,
     { rowId: string; name: string; file: string; mime: string; portable?: boolean }
   >()
+
   externals = new Map<string, { rowId: string; file: string }>()
   // R-412: subtitle tracks read from videos (a few kept in memory, the rest in the local cache) and the reads running.
   embeddedSubtitles = new Map<string, EmbeddedTrack[]>()
@@ -156,6 +166,7 @@ export class Explorer {
       expires: number
     }
   >()
+
   thumbnailReads = 0
   audioCoverTail: Promise<unknown> = Promise.resolve()
   thumbnailJobs = new Map<string, { promise: Promise<Buffer>; signals: AbortSignal[] }>()
@@ -178,6 +189,7 @@ export class Explorer {
       expires: number
     }
   >()
+
   // R-504: the size/date read of the newest sorted first request per caller (right panel, overview); a newer one
   // stops the older between groups of files.
   statReads = new Map<'panel' | 'overview', { stopped: boolean }>()
@@ -191,6 +203,7 @@ export class Explorer {
       facts: Map<string, { size: number; modified: number }>
     }
   >()
+
   constructor(
     readonly library: Library,
     readonly root: string,
@@ -200,6 +213,7 @@ export class Explorer {
     this.index.sync(library.snapshot())
     this.facts = new MediaFacts(path.join(root, 'media-facts.sqlite'))
   }
+
   // Both local indexes, on quit and when a test is done (Windows will not delete an open file).
   private closed = false
   close() {
@@ -209,13 +223,16 @@ export class Explorer {
     this.index.close()
     this.facts.close()
   }
+
   async record(rowId: string, revision: number) {
-    const row = await this.library.checkedRow(rowId, true),
-      record = await readFolder(row.path)
-    if (record.revision !== revision)
+    const row = await this.library.checkedRow(rowId, true)
+    const record = await readFolder(row.path)
+    if (record.revision !== revision) {
       throw new Error('版本衝突；還沒保存的修改保留，重新載入後比較')
+    }
     return { row, record }
   }
+
   async details(
     rowId: string,
     revision: number,
@@ -231,24 +248,27 @@ export class Explorer {
     if (!sameData(before, record)) await saveFolder(row.path, record, revision)
     return this.library.refreshRecord(rowId)
   }
+
   async targetPath(root: string, file: string, kind: 'exe' | 'game' | 'folder' | 'file') {
     if (!path.isAbsolute(file) || file.includes('\0')) throw new Error('目標路徑不合法')
     await safePath(path.parse(file).root, file)
-    const target = await fs.realpath(file),
-      stat = await fs.stat(target)
+    const target = await fs.realpath(file)
+    const stat = await fs.stat(target)
     if (
       kind === 'folder'
         ? !stat.isDirectory()
         : !stat.isFile() ||
           (kind === 'exe' && path.extname(target).toLowerCase() !== '.exe') ||
           (kind === 'game' && !['.exe', '.swf'].includes(path.extname(target).toLowerCase()))
-    )
+    ) {
       throw new Error('目標類型不符')
+    }
     return {
       path: within(root, target) ? relPath(root, target) : target,
       relative: within(root, target),
     }
   }
+
   async resolvedTarget(
     root: string,
     target: { path: string; relative: boolean },
@@ -259,6 +279,7 @@ export class Explorer {
     await this.targetPath(root, file, kind)
     return file
   }
+
   async content(
     rowId: string,
     limit?: number,
@@ -268,9 +289,11 @@ export class Explorer {
   ): Promise<ContentResult> {
     return contentFns.content(this, rowId, limit, cursor, sort, caller)
   }
+
   async file(rowId: string, id: string) {
     return contentFns.file(this, rowId, id)
   }
+
   async nthImage(
     rowId: string,
     index: number,
@@ -278,15 +301,19 @@ export class Explorer {
   ): Promise<globalThis.Response> {
     return contentFns.nthImage(this, rowId, index, request)
   }
+
   async folderCover(rowId: string, request: globalThis.Request): Promise<globalThis.Response> {
     return contentFns.folderCover(this, rowId, request)
   }
+
   async audioCover(rowId: string, id: string, signal?: AbortSignal): Promise<globalThis.Response> {
     return streamFns.audioCover(this, rowId, id, signal)
   }
+
   async readAudioCover(rowId: string, id: string): Promise<globalThis.Response> {
     return streamFns.readAudioCover(this, rowId, id)
   }
+
   async stream(
     rowId: string,
     id: string,
@@ -295,6 +322,7 @@ export class Explorer {
   ): Promise<globalThis.Response> {
     return streamFns.stream(this, rowId, id, request, thumbnail)
   }
+
   async archiveStream(
     rowId: string,
     fileId: string,
@@ -303,6 +331,7 @@ export class Explorer {
   ): Promise<globalThis.Response> {
     return streamFns.archiveStream(this, rowId, fileId, token, number)
   }
+
   async thumbnail(
     cache: string,
     source: string,
@@ -313,9 +342,11 @@ export class Explorer {
   ) {
     return streamFns.thumbnail(this, cache, source, mime, size, signal, url)
   }
+
   async trimThumbnails() {
     return streamFns.trimThumbnails(this)
   }
+
   // R-505: the background thumbnail work running now, stopped by the next request.
   warming?: AbortController
   // Folders whose first pictures were all warmed in this session (not listed again on a restart).
@@ -323,27 +354,32 @@ export class Explorer {
   warmThumbnails(rowIds: string[]) {
     warmThumbnails(this, rowIds)
   }
+
   checkValue(a: Attribute, record: FolderRecord) {
-    if (!key(a.attributeId) || typeof a.key !== 'string' || a.key.length > 100)
+    if (!key(a.attributeId) || typeof a.key !== 'string' || a.key.length > 100) {
       throw new Error('欄位身分不合法')
+    }
     const valid = validFieldValue(a.type, a.value)
     if (!valid) throw new Error(fmt('欄位 {0} 的值與格式 {1} 不符', a.key, a.type))
     const old = record.attributes.find((v) => v.attributeId === a.attributeId)
-    if (old && old.type !== a.type && !dateOrText(old.type, a.type))
+    if (old && old.type !== a.type && !dateOrText(old.type, a.type)) {
       throw new Error('不能改變既有欄位的格式')
+    }
   }
+
   async attributes(rowId: string, revision: number, values: Attribute[], privateValues: boolean) {
     if (
       !Array.isArray(values) ||
       values.length > 200 ||
       typeof privateValues !== 'boolean' ||
       new Set(values.map((v) => v.attributeId)).size !== values.length
-    )
+    ) {
       throw new Error('欄位更新不合法')
-    const { row, record } = await this.record(rowId, revision),
-      project = this.library
-        .snapshot()
-        .projects.find((p) => p.projectId === row.projectId)!.project!
+    }
+    const { row, record } = await this.record(rowId, revision)
+    const project = this.library
+      .snapshot()
+      .projects.find((p) => p.projectId === row.projectId)!.project!
     const allowed = new Map([
       ...project.fieldBindings.map((f) => [f.attributeId, { key: f.alias, type: f.type }] as const),
       ...record.attributes.map((a) => [a.attributeId, a] as const),
@@ -353,12 +389,13 @@ export class Explorer {
       : record.attributes
     for (const value of values) {
       this.checkValue(value, record)
-      const binding = allowed.get(value.attributeId),
-        defined = project.fieldBindings.find((f) => f.attributeId === value.attributeId)
+      const binding = allowed.get(value.attributeId)
+      const defined = project.fieldBindings.find((f) => f.attributeId === value.attributeId)
       // A value is saved with the type it already has, or with the project's type for the field: a field switched
       // between text and date saves new values with its current type (R-240).
-      if (!binding || (binding.type !== value.type && defined?.type !== value.type))
+      if (!binding || (binding.type !== value.type && defined?.type !== value.type)) {
         throw new Error('欄位不存在或格式不符')
+      }
       if (
         value.type === 'enum' &&
         !validFieldValue(
@@ -366,11 +403,13 @@ export class Explorer {
           value.value,
           project.fieldBindings.find((field) => field.attributeId === value.attributeId)?.options
         )
-      )
+      ) {
         throw new Error('單選值不在選項內')
+      }
       const old = target.find((a) => a.attributeId === value.attributeId)
-      if (old && old.type !== value.type && !dateOrText(old.type, value.type))
+      if (old && old.type !== value.type && !dateOrText(old.type, value.type)) {
         throw new Error('只在這個專案的值格式不符')
+      }
       const a = {
         ...value,
         key: binding.key ?? ('alias' in binding ? binding.alias : ''),
@@ -385,20 +424,23 @@ export class Explorer {
     else record.attributes = target
     await saveFolder(row.path, record, revision)
   }
+
   async droppedSubtitle(rowId: string, filePath: string) {
     return this.chooseSubtitle(rowId, filePath)
   }
+
   async chooseSubtitle(rowId: string, filePath?: string): Promise<ExplorerResponse> {
     await this.library.checkedRow(rowId)
     const file = filePath ?? (await this.desktop.choose('subtitle'))
     if (!file) return { cancelled: true }
-    if (!path.isAbsolute(file) || !subtitleExtensions.includes(path.extname(file).toLowerCase()))
+    if (!path.isAbsolute(file) || !subtitleExtensions.includes(path.extname(file).toLowerCase())) {
       throw new Error('僅支援 SRT／VTT／ASS／SSA')
-    const real = await fs.realpath(file),
-      stat = await fs.stat(real)
+    }
+    const real = await fs.realpath(file)
+    const stat = await fs.stat(real)
     if (!stat.isFile() || stat.size > 5 * 1024 * 1024) throw new Error('字幕需為 5MB 以內的文字檔')
-    const bytes = await fs.readFile(real),
-      token = 'ext-' + createHash('sha256').update(bytes).digest('hex')
+    const bytes = await fs.readFile(real)
+    const token = 'ext-' + createHash('sha256').update(bytes).digest('hex')
     this.externals.set(`${rowId}/${token}`, { rowId, file: real })
     return {
       subtitle: {
@@ -409,6 +451,7 @@ export class Explorer {
       },
     }
   }
+
   async request(req: ExplorerRequest): Promise<ExplorerResponse> {
     if (req.action === 'visit') return this.after(await this.library.visit(req.rowId))
     if (!req || typeof req.action !== 'string') throw new Error('無效的操作')
@@ -424,10 +467,11 @@ export class Explorer {
             'application/vnd.comicbook-rar',
             'application/x-7z-compressed',
           ].includes(file.mime)
-        )
+        ) {
           throw new Error('不是漫畫壓縮檔（ZIP／CBZ、RAR／CBR、7z／CB7）')
-        const index = await openArchive(file.file),
-          token = randomUUID()
+        }
+        const index = await openArchive(file.file)
+        const token = randomUUID()
         this.remember(token, { file: file.file, index })
         return {
           content: {
@@ -452,8 +496,9 @@ export class Explorer {
         // Only files the row published (resolved through the scoped file table) are ever touched.
         const entry = await this.file(req.rowId, req.fileId)
         if (req.action === 'openFile') {
-          if (!/^(video|audio)\//.test(entry.mime))
+          if (!/^(video|audio)\//.test(entry.mime)) {
             throw new Error('只能用系統預設程式開啟影音檔案')
+          }
           await this.desktop.open(entry.file)
           return {}
         }
@@ -478,21 +523,22 @@ export class Explorer {
             (s) => s.isFile(),
             () => false
           ))
-        )
+        ) {
           throw new Error('找不到外部播放器；請到應用程式設定重新指定')
+        }
         // The position is only passed on when it is a sane number (an invalid one starts from the beginning).
         await this.desktop.launch(player, externalPlayerArgs(player, entry.file, req.time))
         return {}
       }
       case 'subtitleTrack': {
         // R-432: the name and language are kept as text with size caps; the record check rejects anything else.
-        const name = req.name?.trim().slice(0, 200),
-          language = req.language?.trim().slice(0, 35)
+        const name = req.name?.trim().slice(0, 200)
+        const language = req.language?.trim().slice(0, 35)
         return this.after(
           await this.details(req.rowId, req.revision, (d) => {
-            if (name || language)
+            if (name || language) {
               d.subtitleTrack = { ...(name ? { name } : {}), ...(language ? { language } : {}) }
-            else delete d.subtitleTrack
+            } else delete d.subtitleTrack
           })
         )
       }
@@ -515,13 +561,14 @@ export class Explorer {
         return this.after(await this.library.refreshRecord(req.rowId))
       case 'removeSource': {
         // R-339: only a known website's own fields (its id prefix), and only values not changed by hand.
-        if (!metadataSources.some((source) => source.id === req.provider))
+        if (!metadataSources.some((source) => source.id === req.provider)) {
           throw new Error('來源不存在')
-        const { row, record } = await this.record(req.rowId, req.revision),
-          prefix = req.provider + '-',
-          kept = record.attributes.filter(
-            (a) => !a.attributeId.startsWith(prefix) || a.source === 'manual'
-          )
+        }
+        const { row, record } = await this.record(req.rowId, req.revision)
+        const prefix = req.provider + '-'
+        const kept = record.attributes.filter(
+          (a) => !a.attributeId.startsWith(prefix) || a.source === 'manual'
+        )
         if (kept.length === record.attributes.length) return this.after(this.library.snapshot())
         record.attributes = kept
         await saveFolder(row.path, record, req.revision)
@@ -534,17 +581,18 @@ export class Explorer {
           req.rows.length > 1000 ||
           !['replace', 'add', 'remove'].includes(req.mode) ||
           new Set(req.rows.map((r) => r.rowId)).size !== req.rows.length
-        )
+        ) {
           throw new Error('批次範圍不合法')
+        }
         const failed: string[] = []
         let saved = 0
-        for (const item of req.rows)
+        for (const item of req.rows) {
           try {
-            const { row, record } = await this.record(item.rowId, item.revision),
-              p = this.library
-                .snapshot()
-                .projects.find((p) => p.projectId === row.projectId)!.project!,
-              field = p.fieldBindings.find((f) => f.attributeId === req.attributeId)
+            const { row, record } = await this.record(item.rowId, item.revision)
+            const p = this.library
+              .snapshot()
+              .projects.find((p) => p.projectId === row.projectId)!.project!
+            const field = p.fieldBindings.find((f) => f.attributeId === req.attributeId)
             if (!field) throw new Error('專案未配置欄位')
             let value = req.value
             if (field.type === 'tags' && req.mode !== 'replace') {
@@ -575,6 +623,7 @@ export class Explorer {
           } catch (e) {
             failed.push(`${item.rowId}: ${String(e)}`)
           }
+        }
         for (const item of req.rows) await this.library.refreshRecord(item.rowId).catch(() => {})
         const snapshot = this.library.snapshot()
         this.index.sync(snapshot)
@@ -633,12 +682,13 @@ export class Explorer {
           !req.rows.length ||
           req.rows.length > 1000 ||
           new Set(req.rows.map((r) => r.rowId)).size !== req.rows.length
-        )
+        ) {
           throw new Error('批次範圍不合法')
+        }
         // Each folder keeps its own record: one that cannot be written is reported and the rest still change.
         const failed: string[] = []
         let saved = 0
-        for (const item of req.rows)
+        for (const item of req.rows) {
           try {
             await this.details(item.rowId, item.revision, (d) => {
               if (req.kind === null) delete d.kind
@@ -648,6 +698,7 @@ export class Explorer {
           } catch (e) {
             failed.push(`${item.rowId}: ${String(e)}`)
           }
+        }
         const snapshot = this.library.snapshot()
         this.index.sync(snapshot)
         return {
@@ -685,8 +736,9 @@ export class Explorer {
         if (
           !['root', 'candidate', 'not-game'].includes(req.state) ||
           (req.tool !== undefined && typeof req.tool !== 'boolean')
-        )
+        ) {
           throw new Error('遊戲保護設定不正確')
+        }
         const detected = (await this.library.checkedRow(req.rowId)).boundary
         await this.details(req.rowId, req.revision, (d) => {
           d.boundary = {
@@ -702,20 +754,21 @@ export class Explorer {
       case 'banner':
         return this.after(
           await this.details(req.rowId, req.revision, (d, r) => {
-            if (!r.assets.some((a) => a.assetId === req.assetId))
+            if (!r.assets.some((a) => a.assetId === req.assetId)) {
               throw new Error('圖片不屬於此資料夾')
+            }
             d.bannerAssetId = req.assetId
           })
         )
       case 'actionVisible': {
-        const row = await this.library.checkedRow(req.rowId),
-          project = this.library
-            .snapshot()
-            .projects.find((p) => p.projectId === row.projectId)?.project
+        const row = await this.library.checkedRow(req.rowId)
+        const project = this.library
+          .snapshot()
+          .projects.find((p) => p.projectId === row.projectId)?.project
         if (typeof req.visible !== 'boolean') throw new Error('任務版型不存在')
         // R-315: the game page's own buttons are opt-in, kept as the list of extras shown.
         const extra = gameExtras.find((name) => 'extra-' + name === req.templateId)
-        if (extra)
+        if (extra) {
           return this.after(
             await this.details(req.rowId, req.revision, (d) => {
               const shown = new Set(d.shownExtras)
@@ -725,8 +778,10 @@ export class Explorer {
               else delete d.shownExtras
             })
           )
-        if (!project || !gameActionTemplates(project).some((t) => t.id === req.templateId))
+        }
+        if (!project || !gameActionTemplates(project).some((t) => t.id === req.templateId)) {
           throw new Error('任務版型不存在')
+        }
         return this.after(
           await this.details(req.rowId, req.revision, (d) => {
             const hidden = new Set(d.hiddenActions)
@@ -738,11 +793,12 @@ export class Explorer {
         )
       }
       case 'bindTarget': {
-        const { row, record } = await this.record(req.rowId, req.revision),
-          project = this.library
-            .snapshot()
-            .projects.find((p) => p.projectId === row.projectId)?.project,
-          template = project && gameActionTemplates(project).find((t) => t.id === req.templateId)
+        const { row, record } = await this.record(req.rowId, req.revision)
+        const project = this.library
+          .snapshot()
+          .projects.find((p) => p.projectId === row.projectId)?.project
+        const template =
+          project && gameActionTemplates(project).find((t) => t.id === req.templateId)
         if (!template) throw new Error('任務版型不存在')
         if (
           !Array.isArray(req.args) ||
@@ -752,8 +808,9 @@ export class Explorer {
           ) ||
           (['url', 'folder', 'shortcut', 'file'].includes(template.kind) && req.args.length) ||
           (req.localeEmulator !== undefined && typeof req.localeEmulator !== 'boolean')
-        )
+        ) {
           throw new Error('參數不合法')
+        }
         let target: NonNullable<NonNullable<FolderRecord['details']>['targets']>[string]
         if (template.kind === 'url') {
           if (!httpUrl(req.url)) throw new Error('網址無法開啟')
@@ -765,8 +822,9 @@ export class Explorer {
             typeof name !== 'string' ||
             !/^[^\\/]+\.(lnk|url)$/i.test(name) ||
             name.includes('\0')
-          )
+          ) {
             throw new Error('請選擇資料夾內的捷徑（.lnk／.url）')
+          }
           await this.targetPath(row.path, path.join(row.path, name), 'file')
           target = { kind: 'shortcut', path: name, relative: true, args: [] }
         } else {
@@ -787,8 +845,9 @@ export class Explorer {
                   : 'exe'
           )
           // A bundled document is opened from inside the game folder only (R-306).
-          if (template.kind === 'file' && (!selected.relative || !documentFile(selected.path)))
+          if (template.kind === 'file' && (!selected.relative || !documentFile(selected.path))) {
             throw new Error('請選擇遊戲資料夾內的說明文件（PDF、HTML、TXT、MD、RTF）')
+          }
           if (template.kind === 'file-app') {
             const file = await this.desktop.choose('file', row.path)
             if (!file) return { cancelled: true }
@@ -798,13 +857,14 @@ export class Explorer {
               args: req.args,
               application: selected,
             }
-          } else
+          } else {
             target = {
               kind: template.kind,
               ...selected,
               args: template.kind === 'file' ? [] : req.args,
               ...(template.kind === 'exe' && req.localeEmulator ? { localeEmulator: true } : {}),
             }
+          }
         }
         record.details ??= newDetails()
         record.details.targets ??= {}
@@ -814,13 +874,16 @@ export class Explorer {
         break
       }
       case 'runTarget': {
-        const row = await this.library.checkedRow(req.rowId),
-          record = await readFolder(row.path),
-          p = this.library.snapshot().projects.find((p) => p.projectId === row.projectId)!.project!,
-          template = gameActionTemplates(p).find((t) => t.id === req.templateId),
-          target = record.details?.targets?.[req.templateId]
-        if (!template || !target || template.kind !== target.kind)
+        const row = await this.library.checkedRow(req.rowId)
+        const record = await readFolder(row.path)
+        const p = this.library
+          .snapshot()
+          .projects.find((p) => p.projectId === row.projectId)!.project!
+        const template = gameActionTemplates(p).find((t) => t.id === req.templateId)
+        const target = record.details?.targets?.[req.templateId]
+        if (!template || !target || template.kind !== target.kind) {
           throw new Error('任務還沒設定；請重新指定')
+        }
         if (target.kind === 'url') {
           if (!httpUrl(target.path) || !this.desktop.external) throw new Error('網址無法開啟')
           await this.desktop.external(target.path)
@@ -848,8 +911,9 @@ export class Explorer {
             // R-309: LEProc.exe starts the game in the chosen locale and exits at once, so this session is not
             // timed. R-319: a profile GUID runs with that profile, otherwise LE's default (Japanese).
             const runner = this.desktop.localeEmulator?.()
-            if (!runner)
+            if (!runner) {
               throw new Error('尚未設定 Locale Emulator（LEProc.exe）；請到應用程式設定指定')
+            }
             const profile = localeProfileId(target.localeEmulator)
               ? ['-runas', target.localeEmulator]
               : ['-run']
@@ -868,20 +932,20 @@ export class Explorer {
         return { notice: { level: 'success', message: '已開啟指定目標' } }
       }
       case 'gameExtras': {
-        const row = await this.library.checkedRow(req.rowId),
-          record = await readFolder(row.path).catch(() => undefined),
-          engines =
-            row.boundary?.engines ??
-            (await detectGame(row.path).catch(() => undefined))?.engines ??
-            [],
-          id = await steamAppId(row.path, record),
-          user = record?.details?.saveFolder,
-          guess = user ? undefined : await engineSave(row.path, engines),
-          bound = new Set(
-            Object.values(record?.details?.targets ?? {})
-              .filter((t) => t.relative)
-              .map((t) => t.path.toLowerCase())
-          )
+        const row = await this.library.checkedRow(req.rowId)
+        const record = await readFolder(row.path).catch(() => undefined)
+        const engines =
+          row.boundary?.engines ??
+          (await detectGame(row.path).catch(() => undefined))?.engines ??
+          []
+        const id = await steamAppId(row.path, record)
+        const user = record?.details?.saveFolder
+        const guess = user ? undefined : await engineSave(row.path, engines)
+        const bound = new Set(
+          Object.values(record?.details?.targets ?? {})
+            .filter((t) => t.relative)
+            .map((t) => t.path.toLowerCase())
+        )
         return {
           extras: {
             ...(id ? { steamAppId: id } : {}),
@@ -909,16 +973,16 @@ export class Explorer {
       // R-409: whether the extra buttons of several games can be used, for the cards on screen. Read-only and light:
       // no tools, profiles or engine detection beyond what the scan found; a folder that cannot be read is left out.
       case 'gameAvailability': {
-        const steamReady = !!this.desktop.protocolReady?.('steam'),
-          out: Record<string, GameAvailability> = {}
+        const steamReady = !!this.desktop.protocolReady?.('steam')
+        const out: Record<string, GameAvailability> = {}
         for (const rowId of [...new Set(req.rowIds)]) {
           const row = await this.library.checkedRow(rowId).catch(() => undefined)
           if (!row || !isGameFolder(row)) continue
-          const record = await readFolder(row.path).catch(() => undefined),
-            id = await steamAppId(row.path, record),
-            saved = record?.details?.saveFolder
-              ? undefined
-              : await engineSave(row.path, row.boundary?.engines ?? []).catch(() => undefined)
+          const record = await readFolder(row.path).catch(() => undefined)
+          const id = await steamAppId(row.path, record)
+          const saved = record?.details?.saveFolder
+            ? undefined
+            : await engineSave(row.path, row.boundary?.engines ?? []).catch(() => undefined)
           out[rowId] = {
             steam: !id
               ? { ok: false, reason: '沒有 Steam App ID' }
@@ -939,13 +1003,14 @@ export class Explorer {
         return { availability: out }
       }
       case 'runExtra': {
-        const row = await this.library.checkedRow(req.rowId),
-          record = await readFolder(row.path)
+        const row = await this.library.checkedRow(req.rowId)
+        const record = await readFolder(row.path)
         if (req.extra === 'steam') {
           const id = await steamAppId(row.path, record)
           if (!id) throw new Error('找不到這個遊戲的 Steam App ID')
-          if (!this.desktop.protocolReady?.('steam') || !this.desktop.external)
+          if (!this.desktop.protocolReady?.('steam') || !this.desktop.external) {
             throw new Error('這台電腦沒有安裝 Steam，無法用 Steam 啟動')
+          }
           await this.desktop.external('steam://run/' + id)
           return {}
         }
@@ -964,8 +1029,9 @@ export class Explorer {
                 (await detectGame(row.path).catch(() => undefined))?.engines ??
                 []
             )
-        if (guess?.state === 'pending')
+        if (guess?.state === 'pending') {
           throw new Error('還沒有存檔；遊戲存檔之後才會出現這個資料夾')
+        }
         const folder = user
           ? await this.resolvedTarget(row.path, user, 'folder')
           : guess?.state === 'found'
@@ -976,14 +1042,15 @@ export class Explorer {
         return {}
       }
       case 'chooseSaveFolder': {
-        if (req.clear)
+        if (req.clear) {
           return this.after(
             await this.details(req.rowId, req.revision, (d) => {
               delete d.saveFolder
             })
           )
-        const row = await this.library.checkedRow(req.rowId, true),
-          chosen = await this.desktop.choose('folder', row.path)
+        }
+        const row = await this.library.checkedRow(req.rowId, true)
+        const chosen = await this.desktop.choose('folder', row.path)
         if (!chosen) return { cancelled: true }
         const picked = await this.targetPath(row.path, chosen, 'folder')
         return this.after(
@@ -993,22 +1060,24 @@ export class Explorer {
         )
       }
       case 'addSuggestion': {
-        const { row, record } = await this.record(req.rowId, req.revision),
-          suggestion = (await bundledSuggestions(row.path)).find((item) => item.name === req.name)
+        const { row, record } = await this.record(req.rowId, req.revision)
+        const suggestion = (await bundledSuggestions(row.path)).find(
+          (item) => item.name === req.name
+        )
         if (!suggestion) throw new Error('這個檔案不在建議清單裡')
-        const kind = suggestion.role === 'config' ? 'exe' : 'file',
-          target = await this.targetPath(
-            row.path,
-            path.join(row.path, suggestion.name),
-            kind === 'exe' ? 'exe' : 'file'
-          )
+        const kind = suggestion.role === 'config' ? 'exe' : 'file'
+        const target = await this.targetPath(
+          row.path,
+          path.join(row.path, suggestion.name),
+          kind === 'exe' ? 'exe' : 'file'
+        )
         if (!target.relative) throw new Error('目標路徑不合法')
-        const link = this.library.snapshot().projects.find((p) => p.projectId === row.projectId),
-          project = link?.project
+        const link = this.library.snapshot().projects.find((p) => p.projectId === row.projectId)
+        const project = link?.project
         if (!project) throw new Error('專案尚未連結')
         // Reuse a button of the same kind and name that this game has not used yet; otherwise add one.
-        const base = suggestion.role === 'config' ? '設定程式' : '說明書',
-          templates = gameActionTemplates(project)
+        const base = suggestion.role === 'config' ? '設定程式' : '說明書'
+        const templates = gameActionTemplates(project)
         let template = templates.find(
           (t) =>
             t.kind === kind &&
@@ -1043,8 +1112,8 @@ export class Explorer {
       }
       case 'testKey': {
         // The key works when the site answers with or without the sample work; only a refusal fails the test.
-        const definition = keySite(req.site),
-          store = this.desktop.keyStore
+        const definition = keySite(req.site)
+        const store = this.desktop.keyStore
         if (!definition || !store) throw new Error('沒有這個網站')
         let result: 'ok' | 'failed' = 'ok'
         try {
@@ -1053,18 +1122,23 @@ export class Explorer {
           if (
             (error instanceof SourceError && error.kind === 'restricted') ||
             (error instanceof Error && error.message === KEY_REJECTED)
-          )
+          ) {
             result = 'failed'
+          }
           // Not reaching the site says nothing about the key (R-461: nor does a busy or slow site).
-          else if (error instanceof SourceError && ['offline', 'busy', 'slow'].includes(error.kind))
+          else if (
+            error instanceof SourceError &&
+            ['offline', 'busy', 'slow'].includes(error.kind)
+          ) {
             throw error
+          }
         }
         await store.mark(req.site, result)
         return { keys: await store.status() }
       }
       case 'folderFacts': {
         const folderFacts: Record<string, FolderFacts> = Object.create(null)
-        for (const rowId of new Set(req.rowIds))
+        for (const rowId of new Set(req.rowIds)) {
           try {
             // The same guard as the folder's content: no unreadable, stopped or game-protected folder.
             const row = await this.library.readableRow(rowId)
@@ -1072,6 +1146,7 @@ export class Explorer {
           } catch {
             // Left out; the card keeps its dash.
           }
+        }
         return { folderFacts }
       }
       case 'audioTags':
@@ -1089,7 +1164,7 @@ export class Explorer {
           this.remember(token, { file: file.file, index: await archiveIndex(file.file) })
         }
         // R-338: the file page only needs the title, author, cover and chapter names.
-        if (req.summary)
+        if (req.summary) {
           return {
             novel: {
               ...novel,
@@ -1097,12 +1172,13 @@ export class Explorer {
               images: undefined,
             },
           }
+        }
         return { novel }
       }
       case 'novelProgress': {
-        const file = await this.file(req.rowId, req.fileId),
-          row = await this.library.checkedRow(req.rowId, true),
-          current = await readFolder(row.path)
+        const file = await this.file(req.rowId, req.fileId)
+        const row = await this.library.checkedRow(req.rowId, true)
+        const current = await readFolder(row.path)
         return this.after(
           await this.details(req.rowId, current.revision, (d) => {
             // Only the known fields are kept; anything else the window sent is dropped.
@@ -1129,12 +1205,13 @@ export class Explorer {
         )
       }
       case 'volumeProgress': {
-        const file = await this.file(req.rowId, req.fileId),
-          row = await this.library.checkedRow(req.rowId, true),
-          current = await readFolder(row.path)
+        const file = await this.file(req.rowId, req.fileId)
+        const row = await this.library.checkedRow(req.rowId, true)
+        const current = await readFolder(row.path)
         if (!/\.(cbz|cbr|cb7|zip)$/i.test(file.file)) throw new Error('不是漫畫壓縮檔')
-        if (!Number.isInteger(req.page) || !Number.isInteger(req.total) || req.total < 1)
+        if (!Number.isInteger(req.page) || !Number.isInteger(req.total) || req.total < 1) {
           throw new Error('閱讀頁碼不合法')
+        }
         const page = Math.min(Math.max(req.page, 0), req.total - 1)
         return this.after(
           await this.details(req.rowId, current.revision, (d) => {
@@ -1176,11 +1253,13 @@ export class Explorer {
         }
         const chosen = await this.desktop.choose('exe')
         if (!chosen) return { cancelled: true }
-        if (!/^leproc\.exe$/i.test(path.basename(chosen)))
+        if (!/^leproc\.exe$/i.test(path.basename(chosen))) {
           throw new Error('請選擇 Locale Emulator 的 LEProc.exe')
+        }
         const file = await fs.realpath(chosen)
-        if (!/^leproc\.exe$/i.test(path.basename(file)) || !(await fs.stat(file)).isFile())
+        if (!/^leproc\.exe$/i.test(path.basename(file)) || !(await fs.stat(file)).isFile()) {
           throw new Error('請選擇 Locale Emulator 的 LEProc.exe')
+        }
         await this.desktop.setLocaleEmulator(file)
         return { localeEmulator: file }
       }
@@ -1194,8 +1273,9 @@ export class Explorer {
         const chosen = await this.desktop.choose('exe')
         if (!chosen) return { cancelled: true }
         const file = await fs.realpath(chosen)
-        if (!/\.exe$/i.test(file) || !(await fs.stat(file)).isFile())
+        if (!/\.exe$/i.test(file) || !(await fs.stat(file)).isFile()) {
           throw new Error('請選擇播放 Flash 的程式（.exe）')
+        }
         await this.desktop.setFlashPlayer(file)
         return { flashPlayer: file }
       }
@@ -1210,8 +1290,9 @@ export class Explorer {
         if (!chosen) return { cancelled: true }
         if (!path.isAbsolute(chosen)) throw new Error('請選擇播放影片的程式（.exe）')
         const file = await fs.realpath(chosen)
-        if (!/\.exe$/i.test(file) || !(await fs.stat(file)).isFile())
+        if (!/\.exe$/i.test(file) || !(await fs.stat(file)).isFile()) {
           throw new Error('請選擇播放影片的程式（.exe）')
+        }
         await this.desktop.setVideoPlayer(file)
         return { videoPlayer: file }
       }
@@ -1242,13 +1323,14 @@ export class Explorer {
           req.time
         )
       case 'subtitle': {
-        let file: string,
-          portable = false,
-          token = req.fileId ?? req.externalToken ?? ''
+        let file: string
+        let portable = false
+        let token = req.fileId ?? req.externalToken ?? ''
         if (req.fileId) {
           const f = await this.file(req.rowId, req.fileId)
-          if (!subtitleExtensions.includes(path.extname(f.file).toLowerCase()))
+          if (!subtitleExtensions.includes(path.extname(f.file).toLowerCase())) {
             throw new Error('字幕格式未支援')
+          }
           file = f.file
           portable = true
         } else {
@@ -1257,15 +1339,15 @@ export class Explorer {
           file = external.file
         }
         if ((await fs.stat(file)).size > 5 * 1024 * 1024) throw new Error('字幕過大')
-        const bytes = await fs.readFile(file),
-          text = new TextDecoder(req.encoding ?? 'utf-8', { fatal: true }).decode(bytes)
+        const bytes = await fs.readFile(file)
+        const text = new TextDecoder(req.encoding ?? 'utf-8', { fatal: true }).decode(bytes)
         parseSubtitles(text)
         if (req.import && !portable) {
-          const row = await this.library.checkedRow(req.rowId, true),
-            r = await readFolder(row.path),
-            id = randomUUID(),
-            relativePath = `subtitles/${id}${path.extname(file).toLowerCase()}`,
-            target = path.join(row.path, DATA_DIR, relativePath)
+          const row = await this.library.checkedRow(req.rowId, true)
+          const r = await readFolder(row.path)
+          const id = randomUUID()
+          const relativePath = `subtitles/${id}${path.extname(file).toLowerCase()}`
+          const target = path.join(row.path, DATA_DIR, relativePath)
           await safePath(row.path, target)
           await fs.mkdir(path.dirname(target), { recursive: true })
           await fs.writeFile(target, bytes, { flag: 'wx' })
@@ -1289,16 +1371,17 @@ export class Explorer {
         }
       }
       case 'cellImage': {
-        const { row, record } = await this.record(req.rowId, req.revision),
-          project = this.library
-            .snapshot()
-            .projects.find((p) => p.projectId === row.projectId)!.project!,
-          cell = projectImageCells(project).find((c) => c.cellId === req.cellId)
+        const { row, record } = await this.record(req.rowId, req.revision)
+        const project = this.library
+          .snapshot()
+          .projects.find((p) => p.projectId === row.projectId)!.project!
+        const cell = projectImageCells(project).find((c) => c.cellId === req.cellId)
         if (
           !cell ||
           (req.assetId !== null && !record.assets.some((a) => a.assetId === req.assetId))
-        )
+        ) {
           throw new Error('圖片組件或圖片不存在')
+        }
         record.details ??= newDetails()
         record.details.cellImages ??= {}
         if (req.assetId === null) delete record.details.cellImages[cell.attributeId ?? cell.cellId]
@@ -1308,16 +1391,18 @@ export class Explorer {
       }
       case 'deleteImage': {
         // One record write drops the asset and every reference to it; the file goes only after that write succeeds.
-        const { row, record } = await this.record(req.rowId, req.revision),
-          asset = record.assets.find((a) => a.assetId === req.assetId)
+        const { row, record } = await this.record(req.rowId, req.revision)
+        const asset = record.assets.find((a) => a.assetId === req.assetId)
         if (typeof req.assetId !== 'string' || !asset) throw new Error('圖片不存在')
         const file = path.join(row.path, DATA_DIR, asset.relativePath)
         await safePath(row.path, file)
         record.assets = record.assets.filter((a) => a.assetId !== req.assetId)
         const cellImages = record.details?.cellImages
-        if (cellImages)
-          for (const [key, id] of Object.entries(cellImages))
+        if (cellImages) {
+          for (const [key, id] of Object.entries(cellImages)) {
             if (id === req.assetId) delete cellImages[key]
+          }
+        }
         if (record.details?.bannerAssetId === req.assetId) delete record.details.bannerAssetId
         if (record.details) validateDetails(record.details)
         await saveFolder(row.path, record, req.revision)
@@ -1352,15 +1437,18 @@ export class Explorer {
     }
     return this.after(await this.library.scan())
   }
+
   async overview(
     request: Extract<ExplorerRequest, { action: 'overview' }>
   ): Promise<OverviewResult> {
     return overviewFns.overview(this, request)
   }
+
   after(snapshot: ReturnType<Library['snapshot']>): ExplorerResponse {
     this.index.sync(snapshot)
     return { snapshot }
   }
+
   async metadataPreview(
     source: string,
     provider?: MetadataSourceId,
@@ -1368,12 +1456,15 @@ export class Explorer {
   ): Promise<MetadataPreview> {
     return sourceFns.metadataPreview(this, source, provider, version)
   }
+
   async imageUrlPreview(url: string) {
     return sourceFns.imageUrlPreview(this, url)
   }
+
   async applyImageUrl(req: Extract<ExplorerRequest, { action: 'imageUrlApply' }>) {
     return sourceFns.applyImageUrl(this, req)
   }
+
   async applyMetadata(req: Extract<ExplorerRequest, { action: 'metadataApply' }>) {
     return sourceFns.applyMetadata(this, req)
   }

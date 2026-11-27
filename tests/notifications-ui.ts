@@ -1,17 +1,18 @@
-import { _electron as electron } from 'playwright-core'
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
+import { _electron as electron } from 'playwright-core'
+
 import { folderFile } from '../electron/files'
+import { Library } from '../electron/library'
 import { closeApp } from './support/app'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
 const root = await fs.mkdtemp(path.join(base, 'notifications-'))
-const local = path.join(root, 'local'),
-  media = path.join(root, 'Media'),
-  out = path.join(root, 'out')
+const local = path.join(root, 'local')
+const media = path.join(root, 'Media')
+const out = path.join(root, 'out')
 const screens = path.join(root, 'screens')
 await fs.mkdir(screens)
 await fs.mkdir(path.join(media, 'A'), { recursive: true })
@@ -20,8 +21,9 @@ const library = new Library(local, undefined, false)
 await library.init()
 await library.create(media, { name: 'QA-失敗只是名稱', depth: { mode: 'through', level: 2 } })
 const originals = new Map<string, Buffer>()
-for (const file of [folderFile(media), folderFile(path.join(media, 'A'))])
+for (const file of [folderFile(media), folderFile(path.join(media, 'A'))]) {
   originals.set(file, await fs.readFile(file))
+}
 
 const env: Record<string, string> = Object.fromEntries(
   Object.entries({ ...process.env, MEDIA_VIEWER_TEST_DATA: local }).filter(
@@ -30,8 +32,8 @@ const env: Record<string, string> = Object.fromEntries(
 )
 delete env.ELECTRON_RUN_AS_NODE
 const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
-const page = await app.firstWindow(),
-  errors: string[] = []
+const page = await app.firstWindow()
+const errors: string[] = []
 page.setDefaultTimeout(15000)
 page.on('pageerror', (error) => errors.push(error.message))
 const toast = page.locator('.app-toasts [data-level]')

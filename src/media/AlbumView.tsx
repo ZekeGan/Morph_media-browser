@@ -1,21 +1,23 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Group, Switch, Text } from '@mantine/core'
-import type { MediaEntry } from '../../shared/explorer'
-import type { FolderRow, Project } from '../../shared/model'
+import { useEffect, useMemo, useRef, useState } from 'react'
+
 import {
   albumDiscs,
   albumSummary,
+  type AlbumTrack,
+  type AudioTags,
   shuffled,
   trackClock,
   trackKey,
   trackTitle,
-  type AlbumTrack,
-  type AudioTags,
 } from '../../shared/album'
-import { usePlayback } from './Playback'
-import { listenState, podcastFolder, setPodcast, usePodcasts } from './podcast'
+import type { MediaEntry } from '../../shared/explorer'
+import type { FolderRow, Project } from '../../shared/model'
+
 import { Icon } from '../common/icons'
 import { t as tr } from '../i18n'
+import { usePlayback } from './Playback'
+import { listenState, podcastFolder, setPodcast, usePodcasts } from './podcast'
 
 // R-390: a music folder shown as an album. Tags (title, artist, album, numbers, length) are read in main 24 files at a
 // time; the list shows file names at once and fills in as they arrive, keeping its order until all are read.
@@ -31,8 +33,8 @@ export function useAlbum(row: FolderRow, entries: MediaEntry[]) {
       })),
     [files, row.rowId]
   )
-  const [tags, setTags] = useState<Record<string, AudioTags>>({}),
-    [complete, setComplete] = useState(false)
+  const [tags, setTags] = useState<Record<string, AudioTags>>({})
+  const [complete, setComplete] = useState(false)
   const ids = files.map((file) => file.id).join('|')
   useEffect(() => {
     let active = true
@@ -69,12 +71,14 @@ export function useAlbum(row: FolderRow, entries: MediaEntry[]) {
   const newest = useMemo(() => [...files].sort((a, b) => b.modified - a.modified), [files])
   return { files, tracks, tags, discs, summary, ordered, newest }
 }
+
 // Whether this folder is shown as a podcast on this computer.
 export function usePodcast(row: FolderRow) {
-  const store = usePodcasts(),
-    folder = podcastFolder(row)
+  const store = usePodcasts()
+  const folder = podcastFolder(row)
   return { folder, podcast: store.folders.includes(folder), places: store.episodes }
 }
+
 type Album = ReturnType<typeof useAlbum>
 
 // 全部播放 and 隨機播放 replace the play queue with the album; a line offers to put the previous queue back.
@@ -96,8 +100,8 @@ export function AlbumActions({
   useEffect(() => () => clearTimeout(timer.current), [])
   if (!playback || !album.ordered.length) return null
   const start = (list: MediaEntry[]) => {
-    const count = playback.count,
-      restore = playback.replace({ row, project, entries }, list, 0)
+    const count = playback.count
+    const restore = playback.replace({ row, project, entries }, list, 0)
     clearTimeout(timer.current)
     if (!restore || !count) return setUndo(undefined)
     setUndo({ restore, count })
@@ -200,16 +204,16 @@ export function AlbumTracks({
     playback?.playing?.rowId === row.rowId && playback.playing.fileId === fileId
   // A podcast lists its episodes newest first, each with its date, length and how far it was heard; a click plays
   // only that episode, from where it was left.
-  if (podcast)
+  if (podcast) {
     return (
       <div className="album-tracks podcast-episodes">
         <ol>
           {album.newest.map((file) => {
-            const key = trackKey(row.rowId, file.id),
-              tag = album.tags[key],
-              place = places[folder + '/' + file.id],
-              state = listenState(place),
-              playing = isPlaying(file.id)
+            const key = trackKey(row.rowId, file.id)
+            const tag = album.tags[key]
+            const place = places[folder + '/' + file.id]
+            const state = listenState(place)
+            const playing = isPlaying(file.id)
             return (
               <li key={key}>
                 <button
@@ -250,6 +254,7 @@ export function AlbumTracks({
         </ol>
       </div>
     )
+  }
   return (
     <div className="album-tracks">
       {album.discs.map((disc) => (
@@ -257,9 +262,9 @@ export function AlbumTracks({
           {several && <Text className="album-disc">{tr('第 {0} 片', disc.disc)}</Text>}
           <ol>
             {disc.tracks.map((track, index) => {
-              const tag = album.tags[track.key],
-                title = tag?.title ?? trackTitle(track.name),
-                playing = isPlaying(track.fileId)
+              const tag = album.tags[track.key]
+              const title = tag?.title ?? trackTitle(track.name)
+              const playing = isPlaying(track.fileId)
               return (
                 <li key={track.key}>
                   <button

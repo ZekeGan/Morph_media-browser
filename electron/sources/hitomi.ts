@@ -1,5 +1,5 @@
 import { SourceError, sourceJson } from '../metadata-common'
-import { clean, type Adapter } from './site'
+import { type Adapter, clean } from './site'
 
 // The gallery data is a JavaScript file; only its JSON object is read, the script itself is never run.
 export const hitomi: Adapter = async (site) => {

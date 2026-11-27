@@ -1,15 +1,16 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import {
   albumDiscs,
   albumSummary,
+  type AlbumTrack,
+  type AudioTags,
   discNumber,
   sameQueue,
   shuffled,
   trackClock,
   trackKey,
-  type AlbumTrack,
-  type AudioTags,
 } from '../shared/album'
 
 const track = (name: string, folderDisc?: number, rowId = 'r'): AlbumTrack => ({

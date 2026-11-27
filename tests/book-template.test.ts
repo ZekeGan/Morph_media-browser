@@ -1,9 +1,11 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import { bookTemplate, builtinPanel, panelEditorStart, withBookCard } from '../shared/explorer'
-import type { Cell } from '../shared/model'
-import { modelProject } from './support/model-fixtures'
 import { projectImageCells } from '../shared/layouts'
+import type { Cell } from '../shared/model'
+
+import { modelProject } from './support/model-fixtures'
 
 const style = { textColor: '#e4e6e8', backgroundColor: 'transparent' }
 const cell = (cellId: string, kind: string, grid: Cell['grid']) =>

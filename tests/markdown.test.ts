@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict'
-import test from 'node:test'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import test from 'node:test'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { MarkdownChapter } from '../src/novel/MarkdownChapter'
+
+import { countFile, emptySample } from '../shared/kind'
+
 import { readNovel } from '../electron/novel'
-import { emptySample, countFile } from '../shared/kind'
+import { MarkdownChapter } from '../src/novel/MarkdownChapter'
 
 const html = (text: string) => renderToStaticMarkup(createElement(MarkdownChapter, { text }))
 
@@ -23,8 +25,9 @@ test('R-399: headings, lists, tables and code blocks are typeset', () => {
     '<th>h1</th>',
     '<pre><code>',
     '<strong>bold</strong>',
-  ])
+  ]) {
     assert.ok(out.includes(part), part)
+  }
 })
 
 test('R-399: raw HTML stays text, pictures are never loaded, only http(s) links are links', () => {

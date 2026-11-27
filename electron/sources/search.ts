@@ -1,9 +1,10 @@
 import type { MetadataCandidate } from '../../shared/explorer'
 import type { MetadataSourceId } from '../../shared/sources'
+
 import { sourceJson, sourceRequest } from '../metadata-common'
 import { userAgent } from './config'
-import { musicBrainzTurn } from './musicbrainz'
 import { pickByLanguage, steamLanguage, tmdbLanguage } from './language'
+import { musicBrainzTurn } from './musicbrainz'
 
 // R-418: search by a folder's name. The five sources below are asked in parallel at fixed hosts (the same hosts as
 // their address adapters); every candidate address is built from an ID checked here, and picking one runs the
@@ -78,14 +79,15 @@ const anilist: Searcher = async (ask, query, languages) => {
     variables: { s: query, n: SEARCH_RESULTS_MAX },
   })
   return rows(found?.data?.Page?.media).flatMap((item) => {
-    if (!Number.isSafeInteger(item?.id) || item.id < 1 || !['ANIME', 'MANGA'].includes(item.type))
+    if (!Number.isSafeInteger(item?.id) || item.id < 1 || !['ANIME', 'MANGA'].includes(item.type)) {
       return []
-    const title = item.title ?? {},
-      own = languages
-        .map((language) =>
-          language === 'en' ? title.english : language === 'ja' ? title.native : undefined
-        )
-        .find((value) => text(value))
+    }
+    const title = item.title ?? {}
+    const own = languages
+      .map((language) =>
+        language === 'en' ? title.english : language === 'ja' ? title.native : undefined
+      )
+      .find((value) => text(value))
     return [
       {
         provider: 'anilist' as const,
@@ -100,12 +102,12 @@ const anilist: Searcher = async (ask, query, languages) => {
 
 // With the user's token NSFW subjects are included (and marked); without it they are filtered out, as the site does.
 const bangumi: Searcher = async (ask, query, languages, keys) => {
-  const token = keys.token ?? '',
-    found = await ask(
-      'https://api.bgm.tv/v0/search/subjects?limit=' + SEARCH_RESULTS_MAX,
-      token ? { keyword: query } : { keyword: query, filter: { nsfw: false } },
-      token ? { Authorization: 'Bearer ' + token } : {}
-    )
+  const token = keys.token ?? ''
+  const found = await ask(
+    'https://api.bgm.tv/v0/search/subjects?limit=' + SEARCH_RESULTS_MAX,
+    token ? { keyword: query } : { keyword: query, filter: { nsfw: false } },
+    token ? { Authorization: 'Bearer ' + token } : {}
+  )
   return rows(found?.data).flatMap((item) => {
     if (!Number.isSafeInteger(item?.id) || item.id < 1) return []
     const chinese = languages.some((language) => language.startsWith('zh'))
@@ -146,20 +148,21 @@ const steam: Searcher = async (ask, query, languages) => {
 
 // R-419: movies and series, only for a user who has set a TMDB key (the key reaches main only, like the adapters').
 const tmdb: Searcher = async (ask, query, languages, keys) => {
-  const token = keys.token ?? '',
-    bearer = token.startsWith('eyJ'),
-    found = await ask(
-      'https://api.themoviedb.org/3/search/multi?include_adult=false&language=' +
-        tmdbLanguage(languages[0]) +
-        '&query=' +
-        encodeURIComponent(query) +
-        (bearer ? '' : '&api_key=' + encodeURIComponent(token)),
-      undefined,
-      bearer ? { Authorization: 'Bearer ' + token } : {}
-    )
+  const token = keys.token ?? ''
+  const bearer = token.startsWith('eyJ')
+  const found = await ask(
+    'https://api.themoviedb.org/3/search/multi?include_adult=false&language=' +
+      tmdbLanguage(languages[0]) +
+      '&query=' +
+      encodeURIComponent(query) +
+      (bearer ? '' : '&api_key=' + encodeURIComponent(token)),
+    undefined,
+    bearer ? { Authorization: 'Bearer ' + token } : {}
+  )
   return rows(found?.results).flatMap((item) => {
-    if (!['movie', 'tv'].includes(item?.media_type) || !/^[1-9]\d{0,9}$/.test(String(item.id)))
+    if (!['movie', 'tv'].includes(item?.media_type) || !/^[1-9]\d{0,9}$/.test(String(item.id))) {
       return []
+    }
     return [
       {
         provider: 'tmdb' as const,
@@ -181,27 +184,27 @@ const DLSITE_SHOPS =
   /^(?:maniax|home|girls|girls-drama|bl|bl-drama|comic|books|ai|soft|app|appx|pro)$/
 const dlsite: Searcher = async (ask, query) => {
   const found = await ask(
-      'https://www.dlsite.com/maniax/api/=/product.json?keyword=' + encodeURIComponent(query)
-    ),
-    lower = query.toLowerCase(),
-    list = rows(found, 50).flatMap((item) => {
-      const shop = item?.site_id === 'aix' ? 'ai' : item?.site_id
-      if (typeof item?.workno !== 'string' || !/^[A-Z]{2}\d{5,8}$/.test(item.workno)) return []
-      if (typeof shop !== 'string' || !DLSITE_SHOPS.test(shop)) return []
-      const title = text(item.work_name)
-      return [
-        {
-          hit: title.toLowerCase().includes(lower),
-          candidate: {
-            provider: 'dlsite' as const,
-            title,
-            detail: detail(year(item.regist_date), text(item.maker_name, 100)),
-            url: `https://www.dlsite.com/${shop}/work/=/product_id/${item.workno}.html`,
-            ...(Number(item.age_category) === 3 ? { adult: true } : {}),
-          } as MetadataCandidate,
-        },
-      ]
-    })
+    'https://www.dlsite.com/maniax/api/=/product.json?keyword=' + encodeURIComponent(query)
+  )
+  const lower = query.toLowerCase()
+  const list = rows(found, 50).flatMap((item) => {
+    const shop = item?.site_id === 'aix' ? 'ai' : item?.site_id
+    if (typeof item?.workno !== 'string' || !/^[A-Z]{2}\d{5,8}$/.test(item.workno)) return []
+    if (typeof shop !== 'string' || !DLSITE_SHOPS.test(shop)) return []
+    const title = text(item.work_name)
+    return [
+      {
+        hit: title.toLowerCase().includes(lower),
+        candidate: {
+          provider: 'dlsite' as const,
+          title,
+          detail: detail(year(item.regist_date), text(item.maker_name, 100)),
+          url: `https://www.dlsite.com/${shop}/work/=/product_id/${item.workno}.html`,
+          ...(Number(item.age_category) === 3 ? { adult: true } : {}),
+        } as MetadataCandidate,
+      },
+    ]
+  })
   return [...list.filter((entry) => entry.hit), ...list.filter((entry) => !entry.hit)].map(
     (entry) => entry.candidate
   )
@@ -219,8 +222,9 @@ const fanza: Searcher = async (ask, query, _languages, keys) => {
       '&affiliate_id=' +
       encodeURIComponent(keys.affiliateId ?? '')
   )
-  if (found?.result?.status !== undefined && Number(found.result.status) !== 200)
+  if (found?.result?.status !== undefined && Number(found.result.status) !== 200) {
     throw new Error('FANZA refused the request')
+  }
   return rows(found?.result?.items).flatMap((item) => {
     const cid = String(item?.content_id ?? '')
     if (!/^[a-z0-9_]{3,40}$/i.test(cid)) return []
@@ -241,8 +245,8 @@ const nhentai: Searcher = async (ask, query, languages) => {
   const found = await ask('https://nhentai.net/api/v2/search?query=' + encodeURIComponent(query))
   return rows(found?.result).flatMap((item) => {
     if (!Number.isSafeInteger(item?.id) || item.id < 1 || item.id > 9999999999) return []
-    const english = text(item.english_title),
-      japanese = text(item.japanese_title)
+    const english = text(item.english_title)
+    const japanese = text(item.japanese_title)
     return [
       {
         provider: 'nhentai' as const,
@@ -283,8 +287,8 @@ export async function searchSources(
   if (options.sources && !options.sources.length) throw new Error('請至少選一個要搜尋的來源')
   const chosen = options.sources && new Set<string>(options.sources)
   // A keyed source is left out, with no failure note, when the user has no key for it (Bangumi's token is optional).
-  const keyed = ['tmdb', 'fanza', 'bangumi'] as const,
-    keys: Record<string, Record<string, string>> = {}
+  const keyed = ['tmdb', 'fanza', 'bangumi'] as const
+  const keys: Record<string, Record<string, string>> = {}
   await Promise.all(
     keyed.map(async (id) => {
       keys[id] =
@@ -294,20 +298,21 @@ export async function searchSources(
     })
   )
   const active = searchers.filter(
-      // FANZA needs both its API ID and affiliate ID; half a key is no key.
-      ([id]) =>
-        (!chosen || chosen.has(id)) &&
-        (id === 'fanza'
-          ? !!keys.fanza.apiId && !!keys.fanza.affiliateId
-          : id !== 'tmdb' || Object.keys(keys[id]).length > 0)
-    ),
-    keysOf = (id: MetadataSourceId) => keys[id] ?? {}
+    // FANZA needs both its API ID and affiliate ID; half a key is no key.
+    ([id]) =>
+      (!chosen || chosen.has(id)) &&
+      (id === 'fanza'
+        ? !!keys.fanza.apiId && !!keys.fanza.affiliateId
+        : id !== 'tmdb' || Object.keys(keys[id]).length > 0)
+  )
+  const keysOf = (id: MetadataSourceId) => keys[id] ?? {}
   const settled = await Promise.allSettled(
     active.map(async ([id, search, hosts]) => {
       const ask: Ask = async (url, body, extra = {}) => {
         const target = new URL(url)
-        if (target.protocol !== 'https:' || target.port || !hosts.includes(target.hostname))
+        if (target.protocol !== 'https:' || target.port || !hosts.includes(target.hostname)) {
           throw new Error('Request host not allowed for this search: ' + target.hostname)
+        }
         const send = () =>
           sourceRequest(fetcher, target, {
             method: body === undefined ? 'GET' : 'POST',
@@ -329,8 +334,8 @@ export async function searchSources(
       return (await search(ask, query, languages, keysOf(id))).filter((item) => item.title)
     })
   )
-  const candidates: MetadataCandidate[] = [],
-    failedSources: MetadataSourceId[] = []
+  const candidates: MetadataCandidate[] = []
+  const failedSources: MetadataSourceId[] = []
   settled.forEach((result, index) => {
     if (result.status === 'fulfilled') candidates.push(...result.value.slice(0, SEARCH_RESULTS_MAX))
     else failedSources.push(active[index][0])

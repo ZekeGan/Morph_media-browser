@@ -1,6 +1,7 @@
 import type { FolderRow } from './model'
 
 const collator = new Intl.Collator('zh-Hant', { numeric: true })
+
 export function sortRows(rows: FolderRow[]) {
   return [...rows].sort(
     (a, b) =>
@@ -9,6 +10,7 @@ export function sortRows(rows: FolderRow[]) {
       collator.compare(a.rowId, b.rowId)
   )
 }
+
 export function filterRows(sortedRows: FolderRow[], query: string) {
   const q = query.toLocaleLowerCase()
   return q

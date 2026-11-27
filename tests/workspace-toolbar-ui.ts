@@ -1,14 +1,16 @@
-import { _electron as electron } from 'playwright-core'
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
+import { _electron as electron } from 'playwright-core'
+
 import { Library } from '../electron/library'
 import { closeApp } from './support/app'
+
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'toolbar-ui-')),
-  media = path.join(root, 'Media'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'toolbar-ui-'))
+const media = path.join(root, 'Media')
+const local = path.join(root, 'local')
 await fs.mkdir(path.join(media, 'Child'), { recursive: true })
 const library = new Library(local, undefined, false)
 await library.init()
@@ -24,8 +26,8 @@ const env = Object.fromEntries(
   )
 )
 delete env.ELECTRON_RUN_AS_NODE
-const app = await electron.launch({ args: ['.'], env, timeout: 30000 }),
-  page = await app.firstWindow()
+const app = await electron.launch({ args: ['.'], env, timeout: 30000 })
+const page = await app.firstWindow()
 page.setDefaultTimeout(15000)
 await page.evaluate('window.__name=(target)=>target')
 const button = (name: string) => page.getByRole('button', { name, exact: true })
@@ -64,10 +66,10 @@ try {
     })
   assert.equal(await page.locator('.folder-table th').count(), 2)
   // R-500: a column follows its resizer while dragged and keeps the width when let go.
-  const levelHead = page.locator('.folder-table th').filter({ hasText: '層級' }),
-    headWidth = async () => (await levelHead.boundingBox())!.width,
-    before = await headWidth(),
-    grip = (await levelHead.locator('.column-resizer').boundingBox())!
+  const levelHead = page.locator('.folder-table th').filter({ hasText: '層級' })
+  const headWidth = async () => (await levelHead.boundingBox())!.width
+  const before = await headWidth()
+  const grip = (await levelHead.locator('.column-resizer').boundingBox())!
   await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)
   await page.mouse.down()
   await page.mouse.move(grip.x + grip.width / 2 + 60, grip.y + grip.height / 2, { steps: 4 })
@@ -95,9 +97,9 @@ try {
   await page.locator('.workspace-file-scope [aria-label="檔案總覽範圍設定"]').click()
   await page.getByRole('radiogroup', { name: '檔案總覽範圍' }).waitFor()
   const mark = await page.evaluate(() => {
-    const group = document.querySelector('[aria-label="檔案總覽範圍"]')!,
-      indicator = group.querySelector('.mantine-SegmentedControl-indicator'),
-      active = group.querySelector('.mantine-SegmentedControl-label[data-active]')!
+    const group = document.querySelector('[aria-label="檔案總覽範圍"]')!
+    const indicator = group.querySelector('.mantine-SegmentedControl-indicator')
+    const active = group.querySelector('.mantine-SegmentedControl-label[data-active]')!
     return {
       indicator: indicator ? getComputedStyle(indicator).display : 'none',
       mark: getComputedStyle(active, '::before').display,

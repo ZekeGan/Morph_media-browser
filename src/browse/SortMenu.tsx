@@ -1,5 +1,7 @@
 import { ActionIcon, Button, Popover, Select, Stack, Switch, Text, Tooltip } from '@mantine/core'
+
 import { MAX_SORT_KEYS, sortChoices, type SortKey } from '../../shared/browse'
+
 import { Icon } from '../common/icons'
 import { useListDrag } from '../common/useListDrag'
 import { t as tr } from '../i18n'
@@ -22,10 +24,10 @@ export function SortMenu({
   busy: boolean
   onChange: (keys: SortKey[], foldersFirst: boolean) => void
 }) {
-  const choices = sortChoices(columns),
-    label = (field: string) => columns.find((c) => c.id === field)?.label ?? field,
-    arrow = (asc: boolean) => (asc ? '↑' : '↓'),
-    shown = keys.filter((k) => columns.some((c) => c.id === k.field))
+  const choices = sortChoices(columns)
+  const label = (field: string) => columns.find((c) => c.id === field)?.label ?? field
+  const arrow = (asc: boolean) => (asc ? '↑' : '↓')
+  const shown = keys.filter((k) => columns.some((c) => c.id === k.field))
   const summary = !shown.length
     ? `${label('name')} ${arrow(true)}`
     : `${label(shown[0].field)} ${arrow(shown[0].asc)}` +

@@ -1,5 +1,6 @@
-import { useLayoutEffect, useRef } from 'react'
 import { Badge } from '@mantine/core'
+import { useLayoutEffect, useRef } from 'react'
+
 import { t as tr } from '../i18n'
 
 // Colours of the E-Hentai style "namespace:name" tags; anything else stays grey.
@@ -16,14 +17,16 @@ const namespaceColors: Record<string, string> = {
   cosplayer: 'lime',
   reclass: 'yellow',
 }
+
 function tagLook(tag: string, colors: 'namespace' | undefined, prefix: boolean) {
-  const split = tag.indexOf(':'),
-    space = split > 0 ? tag.slice(0, split) : ''
+  const split = tag.indexOf(':')
+  const space = split > 0 ? tag.slice(0, split) : ''
   return {
     text: !prefix && space && Object.hasOwn(namespaceColors, space) ? tag.slice(split + 1) : tag,
     color: colors === 'namespace' ? (namespaceColors[space] ?? 'gray') : 'gray',
   }
 }
+
 // Tags wrapped over as many lines as the cell is tall. Those that do not fit are replaced by a "+N" badge, and the
 // whole list stays in the tooltip. In a scrolling cell nothing is hidden.
 export function TagList({
@@ -42,8 +45,8 @@ export function TagList({
     const node = box.current
     if (!node || !fit) return
     const measure = () => {
-      const tagNodes = [...node.querySelectorAll<HTMLElement>('[data-tag]')],
-        more = node.querySelector<HTMLElement>('[data-more]')!
+      const tagNodes = [...node.querySelectorAll<HTMLElement>('[data-tag]')]
+      const more = node.querySelector<HTMLElement>('[data-more]')!
       for (const tag of tagNodes) tag.style.display = ''
       more.style.display = 'none'
       const clipped = () => {

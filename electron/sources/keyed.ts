@@ -1,6 +1,6 @@
 import { SourceError } from '../metadata-common'
-import { clean, type Adapter, type Site } from './site'
 import { tmdbLanguage } from './language'
+import { type Adapter, clean, type Site } from './site'
 
 // R-285–R-290, R-321: sources that need the user's own key, kept where no keyless source does the job (site.keys, read by main only). Each validates the work ID from
 // the pasted address and asks only its fixed API host. Written against the sites' public API documentation; until
@@ -12,6 +12,7 @@ import { tmdbLanguage } from './language'
 // the list is the seasons' own order, capped (seasons 1–30, 500 episodes). Specials (season 0) are not listed.
 export const TMDB_SEASONS_MAX = 30
 export const TMDB_EPISODES_MAX = 500
+
 async function seasons(
   site: Site,
   id: string,
@@ -42,10 +43,11 @@ async function seasons(
   )
   site.list('EPISODES', episodes, TMDB_EPISODES_MAX)
 }
+
 // A TMDB request with the user's token or key (the same way for the main page and each season).
 function get(site: Site, path: string) {
-  const token = site.keys.token ?? '',
-    bearer = token.startsWith('eyJ')
+  const token = site.keys.token ?? ''
+  const bearer = token.startsWith('eyJ')
   return site.json(
     'https://api.themoviedb.org/3' +
       path +
@@ -111,8 +113,9 @@ export const steamgriddb: Adapter = async (site) => {
       auth
     )
     .catch(() => undefined)
-  if (typeof game.data.release_date === 'number')
+  if (typeof game.data.release_date === 'number') {
     site.text('RELEASE_DATE', new Date(game.data.release_date * 1000).toISOString().slice(0, 10))
+  }
   return {
     title: clean(game.data.name),
     canonical: 'https://www.steamgriddb.com/game/' + id,
@@ -138,11 +141,13 @@ export const fanza: Adapter = async (site) => {
       '&affiliate_id=' +
       encodeURIComponent(site.keys.affiliateId ?? '')
   )
-  if (reply.result?.status === 400 || reply.result?.status === 401)
+  if (reply.result?.status === 400 || reply.result?.status === 401) {
     throw new SourceError('restricted')
+  }
   const data = reply.result?.items?.[0]
-  if (!data || String(data.content_id).toLowerCase() !== cid.toLowerCase())
+  if (!data || String(data.content_id).toLowerCase() !== cid.toLowerCase()) {
     throw new SourceError('notFound')
+  }
   const names = (list: unknown) =>
     (Array.isArray(list) ? list : []).map((i: { name?: string }) => i?.name)
   const info = data.iteminfo ?? {}

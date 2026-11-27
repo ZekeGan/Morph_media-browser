@@ -1,12 +1,14 @@
 // Run manually for the POC performance gate, not on every code change.
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { performance } from 'node:perf_hooks'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
-import { filterRows, sortRows } from '../shared/search'
-import { Explorer, type DesktopOperations } from '../electron/explorer'
+
 import type { Snapshot } from '../shared/model'
+import { filterRows, sortRows } from '../shared/search'
+
+import { type DesktopOperations, Explorer } from '../electron/explorer'
+import { Library } from '../electron/library'
 
 async function measure(operation: () => unknown | Promise<unknown>, count = 24) {
   for (let i = 0; i < 3; i++) await operation()
@@ -40,8 +42,8 @@ async function searchPipeline(template: Snapshot, root: string, count: number) {
     },
   }))
   const rows = Array.from({ length: count }, (_, i) => {
-    const project = projects[i % projectCount],
-      name = '作品 ' + String(i).padStart(5, '0')
+    const project = projects[i % projectCount]
+    const name = '作品 ' + String(i).padStart(5, '0')
     return {
       rowId: 'perf-row-' + i,
       projectId: project.projectId,
@@ -153,8 +155,9 @@ assert.ok([1000, 10000].includes(count))
 try {
   const media = path.join(root, 'media')
   await fs.mkdir(media)
-  for (let i = 0; i < count; i++)
+  for (let i = 0; i < count; i++) {
     await fs.mkdir(path.join(media, `漫畫 ${String(i).padStart(4, '0')}`))
+  }
   const library = new Library(path.join(root, 'local'))
   await library.init()
   const start = performance.now()
@@ -200,7 +203,8 @@ try {
   console.log('PERFORMANCE_REPORT ' + report)
   assert.ok(samples[94] < 200, 'POC in-memory filter/sort target exceeded')
 } finally {
-  if (!(await fs.realpath(root)).startsWith((await fs.realpath(base)) + path.sep))
+  if (!(await fs.realpath(root)).startsWith((await fs.realpath(base)) + path.sep)) {
     throw new Error('Unsafe fixture')
+  }
   await fs.rm(root, { recursive: true, force: true })
 }

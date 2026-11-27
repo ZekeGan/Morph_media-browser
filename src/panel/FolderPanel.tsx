@@ -1,32 +1,3 @@
-import { dateOrText } from '../../shared/fields'
-import { Icon } from '../common/icons'
-import { importedFieldLabels } from '../editor/importedFieldLabels'
-import { metadataSources } from '../../shared/sources'
-import {
-  detectFolderKind,
-  effectiveKind,
-  folderKinds,
-  sampleOf,
-  type KindSample,
-} from '../../shared/kind'
-import { GameActionTargets } from '../game/GameActions'
-import { GameExtraSettings } from '../game/GameExtras'
-import {
-  addCommonFields,
-  cardChoice,
-  cardPresets,
-  presetDraft,
-  panelCells,
-  panelChoice,
-  rowCells,
-  syncPresetDraft,
-} from '../../shared/layouts'
-import { commonFieldNames } from '../editor/commonFields'
-import { useIsWork, useParentKind } from '../browse/folderKind'
-import { t as tr, useLocale } from '../i18n'
-import { layoutName as presetName } from '../editor/layoutName'
-import { HelpLabel, HelpTip } from '../common/HelpTip'
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import {
   Alert,
   Badge,
@@ -39,25 +10,65 @@ import {
   Tabs,
   Text,
 } from '@mantine/core'
-import { FolderAdvanced, FolderBoundary } from './FolderAdvanced'
-import { FolderFieldInput } from './FolderFieldInput'
-import { FolderImages } from './FolderImages'
-import { FolderSourceImport, useSourceImport } from '../metadata/FolderSourceImport'
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+
+import { groupValue, isFilled } from '../../shared/cells'
 import {
   builtinPanel,
   type ExplorerRequest,
   type ExplorerResponse,
   launchGap,
 } from '../../shared/explorer'
-import { fieldValue } from '../../shared/model'
-import type { Attribute, FolderRow, Project, Request, Response } from '../../shared/model'
-import { groupValue, isFilled } from '../../shared/cells'
 import { groupOfField, setGroupSource } from '../../shared/fieldGroups'
+import { dateOrText } from '../../shared/fields'
+import {
+  detectFolderKind,
+  effectiveKind,
+  folderKinds,
+  type KindSample,
+  sampleOf,
+} from '../../shared/kind'
+import {
+  addCommonFields,
+  cardChoice,
+  cardPresets,
+  panelCells,
+  panelChoice,
+  presetDraft,
+  rowCells,
+  syncPresetDraft,
+} from '../../shared/layouts'
+import {
+  type Attribute,
+  fieldValue,
+  type FolderRow,
+  type Project,
+  type Request,
+  type Response,
+} from '../../shared/model'
+import { metadataSources } from '../../shared/sources'
+
+import { useIsWork, useParentKind } from '../browse/folderKind'
+import { HelpLabel, HelpTip } from '../common/HelpTip'
+import { Icon } from '../common/icons'
+import { commonFieldNames } from '../editor/commonFields'
 import { fieldSource, fieldSourceGroups, rowFieldAttributes } from '../editor/fieldSources'
+import { importedFieldLabels } from '../editor/importedFieldLabels'
+import { layoutName as presetName } from '../editor/layoutName'
+import { GameActionTargets } from '../game/GameActions'
+import { GameExtraSettings } from '../game/GameExtras'
+import { t as tr, useLocale } from '../i18n'
+import { FolderSourceImport, useSourceImport } from '../metadata/FolderSourceImport'
+import { FolderAdvanced, FolderBoundary } from './FolderAdvanced'
+import { FolderFieldInput } from './FolderFieldInput'
+import { FolderImages } from './FolderImages'
+
 type Act = (request: Request) => Promise<Response | undefined>
 type Run = (request: ExplorerRequest) => Promise<ExplorerResponse | undefined>
+
 // The tab you were on stays when you move to another folder.
 let lastTab: string | null = null
+
 export function FolderPanel({
   row,
   shared,
@@ -85,20 +96,20 @@ export function FolderPanel({
 }) {
   useLocale()
 
-  const [error, setError] = useState(''),
-    [privateValues, setPrivate] = useState(false),
-    [values, setValues] = useState<Record<string, unknown>>({}),
-    [newOptions, setNewOptions] = useState<Record<string, string>>({})
+  const [error, setError] = useState('')
+  const [privateValues, setPrivate] = useState(false)
+  const [values, setValues] = useState<Record<string, unknown>>({})
+  const [newOptions, setNewOptions] = useState<Record<string, string>>({})
   const [editedFields, setEditedFields] = useState<string[]>([])
   useEffect(() => setEditedFields([]), [row.rowId, privateValues])
   const [tab, setTab] = useState<string | null>(
-      initialTab === 'source'
-        ? 'fields'
-        : initialTab === 'fields'
-          ? (lastTab ?? 'fields')
-          : initialTab
-    ),
-    [targetDirty, setTargetDirty] = useState(false)
+    initialTab === 'source'
+      ? 'fields'
+      : initialTab === 'fields'
+        ? (lastTab ?? 'fields')
+        : initialTab
+  )
+  const [targetDirty, setTargetDirty] = useState(false)
   useEffect(() => {
     setTab(
       initialTab === 'source' || (initialTab === 'game' && effectiveKind(row) !== 'game')
@@ -119,8 +130,9 @@ export function FolderPanel({
       .request({ action: 'content', rowId: row.rowId, limit: 60 })
       .then((result) => {
         // R-494: the whole folder's count when the main process gives it, not only these first files.
-        if (alive && result.content)
+        if (alive && result.content) {
           setSample(result.content.sample ?? sampleOf(result.content.entries))
+        }
       })
       .catch(() => {})
     return () => {
@@ -146,13 +158,13 @@ export function FolderPanel({
     default: tr('預設'),
   }
   const shownCard = (() => {
-    const { id, source } = cardChoice(project, row, isWork),
-      preset = cardPresets(project).find((p) => p.id === id) ?? cardPresets(project)[0]
+    const { id, source } = cardChoice(project, row, isWork)
+    const preset = cardPresets(project).find((p) => p.id === id) ?? cardPresets(project)[0]
     return { name: presetName(preset), source: sourceLabel[source] }
   })()
   const shownPanel = (() => {
-    const choice = panelChoice(project, row, effectiveKind(row, sample, parentKind)),
-      preset = choice && project.panelPresets?.find((p) => p.id === choice.id)
+    const choice = panelChoice(project, row, effectiveKind(row, sample, parentKind))
+    const preset = choice && project.panelPresets?.find((p) => p.id === choice.id)
     return preset
       ? { name: presetName(preset), source: sourceLabel[choice!.source] }
       : { name: tr('內建詳情'), source: sourceLabel.default }
@@ -178,11 +190,11 @@ export function FolderPanel({
       }),
     [project.fieldBindings, row.record]
   )
-  const configured = new Set(project.fieldBindings.map((f) => f.attributeId)),
-    // Fields in a group are shown together under the group (R-226), not in their source.
-    mainFields = fields.filter(
-      (f) => configured.has(f.attributeId) && !groupOfField(project, f.attributeId)
-    )
+  const configured = new Set(project.fieldBindings.map((f) => f.attributeId))
+  // Fields in a group are shown together under the group (R-226), not in their source.
+  const mainFields = fields.filter(
+    (f) => configured.has(f.attributeId) && !groupOfField(project, f.attributeId)
+  )
   // R-509: each image component with where it is shown (card or details); one shown in both is listed once.
   const imageCells = [
     ...rowCells(project, row, isWork).map((cell) => ({ cell, where: 'card' as const })),
@@ -201,8 +213,9 @@ export function FolderPanel({
       (tab === 'images' && !showImages) ||
       (tab === 'game' && !isGame) ||
       (tab === 'appearance' && !row.record)
-    )
+    ) {
       setTab('fields')
+    }
   }, [tab, showImages, isGame, row.record])
   const original = useMemo(
     () =>
@@ -261,8 +274,9 @@ export function FolderPanel({
         values: changed,
         private: privateValues,
       })
-    )
+    ) {
       setValues({})
+    }
   }
   // A new option joins the project's choice field (shared by every folder), then fills this folder's value.
   const addOption = async (attributeId: string, option: string) => {
@@ -293,11 +307,12 @@ export function FolderPanel({
       (privateValues
         ? row.record?.projectOverrides[row.projectId]?.find((a) => a.attributeId === attributeId)
         : undefined) ?? row.record?.attributes.find((a) => a.attributeId === attributeId)
-    if (Object.hasOwn(values, attributeId) || attribute?.source === 'manual')
+    if (Object.hasOwn(values, attributeId) || attribute?.source === 'manual') {
       return origin === tr('自建') ? undefined : `${origin} · ${tr('已手動修改')}`
+    }
     if (!attribute) return origin === tr('自建') ? undefined : origin
-    const provider = attribute.sourceRecord?.provider,
-      name = metadataSources.find((item) => item.id === provider)?.name
+    const provider = attribute.sourceRecord?.provider
+    const name = metadataSources.find((item) => item.id === provider)?.name
     return name ? tr('來自 {0}', name) : tr('來自網站匯入')
   }
   const renderField = (f: (typeof fields)[number]) => (
@@ -337,10 +352,12 @@ export function FolderPanel({
   const renderFieldGroups = () =>
     (project.fieldGroups ?? []).map((group) => {
       const alias = (id: string) =>
-          project.fieldBindings.find((field) => field.attributeId === id)?.alias ?? id,
-        shown = groupValue(project, group, row),
-        chosen = folderId ? project.groupSources?.[folderId]?.[group.groupId] : undefined,
-        members = group.memberIds.flatMap((id) => fields.find((f) => f.attributeId === id) ?? [])
+        project.fieldBindings.find((field) => field.attributeId === id)?.alias ?? id
+      const shown = groupValue(project, group, row)
+      const chosen = folderId ? project.groupSources?.[folderId]?.[group.groupId] : undefined
+      const members = group.memberIds.flatMap(
+        (id) => fields.find((f) => f.attributeId === id) ?? []
+      )
       const fold = section('group:' + group.groupId, mainSections <= 1)
       return (
         <details
@@ -445,8 +462,8 @@ export function FolderPanel({
       siteFields.filter((f) => isFilled(effective(f.attributeId)) || handMade(f.attributeId)),
       attributes
     ).map(({ source, fields: items }) => {
-      const provider = providerOf(items[0].attributeId),
-        fold = section('site:' + source, false)
+      const provider = providerOf(items[0].attributeId)
+      const fold = section('site:' + source, false)
       return (
         <details key={source} className="field-source-group site-fields" open={fold.open}>
           <summary onClick={fold.onClick}>
@@ -536,25 +553,27 @@ export function FolderPanel({
   const todo: { key: string; text: string; button: string; go: () => void }[] = []
   if (row.record && !disabled) {
     const launchGapNow = isGame ? launchGap(project, row.record.details?.targets) : undefined
-    if (launchGapNow)
+    if (launchGapNow) {
       todo.push({
         key: 'launch',
         text: launchGapNow === 'action' ? tr('尚未設定啟動操作') : tr('尚未指定啟動檔'),
         button: launchGapNow === 'action' ? tr('新增啟動操作') : tr('指定啟動檔'),
         go: () => setTab('game'),
       })
-    if (isGame && !row.record.details?.bannerAssetId && !assets.length)
+    }
+    if (isGame && !row.record.details?.bannerAssetId && !assets.length) {
       todo.push({
         key: 'cover',
         text: tr('還沒有封面'),
         button: tr('選擇封面'),
         go: () => setTab('images'),
       })
+    }
     if (
       configured.size &&
       fields.every((f) => !configured.has(f.attributeId) || empty(original[f.attributeId])) &&
       !row.record.attributes.some((a) => a.sourceRecord)
-    )
+    ) {
       todo.push({
         key: 'data',
         text: tr('尚無作品資料'),
@@ -568,6 +587,7 @@ export function FolderPanel({
           })
         },
       })
+    }
   }
   return (
     <Stack

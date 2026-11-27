@@ -1,9 +1,11 @@
-import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { metadata } from '../electron/metadata'
-import { searchSources, SEARCH_QUERY_MAX, SEARCH_RESULTS_MAX } from '../electron/sources/search'
+import { test } from 'node:test'
+
 import { defaultSearchSources, searchableSources, sourceForUrl } from '../shared/sources'
+
 import { isExplorerRequest } from '../electron/ipc-requests'
+import { metadata } from '../electron/metadata'
+import { SEARCH_QUERY_MAX, SEARCH_RESULTS_MAX, searchSources } from '../electron/sources/search'
 import { tinyPng } from './support/archive-fixture'
 
 // R-418: search by folder name across five sources, and Wikidata items. Every request is answered by a fixed reply.
@@ -17,14 +19,14 @@ function searchFetcher(
   bangumiNsfw = false
 ) {
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input),
-      host = new URL(url).hostname,
-      body = init?.body ? JSON.parse(String(init.body)) : undefined
+    const url = String(input)
+    const host = new URL(url).hostname
+    const body = init?.body ? JSON.parse(String(init.body)) : undefined
     seen.push({ url, body, headers: new Headers(init?.headers) })
     assert.equal(init?.redirect, 'error')
     assert.match(String(new Headers(init?.headers).get('User-Agent')), /^Morph\//)
     if (fail.includes(host)) return json({}, 500)
-    if (host === 'api.vndb.org')
+    if (host === 'api.vndb.org') {
       return json({
         results: [
           {
@@ -36,7 +38,8 @@ function searchFetcher(
           { id: 'x17', title: 'Bad id' },
         ],
       })
-    if (host === 'musicbrainz.org')
+    }
+    if (host === 'musicbrainz.org') {
       return json({
         'release-groups': [
           {
@@ -48,7 +51,8 @@ function searchFetcher(
           { id: 'not-a-uuid', title: 'Broken' },
         ],
       })
-    if (host === 'graphql.anilist.co')
+    }
+    if (host === 'graphql.anilist.co') {
       return json({
         data: {
           Page: {
@@ -65,14 +69,16 @@ function searchFetcher(
           },
         },
       })
-    if (host === 'api.bgm.tv')
+    }
+    if (host === 'api.bgm.tv') {
       return json({
         data: [
           { id: 9, name: '原名', name_cn: '中文名', date: '2011-04-18' },
           ...(bangumiNsfw ? [{ id: 10, name: 'R18', nsfw: true }] : []),
         ],
       })
-    if (host === 'www.dlsite.com')
+    }
+    if (host === 'www.dlsite.com') {
       return json([
         { workno: 'RJ01000001', site_id: 'maniax', work_name: 'Other', age_category: 1 },
         {
@@ -86,14 +92,16 @@ function searchFetcher(
         { workno: 'RJ01000003', site_id: 'evil', work_name: 'Bad shop', age_category: 3 },
         { workno: 'xx1', site_id: 'maniax', work_name: 'Bad id' },
       ])
-    if (host === 'nhentai.net')
+    }
+    if (host === 'nhentai.net') {
       return json({
         result: [
           { id: 177013, english_title: 'English', japanese_title: '日本語', num_pages: 29 },
           { id: 0, english_title: 'Zero' },
         ],
       })
-    if (host === 'api.dmm.com')
+    }
+    if (host === 'api.dmm.com') {
       return json({
         result: {
           status: 200,
@@ -103,13 +111,15 @@ function searchFetcher(
           ],
         },
       })
-    if (host === 'store.steampowered.com')
+    }
+    if (host === 'store.steampowered.com') {
       return json({
         items: [
           { id: 620, name: 'Portal 2' },
           { id: 0, name: 'Zero' },
         ],
       })
+    }
     return new Response('', { status: 404 })
   }) as typeof fetch
 }
@@ -152,12 +162,13 @@ test('R-418: a name search merges the five sources, in the preferred languages, 
   const sent = (host: string) => seen.find((s) => new URL(s.url).hostname === host)!
   assert.deepEqual(sent('api.vndb.org').body.filters, ['search', '=', 'Ever17'])
   assert.match(sent('store.steampowered.com').url, /storesearch\/\?term=Ever17&l=japanese&cc=JP$/)
-  for (const candidate of result.candidates)
+  for (const candidate of result.candidates) {
     assert.equal(
       sourceForUrl(candidate.url),
       candidate.provider,
       'picking runs the ordinary preview'
     )
+  }
 })
 
 test('R-418: one failing source is reported and the rest still answer; the query and result counts are capped', async () => {
@@ -222,8 +233,9 @@ test('C-143: AniList, Bangumi, DLsite, nhentai and FANZA candidates are marked a
   )
   assert.equal(keyed.candidates.filter((c) => c.provider === 'fanza').length, 1)
   assert.deepEqual(keyed.failedSources, [])
-  for (const candidate of keyed.candidates)
+  for (const candidate of keyed.candidates) {
     assert.equal(sourceForUrl(candidate.url), candidate.provider)
+  }
 })
 
 test('C-143: every search request stays on its own fixed host', async () => {

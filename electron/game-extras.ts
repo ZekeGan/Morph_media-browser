@@ -1,10 +1,12 @@
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+
+import { httpUrl } from '../shared/fields'
+import { type FolderRecord, localeProfileId } from '../shared/model'
+
 import { safePath } from './files'
 import { renpySaveDirectory } from './renpy-save'
-import { httpUrl } from '../shared/fields'
-import { localeProfileId, type FolderRecord } from '../shared/model'
 
 // Game page extras (R-305–R-310): everything here is read-only and worked out in main from the game folder and its
 // record. The window only ever learns names and labels, never paths it could hand back to be opened.
@@ -33,6 +35,7 @@ export const storeSites: Record<string, string> = {
   fanza: 'FANZA',
   booth: 'BOOTH',
 }
+
 export function store(record: FolderRecord | undefined) {
   const attributes = record?.attributes ?? []
   const site = (id: string) => id.slice(0, id.indexOf('-'))
@@ -47,6 +50,7 @@ export function store(record: FolderRecord | undefined) {
     ? { url: found.value as string, site: storeSites[site(found.attributeId)] }
     : undefined
 }
+
 export const storeUrl = (record: FolderRecord | undefined) => store(record)?.url
 
 const isDir = async (file: string) => {
@@ -84,6 +88,7 @@ const plainName = (value: string) =>
 //   packaged apps only; Electron's app.asar is not opened.
 // - RPG Maker MV/MZ: save or www/save inside the game; WOLF: Save; RPG Maker XP–Ace: Save (R-416 shelved).
 export type SaveGuess = { state: 'found'; folder: string } | { state: 'pending' | 'unknown' }
+
 export async function engineSave(
   root: string,
   engines: string[],
@@ -102,8 +107,8 @@ export async function engineSave(
       if (!entry.isDirectory() || !/_Data$/i.test(entry.name)) continue
       const info = await readSmall(root, path.join(root, entry.name, 'app.info'), 4096)
       const [company, product] = (info ?? '').split(/\r?\n/).map((line) => line.trim())
-      const safeCompany = plainName(company ?? ''),
-        safeProduct = plainName(product ?? '')
+      const safeCompany = plainName(company ?? '')
+      const safeProduct = plainName(product ?? '')
       if (!safeCompany || !safeProduct) continue
       const folder = user('LocalLow', safeCompany, safeProduct)
       if (await expect(folder)) return { state: 'found', folder }
@@ -124,11 +129,11 @@ export async function engineSave(
     const project = await readSmall(root, path.join(root, 'project.godot'))
     if (project !== undefined) {
       const setting = (key: string) =>
-          new RegExp('^' + key + '\s*=\s*"([^"\r\n]*)"', 'm').exec(project)?.[1] ?? '',
-        custom = /^config\/use_custom_user_dir\s*=\s*true/m.test(project)
-          ? plainName(setting('config/custom_user_dir_name'))
-          : undefined,
-        name = plainName(setting('config/name'))
+        new RegExp('^' + key + '\s*=\s*"([^"\r\n]*)"', 'm').exec(project)?.[1] ?? ''
+      const custom = /^config\/use_custom_user_dir\s*=\s*true/m.test(project)
+        ? plainName(setting('config/custom_user_dir_name'))
+        : undefined
+      const name = plainName(setting('config/name'))
       const folder = custom
         ? user('Roaming', custom)
         : name
@@ -161,6 +166,7 @@ export async function engineSave(
   if (engines.some((e) => /^RPG Maker M[VZ]$/.test(e) || e === 'WOLF RPG')) pending = true
   return { state: pending ? 'pending' : 'unknown' }
 }
+
 export async function engineSaveFolder(root: string, engines: string[], home = os.homedir()) {
   const guess = await engineSave(root, engines, home)
   return guess.state === 'found' ? guess.folder : undefined
@@ -197,20 +203,22 @@ async function packagedAppFolder(root: string, home: string) {
 // redistributables are left out; nothing is run or added until the user picks it.
 const excluded =
   /^(unins|vcredist|vc_redist|dxsetup|dxwebsetup|directx|dotnet|ndp\d|oalinst|physx)/i
+
 export async function bundledSuggestions(root: string) {
   const entries = await fs.readdir(root, { withFileTypes: true }).catch(() => [])
   const result: { name: string; role: 'config' | 'manual' }[] = []
   for (const entry of entries) {
     if (!entry.isFile() || excluded.test(entry.name)) continue
-    if (/^(config|setup|環境設定.*|.*config.*)\.exe$/i.test(entry.name))
+    if (/^(config|setup|環境設定.*|.*config.*)\.exe$/i.test(entry.name)) {
       result.push({ name: entry.name, role: 'config' })
-    else if (
+    } else if (
       /\.(pdf|html?)$/i.test(entry.name) ||
       /^(readme|manual|説明書|マニュアル|説明|はじめに|お読みください|使用說明|說明書)[^\\/]*\.(txt|md|rtf|pdf|html?)$/i.test(
         entry.name
       )
-    )
+    ) {
       result.push({ name: entry.name, role: 'manual' })
+    }
   }
   return result
     .sort((a, b) => a.role.localeCompare(b.role) || a.name.localeCompare(b.name))
@@ -222,17 +230,18 @@ export async function bundledSuggestions(root: string) {
 export async function localeProfiles(runner: string | undefined) {
   if (!runner) return []
   try {
-    const file = path.join(path.dirname(runner), 'LEConfig.xml'),
-      stat = await fs.stat(file)
+    const file = path.join(path.dirname(runner), 'LEConfig.xml')
+    const stat = await fs.stat(file)
     if (!stat.isFile() || stat.size > 512 * 1024) return []
-    const text = await fs.readFile(file, 'utf8'),
-      found: { guid: string; name: string }[] = []
+    const text = await fs.readFile(file, 'utf8')
+    const found: { guid: string; name: string }[] = []
     for (const tag of text.match(/<Profile\s[^>]{0,2000}>/g) ?? []) {
       const attr = (name: string) => tag.match(new RegExp('\\s' + name + '="([^"]{0,200})"'))?.[1]
-      const guid = attr('Guid'),
-        name = attr('Name')
-      if (guid && name && localeProfileId(guid) && !found.some((p) => p.guid === guid))
+      const guid = attr('Guid')
+      const name = attr('Name')
+      if (guid && name && localeProfileId(guid) && !found.some((p) => p.guid === guid)) {
         found.push({ guid: guid.toLowerCase(), name: xmlText(name).slice(0, 100) })
+      }
       if (found.length >= 50) break
     }
     return found
@@ -240,6 +249,7 @@ export async function localeProfiles(runner: string | undefined) {
     return []
   }
 }
+
 const xmlText = (value: string) =>
   value
     .replace(/&lt;/g, '<')

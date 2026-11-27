@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react'
-import type { BrowseState } from '../../shared/explorer'
+
 import { fallbackColumns, groupColumns } from '../../shared/browse'
+import type { BrowseState } from '../../shared/explorer'
 import type { Project } from '../../shared/model'
-import { t as tr } from '../i18n'
+
 import { LAST_PLAYED, LAST_READ, PLAY_TIME, READ_PROGRESS } from '../game/playtime'
+import { t as tr } from '../i18n'
 
 // TABLE columns: the project's fields after the three built-in ones, in the saved order, minus hidden ones (the
 // name column always stays). Dragging a header moves a column; the moved one flashes briefly where it landed.
@@ -26,9 +28,9 @@ export function useTableColumns({
 }) {
   // dragover can arrive before React re-renders with the dragged column; the ref is set at once.
   const dragNow = useRef('')
-  const [dragColumn, setDragState] = useState(''),
-    [columnDrop, setColumnDrop] = useState<{ id: string; after: boolean }>(),
-    [droppedColumn, setDroppedColumn] = useState('')
+  const [dragColumn, setDragState] = useState('')
+  const [columnDrop, setColumnDrop] = useState<{ id: string; after: boolean }>()
+  const [droppedColumn, setDroppedColumn] = useState('')
   const availableColumns = [
     { id: 'name', label: tr('資料夾名稱') },
     { id: 'path', label: tr('目前路徑') },
@@ -64,8 +66,8 @@ export function useTableColumns({
   )
   const reorderColumn = (source: string, target: string, after: boolean) => {
     if (busy || source === target || !columns.some((c) => c.id === source)) return
-    const ids = orderedColumns.map((c) => c.id).filter((id) => id !== source),
-      index = ids.indexOf(target)
+    const ids = orderedColumns.map((c) => c.id).filter((id) => id !== source)
+    const index = ids.indexOf(target)
     if (index < 0) return
     ids.splice(index + (after ? 1 : 0), 0, source)
     if (ids.some((id, i) => orderedColumns[i].id !== id)) {

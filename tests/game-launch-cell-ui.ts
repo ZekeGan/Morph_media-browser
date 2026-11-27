@@ -1,17 +1,19 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import assert from 'node:assert/strict'
-import { Library } from '../electron/library'
-import { ensureFolder, folderFile, readFolder } from '../electron/files'
+
 import type { Cell } from '../shared/model'
-import { closeApp, launchApp, removeTestRoot, reportFailure, openLayoutEditor } from './support/app'
+
+import { ensureFolder, folderFile, readFolder } from '../electron/files'
+import { Library } from '../electron/library'
+import { closeApp, launchApp, openLayoutEditor, removeTestRoot, reportFailure } from './support/app'
 
 // The "launch game" cell: disabled until the folder has a bound launch file, enabled afterwards. Never clicked here.
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
-const root = await fs.mkdtemp(path.join(base, 'game-launch-cell-ui-')),
-  media = path.join(root, 'Games'),
-  local = path.join(root, 'local')
+const root = await fs.mkdtemp(path.join(base, 'game-launch-cell-ui-'))
+const media = path.join(root, 'Games')
+const local = path.join(root, 'local')
 for (const name of ['Unbound', 'Bound']) {
   await fs.mkdir(path.join(media, name), { recursive: true })
   await fs.writeFile(path.join(media, name, 'Game.exe'), 'x')
@@ -31,8 +33,8 @@ await lib.create(media, {
   scanAll: true,
   depth: { mode: 'through', level: 2 },
 })
-const project = lib.snapshot().projects[0].project!,
-  style = { textColor: '#e4e6e8', backgroundColor: 'transparent' }
+const project = lib.snapshot().projects[0].project!
+const style = { textColor: '#e4e6e8', backgroundColor: 'transparent' }
 const cells: Cell[] = [
   { cellId: 'name', kind: 'name', grid: { x: 0, y: 0, w: 12, h: 1 }, style },
   { cellId: 'launch', kind: 'game-launch', grid: { x: 0, y: 1, w: 6, h: 1 }, style },
@@ -127,15 +129,16 @@ try {
     .locator('.basic-palette')
     .getByRole('button', { name: '啟動遊戲', exact: true })
     .waitFor()
-  for (const name of ['遊戲附加按鈕', '遊玩時間', '遊戲引擎'])
+  for (const name of ['遊戲附加按鈕', '遊玩時間', '遊戲引擎']) {
     await page.locator('.basic-palette').getByRole('button', { name, exact: true }).waitFor()
+  }
   // R-454: a click only marks a palette row and shows what it does; Enter adds it.
-  const editorCells = page.locator('.react-grid-layout .editor-cell'),
-    undo = page.getByRole('button', { name: '復原', exact: true }),
-    presetRow = (name: string) =>
-      page
-        .locator('.basic-palette .palette-item')
-        .filter({ has: page.getByRole('button', { name, exact: true }) })
+  const editorCells = page.locator('.react-grid-layout .editor-cell')
+  const undo = page.getByRole('button', { name: '復原', exact: true })
+  const presetRow = (name: string) =>
+    page
+      .locator('.basic-palette .palette-item')
+      .filter({ has: page.getByRole('button', { name, exact: true }) })
   const start = await editorCells.count()
   await presetRow('遊玩時間').getByRole('button').click()
   await presetRow('遊玩時間').getByText('從 M:orph 啟動的累計遊玩時間', { exact: true }).waitFor()

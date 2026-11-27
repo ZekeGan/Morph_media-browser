@@ -1,16 +1,18 @@
-import { fmt } from '../shared/message'
+import { createHash, randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { createHash, randomUUID } from 'node:crypto'
-import { safePath } from './files'
-import { DATA_DIR } from '../shared/model'
+
 import { type ContentResult, type MediaEntry } from '../shared/explorer'
-import { mediaSortFields, sortMedia, type MediaSort } from '../shared/media'
-import { sampleOf, type KindSample } from '../shared/kind'
-import { hiddenFileNames } from './hidden'
 import { imageTypes } from '../shared/images'
-import { mediaNames, mediaTypes as types, THUMB_EDGE, thumbVersion } from './media-files'
+import { type KindSample, sampleOf } from '../shared/kind'
+import { type MediaSort, mediaSortFields, sortMedia } from '../shared/media'
+import { fmt } from '../shared/message'
+import { DATA_DIR } from '../shared/model'
+
 import type { Explorer } from './explorer'
+import { safePath } from './files'
+import { hiddenFileNames } from './hidden'
+import { mediaNames, mediaTypes as types, THUMB_EDGE, thumbVersion } from './media-files'
 
 // What a name is listed as, from the entry type and the extension only (nothing is opened); the same rule the
 // batch below and the scan use.
@@ -21,8 +23,8 @@ const kindOf = (name: string, directory: boolean): MediaEntry['kind'] =>
       ? 'image'
       : ((types[path.extname(name).toLowerCase()]?.[0] as MediaEntry['kind']) ?? 'other')
 
-const STAT_CACHE_MS = 60000,
-  STAT_CACHE_FOLDERS = 4
+const STAT_CACHE_MS = 60000
+const STAT_CACHE_FOLDERS = 4
 
 // Every listed name's size and time (R-492), from the short cache when the folder's own time is unchanged (R-504).
 // Stopped between groups of files when a newer sorted request from the same caller arrives.
@@ -34,8 +36,8 @@ async function folderFacts(
 ) {
   const now = Date.now()
   for (const [key, cached] of ex.statCache) if (cached.expires < now) ex.statCache.delete(key)
-  const folderModified = (await fs.stat(folder)).mtimeMs,
-    cached = ex.statCache.get(folder)
+  const folderModified = (await fs.stat(folder)).mtimeMs
+  const cached = ex.statCache.get(folder)
   if (cached && cached.folderModified === folderModified) return cached.facts
   const facts = new Map<string, { size: number; modified: number }>()
   for (let start = 0; start < listed.length; start += 32) {
@@ -49,8 +51,9 @@ async function folderFacts(
     )
   }
   ex.statCache.delete(folder)
-  while (ex.statCache.size >= STAT_CACHE_FOLDERS)
+  while (ex.statCache.size >= STAT_CACHE_FOLDERS) {
     ex.statCache.delete(ex.statCache.keys().next().value!)
+  }
   ex.statCache.set(folder, { folderModified, expires: Date.now() + STAT_CACHE_MS, facts })
   return facts
 }
@@ -74,21 +77,23 @@ export async function content(
         typeof sort !== 'object' ||
         !mediaSortFields.includes(sort.field) ||
         typeof sort.asc !== 'boolean'))
-  )
+  ) {
     throw new Error('內容分批設定不合法')
-  const row = await ex.library.readableRow(rowId),
-    notices: string[] = [],
-    entries: MediaEntry[] = []
-  let offset = 0,
-    token = '',
-    names: string[],
-    sample: KindSample,
-    hidden = new Set<string>()
-  for (const [id, session] of ex.contentPages)
+  }
+  const row = await ex.library.readableRow(rowId)
+  const notices: string[] = []
+  const entries: MediaEntry[] = []
+  let offset = 0
+  let token = ''
+  let names: string[]
+  let sample: KindSample
+  let hidden = new Set<string>()
+  for (const [id, session] of ex.contentPages) {
     if (session.expires < Date.now()) ex.contentPages.delete(id)
+  }
   if (cursor) {
-    const match = /^([\w-]+):(\d+)$/.exec(cursor),
-      session = match && ex.contentPages.get(match[1])
+    const match = /^([\w-]+):(\d+)$/.exec(cursor)
+    const session = match && ex.contentPages.get(match[1])
     offset = Number(match?.[2])
     if (
       !session ||
@@ -98,8 +103,9 @@ export async function content(
       !Number.isSafeInteger(offset) ||
       offset < 0 ||
       offset >= session.names.length
-    )
+    ) {
       throw new Error('資料夾內容已過期，請重新開啟資料夾')
+    }
     hidden = session.hidden
     names = session.names
     sample = session.sample
@@ -129,15 +135,16 @@ export async function content(
     names = listed.map((entry) => entry.name)
     if (sort) {
       // R-504: a newer sorted request from the same caller (another folder chosen) stops this one's read.
-      const read = { stopped: false },
-        previous = ex.statReads.get(caller)
+      const read = { stopped: false }
+      const previous = ex.statReads.get(caller)
       if (previous) previous.stopped = true
       ex.statReads.set(caller, read)
       // Size and date need each file's stat before the first batch; name and kind need nothing more.
       let facts = new Map<string, { size: number; modified: number }>()
       try {
-        if (sort.field === 'size' || sort.field === 'modified')
+        if (sort.field === 'size' || sort.field === 'modified') {
           facts = await folderFacts(ex, row.path, listed, read)
+        }
       } finally {
         if (ex.statReads.get(caller) === read) ex.statReads.delete(caller)
       }
@@ -169,7 +176,7 @@ export async function content(
     }
   }
   const batch = names.slice(offset, limit ? offset + limit : undefined)
-  for (let start = 0; start < batch.length; start += 16)
+  for (let start = 0; start < batch.length; start += 16) {
     await Promise.all(
       batch.slice(start, start + 16).map(async (name) => {
         const file = path.join(row.path, name)
@@ -183,8 +190,8 @@ export async function content(
             : imageMime
               ? (['image', imageMime] as const)
               : (types[path.extname(file).toLowerCase()] ?? ['other', 'application/octet-stream'])
-          const id = createHash('sha256').update(name).digest('hex'),
-            url = `media://file/${rowId}/${id}`
+          const id = createHash('sha256').update(name).digest('hex')
+          const url = `media://file/${rowId}/${id}`
           ex.files.set(`${rowId}/${id}`, { rowId, name, file, mime })
           entries.push({
             id,
@@ -204,11 +211,12 @@ export async function content(
         }
       })
     )
+  }
   // The batch keeps the listing's order (by name, or the requested sort).
   const order = new Map(batch.map((name, index) => [name, index]))
   entries.sort((a, b) => order.get(a.name)! - order.get(b.name)!)
-  const next = offset + batch.length,
-    complete = next >= names.length
+  const next = offset + batch.length
+  const complete = next >= names.length
   if (complete && token) ex.contentPages.delete(token)
   for (const sub of complete ? (row.record?.details?.subtitles ?? []) : []) {
     const file = path.join(row.path, DATA_DIR, sub.relativePath)
@@ -243,19 +251,21 @@ export async function content(
 }
 
 export async function file(ex: Explorer, rowId: string, id: string) {
-  const row = await ex.library.readableRow(rowId),
-    entry = ex.files.get(`${rowId}/${id}`)
+  const row = await ex.library.readableRow(rowId)
+  const entry = ex.files.get(`${rowId}/${id}`)
   if (!entry || entry.rowId !== rowId) throw new Error('媒體不存在或需重新載入')
   await safePath(row.path, entry.file)
-  if (!entry.portable && path.dirname(entry.file) !== row.path)
+  if (!entry.portable && path.dirname(entry.file) !== row.path) {
     throw new Error('媒體超出直接內容範圍')
+  }
   if (
     entry.portable &&
     !row.record?.details?.subtitles?.some(
       (s) => path.join(row.path, DATA_DIR, s.relativePath) === entry.file
     )
-  )
+  ) {
     throw new Error('字幕不屬於此記錄')
+  }
   const stat = await fs.stat(entry.file)
   if (!stat.isFile()) throw new Error('不是檔案')
   return { ...entry, stat, row }
@@ -275,6 +285,7 @@ export async function folderFiles(row: { path: string }) {
     .map((entry) => entry.name)
     .sort((a, b) => mediaNames.compare(a, b) || (a < b ? -1 : a > b ? 1 : 0))
 }
+
 // Makes a file inside the folder servable and returns its id (the same id the folder listing gives it).
 export async function serveFile(
   ex: Explorer,
@@ -283,12 +294,13 @@ export async function serveFile(
   name: string,
   mime: string
 ) {
-  const file = path.join(row.path, name),
-    id = createHash('sha256').update(name).digest('hex')
+  const file = path.join(row.path, name)
+  const id = createHash('sha256').update(name).digest('hex')
   await safePath(row.path, file)
   ex.files.set(`${rowId}/${id}`, { rowId, name, file, mime })
   return id
 }
+
 export const imageMime = (name: string) => imageTypes[path.extname(name).slice(1).toLowerCase()]
 // R-499: `?full=1` asks for the original picture (the right panel draws it large); without it, the thumbnail.
 const wantsFull = (request: globalThis.Request) =>
@@ -300,8 +312,9 @@ export async function nthImage(
   index: number,
   request: globalThis.Request
 ): Promise<globalThis.Response> {
-  if (!Number.isInteger(index) || index < 1 || index > 999)
+  if (!Number.isInteger(index) || index < 1 || index > 999) {
     return new globalThis.Response(null, { status: 404 })
+  }
   const row = await ex.library.readableRow(rowId)
   const name = (await folderFiles(row)).filter(imageMime)[index - 1]
   if (!name) return new globalThis.Response(null, { status: 404 })
@@ -321,12 +334,12 @@ export async function folderCover(
   rowId: string,
   request: globalThis.Request
 ): Promise<globalThis.Response> {
-  const row = await ex.library.readableRow(rowId),
-    assets = row.record?.assets ?? [],
-    chosen =
-      assets.find((a) => a.assetId === row.record?.details?.bannerAssetId) ??
-      assets.find((a) => !a.role)
-  if (chosen)
+  const row = await ex.library.readableRow(rowId)
+  const assets = row.record?.assets ?? []
+  const chosen =
+    assets.find((a) => a.assetId === row.record?.details?.bannerAssetId) ??
+    assets.find((a) => !a.role)
+  if (chosen) {
     try {
       const { file, mediaType } = await ex.library.asset(rowId, chosen.assetId)
       return new globalThis.Response(new Uint8Array(await fs.readFile(file)), {
@@ -335,30 +348,31 @@ export async function folderCover(
     } catch {
       // A picture whose file is gone: the next rule decides.
     }
-  const names = await folderFiles(row),
-    track = names.find((name) => types[path.extname(name).toLowerCase()]?.[0] === 'audio'),
-    // A track gone since the listing: the next rule decides.
-    stat = track && (await fs.stat(path.join(row.path, track)).catch(() => undefined))
+  }
+  const names = await folderFiles(row)
+  const track = names.find((name) => types[path.extname(name).toLowerCase()]?.[0] === 'audio')
+  // A track gone since the listing: the next rule decides.
+  const stat = track && (await fs.stat(path.join(row.path, track)).catch(() => undefined))
   if (track && stat) {
     const id = await serveFile(ex, row, rowId, track, types[path.extname(track).toLowerCase()][1])
     // R-455: the embedded cover as a small picture, kept with the other thumbnails, so a page of album cards does
     // not hold every full-size cover. Made from the track as it is now (its size and time are in the name).
-    const cache = path.join(ex.root, 'thumbnails'),
-      small = path.join(
-        cache,
-        createHash('sha256')
-          .update(
-            `${path.join(row.path, track)}/${stat.size}/${stat.mtimeMs}/audio-cover/${THUMB_EDGE}`
-          )
-          .digest('hex') + '.jpg'
-      )
+    const cache = path.join(ex.root, 'thumbnails')
+    const small = path.join(
+      cache,
+      createHash('sha256')
+        .update(
+          `${path.join(row.path, track)}/${stat.size}/${stat.mtimeMs}/audio-cover/${THUMB_EDGE}`
+        )
+        .digest('hex') + '.jpg'
+    )
     await safePath(ex.root, small)
     const jpeg = (bytes: Uint8Array) =>
       new globalThis.Response(new Uint8Array(bytes), {
         headers: { 'Content-Type': 'image/jpeg', 'X-Content-Type-Options': 'nosniff' },
       })
-    const full = wantsFull(request),
-      cached = full ? undefined : await fs.readFile(small).catch(() => undefined)
+    const full = wantsFull(request)
+    const cached = full ? undefined : await fs.readFile(small).catch(() => undefined)
     if (cached?.length) return jpeg(cached)
     const response = await ex.audioCover(rowId, id, request.signal)
     if (response.status === 200 && full) return response
@@ -381,9 +395,9 @@ export async function folderCover(
       }
     }
   }
-  const images = names.filter(imageMime),
-    named = images.filter((name) => /^(cover|folder|front|artist)\.[^.]+$/i.test(name)),
-    name = named.length === 1 ? named[0] : images[0]
+  const images = names.filter(imageMime)
+  const named = images.filter((name) => /^(cover|folder|front|artist)\.[^.]+$/i.test(name))
+  const name = named.length === 1 ? named[0] : images[0]
   if (!name) return new globalThis.Response(null, { status: 404 })
   const id = await serveFile(ex, row, rowId, name, imageMime(name))
   if (wantsFull(request)) return ex.stream(rowId, id, request)

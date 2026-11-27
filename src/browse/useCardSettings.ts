@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState, type RefObject } from 'react'
+import { type RefObject, useEffect, useRef, useState } from 'react'
+
 import { cardDisplay } from '../../shared/browse'
 import type { Project, Request, Response } from '../../shared/model'
+
 import { t as tr } from '../i18n'
 
 type Act = (request: Request) => Promise<Response | undefined>
@@ -20,15 +22,16 @@ export function useCardSettings({
   act: Act
   mounted: RefObject<boolean>
 }) {
-  const [display, setDisplay] = useState(cardDisplay(project)),
-    [density, setDensity] = useState<{ itemsPerRow: number | string; pageSize: number | string }>(
-      project.list
-    )
-  const [cardPending, setCardPending] = useState(false),
-    [cardSaveError, setCardSaveError] = useState('')
-  const cardEdit = useRef(0),
-    cardSaving = useRef(false),
-    projectLive = useRef(project)
+  const [display, setDisplay] = useState(cardDisplay(project))
+  const [density, setDensity] = useState<{
+    itemsPerRow: number | string
+    pageSize: number | string
+  }>(project.list)
+  const [cardPending, setCardPending] = useState(false)
+  const [cardSaveError, setCardSaveError] = useState('')
+  const cardEdit = useRef(0)
+  const cardSaving = useRef(false)
+  const projectLive = useRef(project)
   projectLive.current = project
   const validDensity =
     typeof density.itemsPerRow === 'number' &&
@@ -55,8 +58,8 @@ export function useCardSettings({
   }, [project.revision, deepest])
   useEffect(() => {
     if (!cardPending || !validDensity || busy || cardSaving.current) return
-    const edit = cardEdit.current,
-      projectId = project.projectId
+    const edit = cardEdit.current
+    const projectId = project.projectId
     const timeout = setTimeout(() => {
       cardSaving.current = true
       void act({

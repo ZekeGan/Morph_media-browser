@@ -1,6 +1,7 @@
-import { createElement, Fragment, memo, useMemo, type ReactNode } from 'react'
 import MarkdownIt from 'markdown-it'
 import type Token from 'markdown-it/lib/token.mjs'
+import { createElement, Fragment, memo, type ReactNode, useMemo } from 'react'
+
 import { httpUrl } from '../../shared/fields'
 
 // R-399: a Markdown file as React elements. The parser has HTML switched off (raw HTML stays literal text), the tokens
@@ -105,25 +106,25 @@ function blocks(tokens: Token[], open: Open): ReactNode[] {
     const id = 'b' + index
     // A tight list has no paragraph around an item's text.
     if (token.hidden && token.type.startsWith('paragraph_')) return
-    if (token.type === 'inline')
+    if (token.type === 'inline') {
       push(<Fragment key={id}>{inline(token.children ?? [], open, id)}</Fragment>)
-    else if (token.type === 'fence' || token.type === 'code_block')
+    } else if (token.type === 'fence' || token.type === 'code_block') {
       push(
         <pre key={id}>
           <code>{token.content}</code>
         </pre>
       )
-    else if (token.type === 'hr') push(<hr key={id} />)
+    } else if (token.type === 'hr') push(<hr key={id} />)
     else if (token.type === 'html_block') push(<pre key={id}>{token.content}</pre>)
-    else if (token.type === 'heading_open')
+    else if (token.type === 'heading_open') {
       stack.push({
         tag: token.tag === 'h1' || token.tag === 'h2' || token.tag === 'h3' ? token.tag : 'h4',
         props: { key: id },
         children: [],
       })
-    else if (token.type.endsWith('_open')) {
+    } else if (token.type.endsWith('_open')) {
       const name = token.type.slice(0, -5)
-      if (tags[name])
+      if (tags[name]) {
         stack.push({
           tag: tags[name],
           props: {
@@ -134,6 +135,7 @@ function blocks(tokens: Token[], open: Open): ReactNode[] {
           },
           children: [],
         })
+      }
     } else if (token.type.endsWith('_close')) {
       const top = stack.pop()
       if (top) push(createElement(top.tag, top.props, top.children))

@@ -1,9 +1,12 @@
 import { deflateRawSync } from 'node:zlib'
+
 import { crc32 } from '../../electron/archive'
+
 export const tinyPng = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII=',
   'base64'
 )
+
 export function zipFixture(
   entries: {
     name: string
@@ -14,16 +17,16 @@ export function zipFixture(
     crc?: number
   }[]
 ) {
-  const files: Buffer[] = [],
-    central: Buffer[] = []
+  const files: Buffer[] = []
+  const central: Buffer[] = []
   let offset = 0
   for (const entry of entries) {
-    const name = Buffer.from(entry.name),
-      method = entry.method ?? 8,
-      bytes = method === 0 ? entry.bytes : deflateRawSync(entry.bytes),
-      flags = entry.flags ?? 2048,
-      crc = entry.crc ?? crc32(entry.bytes),
-      size = entry.size ?? entry.bytes.length
+    const name = Buffer.from(entry.name)
+    const method = entry.method ?? 8
+    const bytes = method === 0 ? entry.bytes : deflateRawSync(entry.bytes)
+    const flags = entry.flags ?? 2048
+    const crc = entry.crc ?? crc32(entry.bytes)
+    const size = entry.size ?? entry.bytes.length
     const local = Buffer.alloc(30)
     local.writeUInt32LE(0x04034b50)
     local.writeUInt16LE(20, 4)
@@ -47,8 +50,8 @@ export function zipFixture(
     central.push(header, name)
     offset += local.length + name.length + bytes.length
   }
-  const directory = Buffer.concat(central),
-    end = Buffer.alloc(22)
+  const directory = Buffer.concat(central)
+  const end = Buffer.alloc(22)
   end.writeUInt32LE(0x06054b50)
   end.writeUInt16LE(entries.length, 8)
   end.writeUInt16LE(entries.length, 10)
@@ -70,8 +73,8 @@ export function rarFixture(entries: { name: string; bytes: Buffer; crc?: number 
   main.writeUInt16LE(13, 3)
   const parts: Buffer[] = [Buffer.from([0x52, 0x61, 0x72, 0x21, 0x1a, 0x07, 0x00]), withCrc(main)]
   for (const entry of entries) {
-    const name = Buffer.from(entry.name),
-      body = Buffer.alloc(30 + name.length)
+    const name = Buffer.from(entry.name)
+    const body = Buffer.alloc(30 + name.length)
     body.writeUInt8(0x74, 0)
     body.writeUInt16LE(0x8000, 1)
     body.writeUInt16LE(32 + name.length, 3)

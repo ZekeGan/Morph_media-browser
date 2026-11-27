@@ -1,12 +1,13 @@
-import { t as tr } from '../i18n'
-import { classifyError, errorMessage } from '../../shared/notifications'
 import { plainMessage } from '../../shared/message'
+import { classifyError, errorMessage } from '../../shared/notifications'
+
+import { t as tr } from '../i18n'
 
 // Turns any thrown value into text a user can act on; the original wording is kept as `detail` when it was rewritten.
 export function describeError(raw: unknown): { message: string; hint?: string; detail?: string } {
-  const sent = errorMessage(raw instanceof Error ? raw.message : String(raw)),
-    // The technical wording shown beside a rewritten message, with any sent values filled in (R-281).
-    detail = plainMessage(sent)
+  const sent = errorMessage(raw instanceof Error ? raw.message : String(raw))
+  // The technical wording shown beside a rewritten message, with any sent values filled in (R-281).
+  const detail = plainMessage(sent)
   if (detail === '備用欄位不存在，或格式不合') return { message: tr('備用欄位不存在，或格式不合') }
   switch (classifyError(detail)) {
     case 'permission':
