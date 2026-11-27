@@ -9,6 +9,7 @@ import { parseQuery } from '../shared/query'
 import { parseSubtitles } from '../shared/subtitles'
 
 import { type DesktopOperations, Explorer } from '../electron/explorer'
+import { THUMBNAIL_WORKERS } from '../electron/explorer-stream'
 import { exists, folderFile, readFolder } from '../electron/files'
 import { Library } from '../electron/library'
 import { ehMetadata } from '../electron/metadata'
@@ -1211,7 +1212,8 @@ test('R-502: a thumbnail served from the cache counts as recently used', async (
 test('warm thumbnails bypass cold work; cancelled queued work is skipped and shared requests decode once', async (t) => {
   const { media, lib, explorer } = await fixture(t)
   const jpeg = Buffer.from([255, 216, 255, 0, 255, 217])
-  for (const name of ['warm.jpg', 'slow.jpg', 'cancel.jpg', 'shared.jpg']) {
+  const slowNames = Array.from({ length: THUMBNAIL_WORKERS }, (_, index) => `slow-${index}.jpg`)
+  for (const name of ['warm.jpg', ...slowNames, 'cancel.jpg', 'shared.jpg']) {
     await fs.writeFile(path.join(media, name), 'IMAGE')
   }
   const state = await lib.create(media, {
@@ -1223,14 +1225,15 @@ test('warm thumbnails bypass cold work; cancelled queued work is skipped and sha
   const calls: string[] = []
   const desktop = (explorer as any).desktop as DesktopOperations
   let release!: () => void
-  let started!: () => void
+  let allBusy!: () => void
+  let activeCount = 0
   const gate = new Promise<void>((resolve) => (release = resolve))
-  const active = new Promise<void>((resolve) => (started = resolve))
+  const workersFull = new Promise<void>((resolve) => (allBusy = resolve))
   desktop.thumbnail = async (file) => {
     const name = path.basename(file)
     calls.push(name)
-    if (name === 'slow.jpg') {
-      started()
+    if (name.startsWith('slow-')) {
+      if (++activeCount === THUMBNAIL_WORKERS) allBusy()
       await gate
     }
     return jpeg
@@ -1240,8 +1243,8 @@ test('warm thumbnails bypass cold work; cancelled queued work is skipped and sha
     return explorer.stream(row.rowId, entry.id, new Request(entry.thumb!, { signal }), true)
   }
   assert.equal((await stream('warm.jpg')).status, 200)
-  const slow = stream('slow.jpg')
-  await active
+  const slowRequests = slowNames.map((name) => stream(name))
+  await workersFull
   let timeout: ReturnType<typeof setTimeout> | undefined
   try {
     const warm = await Promise.race([
@@ -1264,11 +1267,16 @@ test('warm thumbnails bypass cold work; cancelled queued work is skipped and sha
   const cancel = stream('cancel.jpg', controller.signal)
   const shared1 = stream('shared.jpg')
   const shared2 = stream('shared.jpg')
-  await new Promise((resolve) => setTimeout(resolve, 30))
+  // Wait until both cancel.jpg and shared.jpg are deterministically queued behind the full worker pool.
+  const deadline = Date.now() + 2000
+  while (explorer.thumbnailQueue.length < 2 && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 5))
+  }
+  assert.equal(explorer.thumbnailQueue.length, 2)
   controller.abort()
   release()
-  const results = await Promise.all([slow, cancel, shared1, shared2])
-  assert.equal(results[1].status, 404)
+  const results = await Promise.all([...slowRequests, cancel, shared1, shared2])
+  assert.equal(results[THUMBNAIL_WORKERS].status, 404)
   assert.equal(calls.includes('cancel.jpg'), false)
   assert.equal(calls.filter((name) => name === 'shared.jpg').length, 1)
   assert.equal(calls.filter((name) => name === 'warm.jpg').length, 1)

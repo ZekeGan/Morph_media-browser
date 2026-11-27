@@ -110,6 +110,12 @@ try {
     const video = document.querySelector('video')
     return video && video.readyState >= 1
   })
+  // Hold the 3-second sample inside its 0.00-2.90s subtitle window so slow runs never play past the cue.
+  await page.evaluate(() => {
+    const video = document.querySelector('video')!
+    video.pause()
+    video.currentTime = 0.5
+  })
   const controls = page.locator('.video-controls')
   const panel = page.getByRole('dialog', { name: '更多播放設定', exact: true })
   await controls.getByRole('button', { name: '更多播放設定', exact: true }).click()

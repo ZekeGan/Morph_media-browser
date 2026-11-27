@@ -630,6 +630,8 @@ export function VideoViewer({
   }
   // The user picked a track by hand: the folder remembers its name and language for the other videos.
   const pickEmbedded = async (track: EmbeddedSubtitleInfo) => {
+    await loadEmbedded(track)
+    if (!mounted.current) return
     const wanted = trackPreference(track)
     const record = latest.current.record
     const known = record?.details?.subtitleTrack
@@ -639,14 +641,13 @@ export function VideoViewer({
       !row.readonly &&
       (known?.name !== wanted.name || known?.language !== wanted.language)
     ) {
-      void run({
+      await run({
         action: 'subtitleTrack',
         rowId: row.rowId,
         revision: record.revision,
         ...wanted,
       })
     }
-    return loadEmbedded(track)
   }
   useEffect(() => {
     if (!matroska || !file || embedded?.fileId === file.id) return

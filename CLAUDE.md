@@ -31,7 +31,7 @@ M:orph：Windows 優先的資料夾檢視器（Electron＋React＋Vite，pnpm）
 
 ## 每批收尾（不必詢問，做完再回報）
 
-1. 新增原始檔或改規格章節時，同批更新 [docs/areas.json](docs/areas.json) 並跑 `node scripts/areas.mjs readme`。
+1. 新增原始檔、測試檔或改規格章節時，同批更新 [docs/areas.json](docs/areas.json) 並跑 `node scripts/areas.mjs readme`。
 2. 功能被取代或移除時，同批刪掉對應的程式、測試（含無障礙名稱）、語系文字與規格段落。
 3. 跑 `pnpm stale`，處理它點名的項目；改到的規格卡用 `pnpm item confirm <檔案> --refs R-…` 更新「最後確認」，已知限制用 `pnpm item confirm --limits <領域>`。
 4. 動到介面時跑 `pnpm test:ui:changed`（提交前）；失敗先查 WORK_ITEMS 的已知限制與進行中需求，再分類（產品／測試／環境）再修。

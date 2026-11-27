@@ -47,14 +47,18 @@ export const sourceFiles = () =>
 export function problems() {
   const out = []
   const files = sourceFiles()
+  const knownUi = new Set()
+  const knownData = new Set()
   for (const file of files) if (!areasOf(file).length) out.push(`未歸入任何領域：${file}`)
   for (const area of areas) {
     for (const name of expand(area.ui)) {
+      knownUi.add(name + '.ts')
       if (!fs.existsSync(path.join(root, 'tests', name + '.ts'))) {
         out.push(`${area.id}：找不到 UI 測試 tests/${name}.ts`)
       }
     }
     for (const name of area.tests) {
+      knownData.add(name)
       if (!fs.existsSync(path.join(root, 'tests', name))) {
         out.push(`${area.id}：找不到資料測試 tests/${name}`)
       }
@@ -63,6 +67,15 @@ export function problems() {
       if (!files.some((file) => toRegExp(pattern).test(file))) {
         out.push(`${area.id}：程式樣式沒有對到任何檔案：${pattern}`)
       }
+    }
+  }
+  // R-529: every top-level unit (*.test.ts) and UI (*-ui.ts) test must belong to at least one area.
+  for (const entry of fs.readdirSync(path.join(root, 'tests'), { withFileTypes: true })) {
+    if (!entry.isFile()) continue
+    if (entry.name.endsWith('.test.ts') && !knownData.has(entry.name)) {
+      out.push(`未歸入任何領域的資料測試：tests/${entry.name}`)
+    } else if (entry.name.endsWith('-ui.ts') && !knownUi.has(entry.name)) {
+      out.push(`未歸入任何領域的 UI 測試：tests/${entry.name}`)
     }
   }
   return out

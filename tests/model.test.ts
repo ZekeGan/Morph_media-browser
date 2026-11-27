@@ -183,6 +183,14 @@ test('subtitle, playback and launch validation retain numeric and path boundarie
       },
     })
   )
+  for (const bad of [
+    { time: Number.NaN, settings: { sub: settings } },
+    { time: 0, settings: { sub: { ...settings, offset: Number.NaN } } },
+    { time: 0, settings: { sub: { ...settings, bottom: Number.NaN } } },
+    { time: 0, settings: { sub: { ...settings, bottom: Number.POSITIVE_INFINITY } } },
+  ]) {
+    reject(validateDetails, { ...details, playback: { v1: bad } }, '播放設定不合法')
+  }
   reject(
     validateDetails,
     { ...details, targets: { play: { ...details.targets!.play, path: '../outside.exe' } } },

@@ -13,8 +13,11 @@
 
 ## 待查收
 
-- **R-528** 整理 `electron/explorer.ts`：抽 `explorer-dispatch.ts` 與 `Map` 具名型別（階段 3） ｜中｜一般｜無｜領域：media｜依賴：R-526
-  驗收：檢視 electron/explorer.ts 的具名快取介面與 electron/explorer-dispatch.ts 請求分派拆出，確認 docs/areas.json、docs/README.md 與 docs/ARCHITECTURE.md 已同步
+- **R-530** 修穩 video-embedded-ui／explorer.test.ts 偶發測試並補 NaN 與 stale 單元測試 ｜小｜一般｜無｜領域：video、media、core｜依賴：無
+  驗收：確認 video-embedded-ui 連跑 5 次全過、explorer.test.ts 取消測試不靠固定等待、model.test.ts 與 routine-commands.test.ts 新增案例通過
+
+- **R-529** 補齊 docs/areas.json 漏登測試並加上 areas.mjs 測試檔反向檢查 ｜小｜一般｜無｜領域：core｜依賴：無
+  驗收：跑 node scripts/areas.mjs check 確認 0 未歸入測試，並檢視 docs/areas.json 與 docs/README.md
 
 ## 進行中
 
@@ -23,6 +26,9 @@
 ## 已登記（未核定）
 
 ## 擱置
+
+- **R-531** 合併同領域小 UI 測試以縮短 test:ui:all 總耗時 ｜中｜一般｜無｜領域：core｜依賴：無
+  目前 64 支 UI 測試各開一次 Electron 共約 17.6 分鐘；日後覺得發布驗證太久時，可將同領域小檔合併為同一 Electron 視窗內的子步驟（不刪回歸斷言）
 
 - **R-473** 全部單元測試一起跑時 media-facts 偶爾整檔失敗：子程序結束碼 5，子測試全過 ｜小｜一般｜無｜領域：core｜依賴：無
   R-462 拆出，2026-11-24。2026-11-25 診斷約 2 小時（使用者給的停損用完）後擱置，查到的：整套跑約每 2～10 輪一次，都在第 3 個測試（隱藏檔與損壞索引）通過後、第 4 個（資料夾變動重讀）還沒回報前；TAP 結果是 exitCode 5、signal 無。程序的 exit 事件沒觸發、沒有致命錯誤報告（測試檔內直接開 process.report 也沒有）、stderr 沒有 FATAL、`--trace-exit` 沒有堆疊、Windows 事件記錄沒有 node.exe 當機、Defender 沒有偵測。Node 原始碼的 ExitCode 註解寫 5 不使用（致命錯誤是 133／134），所以是程序外或原生層以 5 直接結束。已排除：檔案 Blob 讀取時刪改檔（壓測 4 萬輪）、node:sqlite 關閉後回收（壓測數十萬輪）、不經測試執行器直接跑 media-facts（在整套負載下 190 次都過）。剩下的方向：只在 node 測試執行器的子程序發生；隱藏檔輔助程式是常駐的 PowerShell（-EncodedCommand，管線 unref）。下一步要用 procdump／WinDbg 在程序結束時抓傾印才看得到是誰結束它，花費比小需求大。2026-11-26 新線索：定版時跑 `pnpm test`，防毒（卡巴斯基）在執行中把 tests/media-facts.test.ts 本身刪掉，同一檔整檔失敗；結束碼 5 可能是防毒中止程序，下次先在關閉防毒或把專案資料夾加入排除後重跑整套看還會不會出現

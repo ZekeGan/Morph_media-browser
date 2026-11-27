@@ -5,6 +5,8 @@ import { test } from 'node:test'
 import { addMessages } from '../scripts/i18n.mjs'
 // @ts-expect-error - plain .mjs tooling modules without type declarations
 import * as items from '../scripts/item.mjs'
+// @ts-expect-error - plain .mjs tooling modules without type declarations
+import { parseIgnoredRevs, pickLastChange } from '../scripts/stale.mjs'
 
 const { acceptItems, addItem, confirmCard, confirmLimits, moveItems, nextId } = items
 
@@ -116,4 +118,16 @@ test('R-358: messages come in all five languages with the same placeholders', ()
   )
   assert.throws(() => addMessages({}, { 缺: ['缺', 'Missing', '欠け'] }), /缺少 es/)
   assert.throws(() => addMessages(messages, { 舊: ['旧', 'Old', '古い', 'Viejo'] }), /已經有翻譯/)
+})
+
+test('R-530: stale skips pure-formatting commits listed in .git-blame-ignore-revs', () => {
+  const ignored = parseIgnoredRevs(
+    ['# Pure formatting pass', 'aaaa1111  # inline comment', '', 'bbbb2222'].join('\n')
+  )
+  assert.deepEqual([...ignored], ['aaaa1111', 'bbbb2222'])
+  assert.equal(
+    pickLastChange(['aaaa1111 2026-11-27', 'cccc3333 2026-11-25'], ignored),
+    '2026-11-25'
+  )
+  assert.equal(pickLastChange(['aaaa1111 2026-11-27', 'bbbb2222 2026-11-26'], ignored), undefined)
 })

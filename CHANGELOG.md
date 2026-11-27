@@ -19,6 +19,8 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Stabilized `video-embedded-ui` (await `subtitleTrack` after loading track in `VideoViewer`, pause 3s test sample inside cue window) and `explorer.test.ts` thumbnail cancellation test (fill all worker slots deterministically); added `NaN` validation and `stale.mjs` `.git-blame-ignore-revs` unit tests (R-530).
+- Registered all 15 previously unlisted unit/UI tests in `docs/areas.json` and added a reverse check in `scripts/areas.mjs check` so new test files cannot go unmapped (R-529).
 - `electron/explorer.ts` request routing extracted into `electron/explorer-dispatch.ts` and top-level cache `Map` types extracted into named interfaces (R-528).
 - Core backend/shared entry readability pass: flattened `electron/main.ts` bootstrap into focused helpers, unified `isValid*` early-return validators in `shared/modelValidation.ts`, and extracted named plan interfaces in `electron/library.ts` (R-526).
 - `src/App.tsx` internal state and handlers renamed for clarity (`projectSettingsDraft` vs `isAppSettingsOpen`, `requestLibrary` / `requestExplorer`) and layout-editor states consolidated into a single `editorSession` object (R-527).

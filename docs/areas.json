@@ -61,6 +61,7 @@
         "folder-navigation-ui",
         "workspace-toolbar-ui",
         "workspace-ui",
+        "workspace-polish-ui",
         "settings-dock-ui",
         "game-folder-page-ui",
         "image-delete-ui"
@@ -154,7 +155,7 @@
         "electron/thumbnail-decode*"
       ],
       "ui": ["media-scope-ui", "media-workspace-ui", "audio-playback-ui", "media-feedback-ui", "podcast-resume-ui"],
-      "tests": ["media-workspace.test.ts", "explorer.test.ts", "album.test.ts", "podcast.test.ts", "video-place.test.ts"]
+      "tests": ["media-workspace.test.ts", "explorer.test.ts", "album.test.ts", "podcast.test.ts", "video-place.test.ts", "thumbnail-decode.test.ts"]
     },
     {
       "id": "gallery",
@@ -245,7 +246,7 @@
         "src/browse/LayoutConfig*"
       ],
       "ui": ["cell-editor-ui", "layout-config-ui", "layout-breadcrumb-ui", "field-edit-ui", "editor-fields-ui", "decided-ui", "yes-no-wording-ui", "condition-rules-ui", "date-field-ui"],
-      "tests": ["decided.test.ts", "field-types.test.ts", "field-groups.test.ts", "date-fields.test.ts", "layout-rules.test.ts"]
+      "tests": ["decided.test.ts", "field-types.test.ts", "field-groups.test.ts", "date-fields.test.ts", "layout-rules.test.ts", "book-template.test.ts", "cell-lists.test.ts", "panel-presets.test.ts", "settle-grid.test.ts"]
     },
     {
       "id": "cells",
@@ -365,7 +366,7 @@
         "src/metadata/FolderSourceImport*"
       ],
       "ui": ["media-feedback-ui", "keys-ui", "source-language-ui", "field-sources-ui", "source-search-sources-ui", "musicbrainz-version-ui"],
-      "tests": ["metadata.test.ts", "decided-media.test.ts", "keys.test.ts", "web-sources.test.ts", "vndb-store.test.ts", "source-languages.test.ts", "musicbrainz-versions.test.ts", "remove-source.test.ts", "date-fields.test.ts", "source-busy.test.ts"]
+      "tests": ["metadata.test.ts", "decided-media.test.ts", "keys.test.ts", "web-sources.test.ts", "vndb-store.test.ts", "vndb-steam-extras.test.ts", "source-languages.test.ts", "musicbrainz-versions.test.ts", "remove-source.test.ts", "date-fields.test.ts", "source-busy.test.ts", "gallery-sources.test.ts", "itch-source.test.ts", "keyed-sources-r419.test.ts", "source-images.test.ts", "source-search.test.ts"]
     },
     {
       "id": "appearance",
@@ -447,7 +448,7 @@
       "docs": ["WORKSPACE_REVISION.md#專案設定與移除", "STORAGE_OPTIONS.md#移除單一專案"],
       "code": ["src/settings/ProjectSettings*", "electron/library-removal*", "electron/library-field-removal*", "electron/library-field-unify*", "shared/unifyDates*"],
       "ui": ["decided-ui", "problems-ui"],
-      "tests": ["maintenance.test.ts", "library.test.ts"]
+      "tests": ["maintenance.test.ts", "library.test.ts", "field-unify.test.ts"]
     },
     {
       "id": "core",
@@ -457,7 +458,7 @@
         "electron/ipc-requests.ts",
         "electron/library-dispatch.ts", "electron/preload.ts", "src/main.tsx", "src/index.html", "src/env.d.ts"],
       "ui": ["@smoke"],
-      "tests": ["ipc-requests.test.ts"]
+      "tests": ["ipc-requests.test.ts", "routine-commands.test.ts", "test-report.test.ts"]
     }
   ]
 }
