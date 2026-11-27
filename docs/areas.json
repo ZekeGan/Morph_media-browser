@@ -146,6 +146,7 @@
         "shared/explorer*",
         "electron/media-files*",
         "electron/explorer.ts",
+        "electron/explorer-dispatch*",
         "electron/explorer-content*",
         "electron/explorer-source*",
         "electron/explorer-stream*",
