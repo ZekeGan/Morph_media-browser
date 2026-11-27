@@ -13,12 +13,6 @@
 
 ## 待查收
 
-- **R-530** 修穩 video-embedded-ui／explorer.test.ts 偶發測試並補 NaN 與 stale 單元測試 ｜小｜一般｜無｜領域：video、media、core｜依賴：無
-  驗收：確認 video-embedded-ui 連跑 5 次全過、explorer.test.ts 取消測試不靠固定等待、model.test.ts 與 routine-commands.test.ts 新增案例通過
-
-- **R-529** 補齊 docs/areas.json 漏登測試並加上 areas.mjs 測試檔反向檢查 ｜小｜一般｜無｜領域：core｜依賴：無
-  驗收：跑 node scripts/areas.mjs check 確認 0 未歸入測試，並檢視 docs/areas.json 與 docs/README.md
-
 ## 進行中
 
 ## 已核定（未做）
