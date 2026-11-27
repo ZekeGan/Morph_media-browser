@@ -1,3 +1,5 @@
+// Runtime validation for portable folder records, folder details, and project definitions.
+// Rejects malformed or newer-schema records before adoption or disk writes without mutating input.
 import { GROW_KINDS, MAX_GROW_ROWS } from './cardGrid'
 import { withOnlyCells } from './cellLists'
 import { documentFile, type FolderDetails } from './explorer'
@@ -17,588 +19,853 @@ import {
 import { validStableQuery } from './query'
 import { checkNotNewer, FORMAT_VERSION } from './upgrade'
 
-const obj = (v: unknown): v is Record<string, any> =>
-  !!v && typeof v === 'object' && !Array.isArray(v)
+const HEX_COLOR = /^#[0-9a-f]{6}$/i
+const TARGET_KINDS = ['exe', 'folder', 'file-app', 'url', 'shortcut', 'file']
+const CELL_KINDS = [
+  'name',
+  'path',
+  'field-text',
+  'field-tags',
+  'field-number',
+  'field-date',
+  'field-boolean',
+  'field-enum',
+  'field-url',
+  'field-date-only',
+  'static-text',
+  'spacer',
+  'system-info',
+  'image',
+  'divider',
+  'open-folder',
+  'game-launch',
+  'video-play',
+  'book-continue',
+  'game-extra',
+]
+const SYSTEM_INFO_KINDS = [
+  'category',
+  'files',
+  'size',
+  'playTime',
+  'lastPlayed',
+  'readProgress',
+  'lastRead',
+  'engine',
+  'albumName',
+  'albumArtist',
+  'albumYear',
+  'trackCount',
+  'totalLength',
+  'videoCount',
+  'bookTitle',
+  'bookAuthor',
+  'pages',
+  'readPage',
+]
+
+// The type a field cell shows.
+const FIELD_KIND_TYPES: Record<string, string> = {
+  'field-text': 'string',
+  'field-tags': 'tags',
+  'field-number': 'number',
+  'field-date': 'datetime',
+  'field-boolean': 'boolean',
+  'field-enum': 'enum',
+  'field-url': 'url',
+  'field-date-only': 'date',
+}
+
+const isPlainObject = (value: unknown): value is Record<string, any> =>
+  !!value && typeof value === 'object' && !Array.isArray(value)
 
 // R-319: a Locale Emulator profile GUID (the only form passed to LEProc.exe -runas).
-export const localeProfileId = (v: unknown): v is string =>
-  typeof v === 'string' &&
-  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(v)
+export const localeProfileId = (value: unknown): value is string =>
+  typeof value === 'string' &&
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(value)
 
-const id = (v: unknown): v is string =>
-  typeof v === 'string' &&
-  /^[a-zA-Z0-9_-]{1,100}$/.test(v) &&
-  !['__proto__', 'constructor', 'prototype'].includes(v)
-const integer = (v: unknown, min: number, max: number) =>
-  Number.isInteger(v) && Number(v) >= min && Number(v) <= max
-const text = (v: unknown, max = 10000): v is string => typeof v === 'string' && v.length <= max
+const isValidId = (value: unknown): value is string =>
+  typeof value === 'string' &&
+  /^[a-zA-Z0-9_-]{1,100}$/.test(value) &&
+  !['__proto__', 'constructor', 'prototype'].includes(value)
+
+const isIntInRange = (value: unknown, min: number, max: number) =>
+  Number.isInteger(value) && Number(value) >= min && Number(value) <= max
+
+const isBoundedText = (value: unknown, max = 10000): value is string =>
+  typeof value === 'string' && value.length <= max
+
+const isSafeRelativePath = (value: unknown): value is string =>
+  isBoundedText(value) &&
+  !value.startsWith('/') &&
+  !value.includes('\\') &&
+  !value.includes(':') &&
+  !value.split('/').includes('..')
+
+const isUnitRatio = (value: unknown): boolean =>
+  typeof value === 'number' && value >= 0 && value <= 1
 
 // R-413: { card?, panel? }, each { types?, levels?, folders? } whose values are layout ids; a level left unset is ''.
-function validLayoutRule(rule: unknown): boolean {
+function isValidLayoutRule(rule: unknown): boolean {
+  if (!isPlainObject(rule)) return false
+  if (!Object.keys(rule).every((key) => ['types', 'levels', 'folders'].includes(key))) return false
+  if (rule.types !== undefined) {
+    if (!isPlainObject(rule.types)) return false
+    if (
+      !Object.entries(rule.types).every(([kind, layout]) => isFolderKind(kind) && isValidId(layout))
+    ) {
+      return false
+    }
+  }
+  if (rule.levels !== undefined) {
+    if (!Array.isArray(rule.levels) || rule.levels.length > 100) return false
+    if (!rule.levels.every((layout) => layout === '' || isValidId(layout))) return false
+  }
+  if (rule.folders !== undefined) {
+    if (!isPlainObject(rule.folders) || Object.keys(rule.folders).length > 50000) return false
+    if (
+      !Object.entries(rule.folders).every(
+        ([folder, layout]) => isValidId(folder) && isValidId(layout)
+      )
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
+function isValidLayoutRules(value: unknown): boolean {
+  if (!isPlainObject(value)) return false
+  if (!Object.keys(value).every((key) => key === 'card' || key === 'panel')) return false
+  if (value.card !== undefined && !isValidLayoutRule(value.card)) return false
+  if (value.panel !== undefined && !isValidLayoutRule(value.panel)) return false
+  return true
+}
+
+function isValidAttribute(item: unknown): item is Attribute {
+  if (!isPlainObject(item)) return false
+  if (!isValidId(item.attributeId)) return false
+  if (!isBoundedText(item.key, 100)) return false
+  if (!isBoundedText(item.type, 40)) return false
+  if (!isBoundedText(item.source, 100)) return false
+  if (!('value' in item)) return false
+  if (
+    ['boolean', 'enum', 'url', 'date'].includes(item.type) &&
+    !validFieldValue(item.type, item.value)
+  ) {
+    return false
+  }
+  if (item.sourceRecord !== undefined) {
+    const source = item.sourceRecord
+    if (!isPlainObject(source)) return false
+    if (!isValidId(source.provider)) return false
+    if (!isBoundedText(source.url, 2048) || !/^https:\/\//.test(source.url)) return false
+    if (!isBoundedText(source.fetchedAt, 40) || !Number.isFinite(Date.parse(source.fetchedAt))) {
+      return false
+    }
+  }
+  return true
+}
+
+function isValidAsset(asset: unknown): boolean {
+  if (!isPlainObject(asset)) return false
+  if (!isValidId(asset.assetId)) return false
+  if (!isSafeRelativePath(asset.relativePath)) return false
+  if (!/^assets\/[a-zA-Z0-9_-]+\.(png|jpg|webp|gif|bmp|avif|ico)$/.test(asset.relativePath)) {
+    return false
+  }
+  if (!isBoundedText(asset.originalName, 255)) return false
+  if (!Object.values(imageTypes).includes(asset.mediaType)) return false
+  if (asset.role !== undefined && !['screenshot', 'hero', 'logo', 'icon'].includes(asset.role)) {
+    return false
+  }
+  return true
+}
+
+function isValidConditionShape(condition: unknown): boolean {
+  if (!isPlainObject(condition)) return false
+  if (!isValidId(condition.attributeId)) return false
+  if (
+    !['set', 'unset', 'equals', 'not-equals', 'gt', 'lt', 'within', 'older'].includes(
+      condition.operator
+    )
+  ) {
+    return false
+  }
+  if (['set', 'unset'].includes(condition.operator)) return condition.value === undefined
+  if (['within', 'older'].includes(condition.operator)) {
+    return isIntInRange(condition.value, 1, 36500)
+  }
   return (
-    obj(rule) &&
-    Object.keys(rule).every((k) => ['types', 'levels', 'folders'].includes(k)) &&
-    (rule.types === undefined ||
-      (obj(rule.types) &&
-        Object.entries(rule.types).every(([kind, layout]) => isFolderKind(kind) && id(layout)))) &&
-    (rule.levels === undefined ||
-      (Array.isArray(rule.levels) &&
-        rule.levels.length <= 100 &&
-        rule.levels.every((layout) => layout === '' || id(layout)))) &&
-    (rule.folders === undefined ||
-      (obj(rule.folders) &&
-        Object.keys(rule.folders).length <= 50000 &&
-        Object.entries(rule.folders).every(([folder, layout]) => id(folder) && id(layout))))
+    typeof condition.value === 'boolean' ||
+    (typeof condition.value === 'number' && Number.isFinite(condition.value)) ||
+    isBoundedText(condition.value, 10000)
   )
 }
 
-const validLayoutRules = (v: unknown) =>
-  obj(v) &&
-  Object.keys(v).every((k) => k === 'card' || k === 'panel') &&
-  (v.card === undefined || validLayoutRule(v.card)) &&
-  (v.panel === undefined || validLayoutRule(v.panel))
-const relative = (v: unknown): v is string =>
-  text(v) &&
-  !v.startsWith('/') &&
-  !v.includes('\\') &&
-  !v.includes(':') &&
-  !v.split('/').includes('..')
-const attribute = (a: unknown): a is Attribute =>
-  obj(a) &&
-  id(a.attributeId) &&
-  text(a.key, 100) &&
-  text(a.type, 40) &&
-  text(a.source, 100) &&
-  'value' in a &&
-  (!['boolean', 'enum', 'url', 'date'].includes(a.type) || validFieldValue(a.type, a.value)) &&
-  (a.sourceRecord === undefined ||
-    (obj(a.sourceRecord) &&
-      id(a.sourceRecord.provider) &&
-      text(a.sourceRecord.url, 2048) &&
-      /^https:\/\//.test(a.sourceRecord.url) &&
-      text(a.sourceRecord.fetchedAt, 40) &&
-      Number.isFinite(Date.parse(a.sourceRecord.fetchedAt))))
-
-function validAsset(a: unknown): boolean {
-  return (
-    obj(a) &&
-    id(a.assetId) &&
-    relative(a.relativePath) &&
-    /^assets\/[a-zA-Z0-9_-]+\.(png|jpg|webp|gif|bmp|avif|ico)$/.test(a.relativePath) &&
-    text(a.originalName, 255) &&
-    Object.values(imageTypes).includes(a.mediaType) &&
-    (a.role === undefined || ['screenshot', 'hero', 'logo', 'icon'].includes(a.role))
-  )
+function isValidFieldBinding(binding: unknown): boolean {
+  if (!isPlainObject(binding)) return false
+  if (!isBoundedText(binding.alias, 100)) return false
+  if (!isValidId(binding.attributeId)) return false
+  if (!isBoundedText(binding.type, 40)) return false
+  if (binding.type === 'enum') {
+    if (!Array.isArray(binding.options)) return false
+    if (binding.options.length === 0 || binding.options.length > 100) return false
+    if (new Set(binding.options).size !== binding.options.length) return false
+    if (
+      !binding.options.every(
+        (option: unknown) => isBoundedText(option, 100) && option.trim().length > 0
+      )
+    ) {
+      return false
+    }
+  }
+  if (binding.trueLabel !== undefined) {
+    if (
+      binding.type !== 'boolean' ||
+      !isBoundedText(binding.trueLabel, 20) ||
+      binding.trueLabel.trim().length === 0
+    ) {
+      return false
+    }
+  }
+  if (binding.falseLabel !== undefined) {
+    if (
+      binding.type !== 'boolean' ||
+      !isBoundedText(binding.falseLabel, 20) ||
+      binding.falseLabel.trim().length === 0
+    ) {
+      return false
+    }
+  }
+  // Yes and no must read differently, or neither the card nor search could tell them apart.
+  if (
+    binding.trueLabel !== undefined &&
+    binding.falseLabel !== undefined &&
+    binding.trueLabel.trim().toLocaleLowerCase() === binding.falseLabel.trim().toLocaleLowerCase()
+  ) {
+    return false
+  }
+  if (binding.optionColors !== undefined) {
+    if (binding.type !== 'enum' || !isPlainObject(binding.optionColors)) return false
+    if (
+      !Object.entries(binding.optionColors).every(
+        ([option, color]) =>
+          (binding.options as string[]).includes(option) &&
+          typeof color === 'string' &&
+          HEX_COLOR.test(color)
+      )
+    ) {
+      return false
+    }
+  }
+  return true
 }
 
-function conditionShape(c: unknown): boolean {
-  return (
-    obj(c) &&
-    id(c.attributeId) &&
-    ['set', 'unset', 'equals', 'not-equals', 'gt', 'lt', 'within', 'older'].includes(c.operator) &&
-    (['set', 'unset'].includes(c.operator)
-      ? c.value === undefined
-      : ['within', 'older'].includes(c.operator)
-        ? integer(c.value, 1, 36500)
-        : typeof c.value === 'boolean' ||
-          (typeof c.value === 'number' && Number.isFinite(c.value)) ||
-          text(c.value, 10000))
-  )
-}
+function isValidCell(cell: unknown): boolean {
+  if (!isPlainObject(cell)) return false
+  if (!isValidId(cell.cellId)) return false
+  if (!CELL_KINDS.includes(cell.kind)) return false
 
-function validFieldBinding(f: unknown): boolean {
-  return (
-    obj(f) &&
-    text(f.alias, 100) &&
-    id(f.attributeId) &&
-    text(f.type, 40) &&
-    (f.type !== 'enum' ||
-      (Array.isArray(f.options) &&
-        f.options.length > 0 &&
-        f.options.length <= 100 &&
-        new Set(f.options).size === f.options.length &&
-        f.options.every((option: unknown) => text(option, 100) && option.trim().length > 0))) &&
-    (f.trueLabel === undefined ||
-      (f.type === 'boolean' && text(f.trueLabel, 20) && f.trueLabel.trim().length > 0)) &&
-    (f.falseLabel === undefined ||
-      (f.type === 'boolean' && text(f.falseLabel, 20) && f.falseLabel.trim().length > 0)) &&
-    // Yes and no must read differently, or neither the card nor search could tell them apart.
-    (f.trueLabel === undefined ||
-      f.falseLabel === undefined ||
-      f.trueLabel.trim().toLocaleLowerCase() !== f.falseLabel.trim().toLocaleLowerCase()) &&
-    (f.optionColors === undefined ||
-      (f.type === 'enum' &&
-        obj(f.optionColors) &&
-        Object.entries(f.optionColors).every(
-          ([option, color]) =>
-            (f.options as string[]).includes(option) &&
-            typeof color === 'string' &&
-            /^#[0-9a-f]{6}$/i.test(color)
-        )))
-  )
-}
+  if (cell.text !== undefined && !isBoundedText(cell.text, 10000)) return false
+  if (cell.systemInfo !== undefined && !SYSTEM_INFO_KINDS.includes(cell.systemInfo)) return false
+  if (cell.presentation !== undefined) {
+    const validBadge =
+      cell.presentation === 'badge' && ['field-enum', 'field-boolean'].includes(cell.kind)
+    const validNumeric =
+      ['rating', 'progress'].includes(cell.presentation) && cell.kind === 'field-number'
+    if (!validBadge && !validNumeric) return false
+  }
 
-function validCell(c: unknown): boolean {
-  return (
-    obj(c) &&
-    id(c.cellId) &&
-    [
-      'name',
-      'path',
-      'field-text',
-      'field-tags',
-      'field-number',
-      'field-date',
-      'field-boolean',
-      'field-enum',
-      'field-url',
-      'field-date-only',
-      'static-text',
-      'spacer',
-      'system-info',
-      'image',
-      'divider',
-      'open-folder',
-      'game-launch',
-      'video-play',
-      'book-continue',
-      'game-extra',
-    ].includes(c.kind) &&
-    (c.text === undefined || text(c.text, 10000)) &&
-    (c.systemInfo === undefined ||
-      [
-        'category',
-        'files',
-        'size',
-        'playTime',
-        'lastPlayed',
-        'readProgress',
-        'lastRead',
-        'engine',
-        'albumName',
-        'albumArtist',
-        'albumYear',
-        'trackCount',
-        'totalLength',
-        'videoCount',
-        'bookTitle',
-        'bookAuthor',
-        'pages',
-        'readPage',
-      ].includes(c.systemInfo)) &&
-    (c.presentation === undefined ||
-      (c.presentation === 'badge' && ['field-enum', 'field-boolean'].includes(c.kind)) ||
-      (['rating', 'progress'].includes(c.presentation) && c.kind === 'field-number')) &&
-    (c.imageFit === undefined ||
-      (['contain', 'cover', 'blur'].includes(c.imageFit) && c.kind === 'image')) &&
-    (c.fallbackIds === undefined ||
-      (c.kind.startsWith('field-') &&
-        Array.isArray(c.fallbackIds) &&
-        c.fallbackIds.length >= 1 &&
-        c.fallbackIds.length <= MAX_FALLBACKS &&
-        c.fallbackIds.every(id) &&
-        new Set([c.attributeId, ...c.fallbackIds]).size === c.fallbackIds.length + 1)) &&
-    (c.groupId === undefined ||
-      (c.kind.startsWith('field-') && id(c.groupId) && c.fallbackIds === undefined)) &&
-    (c.actionId === undefined || (c.kind === 'game-launch' && id(c.actionId))) &&
-    (c.gameExtra === undefined ||
-      (c.kind === 'game-extra' && ['save', 'steam', 'store'].includes(c.gameExtra))) &&
-    (c.imageIndex === undefined || (c.kind === 'image' && integer(c.imageIndex, 1, 999))) &&
-    (c.imageCover === undefined ||
-      (c.kind === 'image' && c.imageCover === true && c.imageIndex === undefined)) &&
-    (c.imageRole === undefined ||
-      (c.kind === 'image' &&
-        ['hero', 'logo', 'icon'].includes(c.imageRole) &&
-        c.imageIndex === undefined &&
-        c.imageCover === undefined)) &&
-    (c.fallbackActionIds === undefined ||
-      (c.kind === 'game-launch' &&
-        Array.isArray(c.fallbackActionIds) &&
-        c.fallbackActionIds.length >= 1 &&
-        c.fallbackActionIds.length <= MAX_FALLBACKS &&
-        c.fallbackActionIds.every(id) &&
-        new Set([c.actionId, ...c.fallbackActionIds]).size === c.fallbackActionIds.length + 1)) &&
-    (c.scroll === undefined ||
-      (typeof c.scroll === 'boolean' &&
-        ['field-text', 'field-tags', 'static-text'].includes(c.kind))) &&
-    (c.growMax === undefined ||
-      (integer(c.growMax, 1, MAX_GROW_ROWS) && GROW_KINDS.includes(c.kind) && !c.scroll)) &&
-    (c.wrap === undefined ||
-      (typeof c.wrap === 'boolean' && ['field-text', 'name', 'path'].includes(c.kind))) &&
-    (c.unit === undefined || (c.kind === 'field-number' && text(c.unit, 20))) &&
-    (c.unitPosition === undefined ||
-      (c.kind === 'field-number' && ['prefix', 'suffix'].includes(c.unitPosition))) &&
-    (c.decimals === undefined || (c.kind === 'field-number' && integer(c.decimals, 0, 6))) &&
-    (c.maximum === undefined ||
-      (c.kind === 'field-number' &&
-        typeof c.maximum === 'number' &&
-        Number.isFinite(c.maximum) &&
-        c.maximum > 0 &&
-        c.maximum <= 1e9)) &&
-    (c.copyValue === undefined ||
-      (c.kind.startsWith('field-') && typeof c.copyValue === 'boolean')) &&
-    (c.condition === undefined || conditionShape(c.condition)) &&
-    (c.moreConditions === undefined ||
-      (c.condition !== undefined &&
-        Array.isArray(c.moreConditions) &&
-        c.moreConditions.length >= 1 &&
-        c.moreConditions.length <= MAX_MORE_CONDITIONS &&
-        c.moreConditions.every(conditionShape))) &&
-    (c.conditionMode === undefined ||
-      (c.conditionMode === 'any' && c.moreConditions !== undefined)) &&
-    (c.textRules === undefined ||
-      (c.kind === 'static-text' &&
-        Array.isArray(c.textRules) &&
-        c.textRules.length >= 1 &&
-        c.textRules.length <= MAX_TEXT_RULES &&
-        c.textRules.every(
-          (rule: unknown) => obj(rule) && conditionShape(rule.when) && text(rule.text, 1000)
-        ))) &&
-    (!c.kind.startsWith('field-') || id(c.attributeId)) &&
-    (c.kind !== 'image' || c.attributeId === undefined || id(c.attributeId)) &&
-    obj(c.grid) &&
-    integer(c.grid.x, 0, 11) &&
-    integer(c.grid.y, 0, 99) &&
-    integer(c.grid.w, 1, 12) &&
-    integer(c.grid.h, 1, 100) &&
-    c.grid.x + c.grid.w <= 12 &&
-    c.grid.y + c.grid.h <= 100 &&
-    validStyle(c.style) &&
-    (c.tagColors === undefined || (c.tagColors === 'namespace' && c.kind === 'field-tags')) &&
-    (c.tagPrefix === undefined || (typeof c.tagPrefix === 'boolean' && c.kind === 'field-tags'))
-  )
+  if (
+    cell.imageFit !== undefined &&
+    (!['contain', 'cover', 'blur'].includes(cell.imageFit) || cell.kind !== 'image')
+  ) {
+    return false
+  }
+  if (cell.fallbackIds !== undefined) {
+    if (
+      !cell.kind.startsWith('field-') ||
+      !Array.isArray(cell.fallbackIds) ||
+      cell.fallbackIds.length < 1 ||
+      cell.fallbackIds.length > MAX_FALLBACKS ||
+      !cell.fallbackIds.every(isValidId) ||
+      new Set([cell.attributeId, ...cell.fallbackIds]).size !== cell.fallbackIds.length + 1
+    ) {
+      return false
+    }
+  }
+  if (
+    cell.groupId !== undefined &&
+    (!cell.kind.startsWith('field-') || !isValidId(cell.groupId) || cell.fallbackIds !== undefined)
+  ) {
+    return false
+  }
+  if (cell.actionId !== undefined && (cell.kind !== 'game-launch' || !isValidId(cell.actionId))) {
+    return false
+  }
+  if (
+    cell.gameExtra !== undefined &&
+    (cell.kind !== 'game-extra' || !['save', 'steam', 'store'].includes(cell.gameExtra))
+  ) {
+    return false
+  }
+  if (
+    cell.imageIndex !== undefined &&
+    (cell.kind !== 'image' || !isIntInRange(cell.imageIndex, 1, 999))
+  ) {
+    return false
+  }
+  if (
+    cell.imageCover !== undefined &&
+    (cell.kind !== 'image' || cell.imageCover !== true || cell.imageIndex !== undefined)
+  ) {
+    return false
+  }
+  if (
+    cell.imageRole !== undefined &&
+    (cell.kind !== 'image' ||
+      !['hero', 'logo', 'icon'].includes(cell.imageRole) ||
+      cell.imageIndex !== undefined ||
+      cell.imageCover !== undefined)
+  ) {
+    return false
+  }
+  if (cell.fallbackActionIds !== undefined) {
+    if (
+      cell.kind !== 'game-launch' ||
+      !Array.isArray(cell.fallbackActionIds) ||
+      cell.fallbackActionIds.length < 1 ||
+      cell.fallbackActionIds.length > MAX_FALLBACKS ||
+      !cell.fallbackActionIds.every(isValidId) ||
+      new Set([cell.actionId, ...cell.fallbackActionIds]).size !== cell.fallbackActionIds.length + 1
+    ) {
+      return false
+    }
+  }
+
+  if (
+    cell.scroll !== undefined &&
+    (typeof cell.scroll !== 'boolean' ||
+      !['field-text', 'field-tags', 'static-text'].includes(cell.kind))
+  ) {
+    return false
+  }
+  if (
+    cell.growMax !== undefined &&
+    (!isIntInRange(cell.growMax, 1, MAX_GROW_ROWS) ||
+      !GROW_KINDS.includes(cell.kind) ||
+      cell.scroll)
+  ) {
+    return false
+  }
+  if (
+    cell.wrap !== undefined &&
+    (typeof cell.wrap !== 'boolean' || !['field-text', 'name', 'path'].includes(cell.kind))
+  ) {
+    return false
+  }
+  if (cell.unit !== undefined && (cell.kind !== 'field-number' || !isBoundedText(cell.unit, 20))) {
+    return false
+  }
+  if (
+    cell.unitPosition !== undefined &&
+    (cell.kind !== 'field-number' || !['prefix', 'suffix'].includes(cell.unitPosition))
+  ) {
+    return false
+  }
+  if (
+    cell.decimals !== undefined &&
+    (cell.kind !== 'field-number' || !isIntInRange(cell.decimals, 0, 6))
+  ) {
+    return false
+  }
+  if (
+    cell.maximum !== undefined &&
+    (cell.kind !== 'field-number' ||
+      typeof cell.maximum !== 'number' ||
+      !Number.isFinite(cell.maximum) ||
+      cell.maximum <= 0 ||
+      cell.maximum > 1e9)
+  ) {
+    return false
+  }
+  if (
+    cell.copyValue !== undefined &&
+    (!cell.kind.startsWith('field-') || typeof cell.copyValue !== 'boolean')
+  ) {
+    return false
+  }
+
+  if (cell.condition !== undefined && !isValidConditionShape(cell.condition)) return false
+  if (cell.moreConditions !== undefined) {
+    if (
+      cell.condition === undefined ||
+      !Array.isArray(cell.moreConditions) ||
+      cell.moreConditions.length < 1 ||
+      cell.moreConditions.length > MAX_MORE_CONDITIONS ||
+      !cell.moreConditions.every(isValidConditionShape)
+    ) {
+      return false
+    }
+  }
+  if (
+    cell.conditionMode !== undefined &&
+    (cell.conditionMode !== 'any' || cell.moreConditions === undefined)
+  ) {
+    return false
+  }
+  if (cell.textRules !== undefined) {
+    if (
+      cell.kind !== 'static-text' ||
+      !Array.isArray(cell.textRules) ||
+      cell.textRules.length < 1 ||
+      cell.textRules.length > MAX_TEXT_RULES ||
+      !cell.textRules.every(
+        (rule: unknown) =>
+          isPlainObject(rule) && isValidConditionShape(rule.when) && isBoundedText(rule.text, 1000)
+      )
+    ) {
+      return false
+    }
+  }
+
+  if (cell.kind.startsWith('field-') && !isValidId(cell.attributeId)) return false
+  if (cell.kind === 'image' && cell.attributeId !== undefined && !isValidId(cell.attributeId)) {
+    return false
+  }
+  if (!isPlainObject(cell.grid)) return false
+  if (
+    !isIntInRange(cell.grid.x, 0, 11) ||
+    !isIntInRange(cell.grid.y, 0, 99) ||
+    !isIntInRange(cell.grid.w, 1, 12) ||
+    !isIntInRange(cell.grid.h, 1, 100) ||
+    cell.grid.x + cell.grid.w > 12 ||
+    cell.grid.y + cell.grid.h > 100
+  ) {
+    return false
+  }
+  if (!isValidStyle(cell.style)) return false
+  if (
+    cell.tagColors !== undefined &&
+    (cell.tagColors !== 'namespace' || cell.kind !== 'field-tags')
+  ) {
+    return false
+  }
+  if (
+    cell.tagPrefix !== undefined &&
+    (typeof cell.tagPrefix !== 'boolean' || cell.kind !== 'field-tags')
+  ) {
+    return false
+  }
+  return true
 }
 
 // A component style: shared by cells and the project's saved styles.
-function validStyle(style: any): boolean {
-  return (
-    obj(style) &&
-    /^#[0-9a-f]{6}$/i.test(style.textColor) &&
-    (style.backgroundColor === 'transparent' || /^#[0-9a-f]{6}$/i.test(style.backgroundColor)) &&
-    (style.fontSize === undefined ||
-      ['xsmall', 'small', 'medium', 'large', 'xlarge'].includes(style.fontSize)) &&
-    (style.align === undefined || ['left', 'center', 'right'].includes(style.align)) &&
-    (style.valign === undefined || ['top', 'center', 'bottom'].includes(style.valign)) &&
-    (style.weight === undefined || ['light', 'normal', 'bold'].includes(style.weight)) &&
-    ['italic', 'underline', 'strike'].every(
+function isValidStyle(style: unknown): boolean {
+  if (!isPlainObject(style)) return false
+  if (!HEX_COLOR.test(style.textColor)) return false
+  if (style.backgroundColor !== 'transparent' && !HEX_COLOR.test(style.backgroundColor)) {
+    return false
+  }
+  if (
+    style.fontSize !== undefined &&
+    !['xsmall', 'small', 'medium', 'large', 'xlarge'].includes(style.fontSize)
+  ) {
+    return false
+  }
+  if (style.align !== undefined && !['left', 'center', 'right'].includes(style.align)) return false
+  if (style.valign !== undefined && !['top', 'center', 'bottom'].includes(style.valign)) {
+    return false
+  }
+  if (style.weight !== undefined && !['light', 'normal', 'bold'].includes(style.weight)) {
+    return false
+  }
+  if (
+    !['italic', 'underline', 'strike'].every(
       (flag) => style[flag] === undefined || typeof style[flag] === 'boolean'
-    ) &&
-    (style.lineHeight === undefined || ['tight', 'loose'].includes(style.lineHeight)) &&
-    (style.letterSpacing === undefined || style.letterSpacing === 'wide') &&
-    (style.padding === undefined || ['compact', 'roomy'].includes(style.padding)) &&
-    (style.radius === undefined || ['small', 'large'].includes(style.radius)) &&
-    (style.borderColor === undefined || /^#[0-9a-f]{6}$/i.test(style.borderColor)) &&
-    (style.borderWidth === undefined || ['thin', 'thick'].includes(style.borderWidth)) &&
-    (style.opacity === undefined || ['soft', 'faint'].includes(style.opacity))
-  )
+    )
+  ) {
+    return false
+  }
+  if (style.lineHeight !== undefined && !['tight', 'loose'].includes(style.lineHeight)) {
+    return false
+  }
+  if (style.letterSpacing !== undefined && style.letterSpacing !== 'wide') return false
+  if (style.padding !== undefined && !['compact', 'roomy'].includes(style.padding)) return false
+  if (style.radius !== undefined && !['small', 'large'].includes(style.radius)) return false
+  if (style.borderColor !== undefined && !HEX_COLOR.test(style.borderColor)) return false
+  if (style.borderWidth !== undefined && !['thin', 'thick'].includes(style.borderWidth)) {
+    return false
+  }
+  if (style.opacity !== undefined && !['soft', 'faint'].includes(style.opacity)) return false
+  return true
 }
 
-function validTargetEntry([k, t]: [string, unknown]): boolean {
-  return (
-    id(k) &&
-    obj(t) &&
-    ['exe', 'folder', 'file-app', 'url', 'shortcut', 'file'].includes(t.kind) &&
-    text(t.path, 10000) &&
-    typeof t.relative === 'boolean' &&
-    (!t.relative || relative(t.path)) &&
-    Array.isArray(t.args) &&
-    t.args.length <= 100 &&
-    t.args.every((a: unknown) => text(a, 10000) && !String(a).includes('\0')) &&
-    (t.kind !== 'url' || t.args.length === 0) &&
-    // A shortcut carries its own arguments and lives inside the game folder, so the record only keeps its relative name.
-    (t.kind !== 'shortcut' ||
-      (t.args.length === 0 && t.relative === true && /^[^\\/]+\.(lnk|url)$/i.test(t.path))) &&
-    (t.kind !== 'url' || (httpUrl(t.path) && t.relative === false)) &&
-    // A bundled file (manual, readme) opens with its default application from inside the game folder (R-306).
-    (t.kind !== 'file' || (t.args.length === 0 && t.relative === true && documentFile(t.path))) &&
-    (t.localeEmulator === undefined ||
-      (t.kind === 'exe' &&
-        (typeof t.localeEmulator === 'boolean' || localeProfileId(t.localeEmulator)))) &&
-    (t.kind === 'file-app'
-      ? obj(t.application) &&
-        text(t.application.path, 10000) &&
-        /\.exe$/i.test(t.application.path) &&
-        typeof t.application.relative === 'boolean' &&
-        (!t.application.relative || relative(t.application.path))
-      : t.application === undefined)
-  )
+function isValidTargetEntry([actionId, target]: [string, unknown]): boolean {
+  if (!isValidId(actionId) || !isPlainObject(target)) return false
+  if (!TARGET_KINDS.includes(target.kind)) return false
+  if (!isBoundedText(target.path, 10000)) return false
+  if (typeof target.relative !== 'boolean') return false
+  if (target.relative && !isSafeRelativePath(target.path)) return false
+  if (!Array.isArray(target.args) || target.args.length > 100) return false
+  if (
+    !target.args.every((arg: unknown) => isBoundedText(arg, 10000) && !String(arg).includes('\0'))
+  ) {
+    return false
+  }
+  if (target.kind === 'url') {
+    if (target.args.length !== 0 || !httpUrl(target.path) || target.relative !== false) return false
+  }
+  // A shortcut carries its own arguments and lives inside the game folder, so the record only keeps its relative name.
+  if (target.kind === 'shortcut') {
+    if (
+      target.args.length !== 0 ||
+      target.relative !== true ||
+      !/^[^\\/]+\.(lnk|url)$/i.test(target.path)
+    ) {
+      return false
+    }
+  }
+  // A bundled file (manual, readme) opens with its default application from inside the game folder (R-306).
+  if (target.kind === 'file') {
+    if (target.args.length !== 0 || target.relative !== true || !documentFile(target.path)) {
+      return false
+    }
+  }
+  if (target.localeEmulator !== undefined) {
+    if (
+      target.kind !== 'exe' ||
+      (typeof target.localeEmulator !== 'boolean' && !localeProfileId(target.localeEmulator))
+    ) {
+      return false
+    }
+  }
+  if (target.kind === 'file-app') {
+    if (
+      !isPlainObject(target.application) ||
+      !isBoundedText(target.application.path, 10000) ||
+      !/\.exe$/i.test(target.application.path) ||
+      typeof target.application.relative !== 'boolean' ||
+      (target.application.relative && !isSafeRelativePath(target.application.path))
+    ) {
+      return false
+    }
+  } else if (target.application !== undefined) {
+    return false
+  }
+  return true
 }
 
 // R-407: a comic archive's page, kept under its file name inside the folder.
-function validVolumeEntry(name: string, p: unknown): boolean {
-  return (
-    text(name, 255) &&
-    !/[\\/\0]/.test(name) &&
-    obj(p) &&
-    Object.keys(p).every((k) => ['page', 'total', 'updated'].includes(k)) &&
-    integer(p.total, 1, 1000000) &&
-    integer(p.page, 0, 1000000) &&
-    p.page < (p.total as number) &&
-    typeof p.updated === 'string' &&
-    !Number.isNaN(Date.parse(p.updated))
-  )
+function isValidVolumeEntry(name: string, entry: unknown): boolean {
+  if (!isBoundedText(name, 255) || /[\\/\0]/.test(name)) return false
+  if (!isPlainObject(entry)) return false
+  if (!Object.keys(entry).every((key) => ['page', 'total', 'updated'].includes(key))) return false
+  if (!isIntInRange(entry.total, 1, 1000000)) return false
+  if (!isIntInRange(entry.page, 0, 1000000)) return false
+  if (entry.page >= (entry.total as number)) return false
+  if (typeof entry.updated !== 'string' || Number.isNaN(Date.parse(entry.updated))) return false
+  return true
 }
 
 // R-282: a text book's place, kept under its file name inside the folder.
-function validNovelEntry(name: string, p: unknown): boolean {
-  const ratio = (value: unknown) => typeof value === 'number' && value >= 0 && value <= 1
-  return (
-    text(name, 255) &&
-    !/[\\/\0]/.test(name) &&
-    obj(p) &&
-    Object.keys(p).every((k) =>
-      ['chapter', 'position', 'percent', 'updated', 'bookmarks'].includes(k)
-    ) &&
-    integer(p.chapter, 0, 100000) &&
-    ratio(p.position) &&
-    ratio(p.percent) &&
-    typeof p.updated === 'string' &&
-    !Number.isNaN(Date.parse(p.updated)) &&
-    (p.bookmarks === undefined ||
-      (Array.isArray(p.bookmarks) &&
-        p.bookmarks.length <= 500 &&
-        p.bookmarks.every(
-          (b: unknown) =>
-            obj(b) &&
-            Object.keys(b).length === 3 &&
-            integer(b.chapter, 0, 100000) &&
-            ratio(b.position) &&
-            text(b.label, 200)
-        )))
-  )
-}
-
-function validSubtitleSettings(s: unknown): boolean {
-  return (
-    obj(s) &&
-    typeof s.offset === 'number' &&
-    Number.isFinite(s.offset) &&
-    Math.abs(s.offset) <= 86400 &&
-    integer(s.size, 10, 80) &&
-    typeof s.bottom === 'number' &&
-    s.bottom >= 0 &&
-    s.bottom <= 80 &&
-    /^#[0-9a-f]{6}$/i.test(s.color) &&
-    /^#[0-9a-f]{6}$/i.test(s.background) &&
-    ['utf-8', 'big5', 'shift_jis'].includes(s.encoding)
-  )
-}
-
-function validPlaybackEntry([k, p]: [string, unknown]): boolean {
-  return (
-    id(k) &&
-    obj(p) &&
-    typeof p.time === 'number' &&
-    Number.isFinite(p.time) &&
-    p.time >= 0 &&
-    p.time < 1e9 &&
-    (!p.subtitle || text(p.subtitle, 200)) &&
-    (!p.settings || (obj(p.settings) && Object.values(p.settings).every(validSubtitleSettings)))
-  )
-}
-
-export function validateFolder(v: unknown): asserts v is FolderRecord {
-  checkNotNewer('folder', v)
+function isValidNovelEntry(name: string, entry: unknown): boolean {
+  if (!isBoundedText(name, 255) || /[\\/\0]/.test(name)) return false
+  if (!isPlainObject(entry)) return false
   if (
-    !obj(v) ||
-    v.kind !== 'media-viewer.folder' ||
-    v.schemaVersion !== FORMAT_VERSION.folder ||
-    !id(v.folderId) ||
-    !integer(v.revision, 1, Number.MAX_SAFE_INTEGER) ||
-    !Array.isArray(v.attributes) ||
-    !v.attributes.every(attribute) ||
-    new Set(v.attributes.map((a) => a.attributeId)).size !== v.attributes.length ||
-    !obj(v.projectOverrides) ||
-    !Object.entries(v.projectOverrides).every(
-      ([k, a]) => id(k) && Array.isArray(a) && a.every(attribute)
+    !Object.keys(entry).every((key) =>
+      ['chapter', 'position', 'percent', 'updated', 'bookmarks'].includes(key)
+    )
+  ) {
+    return false
+  }
+  if (!isIntInRange(entry.chapter, 0, 100000)) return false
+  if (!isUnitRatio(entry.position) || !isUnitRatio(entry.percent)) return false
+  if (typeof entry.updated !== 'string' || Number.isNaN(Date.parse(entry.updated))) return false
+  if (entry.bookmarks !== undefined) {
+    if (!Array.isArray(entry.bookmarks) || entry.bookmarks.length > 500) return false
+    const allBookmarksValid = entry.bookmarks.every(
+      (bookmark: unknown) =>
+        isPlainObject(bookmark) &&
+        Object.keys(bookmark).length === 3 &&
+        isIntInRange(bookmark.chapter, 0, 100000) &&
+        isUnitRatio(bookmark.position) &&
+        isBoundedText(bookmark.label, 200)
+    )
+    if (!allBookmarksValid) return false
+  }
+  return true
+}
+
+function isValidSubtitleSettings(settings: unknown): boolean {
+  if (!isPlainObject(settings)) return false
+  if (
+    typeof settings.offset !== 'number' ||
+    !Number.isFinite(settings.offset) ||
+    Math.abs(settings.offset) > 86400
+  ) {
+    return false
+  }
+  if (!isIntInRange(settings.size, 10, 80)) return false
+  if (
+    typeof settings.bottom !== 'number' ||
+    !Number.isFinite(settings.bottom) ||
+    settings.bottom < 0 ||
+    settings.bottom > 80
+  ) {
+    return false
+  }
+  if (!HEX_COLOR.test(settings.color) || !HEX_COLOR.test(settings.background)) return false
+  if (!['utf-8', 'big5', 'shift_jis'].includes(settings.encoding)) return false
+  return true
+}
+
+function isValidPlaybackEntry([fileId, entry]: [string, unknown]): boolean {
+  if (!isValidId(fileId) || !isPlainObject(entry)) return false
+  if (
+    typeof entry.time !== 'number' ||
+    !Number.isFinite(entry.time) ||
+    entry.time < 0 ||
+    entry.time >= 1e9
+  ) {
+    return false
+  }
+  if (entry.subtitle && !isBoundedText(entry.subtitle, 200)) return false
+  if (entry.settings) {
+    if (
+      !isPlainObject(entry.settings) ||
+      !Object.values(entry.settings).every(isValidSubtitleSettings)
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
+export function validateFolder(record: unknown): asserts record is FolderRecord {
+  checkNotNewer('folder', record)
+  if (
+    !isPlainObject(record) ||
+    record.kind !== 'media-viewer.folder' ||
+    record.schemaVersion !== FORMAT_VERSION.folder ||
+    !isValidId(record.folderId) ||
+    !isIntInRange(record.revision, 1, Number.MAX_SAFE_INTEGER) ||
+    !Array.isArray(record.attributes) ||
+    !record.attributes.every(isValidAttribute) ||
+    new Set(record.attributes.map((item) => item.attributeId)).size !== record.attributes.length ||
+    !isPlainObject(record.projectOverrides) ||
+    !Object.entries(record.projectOverrides).every(
+      ([projectId, attrs]) =>
+        isValidId(projectId) && Array.isArray(attrs) && attrs.every(isValidAttribute)
     ) ||
-    !Array.isArray(v.assets) ||
-    !v.assets.every(validAsset)
+    !Array.isArray(record.assets) ||
+    !record.assets.every(isValidAsset)
   ) {
     throw new Error('記錄損壞、版本不支援或不屬於本程式；原檔保留')
   }
-  if (v.details !== undefined) validateDetails(v.details)
+  if (record.details !== undefined) validateDetails(record.details)
 }
 
-export function validateDetails(v: unknown): asserts v is FolderDetails {
-  checkNotNewer('details', v)
-  if (!obj(v) || v.schemaVersion !== FORMAT_VERSION.details || JSON.stringify(v).length > 2000000) {
+export function validateDetails(details: unknown): asserts details is FolderDetails {
+  checkNotNewer('details', details)
+  if (
+    !isPlainObject(details) ||
+    details.schemaVersion !== FORMAT_VERSION.details ||
+    JSON.stringify(details).length > 2000000
+  ) {
     throw new Error('內容設定不合法')
   }
   // Sections with truthy guards retain compatibility with existing null values.
   if (
-    v.boundary &&
-    (!obj(v.boundary) ||
-      !['root', 'not-game', 'candidate'].includes(v.boundary.state) ||
-      !Array.isArray(v.boundary.engines) ||
-      !v.boundary.engines.every((x: unknown) => text(x, 100)) ||
-      !Array.isArray(v.boundary.evidence) ||
-      !v.boundary.evidence.every((x: unknown) => text(x, 500)) ||
-      (v.boundary.role !== undefined &&
-        (v.boundary.role !== 'tool' || v.boundary.state !== 'root')))
+    details.boundary &&
+    (!isPlainObject(details.boundary) ||
+      !['root', 'not-game', 'candidate'].includes(details.boundary.state) ||
+      !Array.isArray(details.boundary.engines) ||
+      !details.boundary.engines.every((engine: unknown) => isBoundedText(engine, 100)) ||
+      !Array.isArray(details.boundary.evidence) ||
+      !details.boundary.evidence.every((item: unknown) => isBoundedText(item, 500)) ||
+      (details.boundary.role !== undefined &&
+        (details.boundary.role !== 'tool' || details.boundary.state !== 'root')))
   ) {
     throw new Error('遊戲保護設定不正確')
   }
   if (
-    v.hiddenActions !== undefined &&
-    (!Array.isArray(v.hiddenActions) ||
-      v.hiddenActions.length > 100 ||
-      !v.hiddenActions.every(id) ||
-      new Set(v.hiddenActions).size !== v.hiddenActions.length)
+    details.hiddenActions !== undefined &&
+    (!Array.isArray(details.hiddenActions) ||
+      details.hiddenActions.length > 100 ||
+      !details.hiddenActions.every(isValidId) ||
+      new Set(details.hiddenActions).size !== details.hiddenActions.length)
   ) {
     throw new Error('遊戲操作顯示設定不合法')
   }
   if (
-    v.shownExtras !== undefined &&
-    (!Array.isArray(v.shownExtras) ||
-      !v.shownExtras.every((x: unknown) => ['steam', 'store', 'save'].includes(x as string)) ||
-      new Set(v.shownExtras).size !== v.shownExtras.length)
+    details.shownExtras !== undefined &&
+    (!Array.isArray(details.shownExtras) ||
+      !details.shownExtras.every((extra: unknown) =>
+        ['steam', 'store', 'save'].includes(extra as string)
+      ) ||
+      new Set(details.shownExtras).size !== details.shownExtras.length)
   ) {
     throw new Error('遊戲操作顯示設定不合法')
   }
-  if (v.kind !== undefined && !isFolderKind(v.kind)) throw new Error('資料夾類型不合法')
-  if (v.browseAs !== undefined && !['work', 'collection'].includes(v.browseAs)) {
+  if (details.kind !== undefined && !isFolderKind(details.kind)) {
+    throw new Error('資料夾類型不合法')
+  }
+  if (details.browseAs !== undefined && !['work', 'collection'].includes(details.browseAs)) {
     throw new Error('瀏覽方式不合法')
   }
-  if (v.bannerAssetId !== undefined && !id(v.bannerAssetId)) throw new Error('封面身分不合法')
+  if (details.bannerAssetId !== undefined && !isValidId(details.bannerAssetId)) {
+    throw new Error('封面身分不合法')
+  }
   if (
-    v.cellImages !== undefined &&
-    (!obj(v.cellImages) ||
-      Object.keys(v.cellImages).length > 1000 ||
-      !Object.entries(v.cellImages).every(([slot, asset]) => id(slot) && id(asset)))
+    details.cellImages !== undefined &&
+    (!isPlainObject(details.cellImages) ||
+      Object.keys(details.cellImages).length > 1000 ||
+      !Object.entries(details.cellImages).every(
+        ([slot, assetId]) => isValidId(slot) && isValidId(assetId)
+      ))
   ) {
     throw new Error('圖片組件設定不合法')
   }
   if (
-    v.reading &&
-    (!obj(v.reading) ||
-      (v.reading.mode !== undefined && !['image', 'manga'].includes(v.reading.mode)) ||
-      (v.reading.page !== undefined && !integer(v.reading.page, 0, 1000000)) ||
-      (v.reading.fit !== undefined && !['width', 'height', 'original'].includes(v.reading.fit)) ||
-      (v.reading.webtoonWidth !== undefined && !integer(v.reading.webtoonWidth, 10, 100)) ||
+    details.reading &&
+    (!isPlainObject(details.reading) ||
+      (details.reading.mode !== undefined && !['image', 'manga'].includes(details.reading.mode)) ||
+      (details.reading.page !== undefined && !isIntInRange(details.reading.page, 0, 1000000)) ||
+      (details.reading.fit !== undefined &&
+        !['width', 'height', 'original'].includes(details.reading.fit)) ||
+      (details.reading.webtoonWidth !== undefined &&
+        !isIntInRange(details.reading.webtoonWidth, 10, 100)) ||
       ['spread', 'rtl', 'firstSingle', 'webtoon', 'webtoonAsked'].some(
-        (k) => v.reading[k] !== undefined && typeof v.reading[k] !== 'boolean'
+        (flag) => details.reading[flag] !== undefined && typeof details.reading[flag] !== 'boolean'
       ))
   ) {
     throw new Error('閱讀設定不合法')
   }
-  if (v.targets && (!obj(v.targets) || !Object.entries(v.targets).every(validTargetEntry))) {
+  if (
+    details.targets &&
+    (!isPlainObject(details.targets) || !Object.entries(details.targets).every(isValidTargetEntry))
+  ) {
     throw new Error('任務設定不合法')
   }
   if (
-    v.novels !== undefined &&
-    (!obj(v.novels) ||
-      Object.keys(v.novels).length > 10000 ||
-      !Object.entries(v.novels).every(([name, p]) => validNovelEntry(name, p)))
+    details.novels !== undefined &&
+    (!isPlainObject(details.novels) ||
+      Object.keys(details.novels).length > 10000 ||
+      !Object.entries(details.novels).every(([name, entry]) => isValidNovelEntry(name, entry)))
   ) {
     throw new Error('小說閱讀紀錄不合法')
   }
   if (
-    v.volumes !== undefined &&
-    (!obj(v.volumes) ||
-      Object.keys(v.volumes).length > 10000 ||
-      !Object.entries(v.volumes).every(([name, p]) => validVolumeEntry(name, p)))
+    details.volumes !== undefined &&
+    (!isPlainObject(details.volumes) ||
+      Object.keys(details.volumes).length > 10000 ||
+      !Object.entries(details.volumes).every(([name, entry]) => isValidVolumeEntry(name, entry)))
   ) {
     throw new Error('漫畫壓縮檔閱讀紀錄不合法')
   }
   if (
-    v.saveFolder !== undefined &&
-    (!obj(v.saveFolder) ||
-      !text(v.saveFolder.path, 10000) ||
-      typeof v.saveFolder.relative !== 'boolean' ||
-      (v.saveFolder.relative && !relative(v.saveFolder.path)) ||
+    details.saveFolder !== undefined &&
+    (!isPlainObject(details.saveFolder) ||
+      !isBoundedText(details.saveFolder.path, 10000) ||
+      typeof details.saveFolder.relative !== 'boolean' ||
+      (details.saveFolder.relative && !isSafeRelativePath(details.saveFolder.path)) ||
       // Outside the game it must be a local drive path; a network share would be contacted when opened.
-      (!v.saveFolder.relative && !/^[A-Za-z]:[\\/]/.test(v.saveFolder.path)))
+      (!details.saveFolder.relative && !/^[A-Za-z]:[\\/]/.test(details.saveFolder.path)))
   ) {
     throw new Error('存檔資料夾設定不合法')
   }
   if (
-    v.subtitles &&
-    (!Array.isArray(v.subtitles) ||
-      !v.subtitles.every(
-        (s) =>
-          obj(s) &&
-          id(s.id) &&
-          text(s.name, 255) &&
-          relative(s.relativePath) &&
-          /^subtitles\/[\w-]+\.(srt|vtt)$/.test(s.relativePath)
+    details.subtitles &&
+    (!Array.isArray(details.subtitles) ||
+      !details.subtitles.every(
+        (subtitle) =>
+          isPlainObject(subtitle) &&
+          isValidId(subtitle.id) &&
+          isBoundedText(subtitle.name, 255) &&
+          isSafeRelativePath(subtitle.relativePath) &&
+          /^subtitles\/[\w-]+\.(srt|vtt)$/.test(subtitle.relativePath)
       ))
   ) {
     throw new Error('字幕記錄不合法')
   }
   if (
-    v.playback &&
-    (!obj(v.playback) ||
-      Object.keys(v.playback).length > 10000 ||
-      !Object.entries(v.playback).every(validPlaybackEntry))
+    details.playback &&
+    (!isPlainObject(details.playback) ||
+      Object.keys(details.playback).length > 10000 ||
+      !Object.entries(details.playback).every(isValidPlaybackEntry))
   ) {
     throw new Error('播放設定不合法')
   }
   // R-432: the remembered embedded subtitle track: a name and/or a language, as short text.
   if (
-    v.subtitleTrack !== undefined &&
-    (!obj(v.subtitleTrack) ||
-      Object.keys(v.subtitleTrack).some((k) => !['name', 'language'].includes(k)) ||
-      (v.subtitleTrack.name === undefined && v.subtitleTrack.language === undefined) ||
-      (v.subtitleTrack.name !== undefined &&
-        (!text(v.subtitleTrack.name, 200) || !v.subtitleTrack.name)) ||
-      (v.subtitleTrack.language !== undefined &&
-        (!text(v.subtitleTrack.language, 35) || !v.subtitleTrack.language)))
+    details.subtitleTrack !== undefined &&
+    (!isPlainObject(details.subtitleTrack) ||
+      Object.keys(details.subtitleTrack).some((key) => !['name', 'language'].includes(key)) ||
+      (details.subtitleTrack.name === undefined && details.subtitleTrack.language === undefined) ||
+      (details.subtitleTrack.name !== undefined &&
+        (!isBoundedText(details.subtitleTrack.name, 200) || !details.subtitleTrack.name)) ||
+      (details.subtitleTrack.language !== undefined &&
+        (!isBoundedText(details.subtitleTrack.language, 35) || !details.subtitleTrack.language)))
   ) {
     throw new Error('字幕軌偏好不合法')
   }
 }
 
-export function validateProject(v: unknown): asserts v is Project {
-  checkNotNewer('project', v)
+export function validateProject(project: unknown): asserts project is Project {
+  checkNotNewer('project', project)
   if (
-    obj(v) &&
-    ((v.scanAll !== undefined && typeof v.scanAll !== 'boolean') ||
-      (v.cardView !== undefined &&
-        (!obj(v.cardView) ||
-          !['multi', 'single'].includes(v.cardView.mode) ||
-          (v.cardView.works !== undefined && typeof v.cardView.works !== 'boolean') ||
+    isPlainObject(project) &&
+    ((project.scanAll !== undefined && typeof project.scanAll !== 'boolean') ||
+      (project.cardView !== undefined &&
+        (!isPlainObject(project.cardView) ||
+          !['multi', 'single'].includes(project.cardView.mode) ||
+          (project.cardView.works !== undefined && typeof project.cardView.works !== 'boolean') ||
           !(
-            integer(v.cardView.level, 1, Number.MAX_SAFE_INTEGER) ||
-            (v.cardView.mode === 'multi' && v.cardView.level === 'all')
+            isIntInRange(project.cardView.level, 1, Number.MAX_SAFE_INTEGER) ||
+            (project.cardView.mode === 'multi' && project.cardView.level === 'all')
           ))))
   ) {
     throw new Error('CARD 顯示範圍不合法')
   }
   if (
-    !obj(v) ||
-    v.kind !== 'media-viewer.project' ||
-    v.schemaVersion !== FORMAT_VERSION.project ||
-    !id(v.projectId) ||
-    !id(v.rootFolderId) ||
-    !integer(v.revision, 1, Number.MAX_SAFE_INTEGER) ||
-    !text(v.name, 100) ||
-    !v.name.trim() ||
-    !obj(v.depth) ||
-    !['through', 'exact'].includes(v.depth.mode) ||
-    !integer(v.depth.level, 1, 50) ||
-    !obj(v.list) ||
-    !integer(v.list.itemsPerRow, 1, 6) ||
-    !integer(v.list.pageSize, 1, 500) ||
-    !Array.isArray(v.excludedRelativePaths) ||
-    !v.excludedRelativePaths.every(relative) ||
-    !Array.isArray(v.fieldBindings) ||
-    !v.fieldBindings.every(validFieldBinding) ||
-    !Array.isArray(v.cells) ||
-    v.cells.length > 50 ||
-    !v.cells.every(validCell)
+    !isPlainObject(project) ||
+    project.kind !== 'media-viewer.project' ||
+    project.schemaVersion !== FORMAT_VERSION.project ||
+    !isValidId(project.projectId) ||
+    !isValidId(project.rootFolderId) ||
+    !isIntInRange(project.revision, 1, Number.MAX_SAFE_INTEGER) ||
+    !isBoundedText(project.name, 100) ||
+    !project.name.trim() ||
+    !isPlainObject(project.depth) ||
+    !['through', 'exact'].includes(project.depth.mode) ||
+    !isIntInRange(project.depth.level, 1, 50) ||
+    !isPlainObject(project.list) ||
+    !isIntInRange(project.list.itemsPerRow, 1, 6) ||
+    !isIntInRange(project.list.pageSize, 1, 500) ||
+    !Array.isArray(project.excludedRelativePaths) ||
+    !project.excludedRelativePaths.every(isSafeRelativePath) ||
+    !Array.isArray(project.fieldBindings) ||
+    !project.fieldBindings.every(isValidFieldBinding) ||
+    !Array.isArray(project.cells) ||
+    project.cells.length > 50 ||
+    !project.cells.every(isValidCell)
   ) {
     throw new Error('專案設定不合法或版本不支援')
   }
   if (
-    new Set(v.cells.map((c) => c.cellId)).size !== v.cells.length ||
-    new Set(v.fieldBindings.map((f) => f.alias.toLowerCase())).size !== v.fieldBindings.length
+    new Set(project.cells.map((cell) => cell.cellId)).size !== project.cells.length ||
+    new Set(project.fieldBindings.map((binding) => binding.alias.toLowerCase())).size !==
+      project.fieldBindings.length
   ) {
     throw new Error('組件 ID 或欄位別名重複')
   }
-  for (const cell of v.cells) {
+  for (const cell of project.cells) {
     if (cell.fallbackIds) {
-      const type = v.fieldBindings.find((f) => f.attributeId === cell.attributeId)?.type
+      const type = project.fieldBindings.find(
+        (binding) => binding.attributeId === cell.attributeId
+      )?.type
       const display =
         cell.kind === 'field-text' ? 'string' : cell.kind === 'field-tags' ? 'tags' : type
       if (
@@ -607,7 +874,9 @@ export function validateProject(v: unknown): asserts v is Project {
           (fallback: string) =>
             !compatibleFieldTypes(
               display,
-              v.fieldBindings.find((f: { attributeId: string }) => f.attributeId === fallback)?.type
+              project.fieldBindings.find(
+                (binding: { attributeId: string }) => binding.attributeId === fallback
+              )?.type
             )
         )
       ) {
@@ -615,10 +884,12 @@ export function validateProject(v: unknown): asserts v is Project {
       }
     }
   }
-  validateFieldGroups(v as Project)
-  for (const cell of v.cells) {
+  validateFieldGroups(project as Project)
+  for (const cell of project.cells) {
     for (const condition of cellConditions(cell)) {
-      const field = v.fieldBindings.find((field) => field.attributeId === condition.attributeId)
+      const field = project.fieldBindings.find(
+        (binding) => binding.attributeId === condition.attributeId
+      )
       if (
         !field ||
         (['within', 'older'].includes(condition.operator) &&
@@ -640,185 +911,223 @@ export function validateProject(v: unknown): asserts v is Project {
       }
     }
   }
-  if (v.layoutRules !== undefined && !validLayoutRules(v.layoutRules)) {
+  if (project.layoutRules !== undefined && !isValidLayoutRules(project.layoutRules)) {
     throw new Error('版面配置規則不合法')
   }
   if (
-    v.stylePresets !== undefined &&
-    (!Array.isArray(v.stylePresets) ||
-      v.stylePresets.length > 20 ||
-      new Set(v.stylePresets.map((p) => p?.id)).size !== v.stylePresets.length ||
+    project.stylePresets !== undefined &&
+    (!Array.isArray(project.stylePresets) ||
+      project.stylePresets.length > 20 ||
+      new Set(project.stylePresets.map((preset) => preset?.id)).size !==
+        project.stylePresets.length ||
       new Set(
-        v.stylePresets.map((p) =>
-          typeof p?.name === 'string' ? p.name.trim().toLocaleLowerCase() : p
+        project.stylePresets.map((preset) =>
+          typeof preset?.name === 'string' ? preset.name.trim().toLocaleLowerCase() : preset
         )
-      ).size !== v.stylePresets.length ||
-      !v.stylePresets.every(
-        (p) => obj(p) && id(p.id) && text(p.name, 40) && p.name.trim() && validStyle(p.style)
+      ).size !== project.stylePresets.length ||
+      !project.stylePresets.every(
+        (preset) =>
+          isPlainObject(preset) &&
+          isValidId(preset.id) &&
+          isBoundedText(preset.name, 40) &&
+          preset.name.trim() &&
+          isValidStyle(preset.style)
       ))
   ) {
     throw new Error('自訂樣式不合法或名稱重複')
   }
-  if (v.layoutPresets !== undefined) {
+  if (project.layoutPresets !== undefined) {
     if (
-      !Array.isArray(v.layoutPresets) ||
-      !v.layoutPresets.length ||
-      v.layoutPresets.length > 30 ||
-      new Set(v.layoutPresets.map((p) => p.id)).size !== v.layoutPresets.length ||
+      !Array.isArray(project.layoutPresets) ||
+      !project.layoutPresets.length ||
+      project.layoutPresets.length > 30 ||
+      new Set(project.layoutPresets.map((preset) => preset.id)).size !==
+        project.layoutPresets.length ||
       new Set(
-        v.layoutPresets.map((p) =>
-          typeof p.name === 'string' ? p.name.toLocaleLowerCase() : p.name
+        project.layoutPresets.map((preset) =>
+          typeof preset.name === 'string' ? preset.name.toLocaleLowerCase() : preset.name
         )
-      ).size !== v.layoutPresets.length ||
-      !v.layoutPresets.every((p) => obj(p) && id(p.id) && text(p.name, 100) && p.name.trim())
+      ).size !== project.layoutPresets.length ||
+      !project.layoutPresets.every(
+        (preset) =>
+          isPlainObject(preset) &&
+          isValidId(preset.id) &&
+          isBoundedText(preset.name, 100) &&
+          preset.name.trim()
+      )
     ) {
       throw new Error('卡片外觀不正確或名稱重複')
     }
-    if (!id(v.activeLayoutId) || !v.layoutPresets.some((p) => p.id === v.activeLayoutId)) {
+    if (
+      !isValidId(project.activeLayoutId) ||
+      !project.layoutPresets.some((preset) => preset.id === project.activeLayoutId)
+    ) {
       throw new Error('使用中的外觀不存在')
     }
-    for (const preset of v.layoutPresets) validateProject(withOnlyCells(v, preset.cells))
-  } else if (v.activeLayoutId !== undefined) throw new Error('外觀清單不存在')
+    for (const preset of project.layoutPresets) {
+      validateProject(withOnlyCells(project, preset.cells))
+    }
+  } else if (project.activeLayoutId !== undefined) {
+    throw new Error('外觀清單不存在')
+  }
   // R-409: the right-panel layouts (up to 40: the 30 book templates of a v1 project and the other kinds' templates).
-  if (v.panelPresets !== undefined) {
+  if (project.panelPresets !== undefined) {
     if (
-      !Array.isArray(v.panelPresets) ||
-      !v.panelPresets.length ||
-      v.panelPresets.length > 40 ||
-      new Set(v.panelPresets.map((p) => p?.id)).size !== v.panelPresets.length ||
+      !Array.isArray(project.panelPresets) ||
+      !project.panelPresets.length ||
+      project.panelPresets.length > 40 ||
+      new Set(project.panelPresets.map((preset) => preset?.id)).size !==
+        project.panelPresets.length ||
       new Set(
-        v.panelPresets.map((p) => (typeof p?.name === 'string' ? p.name.toLocaleLowerCase() : p))
-      ).size !== v.panelPresets.length ||
-      !v.panelPresets.every((p) => obj(p) && id(p.id) && text(p.name, 100) && p.name.trim())
+        project.panelPresets.map((preset) =>
+          typeof preset?.name === 'string' ? preset.name.toLocaleLowerCase() : preset
+        )
+      ).size !== project.panelPresets.length ||
+      !project.panelPresets.every(
+        (preset) =>
+          isPlainObject(preset) &&
+          isValidId(preset.id) &&
+          isBoundedText(preset.name, 100) &&
+          preset.name.trim()
+      )
     ) {
       throw new Error('詳情版面不合法或名稱重複')
     }
-    if (v.panelPresetId !== undefined && !v.panelPresets.some((p) => p.id === v.panelPresetId)) {
+    if (
+      project.panelPresetId !== undefined &&
+      !project.panelPresets.some((preset) => preset.id === project.panelPresetId)
+    ) {
       throw new Error('詳情預設版面不存在')
     }
-    for (const preset of v.panelPresets) validateProject(withOnlyCells(v, preset.cells))
-  } else if (v.panelPresetId !== undefined) throw new Error('詳情版面清單不存在')
+    for (const preset of project.panelPresets) {
+      validateProject(withOnlyCells(project, preset.cells))
+    }
+  } else if (project.panelPresetId !== undefined) {
+    throw new Error('詳情版面清單不存在')
+  }
   if (
-    v.traversal !== undefined &&
-    (!obj(v.traversal) ||
-      !Object.entries(v.traversal).every(([k, b]) => id(k) && typeof b === 'boolean'))
+    project.traversal !== undefined &&
+    (!isPlainObject(project.traversal) ||
+      !Object.entries(project.traversal).every(
+        ([key, flag]) => isValidId(key) && typeof flag === 'boolean'
+      ))
   ) {
     throw new Error('遍歷偏好不合法')
   }
   if (
-    v.actionTemplates !== undefined &&
-    (!Array.isArray(v.actionTemplates) ||
-      v.actionTemplates.length > 30 ||
-      new Set(v.actionTemplates.map((t) => t.id)).size !== v.actionTemplates.length ||
-      !v.actionTemplates.every(
-        (t) =>
-          obj(t) &&
-          id(t.id) &&
-          text(t.label, 100) &&
-          ['exe', 'folder', 'file-app', 'url', 'shortcut', 'file'].includes(t.kind) &&
-          /^#[0-9a-f]{6}$/i.test(t.color)
+    project.actionTemplates !== undefined &&
+    (!Array.isArray(project.actionTemplates) ||
+      project.actionTemplates.length > 30 ||
+      new Set(project.actionTemplates.map((template) => template.id)).size !==
+        project.actionTemplates.length ||
+      !project.actionTemplates.every(
+        (template) =>
+          isPlainObject(template) &&
+          isValidId(template.id) &&
+          isBoundedText(template.label, 100) &&
+          TARGET_KINDS.includes(template.kind) &&
+          HEX_COLOR.test(template.color)
       ))
   ) {
     throw new Error('任務版型不合法')
   }
   if (
-    v.savedSearches !== undefined &&
-    (!Array.isArray(v.savedSearches) ||
-      v.savedSearches.length > 100 ||
-      !v.savedSearches.every(
-        (s) =>
-          obj(s) &&
-          id(s.id) &&
-          text(s.name, 100) &&
-          (s.queryAst === undefined || validStableQuery(s.queryAst)) &&
-          text(s.query, 2000)
+    project.savedSearches !== undefined &&
+    (!Array.isArray(project.savedSearches) ||
+      project.savedSearches.length > 100 ||
+      !project.savedSearches.every(
+        (saved) =>
+          isPlainObject(saved) &&
+          isValidId(saved.id) &&
+          isBoundedText(saved.name, 100) &&
+          (saved.queryAst === undefined || validStableQuery(saved.queryAst)) &&
+          isBoundedText(saved.query, 2000)
       ))
   ) {
     throw new Error('常用搜尋不合法')
   }
-  for (let i = 0; i < v.cells.length; i++) {
-    for (let j = i + 1; j < v.cells.length; j++) {
-      const a = v.cells[i].grid
-      const b = v.cells[j].grid
-      if (a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y) {
+  for (let i = 0; i < project.cells.length; i++) {
+    for (let j = i + 1; j < project.cells.length; j++) {
+      const first = project.cells[i].grid
+      const second = project.cells[j].grid
+      if (
+        first.x < second.x + second.w &&
+        first.x + first.w > second.x &&
+        first.y < second.y + second.h &&
+        first.y + first.h > second.y
+      ) {
         throw new Error('組件不能重疊')
       }
     }
   }
 }
 
-// The type a field cell shows.
-const kindTypes: Record<string, string> = {
-  'field-text': 'string',
-  'field-tags': 'tags',
-  'field-number': 'number',
-  'field-date': 'datetime',
-  'field-boolean': 'boolean',
-  'field-enum': 'enum',
-  'field-url': 'url',
-  'field-date-only': 'date',
-}
-
-function validateFieldGroups(v: Project) {
-  const groups = v.fieldGroups
+function validateFieldGroups(project: Project): void {
+  const groups = project.fieldGroups
   if (groups === undefined) {
-    if (v.cells.some((cell) => cell.groupId) || v.groupSources !== undefined) {
+    if (project.cells.some((cell) => cell.groupId) || project.groupSources !== undefined) {
       throw new Error('欄位群組不存在')
     }
     return
   }
   const typeOf = (attributeId: string) =>
-    v.fieldBindings.find((field) => field.attributeId === attributeId)?.type
-  const aliases = new Set(v.fieldBindings.map((field) => field.alias.trim().toLocaleLowerCase()))
+    project.fieldBindings.find((field) => field.attributeId === attributeId)?.type
+  const aliases = new Set(
+    project.fieldBindings.map((field) => field.alias.trim().toLocaleLowerCase())
+  )
   if (
     !Array.isArray(groups) ||
     groups.length > 100 ||
     !groups.every(
-      (g) =>
-        obj(g) &&
-        id(g.groupId) &&
-        text(g.name, 100) &&
-        g.name.trim().length > 0 &&
-        !aliases.has(g.name.trim().toLocaleLowerCase()) &&
-        Array.isArray(g.memberIds) &&
-        g.memberIds.length >= 1 &&
-        g.memberIds.length <= MAX_GROUP_MEMBERS &&
-        g.memberIds.every((member) => id(member) && typeOf(member) !== undefined) &&
-        g.memberIds.every((member) => compatibleFieldTypes(typeOf(g.memberIds[0]), typeOf(member)))
+      (group) =>
+        isPlainObject(group) &&
+        isValidId(group.groupId) &&
+        isBoundedText(group.name, 100) &&
+        group.name.trim().length > 0 &&
+        !aliases.has(group.name.trim().toLocaleLowerCase()) &&
+        Array.isArray(group.memberIds) &&
+        group.memberIds.length >= 1 &&
+        group.memberIds.length <= MAX_GROUP_MEMBERS &&
+        group.memberIds.every((member) => isValidId(member) && typeOf(member) !== undefined) &&
+        group.memberIds.every((member) =>
+          compatibleFieldTypes(typeOf(group.memberIds[0]), typeOf(member))
+        )
     ) ||
-    new Set(groups.map((g) => g.groupId)).size !== groups.length ||
-    new Set(groups.map((g) => g.name.trim().toLocaleLowerCase())).size !== groups.length ||
-    new Set(groups.flatMap((g) => g.memberIds)).size !==
-      groups.reduce((sum, g) => sum + g.memberIds.length, 0)
+    new Set(groups.map((group) => group.groupId)).size !== groups.length ||
+    new Set(groups.map((group) => group.name.trim().toLocaleLowerCase())).size !== groups.length ||
+    new Set(groups.flatMap((group) => group.memberIds)).size !==
+      groups.reduce((sum, group) => sum + group.memberIds.length, 0)
   ) {
     throw new Error('欄位群組不正確：成員要存在、格式相容、只屬於一個群組，名稱不能重複')
   }
-  for (const cell of v.cells) {
+  for (const cell of project.cells) {
     if (cell.groupId) {
-      const group = groups.find((g) => g.groupId === cell.groupId)
+      const group = groups.find((item) => item.groupId === cell.groupId)
       if (
         !group ||
         !cell.attributeId ||
         !group.memberIds.includes(cell.attributeId) ||
-        !compatibleFieldTypes(kindTypes[cell.kind], typeOf(group.memberIds[0]))
+        !compatibleFieldTypes(FIELD_KIND_TYPES[cell.kind], typeOf(group.memberIds[0]))
       ) {
         throw new Error('組件顯示的欄位群組不存在或格式不相容')
       }
     }
   }
-  const sources = v.groupSources
+  const sources = project.groupSources
   if (
     sources !== undefined &&
-    (!obj(sources) ||
+    (!isPlainObject(sources) ||
       Object.keys(sources).length > 50000 ||
       !Object.entries(sources).every(
         ([folder, chosen]) =>
-          id(folder) &&
-          obj(chosen) &&
+          isValidId(folder) &&
+          isPlainObject(chosen) &&
           Object.entries(chosen).every(
             ([groupId, member]) =>
-              id(groupId) &&
-              groups.some((g) => g.groupId === groupId && g.memberIds.includes(member as string))
+              isValidId(groupId) &&
+              groups.some(
+                (group) => group.groupId === groupId && group.memberIds.includes(member as string)
+              )
           )
       ))
   ) {
@@ -830,10 +1139,10 @@ function validateFieldGroups(v: Project) {
 export function withoutGroupCells<T>(value: T): T {
   if (Array.isArray(value)) {
     return value
-      .filter((item) => !(obj(item) && item.kind === 'group'))
+      .filter((item) => !(isPlainObject(item) && item.kind === 'group'))
       .map((item) => withoutGroupCells(item)) as T
   }
-  if (obj(value)) {
+  if (isPlainObject(value)) {
     return Object.fromEntries(
       Object.entries(value).map(([key, item]) => [key, withoutGroupCells(item)])
     ) as T

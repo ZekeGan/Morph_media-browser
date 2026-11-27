@@ -1,3 +1,5 @@
+// Portable project & folder record coordinator: serializes mutations, tracks linked projects and
+// snapshots, and delegates scan/cleanup/removal/export operations to sibling library-*.ts modules.
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -58,6 +60,11 @@ export interface PlanEntry {
   files: { path: string; hash: string }[]
 }
 
+interface ProjectRef {
+  projectId: string
+  root: string
+}
+
 interface Plan {
   preview: CleanupPreview
   entries: PlanEntry[]
@@ -65,60 +72,64 @@ interface Plan {
   projectId?: string
 }
 
+interface RemovalPlan {
+  preview: ProjectRemovalPreview
+  root: string
+  records: { dir: string; record: FolderRecord }[]
+  files: { path: string; hash: string }[]
+  definitions: string[]
+  rootFiles?: { path: string; hash: string }[]
+}
+
+interface FieldDeletionPlan {
+  preview: FieldDeletionPreview
+  changes: Change[]
+  guards: ManagedFile[]
+  refs: string
+  scope: string
+  absent: string[]
+}
+
+// R-364: confirmed previews of unifying a field's text values to dates.
+interface FieldUnifyPlan {
+  changes: Change[]
+  guards: ManagedFile[]
+  refs: string
+  scope: string
+}
+
+interface FullRemovalPlan {
+  preview: FullRemovalPreview
+  tree: Awaited<ReturnType<typeof managedTree>>
+  refs: string
+  guards: ManagedFile[]
+  absent: string[]
+}
+
 export class Library {
-  refs: { projectId: string; root: string }[] = []
-  plans = new Map<string, Plan>()
-  removalPlans = new Map<
-    string,
-    {
-      preview: ProjectRemovalPreview
-      root: string
-      records: { dir: string; record: FolderRecord }[]
-      files: { path: string; hash: string }[]
-      definitions: string[]
-      rootFiles?: { path: string; hash: string }[]
-    }
-  >()
-
-  fieldPlans = new Map<
-    string,
-    {
-      preview: FieldDeletionPreview
-      changes: Change[]
-      guards: ManagedFile[]
-      refs: string
-      scope: string
-      absent: string[]
-    }
-  >()
-
-  // R-364: confirmed previews of unifying a field's text values to dates.
-  unifyPlans = new Map<
-    string,
-    { changes: Change[]; guards: ManagedFile[]; refs: string; scope: string }
-  >()
-
-  fullPlans = new Map<
-    string,
-    {
-      preview: FullRemovalPreview
-      tree: Awaited<ReturnType<typeof managedTree>>
-      refs: string
-      guards: ManagedFile[]
-      absent: string[]
-    }
-  >()
-
-  cancelled = false
-  hiddenKnown = new Set<string>()
-  importPlans = new Map<string, exportFns.ImportPlan>()
-  tail: Promise<unknown> = Promise.resolve()
+  // Registered links & active snapshot state
+  refs: ProjectRef[] = []
   state: Snapshot = {
     projects: [],
     rows: [],
     problems: [],
     progress: { visited: 0, created: 0, errors: 0, active: false, cancelled: false },
   }
+
+  generation = 0
+
+  // Confirmed two-step maintenance plans (accessed by sibling library-*.ts modules)
+  plans = new Map<string, Plan>()
+  removalPlans = new Map<string, RemovalPlan>()
+  fieldPlans = new Map<string, FieldDeletionPlan>()
+  unifyPlans = new Map<string, FieldUnifyPlan>()
+  fullPlans = new Map<string, FullRemovalPlan>()
+  importPlans = new Map<string, exportFns.ImportPlan>()
+
+  // Scan cancellation, hidden-dir cache & serialized mutation queue
+  cancelled = false
+  hiddenKnown = new Set<string>()
+  tail: Promise<unknown> = Promise.resolve()
 
   constructor(
     readonly userData: string,
@@ -133,7 +144,6 @@ export class Library {
     return next
   }
 
-  generation = 0
   snapshot() {
     return { ...structuredClone(this.state), generation: ++this.generation }
   }
