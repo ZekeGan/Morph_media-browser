@@ -13,6 +13,9 @@
 
 ## 待查收
 
+- **R-525** 導入極簡 ESLint 規則、全站純格式整理與 pre-commit 檢查（階段 1） ｜中｜一般｜無｜領域：core｜依賴：R-524
+  驗收：抽看 src/App.tsx 與 electron/explorer.ts 的空行、單一宣告與 import 分組，確認 pnpm lint 與 git blame（搭配 .git-blame-ignore-revs）符合預期
+
 - **R-524** 訂定程式碼可讀性、命名與結構規範（階段 0） ｜小｜一般｜無｜領域：core｜依賴：無
   驗收：檢視 docs/IMPLEMENTATION.md 新增的「程式碼可讀性與命名約定」與 CLAUDE.md 引用句，確認符合預期風格
 
@@ -30,9 +33,6 @@
 
 - **R-526** 核心後端與共用入口檔可讀性整理（階段 2A） ｜中｜安全邊界｜無｜領域：core、storage｜依賴：R-525
   扁平化 electron/main.ts 啟動流程；shared/modelValidation.ts 統一 isValid* 命名與 early return；electron/library.ts 頂部 Map 抽具名型別與區塊註解；純重構不改 IPC 契約與資料格式，提交前獨立審查
-
-- **R-525** 導入極簡 ESLint 規則、全站純格式整理與 pre-commit 檢查（階段 1） ｜中｜一般｜無｜領域：core｜依賴：R-524
-  只開 one-var: never、curly: multi-line、no-duplicate-imports、import 排序與 padding-line-between-statements；切出純格式 commit 並記進 .git-blame-ignore-revs，掛入 pnpm lint 與 pre-commit
 
 ## 擱置
 

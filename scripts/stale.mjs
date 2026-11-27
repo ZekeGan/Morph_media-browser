@@ -28,7 +28,24 @@ const note = (group, line) => findings.push({ group, line })
 // 1. Every source file belongs to an area and every named test exists.
 for (const line of problems()) note('領域登錄表', line)
 
-// 2. Spec cards whose code changed after their "最後確認" date.
+// 2. Spec cards whose code changed after their "最後確認" date (skipping pure format commits in .git-blame-ignore-revs).
+const ignoredRevs = fs.existsSync(path.join(root, '.git-blame-ignore-revs'))
+  ? new Set(
+      read('.git-blame-ignore-revs')
+        .split(/\r?\n/)
+        .map((line) => line.replace(/#.*/, '').trim())
+        .filter(Boolean)
+    )
+  : new Set()
+const lastCodeChange = (files) => {
+  if (!files.length) return undefined
+  const limit = String(ignoredRevs.size + 1)
+  for (const line of git('log', '-n', limit, '--format=%H %cs', '--', ...files)) {
+    const [hash, date] = line.split(' ')
+    if (!ignoredRevs.has(hash)) return date
+  }
+  return undefined
+}
 const dirty = new Set(git('status', '--porcelain').map((line) => line.slice(3).replace(/\\/g, '/')))
 const confirmedOf = (file) => /最後確認：(\d{4}-\d{2}-\d{2})/.exec(read(file).slice(0, 1500))?.[1]
 let unconfirmed = 0
@@ -55,9 +72,7 @@ for (const spec of specs.filter((file) => !historyDocs.has(file))) {
       )
     )
   )
-  const changed = code.some((file) => dirty.has(file))
-    ? today
-    : git('log', '-1', '--format=%cs', '--', ...code)[0]
+  const changed = code.some((file) => dirty.has(file)) ? today : lastCodeChange(code)
   if (changed && changed > confirmed) {
     note('規格卡可能過時', `${spec}：程式 ${changed} 有改動，最後確認 ${confirmed}`)
   }
@@ -148,11 +163,7 @@ for (const line of (limits ?? '').split('\n').filter((l) => l.startsWith('- ')))
   }
   const ids = tag[1].split('、').map((id) => id.trim())
   const code = areaCode(ids)
-  const changed = code.some((file) => dirty.has(file))
-    ? today
-    : code.length
-      ? git('log', '-1', '--format=%cs', '--', ...code)[0]
-      : undefined
+  const changed = code.some((file) => dirty.has(file)) ? today : lastCodeChange(code)
   if (changed && changed > tag[2]) {
     note('已知限制可能過時', `${head}…：${tag[1]} 的程式 ${changed} 有改動，確認 ${tag[2]}`)
   }

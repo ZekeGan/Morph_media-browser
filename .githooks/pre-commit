@@ -4,6 +4,14 @@
 set -e
 pnpm typecheck
 pnpm format:check
+if git diff --cached --name-only | grep -q '^eslint\.config\.mjs$'; then
+  pnpm lint
+else
+  lint_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^(src|shared|electron|tests|scripts)/.*\.(ts|tsx|mjs)$' || true)
+  if [ -n "$lint_files" ]; then
+    pnpm exec eslint $lint_files
+  fi
+fi
 # UI tests must not look for buttons or text the app no longer has (about 0.3 s).
 node scripts/check-ui-names.mjs
 # Interface text goes through translation; main-process messages without a key may not grow (R-277).

@@ -19,6 +19,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Minimal ESLint readability rules (single declarations, multi-line braces, deduplicated grouped imports, block spacing) added with a pure formatting pass recorded in .git-blame-ignore-revs, wired into pre-commit and CI (R-525).
 - Coding readability, naming, and module structure conventions documented in docs/IMPLEMENTATION.md and referenced in CLAUDE.md (R-524).
 
 ## 0.41.2-beta.1 — 2026-11-26
