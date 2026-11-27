@@ -1,3 +1,5 @@
+// Top-level application coordinator: owns the library snapshot, unsaved-draft guards, serialized
+// library/explorer IPC requests, browse/editor view switching, and application-level dialogs.
 import { Alert, Button, Checkbox, Group, Modal, Stack } from '@mantine/core'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -32,26 +34,61 @@ import { useSnapshot } from './useSnapshot'
 // R-503: the layout editor (with its grid library) is loaded the first time it opens, not at start.
 const Editor = lazy(() => import('./editor/Editor').then((module) => ({ default: module.Editor })))
 
-type Act = (request: Request) => Promise<Response | undefined>
+type LibraryRequestFn = (request: Request) => Promise<Response | undefined>
+
+interface EditorSession {
+  category?: string
+  // R-363: the template to open first (one folder's own); saving it leaves the project default alone.
+  preset?: string
+  // R-460: the folder the editor was opened for, used as its first preview.
+  previewRowId?: string
+}
+
+interface AppSettingsStart {
+  tab: string
+  site?: string
+}
 
 export function App() {
   useLocale()
 
   const { snapshot, takeSnapshot, takeLater, takeProgress } = useSnapshot()
-  const [selected, setSelected] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [selectedProjectId, setSelectedProjectId] = useState('')
+  const [selectedRowId, setSelectedRowId] = useState<string>()
+  const [isBusy, setIsBusy] = useState(false)
   const busyRef = useRef(false)
   const [notice, setNoticeState] = useState<Notice>()
   const [noticeVersion, setNoticeVersion] = useState(0)
+
+  const [toolbarTarget, setToolbarTarget] = useState<HTMLDivElement | null>(null)
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const [hasBrowseOverlay, setHasBrowseOverlay] = useState(false)
+  const [hasShellOverlay, setHasShellOverlay] = useState(false)
+
+  const [isAppSettingsOpen, setIsAppSettingsOpen] = useState(false)
+  const [appSettingsStart, setAppSettingsStart] = useState<AppSettingsStart>()
+  const [projectSettingsDraft, setProjectSettingsDraft] = useState<Project>()
+  const [editorSession, setEditorSession] = useState<EditorSession | null>(null)
+  // R-459: the project whose browser should resume where it was after closing the layout editor.
+  const [resumeProjectId, setResumeProjectId] = useState<string>()
+  const [isProblemsOpen, setIsProblemsOpen] = useState(false)
+  const [cleanupPreview, setCleanupPreview] = useState<CleanupPreview>()
+  const [shouldRestartAfterCleanup, setShouldRestartAfterCleanup] = useState(false)
+
   const setNotice = useCallback((value: Notice | undefined) => {
     setNoticeState(value)
-    setNoticeVersion((v) => v + 1)
+    setNoticeVersion((version) => version + 1)
   }, [])
   const dismissNotice = useCallback(() => setNoticeState(undefined), [])
   const notifyError = useCallback(
     (message: string) => setNotice({ level: 'error', ...describeError(message) }),
     [setNotice]
   )
+
+  const createProject = useCreateProject(notifyError)
+  const isCreateDialogOpen = createProject.opened
+  const setIsCreateDialogOpen = createProject.setOpened
+
   // Async failures nobody caught used to vanish silently; surface them instead.
   useEffect(() => {
     const onRejection = (event: PromiseRejectionEvent) => {
@@ -63,35 +100,14 @@ export function App() {
     window.addEventListener('unhandledrejection', onRejection)
     return () => window.removeEventListener('unhandledrejection', onRejection)
   }, [notifyError])
-  const [settingsOverlay, setSettingsOverlay] = useState(false)
-  const [toolbarTarget, setToolbarTarget] = useState<HTMLDivElement | null>(null)
-  const [refreshNonce, setRefreshNonce] = useState(0)
-  const create = useCreateProject(notifyError)
-  const createOpen = create.opened
-  const setCreateOpen = create.setOpened
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [settingsStart, setSettingsStart] = useState<{ tab: string; site?: string }>()
-  const [templateCategory, setTemplateCategory] = useState<string>()
-  // R-363: the book template to open first (one folder's own); saving it then leaves the project default alone.
-  const [templatePreset, setTemplatePreset] = useState<string>()
-  // R-460: the folder the editor was opened for, its first preview. R-459: the project whose browser comes back
-  // from the editor where it was.
-  const [templateRow, setTemplateRow] = useState<string>()
-  const [resumeProject, setResumeProject] = useState<string>()
-  const [settings, setSettings] = useState<Project>()
-  const [editor, setEditor] = useState(false)
-  const [detailsId, setDetailsId] = useState<string>()
-  const [problems, setProblems] = useState(false)
-  const [shellOverlay, setShellOverlay] = useState(false)
-  const [cleanup, setCleanup] = useState<CleanupPreview>()
-  const [restart, setRestart] = useState(false)
-  const act: Act = useCallback(
+
+  const requestLibrary: LibraryRequestFn = useCallback(
     async (request) => {
       if (busyRef.current && request.action !== 'cancelScan') return
       const ownBusy = request.action !== 'cancelScan'
       if (ownBusy) {
         busyRef.current = true
-        setBusy(true)
+        setIsBusy(true)
       }
       try {
         const result = await window.media.request(request)
@@ -99,8 +115,8 @@ export function App() {
         if (!['snapshot', 'scan'].includes(request.action)) setNotice(undefined)
         if (result.notice) setNotice(result.notice)
         if (result.preview?.scope === 'all') {
-          setCleanup(result.preview)
-          setRestart(false)
+          setCleanupPreview(result.preview)
+          setShouldRestartAfterCleanup(false)
         }
         return result
       } catch (error) {
@@ -108,39 +124,53 @@ export function App() {
       } finally {
         if (ownBusy) {
           busyRef.current = false
-          setBusy(false)
+          setIsBusy(false)
         }
       }
     },
     [notifyError, setNotice]
   )
+
   useEffect(() => {
-    act({ action: 'snapshot' })
+    requestLibrary({ action: 'snapshot' })
     return window.media.onProgress(takeProgress)
-  }, [act])
+  }, [requestLibrary])
+
   useEffect(() => {
-    if (selected && !snapshot.projects.some((p) => p.projectId === selected)) setSelected('')
-  }, [snapshot.projects, selected])
+    if (
+      selectedProjectId &&
+      !snapshot.projects.some((link) => link.projectId === selectedProjectId)
+    ) {
+      setSelectedProjectId('')
+    }
+  }, [snapshot.projects, selectedProjectId])
+
   // Other parts of the window can open the settings on a tab, e.g. the website keys from a source preview (R-285).
   useEffect(() => {
-    const open = (event: Event) => {
-      const detail = (event as CustomEvent<{ tab: string; site?: string }>).detail
-      setSettingsStart(detail)
-      setSettingsOpen(true)
+    const openAppSettings = (event: Event) => {
+      const detail = (event as CustomEvent<AppSettingsStart>).detail
+      setAppSettingsStart(detail)
+      setIsAppSettingsOpen(true)
     }
-    window.addEventListener('morph:open-settings', open)
-    return () => window.removeEventListener('morph:open-settings', open)
+    window.addEventListener('morph:open-settings', openAppSettings)
+    return () => window.removeEventListener('morph:open-settings', openAppSettings)
   }, [])
+
   const playback = usePlayback()
   useEffect(() => {
     playback?.reconcile(snapshot.projects.map((link) => link.projectId))
   }, [snapshot.projects])
-  const linked = snapshot.projects.find((p) => p.projectId === selected)
-  const project = linked?.project
-  const settingsDirty =
-    !!settings &&
-    JSON.stringify(settings) !==
-      JSON.stringify(snapshot.projects.find((p) => p.projectId === settings.projectId)?.project)
+
+  const selectedLink = snapshot.projects.find((link) => link.projectId === selectedProjectId)
+  const selectedProject = selectedLink?.project
+  const isEditorOpen = editorSession !== null
+  const savedProjectForDraft = projectSettingsDraft
+    ? snapshot.projects.find((link) => link.projectId === projectSettingsDraft.projectId)
+    : undefined
+  const isProjectSettingsDirty =
+    !!projectSettingsDraft &&
+    JSON.stringify(projectSettingsDraft) !== JSON.stringify(savedProjectForDraft?.project)
+
   const {
     detailDirty,
     setDetailDirty,
@@ -149,103 +179,118 @@ export function App() {
     setAppearanceDirty,
     unsaved,
     confirmLeave,
-  } = useDrafts({ settingsDirty, creating: createOpen, busy: busyRef })
-  const modalOpen =
-    createOpen ||
-    settingsOpen ||
-    !!settings ||
-    editor ||
+  } = useDrafts({
+    settingsDirty: isProjectSettingsDirty,
+    creating: isCreateDialogOpen,
+    busy: busyRef,
+  })
+
+  const hasBlockingModal =
+    isCreateDialogOpen ||
+    isAppSettingsOpen ||
+    !!projectSettingsDraft ||
+    isEditorOpen ||
     detailDirty ||
-    !!cleanup ||
-    problems ||
-    shellOverlay ||
-    settingsOverlay
+    !!cleanupPreview ||
+    isProblemsOpen ||
+    hasShellOverlay ||
+    hasBrowseOverlay
+
   useEffect(() => {
-    const focus = () => {
+    const onWindowFocus = () => {
       if (
-        selected &&
-        !modalOpen &&
+        selectedProjectId &&
+        !hasBlockingModal &&
         !busyRef.current &&
         !document.querySelector(
           '.mantine-Modal-content,.mantine-Drawer-content,.reader,.media-viewer-shell,.document-viewer'
         )
       ) {
-        act({ action: 'scan' })
+        requestLibrary({ action: 'scan' })
       }
     }
-    window.addEventListener('focus', focus)
-    return () => window.removeEventListener('focus', focus)
-  }, [modalOpen, selected, act])
-  const clearEditors = () => {
-    setEditor(false)
-    setTemplateCategory(undefined)
-    setDetailsId(undefined)
-    setSettings(undefined)
-    setSettingsOpen(false)
+    window.addEventListener('focus', onWindowFocus)
+    return () => window.removeEventListener('focus', onWindowFocus)
+  }, [hasBlockingModal, selectedProjectId, requestLibrary])
+
+  const closeActiveEditors = () => {
+    setEditorSession(null)
+    setSelectedRowId(undefined)
+    setProjectSettingsDraft(undefined)
+    setIsAppSettingsOpen(false)
   }
-  const openProject = (id: string, rowId?: string, confirmed = false) => {
+
+  const openProject = (projectId: string, rowId?: string, confirmed = false) => {
     if (!confirmed && !confirmLeave()) return false
-    clearEditors()
-    setCreateOpen(false)
-    setSelected(id)
-    if (rowId) setDetailsId(rowId)
+    closeActiveEditors()
+    setIsCreateDialogOpen(false)
+    setSelectedProjectId(projectId)
+    if (rowId) setSelectedRowId(rowId)
     return true
   }
-  const beginCreate = () => {
+
+  const beginCreateProject = () => {
     if (confirmLeave()) {
-      clearEditors()
-      create.begin()
+      closeActiveEditors()
+      createProject.begin()
     }
   }
-  const beginLink = () => beginCreate()
-  const rows = useMemo(
-    () => snapshot.rows.filter((r) => r.projectId === selected),
-    [snapshot.rows, selected]
+
+  const projectRows = useMemo(
+    () => snapshot.rows.filter((row) => row.projectId === selectedProjectId),
+    [snapshot.rows, selectedProjectId]
   )
+
   // R-501: kept between renders, so the browse view's folder kinds (which every card reads) are not rebuilt.
   const projectStructure = useMemo(
-    () => (snapshot.structure ?? snapshot.rows).filter((r) => r.projectId === selected),
-    [snapshot.structure, snapshot.rows, selected]
+    () =>
+      (snapshot.structure ?? snapshot.rows).filter((row) => row.projectId === selectedProjectId),
+    [snapshot.structure, snapshot.rows, selectedProjectId]
   )
+
   // Folders that more than one linked project shows; only these need the shared / this-project switch.
   const sharedFolders = useMemo(() => {
     const owners = new Map<string, Set<string>>()
-    for (const r of snapshot.rows) {
-      const id = r.record?.folderId
-      if (id) owners.set(id, (owners.get(id) ?? new Set()).add(r.projectId))
+    for (const row of snapshot.rows) {
+      const folderId = row.record?.folderId
+      if (folderId) owners.set(folderId, (owners.get(folderId) ?? new Set()).add(row.projectId))
     }
-    return new Set([...owners].filter(([, set]) => set.size > 1).map(([id]) => id))
+    return new Set([...owners].filter(([, set]) => set.size > 1).map(([folderId]) => folderId))
   }, [snapshot.rows])
-  const chooseDetail = (id: string) => {
-    setDetailsId(id)
+
+  const selectDetailRow = (rowId: string) => {
+    setSelectedRowId(rowId)
     return true
   }
-  const closeDetail = () => setDetailsId(undefined)
-  const explore = async (request: ExplorerRequest): Promise<ExplorerResponse | undefined> => {
+  const closeDetailRow = () => setSelectedRowId(undefined)
+
+  const requestExplorer = async (
+    request: ExplorerRequest
+  ): Promise<ExplorerResponse | undefined> => {
     // Preserve reader preferences even while another setting is saving.
     // Reading places (manga pages, novel positions) are saved even while something else runs.
-    const reading =
+    const isReadingProgress =
       request.action === 'reading' ||
       request.action === 'novelProgress' ||
       request.action === 'volumeProgress'
-    if (busyRef.current && !reading) return
+    if (busyRef.current && !isReadingProgress) return
     // Only a novel's place, saved while scrolling, waits for idle; the manga reading settings and volume places are
     // followed by requests that send the record's revision, so their snapshot is taken in at once.
-    const later = request.action === 'novelProgress'
+    const deferSnapshot = request.action === 'novelProgress'
     // R-448: a reading place is saved in the background while the reader goes on: it does not mark the app busy
     // (that redrew the whole window at every chapter crossed), and the snapshot it brings back is taken in when the
     // window is idle (newer ones only).
-    const ownBusy = !reading && !busyRef.current
+    const ownBusy = !isReadingProgress && !busyRef.current
     if (ownBusy) {
       busyRef.current = true
-      setBusy(true)
+      setIsBusy(true)
     }
     try {
       const result = await window.explorer.request(request)
-      const next = result.snapshot
-      if (next) {
-        if (later) takeLater(next)
-        else takeSnapshot(next)
+      const nextSnapshot = result.snapshot
+      if (nextSnapshot) {
+        if (deferSnapshot) takeLater(nextSnapshot)
+        else takeSnapshot(nextSnapshot)
       }
       if (result.notice) setNotice(result.notice)
       return result
@@ -254,48 +299,62 @@ export function App() {
     } finally {
       if (ownBusy) {
         busyRef.current = false
-        setBusy(false)
+        setIsBusy(false)
       }
     }
   }
+
   // R-409: the panel editor works on the right-panel layouts of one kind.
-  const panelKind: FolderKind | undefined = isFolderKind(templateCategory)
-    ? templateCategory
+  const panelEditorKind: FolderKind | undefined = isFolderKind(editorSession?.category)
+    ? editorSession.category
     : undefined
-  const panelProject = (p: Project) =>
-    panelEditorProject(p, panelKind!, panelEditorStart(p, panelKind!), templatePreset)
+  const buildPanelEditorProject = (project: Project) =>
+    panelEditorProject(
+      project,
+      panelEditorKind!,
+      panelEditorStart(project, panelEditorKind!),
+      editorSession?.preset
+    )
+
   // R-444: the card editor opened from the layout window at a layout other than the default one edits that layout and
   // leaves the default as it was (unless another layout is picked in the editor, which makes that one the default).
-  const cardOther =
-    !panelKind &&
-    !!templatePreset &&
-    templatePreset !== project?.activeLayoutId &&
-    !!project?.layoutPresets?.some((p) => p.id === templatePreset)
-  const keepDefault = (p: Project) => {
-    const next = syncPresetDraft(p)
-    const original = next.layoutPresets?.find((x) => x.id === project!.activeLayoutId)
-    return cardOther && p.activeLayoutId === templatePreset && original
-      ? { ...next, activeLayoutId: original.id, cells: structuredClone(original.cells) }
-      : next
+  const isEditingNonDefaultCardPreset =
+    !panelEditorKind &&
+    !!editorSession?.preset &&
+    editorSession.preset !== selectedProject?.activeLayoutId &&
+    !!selectedProject?.layoutPresets?.some((preset) => preset.id === editorSession.preset)
+
+  const preserveDefaultCardLayout = (draft: Project) => {
+    const synced = syncPresetDraft(draft)
+    const original = synced.layoutPresets?.find(
+      (preset) => preset.id === selectedProject!.activeLayoutId
+    )
+    return isEditingNonDefaultCardPreset &&
+      draft.activeLayoutId === editorSession?.preset &&
+      original
+      ? { ...synced, activeLayoutId: original.id, cells: structuredClone(original.cells) }
+      : synced
   }
-  const saveEdited = async (p: Project, preset?: { name: string; asNew: boolean }) => {
+
+  const saveEditedLayout = async (draft: Project, preset?: { name: string; asNew: boolean }) => {
     try {
-      const next = panelKind
-        ? fromPanelEditor(project!, p, panelKind, !!templatePreset)
-        : p.layoutPresets
-          ? keepDefault(p)
+      const nextProject = panelEditorKind
+        ? fromPanelEditor(selectedProject!, draft, panelEditorKind, !!editorSession?.preset)
+        : draft.layoutPresets
+          ? preserveDefaultCardLayout(draft)
           : saveCardPreset(
-              p,
+              draft,
               preset ?? { name: tr('預設版面'), asNew: false },
               () => crypto.randomUUID(),
-              project!
+              selectedProject!
             )
-      return !!(await act({ action: 'saveProject', project: next }))
-    } catch (e) {
-      notifyError(String(e))
+      return !!(await requestLibrary({ action: 'saveProject', project: nextProject }))
+    } catch (error) {
+      notifyError(String(error))
       return false
     }
   }
+
   return (
     <>
       <Toasts
@@ -313,7 +372,7 @@ export function App() {
               <Button
                 size="compact-xs"
                 variant="subtle"
-                onClick={() => void act({ action: 'cancelScan' })}
+                onClick={() => void requestLibrary({ action: 'cancelScan' })}
               >
                 {tr('取消掃描')}
               </Button>
@@ -326,30 +385,30 @@ export function App() {
           toolbarRef={setToolbarTarget}
           projects={snapshot.projects}
           rows={snapshot.rows}
-          selected={selected}
-          busy={busy}
+          selected={selectedProjectId}
+          busy={isBusy}
           dirty={unsaved}
           onSelect={openProject}
-          onCreate={() => beginCreate()}
+          onCreate={() => beginCreateProject()}
           onSettings={() => {
             if (!confirmLeave()) return
-            setSettingsStart(undefined)
-            setSettingsOpen(true)
+            setAppSettingsStart(undefined)
+            setIsAppSettingsOpen(true)
           }}
           onRefresh={() => {
-            if (editor) return
+            if (isEditorOpen) return
             setRefreshNonce((value) => value + 1)
-            void act({ action: 'scan' })
+            void requestLibrary({ action: 'scan' })
           }}
-          onProjectSettings={(id) => {
+          onProjectSettings={(projectId) => {
             if (confirmLeave()) {
-              const p = snapshot.projects.find((p) => p.projectId === id)?.project
-              if (p) setSettings(structuredClone(p))
+              const found = snapshot.projects.find((link) => link.projectId === projectId)?.project
+              if (found) setProjectSettingsDraft(structuredClone(found))
             }
           }}
-          onProblems={() => setProblems(true)}
+          onProblems={() => setIsProblemsOpen(true)}
           problemCount={problemCount(snapshot)}
-          onOverlay={setShellOverlay}
+          onOverlay={setHasShellOverlay}
           onDirty={setShellDirty}
           onSnapshot={takeSnapshot}
           status={
@@ -360,7 +419,7 @@ export function App() {
                   snapshot.progress.created,
                   snapshot.progress.errors
                 )
-              : busy
+              : isBusy
                 ? tr('處理中…')
                 : unsaved
                   ? tr('尚未保存')
@@ -368,17 +427,17 @@ export function App() {
           }
           banner={null}
         >
-          {editor && project ? (
+          {isEditorOpen && selectedProject ? (
             <Suspense fallback={null}>
               <Editor
-                key={`${project.projectId}:${templateCategory ?? 'card'}:${templatePreset ?? ''}`}
-                act={act}
-                presets={!panelKind}
-                presetTools={!!panelKind}
-                panelKind={panelKind}
-                fromSaved={panelKind ? panelProject : undefined}
+                key={`${selectedProject.projectId}:${editorSession.category ?? 'card'}:${editorSession.preset ?? ''}`}
+                act={requestLibrary}
+                presets={!panelEditorKind}
+                presetTools={!!panelEditorKind}
+                panelKind={panelEditorKind}
+                fromSaved={panelEditorKind ? buildPanelEditorProject : undefined}
                 targetLabel={
-                  panelKind
+                  panelEditorKind
                     ? tr(
                         '{0}資訊版面',
                         {
@@ -387,95 +446,95 @@ export function App() {
                           music: tr('音樂'),
                           video: tr('影片'),
                           general: tr('一般'),
-                        }[panelKind]
+                        }[panelEditorKind]
                       )
                     : tr('卡片')
                 }
                 onDirty={setEditorDirty}
                 project={
-                  panelKind
-                    ? panelProject(project)
-                    : cardOther
-                      ? selectPreset(project, templatePreset!)
-                      : { ...project, cells: visibleCells(project) }
+                  panelEditorKind
+                    ? buildPanelEditorProject(selectedProject)
+                    : isEditingNonDefaultCardPreset
+                      ? selectPreset(selectedProject, editorSession.preset!)
+                      : { ...selectedProject, cells: visibleCells(selectedProject) }
                 }
                 rows={(snapshot.structure ?? snapshot.rows).filter(
-                  (r) => r.projectId === selected && !r.readonly
+                  (row) => row.projectId === selectedProjectId && !row.readonly
                 )}
-                busy={busy}
-                save={saveEdited}
-                previewRow={templateRow}
+                busy={isBusy}
+                save={saveEditedLayout}
+                previewRow={editorSession.previewRowId}
                 close={() => {
-                  setEditor(false)
-                  setTemplateCategory(undefined)
-                  setTemplatePreset(undefined)
-                  setTemplateRow(undefined)
-                  setResumeProject(project.projectId)
+                  setEditorSession(null)
+                  setResumeProjectId(selectedProject.projectId)
                 }}
               />
             </Suspense>
-          ) : project && !linked?.error ? (
+          ) : selectedProject && !selectedLink?.error ? (
             <BrowseWorkspace
               toolbarTarget={toolbarTarget}
-              key={project.projectId}
-              project={project}
-              root={linked!.root}
-              rows={rows}
+              key={selectedProject.projectId}
+              project={selectedProject}
+              root={selectedLink!.root}
+              rows={projectRows}
               sharedFolders={sharedFolders}
               structure={projectStructure}
-              selected={detailsId}
-              onSelect={chooseDetail}
-              onClose={closeDetail}
-              busy={busy}
-              act={act}
-              run={explore}
+              selected={selectedRowId}
+              onSelect={selectDetailRow}
+              onClose={closeDetailRow}
+              busy={isBusy}
+              act={requestLibrary}
+              run={requestExplorer}
               onDirty={setDetailDirty}
-              onOverlay={setSettingsOverlay}
+              onOverlay={setHasBrowseOverlay}
               notify={notifyError}
               edit={(category, preset, rowId) => {
                 if (
                   !detailDirty ||
                   window.confirm(tr('還有沒保存的修改，要放棄並去編輯版面嗎？'))
                 ) {
-                  setTemplateCategory(category)
-                  setTemplatePreset(preset)
-                  setTemplateRow(rowId)
-                  setEditor(true)
+                  setEditorSession({ category, preset, previewRowId: rowId })
                 }
               }}
-              resume={resumeProject === project.projectId}
-              onResumed={() => setResumeProject(undefined)}
+              resume={resumeProjectId === selectedProject.projectId}
+              onResumed={() => setResumeProjectId(undefined)}
             />
           ) : (
             <div className="empty">
               <h1>{tr('專案暫不可用')}</h1>
-              <p className="path">{linked?.root}</p>
+              <p className="path">{selectedLink?.root}</p>
               <p>{tr('資料夾可能已搬移、離線，或資料夾資訊需要復原。')}</p>
               <Alert color="orange" mt="lg">
-                {linked?.error ?? tr('請選擇專案或重新連結。')}
+                {selectedLink?.error ?? tr('請選擇專案或重新連結。')}
               </Alert>
               <Group justify="center" mt="md">
-                <Button disabled={busy} onClick={beginLink}>
+                <Button disabled={isBusy} onClick={beginCreateProject}>
                   {tr('重新連結專案位置')}
                 </Button>
-                {linked && (
+                {selectedLink && (
                   <>
                     <Button
                       color="orange"
                       variant="light"
-                      disabled={busy}
+                      disabled={isBusy}
                       onClick={() =>
                         window.confirm(
                           tr('用最近一次正常的備份修復這個專案？壞掉的檔案會另外留著。')
-                        ) && act({ action: 'restoreProject', projectId: linked.projectId })
+                        ) &&
+                        requestLibrary({
+                          action: 'restoreProject',
+                          projectId: selectedLink.projectId,
+                        })
                       }
                     >
                       {tr('從備份復原專案')}
                     </Button>
                     <Button
                       variant="default"
-                      disabled={busy}
-                      onClick={() => act({ action: 'unlink', projectId: linked.projectId })}
+                      disabled={isBusy}
+                      onClick={() =>
+                        requestLibrary({ action: 'unlink', projectId: selectedLink.projectId })
+                      }
                     >
                       {tr('從清單移除（資料夾裡的資訊保留）')}
                     </Button>
@@ -487,146 +546,154 @@ export function App() {
         </DesktopShell>
       </RefreshContext.Provider>
       <CreateProjectDialog
-        opened={createOpen}
-        busy={busy}
-        {...create.fields}
-        act={act}
+        opened={isCreateDialogOpen}
+        busy={isBusy}
+        {...createProject.fields}
+        act={requestLibrary}
         link={async (rootToken) => {
-          const before = new Set(snapshot.projects.map((p) => p.projectId))
-          const result = await act({ action: 'link', rootToken })
+          const existingIds = new Set(snapshot.projects.map((link) => link.projectId))
+          const result = await requestLibrary({ action: 'link', rootToken })
           if (!result || result.cancelled) return
-          setCreateOpen(false)
-          const next =
-            result.snapshot.projects.find((p) => !before.has(p.projectId)) ??
+          setIsCreateDialogOpen(false)
+          const addedLink =
+            result.snapshot.projects.find((link) => !existingIds.has(link.projectId)) ??
             result.snapshot.projects.at(-1)
-          if (next) openProject(next.projectId, undefined, true)
+          if (addedLink) openProject(addedLink.projectId, undefined, true)
         }}
         close={() => {
           if (
-            !busy &&
-            (create.empty || window.confirm(tr('取消新增專案？目前還沒建立任何東西。')))
+            !isBusy &&
+            (createProject.empty || window.confirm(tr('取消新增專案？目前還沒建立任何東西。')))
           ) {
-            setCreateOpen(false)
+            setIsCreateDialogOpen(false)
           }
         }}
         create={async () => {
-          const { input, rootChoice, group } = create.fields
-          const result = await act({ action: 'create', input, rootToken: rootChoice!.token })
+          const { input, rootChoice, group } = createProject.fields
+          const result = await requestLibrary({
+            action: 'create',
+            input,
+            rootToken: rootChoice!.token,
+          })
           if (result && !result.cancelled) {
-            const id = result.snapshot.projects.at(-1)?.projectId
-            if (id) {
+            const createdProjectId = result.snapshot.projects.at(-1)?.projectId
+            if (createdProjectId) {
               if (group) {
                 try {
                   await window.desktop.updateWorkspace({
                     action: 'moveProject',
-                    projectId: id,
+                    projectId: createdProjectId,
                     groupId: group,
                   })
-                } catch (e) {
-                  notifyError(tr('專案已建立，但群組保存失敗：') + String(e))
+                } catch (error) {
+                  notifyError(tr('專案已建立，但群組保存失敗：') + String(error))
                 }
               }
-              openProject(id, undefined, true)
+              openProject(createdProjectId, undefined, true)
             }
           }
         }}
       />
       <ApplicationSettings
-        opened={settingsOpen}
-        close={() => setSettingsOpen(false)}
+        opened={isAppSettingsOpen}
+        close={() => setIsAppSettingsOpen(false)}
         onDirty={setAppearanceDirty}
-        act={act}
-        busy={busy}
-        start={settingsStart}
+        act={requestLibrary}
+        busy={isBusy}
+        start={appSettingsStart}
       />
       <Modal
-        opened={!!settings}
+        opened={!!projectSettingsDraft}
         onClose={() => {
-          if (!busy && (!settingsDirty || window.confirm(tr('放棄尚未保存的專案設定？')))) {
-            setSettings(undefined)
+          if (
+            !isBusy &&
+            (!isProjectSettingsDirty || window.confirm(tr('放棄尚未保存的專案設定？')))
+          ) {
+            setProjectSettingsDraft(undefined)
           }
         }}
-        title={
-          tr('專案設定 · ') +
-          (snapshot.projects.find((p) => p.projectId === settings?.projectId)?.project?.name ?? '')
-        }
+        title={tr('專案設定 · ') + (savedProjectForDraft?.project?.name ?? '')}
         size="lg"
       >
-        {settings && (
+        {projectSettingsDraft && (
           <ProjectSettings
-            key={settings.projectId}
-            project={settings}
-            root={snapshot.projects.find((p) => p.projectId === settings.projectId)?.root ?? ''}
-            busy={busy}
-            dirty={settingsDirty}
-            change={setSettings}
-            act={act}
-            close={() => setSettings(undefined)}
-            saved={
-              snapshot.projects.find((p) => p.projectId === settings.projectId)?.project ?? settings
-            }
+            key={projectSettingsDraft.projectId}
+            project={projectSettingsDraft}
+            root={savedProjectForDraft?.root ?? ''}
+            busy={isBusy}
+            dirty={isProjectSettingsDirty}
+            change={setProjectSettingsDraft}
+            act={requestLibrary}
+            close={() => setProjectSettingsDraft(undefined)}
+            saved={savedProjectForDraft?.project ?? projectSettingsDraft}
           />
         )}
       </Modal>
       <ProblemsDialog
-        opened={problems}
-        close={() => setProblems(false)}
+        opened={isProblemsOpen}
+        close={() => setIsProblemsOpen(false)}
         snapshot={snapshot}
-        busy={busy}
-        act={act}
-        run={explore}
+        busy={isBusy}
+        act={requestLibrary}
+        run={requestExplorer}
         relink={() => {
-          setProblems(false)
-          void beginLink()
+          setIsProblemsOpen(false)
+          void beginCreateProject()
         }}
         openFolder={(row) => {
-          setProblems(false)
+          setIsProblemsOpen(false)
           openProject(row.projectId, row.rowId)
         }}
       />
       <Modal
-        opened={!!cleanup}
-        onClose={() => setCleanup(undefined)}
+        opened={!!cleanupPreview}
+        onClose={() => setCleanupPreview(undefined)}
         title={tr('預覽：你的檔案不會被刪')}
         size="xl"
       >
-        {cleanup && (
+        {cleanupPreview && (
           <Stack>
             <p>
               {tr('範圍：')}
-              {cleanup.scope === 'all'
+              {cleanupPreview.scope === 'all'
                 ? tr('全部已連結可存取資料；完成後退出連結')
-                : cleanup.scope === 'private'
+                : cleanupPreview.scope === 'private'
                   ? tr('只在這個專案的資訊')
                   : tr('此資料夾所有 M:orph 建立的資訊')}
               {tr('。找到')}
-              {cleanup.count} {tr('個資料夾的資訊。')}
+              {cleanupPreview.count} {tr('個資料夾的資訊。')}
             </p>
             <div className="file-list">
-              {cleanup.paths.map((p) => (
-                <div key={p}>{p}</div>
+              {cleanupPreview.paths.map((itemPath) => (
+                <div key={itemPath}>{itemPath}</div>
               ))}
             </div>
             <Alert color="orange">
               {tr('沒接上的磁碟、不在清單裡的副本不會處理；認不得的檔案一律保留。')}
-              {cleanup.skipped.map((s, i) => (
-                <div key={i}>{tr(s)}</div>
+              {cleanupPreview.skipped.map((skippedMessage, index) => (
+                <div key={index}>{tr(skippedMessage)}</div>
               ))}
             </Alert>
-            {cleanup.scope === 'folder' && (
+            {cleanupPreview.scope === 'folder' && (
               <Checkbox
                 label={tr('清除後繼續記錄這個資料夾')}
-                checked={restart}
-                onChange={(e) => setRestart(e.currentTarget.checked)}
+                checked={shouldRestartAfterCleanup}
+                onChange={(event) => setShouldRestartAfterCleanup(event.currentTarget.checked)}
               />
             )}
             <Button
               color="red"
-              loading={busy}
+              loading={isBusy}
               onClick={async () => {
-                if (await act({ action: 'cleanup', token: cleanup.token, restart })) {
-                  setCleanup(undefined)
-                  setDetailsId(undefined)
+                if (
+                  await requestLibrary({
+                    action: 'cleanup',
+                    token: cleanupPreview.token,
+                    restart: shouldRestartAfterCleanup,
+                  })
+                ) {
+                  setCleanupPreview(undefined)
+                  setSelectedRowId(undefined)
                 }
               }}
             >

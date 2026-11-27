@@ -13,26 +13,20 @@
 
 ## 待查收
 
-- **R-525** 導入極簡 ESLint 規則、全站純格式整理與 pre-commit 檢查（階段 1） ｜中｜一般｜無｜領域：core｜依賴：R-524
-  驗收：抽看 src/App.tsx 與 electron/explorer.ts 的空行、單一宣告與 import 分組，確認 pnpm lint 與 git blame（搭配 .git-blame-ignore-revs）符合預期
-
-- **R-524** 訂定程式碼可讀性、命名與結構規範（階段 0） ｜小｜一般｜無｜領域：core｜依賴：無
-  驗收：檢視 docs/IMPLEMENTATION.md 新增的「程式碼可讀性與命名約定」與 CLAUDE.md 引用句，確認符合預期風格
+- **R-527** 前端入口 App.tsx 狀態命名與編輯器工作階段收斂（階段 2B） ｜小｜一般｜無｜領域：notices｜依賴：R-525
+  驗收：檢查 src/App.tsx 的狀態命名（projectSettingsDraft vs isAppSettingsOpen、requestLibrary／requestExplorer）與 editorSession 收斂，確認版面編輯器與專案／應用設定視窗開關行為無異
 
 ## 進行中
 
 ## 已核定（未做）
 
+- **R-526** 核心後端與共用入口檔可讀性整理（階段 2A） ｜中｜安全邊界｜無｜領域：core、storage｜依賴：R-525
+  扁平化 electron/main.ts 啟動流程；shared/modelValidation.ts 統一 isValid* 命名與 early return；electron/library.ts 頂部 Map 抽具名型別與區塊註解；純重構不改 IPC 契約與資料格式，提交前獨立審查
+
 ## 已登記（未核定）
 
 - **R-528** 逐檔拆解超長熱點檔（階段 3） ｜大｜一般｜無｜領域：media、browse、editor、reader、video、novel｜依賴：R-526
   按需分批拆解 1,000+ 行巨檔至 200～500 行（優先 electron/explorer.ts、src/browse/BrowseWorkspace.tsx，其餘 Editor／FieldManager／Reader／VideoViewer／NovelReader 視改動時機拆）；每檔單獨一批並同步 areas.json、ARCHITECTURE.md 與 graphify
-
-- **R-527** 前端入口 App.tsx 狀態命名與編輯器工作階段收斂（階段 2B） ｜小｜一般｜無｜領域：notices｜依賴：R-525
-  釐清 settings／settingsOpen 撞名、act 改為語意化名稱、收斂版面編輯相關狀態為單一 editorSession；純重構不改行為
-
-- **R-526** 核心後端與共用入口檔可讀性整理（階段 2A） ｜中｜安全邊界｜無｜領域：core、storage｜依賴：R-525
-  扁平化 electron/main.ts 啟動流程；shared/modelValidation.ts 統一 isValid* 命名與 early return；electron/library.ts 頂部 Map 抽具名型別與區塊註解；純重構不改 IPC 契約與資料格式，提交前獨立審查
 
 ## 擱置
 
