@@ -272,6 +272,7 @@ export function validateWorkspace(v: unknown): asserts v is WorkspacePrefs {
       (b) =>
         !object(b) ||
         (b.panelVisible !== undefined && typeof b.panelVisible !== 'boolean') ||
+        (b.panelAuto !== undefined && typeof b.panelAuto !== 'boolean') ||
         (b.settingsDock !== undefined && typeof b.settingsDock !== 'boolean') ||
         (b.detailId !== undefined && !key(b.detailId)) ||
         (b.locations !== undefined &&

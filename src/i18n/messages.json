@@ -13354,5 +13354,23 @@
     "en": "Linked projects: {0}",
     "ja": "{0} 件の連携済みプロジェクト",
     "es": "Proyectos vinculados: {0}"
+  },
+  "資料夾「{0}」的選單": {
+    "zh-CN": "文件夹“{0}”的菜单",
+    "en": "Menu for folder “{0}”",
+    "ja": "フォルダー「{0}」のメニュー",
+    "es": "Menú de la carpeta «{0}»"
+  },
+  "變更類型": {
+    "zh-CN": "更改类型",
+    "en": "Change type",
+    "ja": "種類を変更",
+    "es": "Cambiar tipo"
+  },
+  "指定版面…": {
+    "zh-CN": "指定版面…",
+    "en": "Choose layout…",
+    "ja": "レイアウトを指定…",
+    "es": "Elegir diseño…"
   }
 }

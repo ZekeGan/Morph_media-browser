@@ -3,7 +3,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 
 import { Library } from '../electron/library'
-import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
+import { closeApp, launchApp, openPanel, removeTestRoot, reportFailure } from './support/app'
 
 // R-451: 從上次繼續 plays the podcast episode heard part of the way from where it was left, not from 0:00, and the
 // place it was left at is still kept once it has started again.
@@ -48,6 +48,7 @@ const episode = (name: string) => page.locator('.podcast-episode').filter({ hasT
 let passed = false
 try {
   await page.getByRole('button', { name: '開啟專案 Show', exact: true }).first().click()
+  await openPanel(page)
   await page.getByRole('switch', { name: '以 Podcast 顯示', exact: true }).click()
   // Episode 1 is heard to 2:00 and paused there.
   await episode('Episode 1').click()

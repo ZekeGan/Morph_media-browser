@@ -41,7 +41,8 @@ interface Props {
   onCollapsed: (ids: string[]) => void
   onSelect: (id: string) => void
   onOpen: (id: string) => void
-  onConfigure: (id: string) => void
+  // R-535: the folder's short menu, at a point of the window.
+  onMenu: (id: string, x: number, y: number) => void
   viewport?: BrowseState['viewport']
   save: (v: NonNullable<BrowseState['viewport']>) => void
   // R-466: draw each node as its card (the card layout the folder uses), sized by that layout.
@@ -62,7 +63,7 @@ export default function Tree({
   onCollapsed,
   onSelect,
   onOpen,
-  onConfigure,
+  onMenu,
   viewport,
   save,
   cards,
@@ -74,8 +75,8 @@ export default function Tree({
   const closed = collapsed ?? defaults
   const structure = useMemo(() => treeStructure(rows), [rows])
   const visible = useMemo(() => visibleTreeRows(rows, closed), [rows, closed])
-  const actions = useRef({ onOpen, onConfigure, onCollapsed, closed })
-  actions.current = { onOpen, onConfigure, onCollapsed, closed }
+  const actions = useRef({ onOpen, onMenu, onCollapsed, closed })
+  actions.current = { onOpen, onMenu, onCollapsed, closed }
   const canvas = useRef<HTMLDivElement>(null)
   const [initialView, setInitialView] = useState(viewport)
   const [flow, setFlow] = useState<ReactFlowInstance>()
@@ -161,7 +162,8 @@ export default function Tree({
                   }
                   if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
                     e.preventDefault()
-                    actions.current.onConfigure(r.rowId)
+                    const box = e.currentTarget.getBoundingClientRect()
+                    actions.current.onMenu(r.rowId, box.left + 12, box.top + 12)
                   }
                 }}
               >
@@ -293,7 +295,7 @@ export default function Tree({
           onNodeDoubleClick={(_, node) => onOpen(node.id)}
           onNodeContextMenu={(e, node) => {
             e.preventDefault()
-            onConfigure(node.id)
+            onMenu(node.id, e.clientX, e.clientY)
           }}
           onMoveEnd={(_, v) => save(v)}
           colorMode={theme === 'dark' ? 'dark' : 'light'}

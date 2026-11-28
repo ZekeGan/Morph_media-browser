@@ -71,6 +71,7 @@ try {
     BrowserWindow.getAllWindows()[0].setBounds({ width: 1500, height: 950 })
   )
   await page.getByRole('button', { name: '開啟專案 Media scope', exact: true }).first().click()
+  await page.getByRole('button', { name: '切換詳情內容', exact: true }).click()
   await page.locator('.media-thumbnail').waitFor()
   assert.equal(await scopeSwitch().isChecked(), false)
   assert.equal(await page.locator('.media-thumbnail').count(), 1)

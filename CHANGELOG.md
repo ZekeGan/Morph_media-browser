@@ -19,6 +19,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Projects now start with full-width browsing and slide the detail panel out on single-click while remembering explicit close preferences (R-533); double-clicking leaf/game work folders expands full-width details instead of entering an empty list (R-534); right-clicking cards, table rows, or tree nodes opens a minimal folder context menu (R-535); Esc, mouse Back, and the expanded panel Back button step back layer by layer while preserving list scroll and selection (R-537).
 - Categorized `docs/` into `specs/`, `architecture/`, `guides/`, and `design/`, added `docs/specs/UX_PRINCIPLES.md` (UI-agnostic UX & interaction principles), updated `scripts/stale.mjs`, `scripts/areas.mjs`, `docs/areas.json`, and all relative Markdown links (R-532).
 - Confirmed `tests/media-facts.test.ts` exit code 5 under `pnpm test` was caused by Kaspersky behavioral termination (20/20 consecutive full runs passed with antivirus disabled), and stopped `media-facts.test.ts` from spawning the PowerShell hidden-file helper when no real hidden files are tested (R-473).
 - Stabilized `video-embedded-ui` (await `subtitleTrack` after loading track in `VideoViewer`, pause 3s test sample inside cue window) and `explorer.test.ts` thumbnail cancellation test (fill all worker slots deterministically); added `NaN` validation and `stale.mjs` `.git-blame-ignore-revs` unit tests (R-530).

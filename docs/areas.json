@@ -46,6 +46,7 @@
         "src/browse/BrowsePanel*",
         "src/browse/BrowseNav*",
         "src/browse/FolderCards*",
+        "src/browse/FolderMenu*",
         "src/browse/useCardSettings*",
         "src/browse/useWidthDrag*",
         "src/browse/useFolderMarks*",

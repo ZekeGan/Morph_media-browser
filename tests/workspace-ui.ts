@@ -140,6 +140,9 @@ try {
   })
   assert.equal(await app.evaluate(({ app }) => app.getVersion()), packageInfo.version)
   await open('相簿收藏')
+  // R-533: a fresh project starts with the detail panel closed; clicking the toggle opens it on root.
+  assert.equal(await page.locator('.folder-panel').count(), 0)
+  await page.getByRole('button', { name: '切換詳情內容', exact: true }).click()
   await header().getByText('Album', { exact: true }).waitFor()
   for (let i = 0; i < 7; i++) {
     const tile = page.locator('.media-thumbnail').nth(i)
@@ -252,6 +255,13 @@ try {
     async () => (await firstInGroup()) === '遊戲收藏'
   )
   console.log('PASS project drag/drop across groups and manual ordering')
+  // R-535: right-clicking a folder card opens the short folder menu.
+  await card('A').click({ button: 'right' })
+  await page.getByRole('menuitem', { name: '資料夾設定', exact: true }).waitFor()
+  await page.getByRole('menuitem', { name: '在檔案總管開啟', exact: true }).waitFor()
+  await page.getByRole('menuitem', { name: '變更類型', exact: true }).waitFor()
+  await page.getByRole('menuitem', { name: '指定版面…', exact: true }).waitFor()
+  await page.keyboard.press('Escape')
   await card('A').dblclick()
   await header().getByText('A', { exact: true }).waitFor()
   // The header can show A before its cards are drawn; wait for them instead of counting at once (R-462).
@@ -271,6 +281,10 @@ try {
     .filter({ has: page.getByText('B', { exact: true }) })
     .dblclick()
   await header().getByText('B', { exact: true }).waitFor()
+  // R-534 & R-537: double-clicking a leaf folder expands details full-width; Esc returns to TREE.
+  await page.locator('.project-workspace.content-expanded').waitFor()
+  await page.keyboard.press('Escape')
+  await page.locator('.project-workspace.content-expanded').waitFor({ state: 'detached' })
   assert.deepEqual(
     await page.evaluate(async () =>
       ((await window.media.request({ action: 'snapshot' })).snapshot.structure ?? [])
@@ -297,7 +311,7 @@ try {
   await page.locator('.folder-table').waitFor()
   assert.equal(
     await page.locator('[aria-label="資料夾路徑"] [aria-current="page"]').innerText(),
-    'B'
+    'A'
   )
   await page
     .getByRole('navigation', { name: '資料夾路徑' })
@@ -391,8 +405,15 @@ try {
   await open('遊戲收藏')
   // R-465: game projects have no all/boundary folder switch.
   assert.equal(await page.getByRole('textbox', { name: '遊戲資料夾篩選' }).count(), 0)
-  await card('Game').dblclick()
+  // R-533: a fresh project starts closed; single-clicking a card slides the panel out.
+  assert.equal(await page.locator('.folder-panel').count(), 0)
+  await card('Game').click()
   await header().getByText('Game', { exact: true }).waitFor()
+  // R-534 & R-537: double-clicking a game expands full-width; Esc returns to the list with Game still open.
+  await card('Game').dblclick()
+  await page.locator('.project-workspace.content-expanded').waitFor()
+  await page.keyboard.press('Escape')
+  await page.locator('.project-workspace.content-expanded').waitFor({ state: 'detached' })
   // R-469: the game page shows its built-in right-panel layout (a wide cover with the name), not a fixed banner.
   await page.locator('.game-content .media-info-template').waitFor()
   assert.equal(await page.locator('.game-banner').count(), 0)
@@ -460,6 +481,7 @@ try {
   await page.screenshot({ path: path.join(screens, 'game.png') })
   console.log('PASS game three-zone content and portable WebP cover')
   await open('影片收藏')
+  await page.getByRole('button', { name: '切換詳情內容', exact: true }).click()
   await page.locator('.mixed-media-browser .media-thumbnail').first().click()
   await page.locator('.video-stage video').waitFor()
   await page.waitForFunction(() => {
@@ -503,7 +525,8 @@ try {
   assert.equal(created.scanAll, true)
   assert.deepEqual(created.cardView, { mode: 'single', level: 1 })
   console.log('PASS staged native folder choice and create defaults')
-  await page.getByRole('button', { name: '關閉資料夾內容', exact: true }).click()
+  // R-533: the newly created project already starts with the detail panel closed.
+  assert.equal(await page.locator('.folder-panel').count(), 0)
   await page.setViewportSize({ width: 800, height: 650 })
   await page.screenshot({ path: path.join(screens, 'narrow.png') })
   assert.equal(

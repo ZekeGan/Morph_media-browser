@@ -910,3 +910,7 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .site-field { display:grid; grid-template-columns:minmax(6em, max-content) 1fr auto; align-items:baseline; gap:4px 10px; }
 .site-field-value { min-width:0; overflow-wrap:anywhere; white-space:pre-wrap; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:4; overflow:hidden; }
 .card-display-advanced summary { cursor:pointer; color:var(--muted); font-size:12px; margin-bottom:6px; }
+
+/* R-535: folder context menu anchored at the pointer */
+.folder-menu-anchor { position:fixed; width:1px; height:1px; pointer-events:none; }
+.folder-menu-blank { display:inline-block; width:14px; }

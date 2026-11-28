@@ -6,7 +6,7 @@ import { DATA_DIR } from '../shared/model'
 
 import { readFolder, saveFolder } from '../electron/files'
 import { Library } from '../electron/library'
-import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
+import { closeApp, launchApp, openPanel, removeTestRoot, reportFailure } from './support/app'
 
 // Saved images in folder settings can be deleted after a confirmation; the user's own media stays.
 const png = Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.alloc(64, 1)])
@@ -43,6 +43,7 @@ const { app, page } = await launchApp(local, errors)
 let passed = false
 try {
   await page.getByRole('button', { name: '開啟專案 Pics', exact: true }).first().click()
+  await openPanel(page)
   await page.locator('.folder-panel-header').waitFor()
   await page.getByRole('tab', { name: '設定', exact: true }).click()
   await page.locator('.folder-panel-dock-settings').waitFor()

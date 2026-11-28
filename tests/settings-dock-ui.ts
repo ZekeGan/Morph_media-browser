@@ -3,7 +3,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 
 import { Library } from '../electron/library'
-import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
+import { closeApp, launchApp, openPanel, removeTestRoot, reportFailure } from './support/app'
 
 const base = path.resolve('.test-output')
 await fs.mkdir(base, { recursive: true })
@@ -27,6 +27,7 @@ const button = (name: string) => page.getByRole('button', { name, exact: true })
 let passed = false
 try {
   await button('開啟專案 Dock Test').first().click()
+  await openPanel(page)
   await page.locator('.folder-panel-header').waitFor()
   // Settings always dock into the right panel; there is no drawer or dock toggle.
   await page.getByRole('tab', { name: '設定', exact: true }).click()

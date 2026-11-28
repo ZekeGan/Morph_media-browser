@@ -135,10 +135,16 @@ const buttons = async (back: boolean, forward: boolean) => {
   )
 }
 // The panel repeats back/forward only while it is expanded over the center.
+// R-537: Back in an expanded panel exits full-width first; Forward still steps through history.
 const viaPanel = async (name: '返回' | '前進') => {
   await button('放大內容區').click()
   await right().getByRole('button', { name, exact: true }).click()
-  await button('還原內容區').click()
+  if (name === '返回') {
+    await page.locator('.project-workspace.content-expanded').waitFor({ state: 'detached' })
+    await center().getByRole('button', { name: '返回', exact: true }).click()
+  } else {
+    await button('還原內容區').click()
+  }
 }
 const go = async (name: string) => {
   await page
@@ -226,6 +232,7 @@ try {
   })
   await fs.mkdir(path.join(media, 'Untracked'))
   await button('開啟專案 Navigation').first().click()
+  await button('切換詳情內容').click()
   await page.locator('.mixed-media-browser').waitFor()
   await current('Media')
   await buttons(false, false)
@@ -319,10 +326,10 @@ try {
   await current('Media')
   await page.locator('.media-thumbnail').filter({ hasText: 'book.zip' }).click()
   await page.locator('.media-viewer-shell .is-active').waitFor()
+  // R-537: mouse Back while a viewer is open closes the viewer instead of changing folder history.
   await side(-1, '.react-flow')
-  await current('Media')
-  await button('關閉媒體檢視器').click()
   await page.locator('.media-viewer-shell').waitFor({ state: 'detached' })
+  await current('Media')
   const missing = folderFile(path.join(media, 'A', 'B'))
   const backup = missing + '.navigation-test'
   await fs.rename(missing, backup)
@@ -376,6 +383,12 @@ try {
   await current('A')
   await side(-1)
   await current('Media')
+  await button('開啟專案 Multi navigation').first().click()
+  // R-533: a fresh project starts with its detail panel closed; open it once, then test R-379 on switching back.
+  await button('切換詳情內容').click()
+  await page.locator('.media-subfolders, .content-subfolders').waitFor()
+  await button('開啟專案 Navigation').first().click()
+  await page.locator('.mixed-media-browser').waitFor()
   await button('開啟專案 Multi navigation').first().click()
   // R-379: the right panel of the project just opened is there at once; it does not slide open again.
   const panelWidths = await page.evaluate(

@@ -170,6 +170,9 @@ try {
       .getByRole('button', { name: '開啟專案 ' + name, exact: true })
       .first()
       .click()
+    const toggle = page.getByRole('button', { name: '切換詳情內容', exact: true })
+    await toggle.waitFor()
+    if ((await toggle.getAttribute('aria-pressed')) !== 'true') await toggle.click()
     await page.locator('.mixed-media-browser').waitFor()
     // R-294: a music folder's page shows the album cover (here the first track's embedded one).
     await page.waitForFunction(() => {
@@ -330,6 +333,9 @@ try {
       })
       await page.getByRole('button', { name: '縮小播放', exact: true }).click()
       await page.getByRole('button', { name: '開啟專案 Audio legacy', exact: true }).first().click()
+      const legacyToggle = page.getByRole('button', { name: '切換詳情內容', exact: true })
+      await legacyToggle.waitFor()
+      if ((await legacyToggle.getAttribute('aria-pressed')) !== 'true') await legacyToggle.click()
       await page.locator('.mixed-media-browser').waitFor()
       assert.equal(
         await page.evaluate(

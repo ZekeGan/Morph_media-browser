@@ -107,3 +107,10 @@ export async function openLayoutEditor(page: Page) {
   await dialog.getByRole('button', { name: '編輯卡片版面', exact: true }).click()
   await dialog.waitFor({ state: 'hidden' })
 }
+
+// R-533: a fresh project starts with the detail panel closed; tests that inspect it open it explicitly.
+export async function openPanel(page: Page) {
+  const toggle = page.getByRole('button', { name: '切換詳情內容', exact: true })
+  await toggle.waitFor()
+  if ((await toggle.getAttribute('aria-pressed')) !== 'true') await toggle.click()
+}

@@ -143,6 +143,7 @@ try {
     win.setBounds({ width: 1500, height: 950 })
   })
   await button('開啟專案 Mixed QA').first().click()
+  await button('切換詳情內容').click()
   await page.locator('.mixed-media-browser').waitFor()
   await page.locator('.gallery-loading').waitFor({ state: 'detached' })
   assert.equal(await button('套用').count(), 0)

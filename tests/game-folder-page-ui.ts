@@ -3,7 +3,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 
 import { Library } from '../electron/library'
-import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
+import { closeApp, launchApp, openPanel, removeTestRoot, reportFailure } from './support/app'
 import { tinyPng } from './support/archive-fixture'
 
 // A folder in a game project that is not a game ROOT must show the shared folder page:
@@ -27,6 +27,7 @@ const { app, page } = await launchApp(local, errors)
 let passed = false
 try {
   await page.getByRole('button', { name: '開啟專案 Game Page', exact: true }).first().click()
+  await openPanel(page)
   const body = page.locator('.folder-panel-body')
   await body.locator('.mixed-media-browser').waitFor()
   await body.locator('.folder-details summary').waitFor()

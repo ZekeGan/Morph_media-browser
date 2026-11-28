@@ -42,6 +42,8 @@ type Props = {
   folderMode: boolean
   moveWidth: (event: React.PointerEvent) => void
   navHistory: (delta: number) => void
+  // R-537: one layer back (out of the full-width view first).
+  back: () => void
   persist: (next: BrowseState) => void
   // Passed in on purpose: a bare `open` would silently resolve to window.open.
   open: (id: string, fromHistory?: number) => Promise<void>
@@ -86,6 +88,7 @@ export function BrowsePanel(props: Props) {
     folderMode,
     moveWidth,
     navHistory,
+    back,
     persist,
     open,
     openConfig,
@@ -136,9 +139,9 @@ export function BrowsePanel(props: Props) {
                 <ActionIcon
                   className="panel-history"
                   aria-label={tr('返回')}
-                  disabled={!ready || busy || !history.index}
+                  disabled={!ready || busy || (!expanded && !history.index)}
                   variant="subtle"
-                  onClick={() => navHistory(-1)}
+                  onClick={back}
                 >
                   <Icon name="arrow-left" />
                 </ActionIcon>

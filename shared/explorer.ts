@@ -28,6 +28,8 @@ export interface BrowseState {
   treeCollapsed?: string[]
   panelWidth: number
   panelVisible?: boolean
+  /** R-533: false once the user closed the panel themselves; a click on a folder then only selects it. */
+  panelAuto?: boolean
   /** Legacy: settings always dock in the right panel now; kept so older saved preferences stay valid. */
   settingsDock?: boolean
   detailId?: string

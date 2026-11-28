@@ -8,9 +8,11 @@ export interface MarkContext {
   // The folders in the order shown, for Shift+click ranges.
   current: FolderRow[]
   highlight?: string
-  setHighlight: (id: string) => void
+  // A plain click on a folder.
+  select: (id: string) => void
   open: (id: string) => void
-  openConfig: (id: string) => void
+  // R-535: the folder's short menu, at a point of the window.
+  openMenu: (id: string, x: number, y: number) => void
   clearSelection: () => void
 }
 
@@ -28,7 +30,7 @@ export function useFolderMarks(context: () => MarkContext) {
   useEffect(() => cancelClear, [])
   const gestures = (id: string) => ({
     onClick: (e: MouseEvent) => {
-      const { current, highlight, setHighlight, clearSelection } = context()
+      const { current, highlight, select, clearSelection } = context()
       cancelClear()
       if (e.ctrlKey || e.metaKey) {
         anchor.current = id
@@ -52,7 +54,7 @@ export function useFolderMarks(context: () => MarkContext) {
         return
       }
       if (marked.length) setMarked([])
-      setHighlight(id)
+      select(id)
     },
     onDoubleClick: () => {
       cancelClear()
@@ -61,7 +63,7 @@ export function useFolderMarks(context: () => MarkContext) {
     onContextMenu: (e: MouseEvent) => {
       e.preventDefault()
       e.stopPropagation()
-      context().openConfig(id)
+      context().openMenu(id, e.clientX, e.clientY)
     },
     onKeyDown: (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
@@ -70,7 +72,8 @@ export function useFolderMarks(context: () => MarkContext) {
       }
       if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
         e.preventDefault()
-        context().openConfig(id)
+        const box = e.currentTarget.getBoundingClientRect()
+        context().openMenu(id, box.left + 12, box.top + 12)
       }
     },
   })

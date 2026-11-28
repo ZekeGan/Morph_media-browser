@@ -47,6 +47,7 @@ import { BrowsePanel } from './BrowsePanel'
 import { BrowseToolbar } from './BrowseToolbar'
 import { FolderCards } from './FolderCards'
 import { isLayoutWork, KindRowsContext, LayoutWorksContext } from './folderKind'
+import { FolderMenu, type FolderMenuAt } from './FolderMenu'
 import { FolderTable } from './FolderTable'
 import { KindBatchBar } from './KindBatchBar'
 import { LayoutConfig } from './LayoutConfig'
@@ -67,8 +68,14 @@ const initial: BrowseState = {
   location: '',
   widths: { name: 200, path: 320, depth: 90 },
   panelWidth: 420,
-  panelVisible: true,
+  // R-533: a project starts with the list using the full width; a click on a folder slides the panel out.
+  panelVisible: false,
 }
+
+const anyShown = (selector: string) =>
+  Array.from(document.querySelectorAll(selector)).some(
+    (node) => node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden'
+  )
 
 type Act = (r: Request) => Promise<Response | undefined>
 type Run = (r: ExplorerRequest) => Promise<ExplorerResponse | undefined>
@@ -152,13 +159,14 @@ function BrowseWorkspaceBody({
   const [configDirty, setConfigDirty] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [filePreview, setFilePreview] = useState<OverviewEntry>()
+  const [menu, setMenu] = useState<FolderMenuAt>()
   // Read at the time of a gesture; everything here is defined further down.
   const { marked, setMarked, gestures, cancelClear } = useFolderMarks(() => ({
     current,
     highlight,
-    setHighlight,
-    open: (id) => void open(id),
-    openConfig,
+    select: selectFolder,
+    open: activate,
+    openMenu: (rowId, x, y) => setMenu({ rowId, x, y }),
     clearSelection,
   }))
   const panelSlot = useRef<HTMLDivElement>(null)
@@ -219,7 +227,7 @@ function BrowseWorkspaceBody({
               : saved.location || '',
           locations: undefined,
           detailId: target?.rowId,
-          panelVisible: saved.panelVisible ?? true,
+          panelVisible: saved.panelVisible ?? false,
         }
         setBrowse(next)
         state.current = next
@@ -494,6 +502,65 @@ function BrowseWorkspaceBody({
   useEffect(() => {
     if (highlight && browse.panelVisible !== false) previewDetail(highlight)
   }, [highlight, browse.panelVisible])
+  // R-533: a click on a folder shows it in the panel, sliding the panel out unless the user closed it themselves.
+  const selectFolder = (id: string) => {
+    setHighlight(id)
+    if (ready && state.current.panelVisible === false && state.current.panelAuto !== false) {
+      persist({ ...state.current, panelVisible: true })
+    }
+  }
+  // R-534: a work folder (no subfolders, or a game) has nothing to list inside, so opening it shows its details
+  // full width instead of entering an empty list. Folders that may be refused go the usual way, with its notices.
+  const children = useMemo(() => treeStructure(all).children, [all])
+  const hideAfterExpand = useRef(false)
+  const activate = (id: string) => {
+    const row = all.find((r) => r.rowId === id)
+    const healthy = !!row?.record && !row.error && !row.stopped && !row.readonly
+    if (!row || !healthy || !(isGameFolder(row) || !children.has(row.rowId))) {
+      void open(id)
+      return
+    }
+    cancelClear()
+    hideAfterExpand.current = state.current.panelVisible === false
+    setHighlight(id)
+    persist({ ...state.current, panelVisible: true })
+    setExpanded(true)
+  }
+  // R-537: Back goes one layer at a time: out of the full-width details (once the steps taken inside them are
+  // retraced), then through the history. Leaving them puts the list back as it was: its scroll, and the panel
+  // closed again when opening a work had opened it.
+  const expandedAt = useRef(0)
+  const wasExpanded = useRef(false)
+  useLayoutEffect(() => {
+    if (expanded) expandedAt.current = histories.current[state.current.mode]?.index ?? 0
+    else if (wasExpanded.current) {
+      if (hideAfterExpand.current) persist({ ...state.current, panelVisible: false })
+      scroll.current?.scrollTo(0, state.current.scrolls?.[state.current.mode] ?? 0)
+    }
+    hideAfterExpand.current &&= expanded
+    wasExpanded.current = expanded
+  }, [expanded])
+  const back = () => {
+    if (expanded && history.index <= expandedAt.current) setExpanded(false)
+    else navHistory(-1)
+  }
+  // R-537: while a reader or player fills the view, the mouse's Back button does what Esc does there (leaving
+  // immersive reading first, then the reader).
+  const backInViewer = () => {
+    if (!anyShown('.reader,.media-viewer-shell,.document-viewer')) return false
+    if (
+      !anyShown(
+        '.mantine-Drawer-content,.mantine-Modal-content,.mantine-Menu-dropdown,.mantine-Select-dropdown,.mantine-Popover-dropdown'
+      )
+    ) {
+      const focused =
+        document.activeElement instanceof HTMLElement ? document.activeElement : document.body
+      focused.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+      )
+    }
+    return true
+  }
   // Unsaved folder settings are never dropped silently: switching waits for an answer shown in the panel.
   const [switching, setSwitching] = useState<{ id: string; enter: boolean }>()
   const draftBlocks = (id: string, enter: boolean) => {
@@ -596,8 +663,12 @@ function BrowseWorkspaceBody({
     ) {
       return
     }
+    if (event.delta === -1 && backInViewer()) return
     const target = document.elementFromPoint(event.x, event.y)
-    if (target && workspaceRoot.current?.contains(target)) navHistory(event.delta)
+    if (target && workspaceRoot.current?.contains(target)) {
+      if (event.delta === -1) back()
+      else navHistory(1)
+    }
   }
   const openConfig = (id: string, tab = 'fields') => {
     if (configDirty && id !== configId && !window.confirm(tr('放棄尚未保存的資料夾設定？'))) return
@@ -754,7 +825,7 @@ function BrowseWorkspaceBody({
   }
   const showPanelFor = (id: string) => {
     setHighlight(id)
-    persist({ ...state.current, panelVisible: true })
+    persist({ ...state.current, panelVisible: true, panelAuto: undefined })
   }
   // The files view lists what is under the folder shown in the path bar. Switching to it from a selected folder
   // goes there first, so both views always describe the same place.
@@ -778,11 +849,20 @@ function BrowseWorkspaceBody({
     const timer = window.setTimeout(preloadPanel, 1200)
     return () => window.clearTimeout(timer)
   }, [])
+  // Closing the panel with its button or X is remembered: clicks then only select until it is opened again (R-533).
   const togglePanel = () => {
     if (panelSlot.current?.contains(document.activeElement)) panelToggle.current?.focus()
     setExpanded(false)
-    persist({ ...state.current, panelVisible: state.current.panelVisible === false })
+    const opening = state.current.panelVisible === false
+    persist({ ...state.current, panelVisible: opening, panelAuto: opening ? undefined : false })
   }
+  // The dimmed list beside the overlay panel in a narrow window: a click there only puts the panel away.
+  const closePanel = () => {
+    if (panelSlot.current?.contains(document.activeElement)) panelToggle.current?.focus()
+    setExpanded(false)
+    persist({ ...state.current, panelVisible: false })
+  }
+  const menuRow = menu && all.find((r) => r.rowId === menu.rowId)
   return (
     <div
       ref={workspaceRoot}
@@ -917,9 +997,9 @@ function BrowseWorkspaceBody({
                 rows={base}
                 selected={highlight}
                 focusId={location ? currentFolder?.rowId : undefined}
-                onSelect={setHighlight}
-                onOpen={(id) => void open(id)}
-                onConfigure={openConfig}
+                onSelect={selectFolder}
+                onOpen={activate}
+                onMenu={(rowId, x, y) => setMenu({ rowId, x, y })}
                 collapsed={browse.treeCollapsed}
                 onCollapsed={(treeCollapsed) => persist({ ...state.current, treeCollapsed })}
                 viewport={browse.viewport}
@@ -994,7 +1074,31 @@ function BrowseWorkspaceBody({
           </div>
         )}
       </section>
-      {panelOpen && <div className="panel-scrim" aria-hidden="true" onClick={togglePanel} />}
+      {panelOpen && <div className="panel-scrim" aria-hidden="true" onClick={closePanel} />}
+      {menu && menuRow && (
+        <FolderMenu
+          row={menuRow}
+          x={menu.x}
+          y={menu.y}
+          busy={busy}
+          close={() => setMenu(undefined)}
+          openConfig={() => openConfig(menuRow.rowId)}
+          openInExplorer={() => void act({ action: 'open', rowId: menuRow.rowId })}
+          setKind={(kind) =>
+            menuRow.record &&
+            void run({
+              action: 'folderKind',
+              rowId: menuRow.rowId,
+              revision: menuRow.record.revision,
+              kind,
+            })
+          }
+          chooseLayout={() => {
+            setLayoutsFrom({ row: menuRow, target: 'card' })
+            setLayoutsOpen(true)
+          }}
+        />
+      )}
       <BrowsePanel
         persist={persist}
         act={act}
@@ -1033,6 +1137,7 @@ function BrowseWorkspaceBody({
         readNextDone={() => setReadNext(undefined)}
         moveWidth={moveWidth}
         navHistory={navHistory}
+        back={back}
         open={open}
         openConfig={openConfig}
         panelBody={panelBody}

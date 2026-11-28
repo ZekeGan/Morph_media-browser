@@ -161,6 +161,7 @@ try {
     .getByRole('button', { name: '開啟專案 主題查收 · Theme QA', exact: true })
     .first()
     .click()
+  await page.getByRole('button', { name: '切換詳情內容', exact: true }).click()
   await page
     .locator('.media-subfolder')
     .getByRole('button', { name: '雨後書店', exact: true })
