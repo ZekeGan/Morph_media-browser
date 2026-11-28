@@ -202,8 +202,10 @@ export function Reader({
     )
     return () => cancelAnimationFrame(frame)
   }, [pageDropdown])
-  const toggleChrome = () =>
-    immersive ? setBars((value) => !value) : setToolbar((value) => !value)
+  // R-558: center click only toggles HUD bars in immersive mode; non-immersive toolbar stays stably visible.
+  const toggleChrome = () => {
+    if (immersive) setBars((value) => !value)
+  }
   const select = useRef<HTMLInputElement>(null)
   const viewport = useRef<HTMLDivElement>(null)
   const drag = useRef<
@@ -1074,7 +1076,6 @@ export function Reader({
     previewIndex === undefined ? undefined : images[groups[previewIndex]?.[0] ?? -1]
   const edges = immersive && (
     <>
-      <div className="reader-edge reader-edge-left" aria-hidden="true" />
       <nav className="reader-rail" aria-label={tr('閱讀工具')}>
         {modeTools.map((tool) => toolButton(tool, 'right'))}
         <span className="reader-rail-gap" />
@@ -1082,62 +1083,63 @@ export function Reader({
         <span className="reader-rail-gap" />
         {toolButton(immersiveTool, 'right')}
       </nav>
-      <div className="reader-edge reader-edge-bottom" aria-hidden="true" />
-      <div className="reader-progress" role="group" aria-label={tr('閱讀進度')}>
-        {!webtoon &&
-          iconTool(
-            rtl ? tr('下一頁') : tr('上一頁'),
-            '←',
-            'prev',
-            () => step(rtl ? 1 : -1),
-            rtl ? !canForward : groupIndex === 0
-          )}
-        <div
-          ref={track}
-          className="reader-progress-track"
-          onMouseMove={(event) => {
-            const bounds = event.currentTarget.getBoundingClientRect()
-            const ratio = Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width))
-            setHovered(Math.round((barRtl ? 1 - ratio : ratio) * last))
-          }}
-          onMouseLeave={() => setHovered(undefined)}
-        >
-          {/* Right to left: the bar runs the other way (first page at the right end, the read part filled from the
-              right), so its position is the page counted from the end. */}
-          <Slider
-            aria-label={tr('閱讀進度')}
-            min={0}
-            max={last}
-            step={1}
-            label={null}
-            inverted={barRtl}
-            disabled={groups.length < 2}
-            value={barRtl ? last - (scrub ?? groupIndex) : (scrub ?? groupIndex)}
-            onChange={(value) => setScrub(barRtl ? last - value : value)}
-            onChangeEnd={(value) => {
-              setScrub(undefined)
-              goToGroup(barRtl ? last - value : value)
+      {manga && (
+        <div className="reader-progress" role="group" aria-label={tr('閱讀進度')}>
+          {!webtoon &&
+            iconTool(
+              rtl ? tr('下一頁') : tr('上一頁'),
+              '←',
+              'prev',
+              () => step(rtl ? 1 : -1),
+              rtl ? !canForward : groupIndex === 0
+            )}
+          <div
+            ref={track}
+            className="reader-progress-track"
+            onMouseMove={(event) => {
+              const bounds = event.currentTarget.getBoundingClientRect()
+              const ratio = Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width))
+              setHovered(Math.round((barRtl ? 1 - ratio : ratio) * last))
             }}
-          />
-          {previewEntry && previewIndex !== undefined && (
-            <div className="reader-progress-preview" style={{ left: place(previewIndex) }}>
-              <img src={previewEntry.thumb ?? previewEntry.url} alt="" draggable={false} />
-              <span>{pageLabel(groups[previewIndex])}</span>
-            </div>
-          )}
+            onMouseLeave={() => setHovered(undefined)}
+          >
+            {/* Right to left: the bar runs the other way (first page at the right end, the read part filled from the
+                right), so its position is the page counted from the end. */}
+            <Slider
+              aria-label={tr('閱讀進度')}
+              min={0}
+              max={last}
+              step={1}
+              label={null}
+              inverted={barRtl}
+              disabled={groups.length < 2}
+              value={barRtl ? last - (scrub ?? groupIndex) : (scrub ?? groupIndex)}
+              onChange={(value) => setScrub(barRtl ? last - value : value)}
+              onChangeEnd={(value) => {
+                setScrub(undefined)
+                goToGroup(barRtl ? last - value : value)
+              }}
+            />
+            {previewEntry && previewIndex !== undefined && (
+              <div className="reader-progress-preview" style={{ left: place(previewIndex) }}>
+                <img src={previewEntry.thumb ?? previewEntry.url} alt="" draggable={false} />
+                <span>{pageLabel(groups[previewIndex])}</span>
+              </div>
+            )}
+          </div>
+          {!webtoon &&
+            iconTool(
+              rtl ? tr('上一頁') : tr('下一頁'),
+              '→',
+              'next',
+              () => step(rtl ? -1 : 1),
+              rtl ? groupIndex === 0 : !canForward
+            )}
+          <span className="reader-progress-pages">
+            {tr('第 {0} / {1} 頁', pageLabel(groups[scrub ?? groupIndex] ?? []), images.length)}
+          </span>
         </div>
-        {!webtoon &&
-          iconTool(
-            rtl ? tr('上一頁') : tr('下一頁'),
-            '→',
-            'next',
-            () => step(rtl ? -1 : 1),
-            rtl ? groupIndex === 0 : !canForward
-          )}
-        <span className="reader-progress-pages">
-          {tr('第 {0} / {1} 頁', pageLabel(groups[scrub ?? groupIndex] ?? []), images.length)}
-        </span>
-      </div>
+      )}
     </>
   )
   // R-269: in immersive reading the pointer hides after two seconds at rest, except over the tool rail or progress
@@ -1414,9 +1416,8 @@ export function Reader({
                 } else releaseDrag(0)
                 return
               }
-              // R-392: the left and right thirds turn the page, the middle third shows or hides the toolbar.
+              // R-392 / R-558: middle third toggles immersive HUD (both manga & image viewer); left/right thirds turn manga pages.
               if (
-                manga &&
                 start &&
                 !start.moved &&
                 Math.hypot(event.clientX - start.x, event.clientY - start.y) <= 5
@@ -1424,7 +1425,7 @@ export function Reader({
                 const bounds = event.currentTarget.getBoundingClientRect()
                 const third = (event.clientX - bounds.left) / bounds.width
                 if (third >= 1 / 3 && third <= 2 / 3) toggleChrome()
-                else step(readerArrowStep(third < 0.5 ? 'ArrowLeft' : 'ArrowRight', rtl))
+                else if (manga) step(readerArrowStep(third < 0.5 ? 'ArrowLeft' : 'ArrowRight', rtl))
               }
             }}
             onPointerCancel={() => {

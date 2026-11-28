@@ -816,18 +816,12 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .purpose-card-text strong { font-size:13px; font-weight:600; }
 .purpose-card-text small { font-size:11px; color:var(--muted); overflow-wrap:anywhere; }
 .palette-unadded { justify-self:start; }
-/* Immersive reading edges (R-261 to R-263): a thin strip at each edge slides its panel in on hover; keyboard focus
-   inside a panel keeps it open. Left: tools, bottom: progress, right: the media queue (media-workspace.css). */
-.reader-edge { position:absolute; z-index:9; }
-.reader-edge-left { left:0; top:0; bottom:0; width:14px; }
-.reader-edge-bottom { left:0; right:0; bottom:0; height:16px; }
-.reader-rail { position:absolute; z-index:10; left:8px; top:50%; display:flex; flex-direction:column; gap:2px; padding:6px; border:1px solid var(--line); border-radius:var(--radius); background:var(--overlay); backdrop-filter:blur(12px); transform:translate(calc(-100% - 12px), -50%); opacity:0; transition:transform 160ms ease-out, opacity 160ms ease-out; }
+/* R-558: immersive reading HUD — toggled only by clicking the center (or keyboard focus), no edge hover. */
+.reader-rail { position:absolute; z-index:10; left:8px; top:50%; display:flex; flex-direction:column; gap:2px; padding:6px; border:1px solid var(--line); border-radius:var(--radius); background:var(--overlay); backdrop-filter:blur(12px); transform:translate(calc(-100% - 12px), -50%); opacity:0; pointer-events:none; transition:transform 160ms ease-out, opacity 160ms ease-out; }
 .reader-rail-gap { height:1px; margin:4px 2px; background:var(--line); }
-.reader-progress { position:absolute; z-index:10; left:50%; bottom:10px; width:min(760px, calc(100% - 40px)); display:flex; align-items:center; gap:8px; padding:6px 12px; border:1px solid var(--line); border-radius:var(--radius); background:var(--overlay); backdrop-filter:blur(12px); transform:translate(-50%, calc(100% + 16px)); opacity:0; transition:transform 160ms ease-out, opacity 160ms ease-out; }
-.reader-edge-left:hover + .reader-rail, .reader-rail:hover, .reader-rail:has(:focus-visible) { transform:translate(0, -50%); opacity:1; transition-delay:80ms; }
-.reader-bars .reader-rail { transform:translate(0, -50%); opacity:1; }
-.reader-bars .reader-progress { transform:translate(-50%, 0); opacity:1; }
-.reader-edge-bottom:hover + .reader-progress, .reader-progress:hover, .reader-progress:has(:focus-visible) { transform:translate(-50%, 0); opacity:1; transition-delay:80ms; }
+.reader-progress { position:absolute; z-index:10; left:50%; bottom:10px; width:min(760px, calc(100% - 40px)); display:flex; align-items:center; gap:8px; padding:6px 12px; border:1px solid var(--line); border-radius:var(--radius); background:var(--overlay); backdrop-filter:blur(12px); transform:translate(-50%, calc(100% + 16px)); opacity:0; pointer-events:none; transition:transform 160ms ease-out, opacity 160ms ease-out; }
+.reader-bars .reader-rail, .reader-rail:has(:focus-visible) { transform:translate(0, -50%); opacity:1; pointer-events:auto; }
+.reader-bars .reader-progress, .reader-progress:has(:focus-visible) { transform:translate(-50%, 0); opacity:1; pointer-events:auto; }
 .reader-progress-track { position:relative; flex:1; min-width:0; padding:6px 0; }
 .reader-progress-pages { flex-shrink:0; font-size:12px; color:var(--muted); white-space:nowrap; }
 .reader-progress-preview { position:absolute; bottom:calc(100% + 8px); display:grid; justify-items:center; gap:4px; padding:4px; border:1px solid var(--line); border-radius:var(--radius); background:var(--panel); transform:translateX(-50%); pointer-events:none; font-size:11px; color:var(--muted); }

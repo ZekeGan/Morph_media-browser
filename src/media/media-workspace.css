@@ -536,13 +536,13 @@
     display: none;
 }
 
-/* Immersive reading (R-261): the queue waits behind the right edge and slides in while the pointer rests there. */
+/* R-558: in immersive reading, the right media queue toggles together with the HUD when clicking the center. */
 .media-viewer-layout>.media-queue-slot.queue-edge {
     top: 0;
     visibility: visible;
     opacity: 1;
-    pointer-events: auto;
-    transform: translateX(calc(100% - 14px));
+    pointer-events: none;
+    transform: translateX(100%);
     transition: transform 160ms ease-out;
 }
 
@@ -551,13 +551,13 @@
     transition: opacity 160ms ease-out;
 }
 
-.media-viewer-layout>.media-queue-slot.queue-edge:hover,
+.media-viewer-shell:has(.reader-bars) .media-viewer-layout>.media-queue-slot.queue-edge,
 .media-viewer-layout>.media-queue-slot.queue-edge:has(:focus-visible) {
     transform: translateX(0);
-    transition-delay: 80ms;
+    pointer-events: auto;
 }
 
-.media-viewer-layout>.media-queue-slot.queue-edge:hover>.media-queue,
+.media-viewer-shell:has(.reader-bars) .media-viewer-layout>.media-queue-slot.queue-edge>.media-queue,
 .media-viewer-layout>.media-queue-slot.queue-edge:has(:focus-visible)>.media-queue {
     opacity: 1;
 }

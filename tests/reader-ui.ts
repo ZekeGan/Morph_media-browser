@@ -350,23 +350,32 @@ try {
   assert.equal(await reader().locator('.reader-toolbar,.reader-info,.reader-close').count(), 0)
   await fit()
   await page.screenshot({ path: path.join(root, 'reader-fullscreen.png') })
-  // R-262/R-263: the left edge slides in the tool rail, the bottom edge the progress bar.
+  // R-558: immersive HUD opens on center click (never on left/bottom edge hover).
   const viewportSize =
     page.viewportSize() ?? (await page.evaluate(() => ({ width: innerWidth, height: innerHeight })))
   await page.mouse.move(4, viewportSize.height / 2)
-  await page.waitForTimeout(400)
+  await page.waitForTimeout(300)
   assert.equal(
-    await reader().getByRole('navigation', { name: '閱讀工具', exact: true }).isVisible(),
-    true
+    await reader()
+      .locator('.reader-rail')
+      .evaluate((rail) => getComputedStyle(rail).opacity),
+    '0'
+  )
+  await page.mouse.click(viewportSize.width / 2, viewportSize.height / 2)
+  await page.waitForTimeout(300)
+  assert.equal(
+    await reader()
+      .locator('.reader-rail')
+      .evaluate((rail) => getComputedStyle(rail).opacity),
+    '1'
   )
   await page.screenshot({ path: path.join(root, 'reader-rail.png') })
-  // R-274: clicking a tool leaves no keyboard focus behind, so the rail still closes when the pointer leaves.
   await reader()
     .getByRole('navigation', { name: '閱讀工具', exact: true })
     .getByRole('button', { name: '重設縮放', exact: true })
     .click()
-  await page.mouse.move(viewportSize.width / 2, viewportSize.height / 2)
-  await page.waitForTimeout(500)
+  await page.mouse.click(viewportSize.width / 2, viewportSize.height / 2)
+  await page.waitForTimeout(300)
   assert.equal(
     await reader()
       .locator('.reader-rail')
@@ -378,8 +387,17 @@ try {
   assert.equal(await reader().evaluate((node) => node.classList.contains('cursor-idle')), true)
   await page.mouse.move(viewportSize.width / 2 + 20, viewportSize.height / 2)
   assert.equal(await reader().evaluate((node) => node.classList.contains('cursor-idle')), false)
+  // R-558: immersive HUD (rail + progress bar) opens only on center click, not edge hover.
   await page.mouse.move(viewportSize.width / 2, viewportSize.height - 4)
-  await page.waitForTimeout(400)
+  await page.waitForTimeout(250)
+  assert.equal(
+    await reader()
+      .locator('.reader-rail')
+      .evaluate((rail) => getComputedStyle(rail).opacity),
+    '0'
+  )
+  await page.mouse.click(viewportSize.width / 2, viewportSize.height / 2)
+  await page.waitForTimeout(250)
   const progress = reader().getByRole('group', { name: '閱讀進度', exact: true })
   await progress.locator('.reader-progress-track').hover({ position: { x: 40, y: 10 } })
   await page.waitForTimeout(200)
@@ -387,7 +405,6 @@ try {
   await page.screenshot({ path: path.join(root, 'reader-progress.png') })
   // Right to left, the bar starts at its right end: resting there previews the first pages.
   const direction = async (name: string) => {
-    await page.mouse.move(4, viewportSize.height / 2)
     await reader()
       .getByRole('navigation', { name: '閱讀工具', exact: true })
       .getByRole('button', { name, exact: true })
@@ -395,8 +412,6 @@ try {
   }
   await direction('由左至右')
   const trackBox = (await progress.locator('.reader-progress-track').boundingBox())!
-  await page.mouse.move(trackBox.x + trackBox.width / 2, viewportSize.height - 4)
-  await page.waitForTimeout(400)
   await progress
     .locator('.reader-progress-track')
     .hover({ position: { x: trackBox.width - 2, y: 10 } })
