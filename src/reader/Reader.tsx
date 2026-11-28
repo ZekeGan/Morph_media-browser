@@ -1,4 +1,13 @@
-import { ActionIcon, Button, FocusTrap, Group, Select, Slider, Tooltip } from '@mantine/core'
+import {
+  ActionIcon,
+  Button,
+  FocusTrap,
+  Group,
+  Popover,
+  Select,
+  Slider,
+  Tooltip,
+} from '@mantine/core'
 import {
   type ReactNode,
   useCallback,
@@ -929,7 +938,8 @@ export function Reader({
     pressed?: boolean
   }
 
-  const modeTools: ReaderTool[] = manga
+  // R-553: split high-frequency view modes (single/spread/webtoon) from lower-frequency reading settings.
+  const primaryModeTools: ReaderTool[] = manga
     ? [
         {
           label: tr('單頁'),
@@ -958,32 +968,6 @@ export function Reader({
           pressed: webtoon,
           action: () => setWebtoon(true),
         },
-        // First page alone and reading direction do not apply to one continuous column.
-        ...(webtoon
-          ? []
-          : ([
-              {
-                label: tr('首張獨立顯示'),
-                key: '',
-                icon: 'page-cover',
-                pressed: first,
-                disabled: !spread,
-                action: () => setFirst((value) => !value),
-              },
-              {
-                label: rtl ? tr('由右至左') : tr('由左至右'),
-                key: '',
-                icon: rtl ? 'read-rtl' : 'read-ltr',
-                action: () => setRtl((value) => !value),
-              },
-              {
-                label: tr('翻頁過渡'),
-                key: 'A',
-                icon: 'page-slide',
-                pressed: turnMotion,
-                action: toggleTurnMotion,
-              },
-            ] as ReaderTool[])),
       ]
     : [
         {
@@ -1001,6 +985,33 @@ export function Reader({
           action: () => setFitMode('height'),
         },
       ]
+  const secondaryModeTools: ReaderTool[] =
+    manga && !webtoon
+      ? [
+          {
+            label: tr('首張獨立顯示'),
+            key: '',
+            icon: 'page-cover',
+            pressed: first,
+            disabled: !spread,
+            action: () => setFirst((value) => !value),
+          },
+          {
+            label: rtl ? tr('由右至左') : tr('由左至右'),
+            key: '',
+            icon: rtl ? 'read-rtl' : 'read-ltr',
+            action: () => setRtl((value) => !value),
+          },
+          {
+            label: tr('翻頁過渡'),
+            key: 'A',
+            icon: 'page-slide',
+            pressed: turnMotion,
+            action: toggleTurnMotion,
+          },
+        ]
+      : []
+  const modeTools: ReaderTool[] = [...primaryModeTools, ...secondaryModeTools]
   const zoomOut: ReaderTool = {
     label: tr('縮小'),
     key: '−',
@@ -1230,7 +1241,7 @@ export function Reader({
                 )}
             </Group>
             <Group className="reader-tool-group" gap={3} wrap="nowrap">
-              {modeTools.map((tool) => toolButton(tool))}
+              {primaryModeTools.map((tool) => toolButton(tool))}
             </Group>
             <Group className="reader-tool-group reader-zoom-tools" gap={3} wrap="nowrap">
               {webtoon ? (
@@ -1263,8 +1274,29 @@ export function Reader({
                 </>
               )}
               {toolButton(immersiveTool)}
+              {(secondaryModeTools.length > 0 || !!extraTools) && (
+                <Popover position="bottom-end" withArrow shadow="md" zIndex={510}>
+                  <Popover.Target>
+                    <Tooltip zIndex={510} label={tr('閱讀設定')}>
+                      <ActionIcon
+                        aria-label={tr('閱讀設定')}
+                        size="lg"
+                        variant="subtle"
+                        color="gray"
+                      >
+                        <Icon name="settings" />
+                      </ActionIcon>
+                    </Tooltip>
+                  </Popover.Target>
+                  <Popover.Dropdown className="reader-settings-popover">
+                    <Group gap={4} wrap="wrap">
+                      {secondaryModeTools.map((tool) => toolButton(tool))}
+                      {extraTools}
+                    </Group>
+                  </Popover.Dropdown>
+                </Popover>
+              )}
             </Group>
-            {extraTools}
           </div>
         )}
         {webtoon ? (

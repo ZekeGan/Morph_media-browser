@@ -236,7 +236,29 @@ export function SearchDialog({
                 maxLength={2000}
                 onChange={(e) => changeQuery(e.currentTarget.value)}
                 onKeyDown={(event) => {
-                  if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+                  if (event.nativeEvent.isComposing) return
+                  const hits = result?.hits ?? []
+                  if (event.key === 'ArrowDown' && hits.length) {
+                    event.preventDefault()
+                    const index = hits.findIndex((item) => item.rowId === hit?.rowId)
+                    const next = hits[(index + 1) % hits.length]
+                    setHit(next)
+                    document
+                      .querySelector(`.search-results [data-hit-id="${next.rowId}"]`)
+                      ?.scrollIntoView({ block: 'nearest' })
+                    return
+                  }
+                  if (event.key === 'ArrowUp' && hits.length) {
+                    event.preventDefault()
+                    const index = hits.findIndex((item) => item.rowId === hit?.rowId)
+                    const next = hits[index <= 0 ? hits.length - 1 : index - 1]
+                    setHit(next)
+                    document
+                      .querySelector(`.search-results [data-hit-id="${next.rowId}"]`)
+                      ?.scrollIntoView({ block: 'nearest' })
+                    return
+                  }
+                  if (event.key === 'Enter') {
                     event.preventDefault()
                     open()
                   }
@@ -258,9 +280,28 @@ export function SearchDialog({
                   ) : null
                 }
               />
+              {/* R-551: concise syntax help tucked behind a ? popover. */}
+              <Popover position="bottom-end" withArrow shadow="md" width={280}>
+                <Popover.Target>
+                  <ActionIcon
+                    size="lg"
+                    variant="subtle"
+                    color="gray"
+                    aria-label={tr('搜尋語法說明')}
+                    title={tr('搜尋語法說明')}
+                  >
+                    <Icon name="help" size={16} />
+                  </ActionIcon>
+                </Popover.Target>
+                <Popover.Dropdown>
+                  <Text size="xs">
+                    {tr('可用欄位名稱（如 tag:RPG、score>=8）、引號精確詞組或 -詞 排除。')}
+                  </Text>
+                </Popover.Dropdown>
+              </Popover>
               <ActionIcon
                 size="lg"
-                variant="default"
+                variant={canSave ? 'light' : 'default'}
                 aria-label={tr('保存目前條件')}
                 title={canSave ? tr('保存目前條件') : tr('先輸入搜尋條件，才能保存為常用搜尋')}
                 disabled={!canSave}
@@ -324,80 +365,83 @@ export function SearchDialog({
               </Group>
             </form>
           )}
-          <Popover
-            opened={savedOpen}
-            onChange={setSavedOpen}
-            position="bottom-start"
-            width="target"
-            withinPortal={false}
-          >
-            <Popover.Target>
-              <Button
-                className="saved-search-toggle"
-                variant="subtle"
-                color="gray"
-                fullWidth
-                aria-label={tr('常用搜尋')}
-                onClick={() => setSavedOpen((v) => !v)}
-                rightSection={<span aria-hidden="true">{savedMatches.length} ▾</span>}
-              >
-                {query.trim() ? tr('符合的常用搜尋') : tr('常用搜尋')}
-                {savedMatches.length === 0 && !query.trim() ? ' · ' + tr('尚無') : ''}
-              </Button>
-            </Popover.Target>
-            <Popover.Dropdown className="saved-search-dropdown">
-              <Stack gap="xs">
-                <Text size="xs" c="dimmed">
-                  {tr('選擇條件以套用；右側 × 可刪除。')}
-                </Text>
-                <div className="saved-search-list">
-                  {savedMatches.map((s) => (
-                    <div className="saved-search-row" key={s.id}>
-                      <button
-                        className="saved-search-apply"
-                        disabled={saving}
-                        title={s.query}
-                        onClick={() => {
-                          setQueryAst(s.queryAst)
-                          setQuery(s.query)
-                          setPage(1)
-                          if (query !== s.query || queryAst !== s.queryAst || page !== 1) {
-                            setHit(undefined)
-                            setResult(undefined)
-                            setBusy(true)
-                          }
-                          setSavedOpen(false)
-                          queryInput.current?.focus()
-                        }}
-                      >
-                        <strong>{s.name}</strong>
-                        <small>{s.query}</small>
-                      </button>
-                      <ActionIcon
-                        size="sm"
-                        variant="subtle"
-                        color="gray"
-                        aria-label={tr('刪除常用搜尋 {0}', s.name)}
-                        disabled={saving || dirty}
-                        onClick={() => void removeSaved(s.id)}
-                      >
-                        <Icon name="close" size={15} />
-                      </ActionIcon>
-                    </div>
-                  ))}
-                  {!savedMatches.length && (
-                    <Text size="sm" c="dimmed">
-                      {!project
-                        ? tr('開啟專案後可保存常用搜尋。')
-                        : savedSearches.length
-                          ? tr('沒有符合的常用搜尋')
-                          : tr('尚未保存常用搜尋')}
-                    </Text>
-                  )}
-                </div>
-              </Stack>
-            </Popover.Dropdown>
-          </Popover>
+          {/* R-551: hide saved-searches toggle when the project has none yet. */}
+          {savedSearches.length > 0 && (
+            <Popover
+              opened={savedOpen}
+              onChange={setSavedOpen}
+              position="bottom-start"
+              width="target"
+              withinPortal={false}
+            >
+              <Popover.Target>
+                <Button
+                  className="saved-search-toggle"
+                  variant="subtle"
+                  color="gray"
+                  fullWidth
+                  aria-label={tr('常用搜尋')}
+                  onClick={() => setSavedOpen((v) => !v)}
+                  rightSection={<span aria-hidden="true">{savedMatches.length} ▾</span>}
+                >
+                  {query.trim() ? tr('符合的常用搜尋') : tr('常用搜尋')}
+                  {savedMatches.length === 0 && !query.trim() ? ' · ' + tr('尚無') : ''}
+                </Button>
+              </Popover.Target>
+              <Popover.Dropdown className="saved-search-dropdown">
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed">
+                    {tr('選擇條件以套用；右側 × 可刪除。')}
+                  </Text>
+                  <div className="saved-search-list">
+                    {savedMatches.map((s) => (
+                      <div className="saved-search-row" key={s.id}>
+                        <button
+                          className="saved-search-apply"
+                          disabled={saving}
+                          title={s.query}
+                          onClick={() => {
+                            setQueryAst(s.queryAst)
+                            setQuery(s.query)
+                            setPage(1)
+                            if (query !== s.query || queryAst !== s.queryAst || page !== 1) {
+                              setHit(undefined)
+                              setResult(undefined)
+                              setBusy(true)
+                            }
+                            setSavedOpen(false)
+                            queryInput.current?.focus()
+                          }}
+                        >
+                          <strong>{s.name}</strong>
+                          <small>{s.query}</small>
+                        </button>
+                        <ActionIcon
+                          size="sm"
+                          variant="subtle"
+                          color="gray"
+                          aria-label={tr('刪除常用搜尋 {0}', s.name)}
+                          disabled={saving || dirty}
+                          onClick={() => void removeSaved(s.id)}
+                        >
+                          <Icon name="close" size={15} />
+                        </ActionIcon>
+                      </div>
+                    ))}
+                    {!savedMatches.length && (
+                      <Text size="sm" c="dimmed">
+                        {!project
+                          ? tr('開啟專案後可保存常用搜尋。')
+                          : savedSearches.length
+                            ? tr('沒有符合的常用搜尋')
+                            : tr('尚未保存常用搜尋')}
+                      </Text>
+                    )}
+                  </div>
+                </Stack>
+              </Popover.Dropdown>
+            </Popover>
+          )}
           {error && (
             <Alert color="red" title={tr('搜尋未完成')}>
               {error}
@@ -431,11 +475,12 @@ export function SearchDialog({
             result?.hits.map((r) => (
               <button
                 key={r.rowId}
+                data-hit-id={r.rowId}
                 className={hit?.rowId === r.rowId ? 'selected' : ''}
                 aria-pressed={hit?.rowId === r.rowId}
                 disabled={busy || saving}
-                onClick={() => setHit(r)}
-                onDoubleClick={() => open(r)}
+                onMouseEnter={() => setHit(r)}
+                onClick={() => open(r)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') {
                     event.preventDefault()
@@ -486,16 +531,11 @@ export function SearchDialog({
             size="sm"
           />
         )}
-        <Group className="search-footer" justify="space-between">
-          <Group gap="xs">
-            <Button variant="default" onClick={close}>
-              {tr('取消')}
-            </Button>
-            <Button disabled={!hit || busy || saving || !!error} onClick={() => open()}>
-              {tr('開啟資料夾')}
-            </Button>
-          </Group>
-        </Group>
+        <div className="search-hint-bar">
+          <Text size="xs" c="dimmed">
+            {tr('↑↓ 選擇 · Enter／單擊 開啟 · Esc 關閉')}
+          </Text>
+        </div>
       </Stack>
     </Modal>
   )

@@ -39,6 +39,7 @@ interface Props {
   onCreate: () => void
   onProblems: () => void
   problemCount: number
+  pendingCount?: number
   onSettings: () => void
   onRefresh: () => void
   onProjectSettings: (projectId: string) => void
@@ -834,6 +835,23 @@ export function DesktopShell(props: Props) {
                     <Icon name="plus" size={16} /> {tr('新增專案')}
                   </Button>
                 </Group>
+                {/* R-542: when no projects exist yet, show a 3-step minimal workflow instead of an empty Unclassified box. */}
+                {!projects.length && (
+                  <ol className="home-steps" aria-label={tr('本機資料夾檢視器')}>
+                    <li>
+                      <Icon name="folder" size={18} />
+                      <span>{tr('選擇資料夾')}</span>
+                    </li>
+                    <li>
+                      <Icon name="grid" size={18} />
+                      <span>{tr('瀏覽與檢視')}</span>
+                    </li>
+                    <li>
+                      <Icon name="layout" size={18} />
+                      <span>{tr('自訂版面')}</span>
+                    </li>
+                  </ol>
+                )}
               </div>
               {favorites.length > 0 && (
                 <div className="home-section">
@@ -855,33 +873,31 @@ export function DesktopShell(props: Props) {
                   </div>
                 </div>
               )}
-              <div className="home-section">
-                <h2>{tr('未分類')}</h2>
-                {unclassified.length ? (
-                  <div className="home-projects">
-                    {unclassified.map((p) => (
-                      <button
-                        key={p.projectId}
-                        disabled={props.busy}
-                        onClick={() => props.onSelect(p.projectId)}
-                      >
-                        <span>
-                          <Icon name="folder" />
-                        </span>
-                        <strong>{title(p)}</strong>
-                        <small>{p.root}</small>
-                        <em>{p.error ? tr('需要重新連結') : tr('開啟專案 →')}</em>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="home-empty">
-                    {projects.length
-                      ? tr('目前專案都已歸組；可從左側群組開啟。')
-                      : tr('尚未建立專案，選擇資料夾開始。')}
-                  </div>
-                )}
-              </div>
+              {projects.length > 0 && (
+                <div className="home-section">
+                  <h2>{tr('未分類')}</h2>
+                  {unclassified.length ? (
+                    <div className="home-projects">
+                      {unclassified.map((p) => (
+                        <button
+                          key={p.projectId}
+                          disabled={props.busy}
+                          onClick={() => props.onSelect(p.projectId)}
+                        >
+                          <span>
+                            <Icon name="folder" />
+                          </span>
+                          <strong>{title(p)}</strong>
+                          <small>{p.root}</small>
+                          <em>{p.error ? tr('需要重新連結') : tr('開啟專案 →')}</em>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="home-empty">{tr('目前專案都已歸組；可從左側群組開啟。')}</div>
+                  )}
+                </div>
+              )}
               {projects.some((p) => p.error) && (
                 <div className="home-section">
                   <h2>{tr('需要處理')}</h2>
@@ -913,6 +929,15 @@ export function DesktopShell(props: Props) {
         <span className="status-version" title={tr('應用程式版本')}>
           v{__APP_VERSION__}
         </span>
+        {!!props.pendingCount && (
+          <button
+            onClick={props.onProblems}
+            className="status-pending"
+            aria-label={tr('查看待確認項目')}
+          >
+            {tr('{0} 項待確認', props.pendingCount)}
+          </button>
+        )}
         <button
           onClick={props.onProblems}
           className={props.problemCount ? 'status-problems has-problems' : 'status-problems'}

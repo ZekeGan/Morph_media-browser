@@ -778,7 +778,7 @@
 
 .playback-mini {
     right: 12px;
-    bottom: 12px;
+    bottom: 72px;
     width: min(380px, 100vw);
     height: min(300px, 100vh);
     border-radius: var(--radius);

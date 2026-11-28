@@ -3,13 +3,13 @@ import { Tooltip } from '@mantine/core'
 import { Icon } from '../common/icons'
 import { t as tr } from '../i18n'
 
-// A game boundary is marked with a flag; the words live in the tooltip.
+// R-543: a protected game boundary is marked with a neutral shield; the words live in the tooltip.
 export function BoundaryFlag({ detail }: { detail?: string }) {
   const label = detail ? tr('受保護的遊戲') + ' · ' + detail : tr('受保護的遊戲')
   return (
     <Tooltip label={label} withArrow>
       <span className="boundary-flag" role="img" aria-label={label} tabIndex={0}>
-        <Icon name="flag" size={14} />
+        <Icon name="shield" size={14} />
       </span>
     </Tooltip>
   )

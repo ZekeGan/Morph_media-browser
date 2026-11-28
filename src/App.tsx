@@ -25,7 +25,7 @@ import { ApplicationSettings } from './settings/ApplicationSettings'
 import { ProjectSettings } from './settings/ProjectSettings'
 import { CreateProjectDialog } from './shell/CreateProjectDialog'
 import { DesktopShell } from './shell/DesktopShell'
-import { problemCount, ProblemsDialog } from './storage/ProblemsDialog'
+import { pendingCount, problemCount, ProblemsDialog } from './storage/ProblemsDialog'
 import { t as tr, useLocale } from './i18n'
 import { useCreateProject } from './useCreateProject'
 import { useDrafts } from './useDrafts'
@@ -408,6 +408,7 @@ export function App() {
           }}
           onProblems={() => setIsProblemsOpen(true)}
           problemCount={problemCount(snapshot)}
+          pendingCount={pendingCount(snapshot)}
           onOverlay={setHasShellOverlay}
           onDirty={setShellDirty}
           onSnapshot={takeSnapshot}

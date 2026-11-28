@@ -38,6 +38,9 @@ export const problemCount = (snapshot: Overview) => {
   return structured || splitMessages(snapshot.problems).others.length
 }
 
+// R-543: pending game confirmations are counted separately from real errors/problems.
+export const pendingCount = (snapshot: Overview) => problemItems(snapshot).candidates.length
+
 const shortPath = (path: string) => {
   const parts = path.split(/[\\/]+/).filter(Boolean)
   const separator = path.includes('\\') ? '\\' : '/'

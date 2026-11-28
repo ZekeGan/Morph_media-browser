@@ -923,12 +923,6 @@
     "en": "All projects are grouped. Open them from the sidebar.",
     "es": "Todos los proyectos están agrupados. Ábrelos desde la barra lateral."
   },
-  "尚未建立專案，選擇資料夾開始。": {
-    "ja": "プロジェクトがありません。フォルダーを選んで開始してください。",
-    "zh-CN": "尚未建立项目，选择文件夹开始。",
-    "en": "No projects yet. Choose a folder to get started.",
-    "es": "Aún no hay proyectos. Elige una carpeta para empezar."
-  },
   "保存側欄設定…": {
     "ja": "サイドバー設定を保存中…",
     "zh-CN": "保存侧栏设定…",
@@ -13426,5 +13420,77 @@
     "en": "This action is shared across the project so other games can bind it too.",
     "ja": "この操作はプロジェクト共通リストに追加され、他のゲームでも使えます。",
     "es": "Esta acción se comparte en todo el proyecto para que otros juegos también puedan usarla."
+  },
+  "瀏覽與檢視": {
+    "zh-CN": "浏览与查看",
+    "en": "Browse & view",
+    "ja": "閲覧と表示",
+    "es": "Explorar y ver"
+  },
+  "自訂版面": {
+    "zh-CN": "自定义版面",
+    "en": "Customize layout",
+    "ja": "レイアウトを調整",
+    "es": "Personalizar diseño"
+  },
+  "查看待確認項目": {
+    "zh-CN": "查看待确认项目",
+    "en": "Review pending items",
+    "ja": "確認待ちの項目を見る",
+    "es": "Ver elementos pendientes"
+  },
+  "{0} 項待確認": {
+    "zh-CN": "{0} 项待确认",
+    "en": "{0} pending",
+    "ja": "確認待ち {0} 件",
+    "es": "{0} pendientes"
+  },
+  "外觀與語言": {
+    "zh-CN": "外观与语言",
+    "en": "Appearance & language",
+    "ja": "外観と言語",
+    "es": "Apariencia e idioma"
+  },
+  "外部工具": {
+    "zh-CN": "外部工具",
+    "en": "External tools",
+    "ja": "外部ツール",
+    "es": "Herramientas externas"
+  },
+  "備份與還原": {
+    "zh-CN": "备份与还原",
+    "en": "Backup & restore",
+    "ja": "バックアップと復元",
+    "es": "Copia de seguridad y restauración"
+  },
+  "選填：僅在需要查詢對應網站（如 TMDB、FANZA）時才需設定金鑰，只存在本機。": {
+    "zh-CN": "选填：仅在需要查询对应网站（如 TMDB、FANZA）时才需设置密钥，只保存在本机。",
+    "en": "Optional: only needed when searching sites that require a key (such as TMDB or FANZA); stored locally only.",
+    "ja": "任意：TMDB や FANZA などキーが必要なサイトを検索する場合のみ設定してください。この PC 内にのみ保存されます。",
+    "es": "Opcional: solo necesario para buscar en sitios que piden clave (como TMDB o FANZA); se guarda solo en este equipo."
+  },
+  "僅備份應用程式設定、專案配置與記錄，不會複製你的原始檔案。": {
+    "zh-CN": "仅备份应用程序设置、项目配置与记录，不会复制你的原始文件。",
+    "en": "Backs up app settings, project layouts, and folder records only; your original files are never copied.",
+    "ja": "アプリ設定・プロジェクト設定・フォルダー記録のみをバックアップします。元のファイルはコピーしません。",
+    "es": "Solo respalda ajustes de la app, configuración de proyectos y registros; nunca copia tus archivos originales."
+  },
+  "搜尋語法說明": {
+    "zh-CN": "搜索语法说明",
+    "en": "Search syntax help",
+    "ja": "検索構文のヘルプ",
+    "es": "Ayuda de sintaxis de búsqueda"
+  },
+  "可用欄位名稱（如 tag:RPG、score>=8）、引號精確詞組或 -詞 排除。": {
+    "zh-CN": "可用字段名称（如 tag:RPG、score>=8）、引号精确词组或 -词 排除。",
+    "en": "Filter by field (e.g. tag:RPG, score>=8), quotes for exact phrases, or -word to exclude.",
+    "ja": "項目名（例：tag:RPG、score>=8）、引用符で完全一致、-語 で除外できます。",
+    "es": "Filtra por campo (p. ej. tag:RPG, score>=8), comillas para frases exactas o -palabra para excluir."
+  },
+  "↑↓ 選擇 · Enter／單擊 開啟 · Esc 關閉": {
+    "zh-CN": "↑↓ 选择 · Enter／单击 打开 · Esc 关闭",
+    "en": "↑↓ select · Enter / click to open · Esc to close",
+    "ja": "↑↓ で選択 · Enter／クリックで開く · Esc で閉じる",
+    "es": "↑↓ seleccionar · Enter / clic para abrir · Esc para cerrar"
   }
 }

@@ -123,6 +123,7 @@ const sameBounds = (
 }
 try {
   await page.getByRole('button', { name: '開啟專案 Reader test', exact: true }).first().click()
+  await page.getByRole('button', { name: '切換詳情內容', exact: true }).click()
   await app.evaluate(({ BrowserWindow }) => {
     const win = BrowserWindow.getAllWindows()[0]
     win.unmaximize()
@@ -134,7 +135,9 @@ try {
   // R-362: the book's cover is a component of its template (no picture drawn beside it), showing the first image.
   assert.equal(await page.locator('.media-info-template .manga-cover').count(), 0)
   await page.locator('.media-info-template .card-cell img').first().waitFor()
-  await page.getByRole('button', { name: '詳情版面配置…', exact: true }).first().waitFor()
+  await page.getByRole('button', { name: '更多詳情操作', exact: true }).click()
+  await page.getByRole('menuitem', { name: '詳情版面配置…', exact: true }).waitFor()
+  await page.keyboard.press('Escape')
   // R-363: a folder can make its own manga template; the editor opens on it, the folder keeps the choice.
   await page.evaluate(() => {
     window.confirm = () => true
@@ -231,8 +234,11 @@ try {
     .last()
     .locator('path')
     .getAttribute('d')
-  await reader().getByRole('button', { name: '由右至左', exact: true }).click()
-  await reader().getByRole('button', { name: '由左至右', exact: true }).waitFor()
+  // R-553: reading direction, first-page-alone, page transition and open-folder live in the Reading Settings popover.
+  await reader().getByRole('button', { name: '閱讀設定', exact: true }).click()
+  await page.getByRole('button', { name: '由右至左', exact: true }).click()
+  await page.getByRole('button', { name: '由左至右', exact: true }).waitFor()
+  await reader().getByRole('button', { name: '閱讀設定', exact: true }).click()
   await page.keyboard.press('ArrowRight')
   await waitPages('13–14')
   await page.keyboard.press('ArrowLeft')

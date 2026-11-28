@@ -181,15 +181,27 @@ export function ApplicationSettings({
       closeOnEscape={!saving}
     >
       <Tabs value={tab} onChange={setTab} keepMounted>
+        {/* R-552: four focused pages (Appearance & language, External tools, Site keys, Backup & restore). */}
         <Tabs.List>
           <Tabs.Tab value="general" leftSection={<Icon name="sliders" />}>
-            {tr('一般')}
+            {tr('外觀與語言')}
           </Tabs.Tab>
-          <Tabs.Tab value="data">{tr('備份')}</Tabs.Tab>
+          <Tabs.Tab value="tools">{tr('外部工具')}</Tabs.Tab>
           <Tabs.Tab value="keys">{tr('網站金鑰')}</Tabs.Tab>
+          <Tabs.Tab value="data">{tr('備份與還原')}</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="keys" pt="lg">
+          <Text size="xs" c="dimmed" mb="md">
+            {tr('選填：僅在需要查詢對應網站（如 TMDB、FANZA）時才需設定金鑰，只存在本機。')}
+          </Text>
           <SiteKeys opened={opened && tab === 'keys'} focus={start?.site} />
+        </Tabs.Panel>
+        <Tabs.Panel value="tools" pt="lg">
+          <Stack gap="sm">
+            <LocaleEmulatorSetting opened={opened} />
+            <FlashPlayerSetting opened={opened} />
+            <VideoPlayerSetting opened={opened} />
+          </Stack>
         </Tabs.Panel>
         <Tabs.Panel value="general" pt="lg">
           <Select
@@ -261,13 +273,13 @@ export function ApplicationSettings({
           </Text>
           <Stack gap="sm">
             <SourceLanguageSetting opened={opened} locale={appearance.savedLocale} />
-            <LocaleEmulatorSetting opened={opened} />
-            <FlashPlayerSetting opened={opened} />
-            <VideoPlayerSetting opened={opened} />
           </Stack>
         </Tabs.Panel>
         <Tabs.Panel value="data" pt="lg">
           <Stack gap="lg">
+            <Text size="xs" c="dimmed">
+              {tr('僅備份應用程式設定、專案配置與記錄，不會複製你的原始檔案。')}
+            </Text>
             <section className="settings-section">
               {undo && !restorePreview && (
                 <Alert color="blue" my="sm" className="restore-undo">

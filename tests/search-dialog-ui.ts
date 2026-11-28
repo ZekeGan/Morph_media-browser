@@ -171,10 +171,9 @@ try {
   await query.fill('"')
   await dialog.getByRole('alert').waitFor()
   assert.match((await dialog.getByRole('alert').textContent()) ?? '', /引號或跳脫未完成/)
-  assert.equal(
-    await dialog.getByRole('button', { name: '開啟資料夾', exact: true }).isDisabled(),
-    true
-  )
+  // R-551: command-palette search removes the footer button bar and shows a keyboard hint strip instead.
+  assert.equal(await dialog.locator('.search-results button').count(), 0)
+  await dialog.locator('.search-hint-bar').waitFor()
   await button('清除搜尋').click()
   await page.waitForFunction(() => !document.querySelector('.folder-search-dialog [role="alert"]'))
   const scope = dialog.getByRole('textbox', { name: '搜尋範圍', exact: true })

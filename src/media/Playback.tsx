@@ -321,7 +321,9 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
               onKeyDown={(event) => {
                 if (event.key === 'Escape' && !mini) {
                   event.stopPropagation()
-                  setMini(true)
+                  // R-554: when the queue drawer is open, Esc closes only the drawer without interrupting playback.
+                  if (showQueue) setShowQueue(false)
+                  else setMini(true)
                 }
               }}
             >
