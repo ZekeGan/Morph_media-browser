@@ -161,9 +161,6 @@ try {
     .and(page.locator('[title=' + JSON.stringify(sourcePath) + ']'))
     .click()
   await page.locator('.media-viewer-shell .is-active').waitFor()
-  // R-553: viewer extraTools (source badge & queue toggle) live inside the Reader's "閱讀設定" popover.
-  await page.getByRole('button', { name: '閱讀設定', exact: true }).click()
-  assert.equal(await page.locator('.media-viewer-source').innerText(), 'A')
   await page.getByRole('button', { name: '切換媒體佇列', exact: true }).click()
   assert.equal(await page.locator('.media-queue-scroll button').count(), 2)
   // The viewer's queue follows the list's order: sorted from large to small, 002 comes before 001 (R-486).
@@ -177,7 +174,6 @@ try {
     .and(page.locator('[title=' + JSON.stringify(sourcePath) + ']'))
     .click()
   await page.locator('.media-viewer-shell .is-active').waitFor()
-  await page.getByRole('button', { name: '閱讀設定', exact: true }).click()
   await page.getByRole('button', { name: '切換媒體佇列', exact: true }).click()
   const queued = await page.locator('.media-queue-scroll button').allInnerTexts()
   assert.ok(
@@ -193,7 +189,6 @@ try {
     .and(page.locator('[title=' + JSON.stringify(sourcePath) + ']'))
     .click()
   await page.locator('.media-viewer-shell .is-active').waitFor()
-  await page.getByRole('button', { name: '閱讀設定', exact: true }).click()
   await page.getByRole('button', { name: '切換媒體佇列', exact: true }).click()
   await page.getByRole('button', { name: '退出閱讀器', exact: true }).click()
   await page.locator('.media-viewer-shell').waitFor({ state: 'detached' })

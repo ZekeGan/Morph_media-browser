@@ -1202,35 +1202,43 @@ export function Reader({
                   () => step(rtl ? 1 : -1),
                   rtl ? !canForward : groupIndex === 0
                 )}
-              <Tooltip zIndex={510} label={tr('跳至頁碼 · G')}>
-                <div className="reader-page-select">
-                  <Select
-                    ref={select}
-                    size="xs"
-                    aria-label={tr('頁碼')}
-                    comboboxProps={{ zIndex: 510 }}
-                    classNames={{ dropdown: 'reader-page-options' }}
-                    searchable
-                    allowDeselect={false}
-                    dropdownOpened={pageDropdown}
-                    onDropdownOpen={() => setPageDropdown(true)}
-                    onDropdownClose={() => setPageDropdown(false)}
-                    rightSectionPointerEvents="none"
-                    value={String(groupIndex)}
-                    data={groups.map((indices, index) => ({
-                      value: String(index),
-                      label: pageLabel(indices),
-                    }))}
-                    onChange={(value) => value !== null && goToGroup(Number(value))}
-                    onOptionSubmit={() => {
-                      setPageDropdown(false)
-                      focusStage()
-                    }}
-                    w={85}
-                  />
-                </div>
-              </Tooltip>
-              <span className="reader-page-total">/ {images.length}</span>
+              {manga ? (
+                <>
+                  <Tooltip zIndex={510} label={tr('跳至頁碼 · G')}>
+                    <div className="reader-page-select">
+                      <Select
+                        ref={select}
+                        size="xs"
+                        aria-label={tr('頁碼')}
+                        comboboxProps={{ zIndex: 510 }}
+                        classNames={{ dropdown: 'reader-page-options' }}
+                        searchable
+                        allowDeselect={false}
+                        dropdownOpened={pageDropdown}
+                        onDropdownOpen={() => setPageDropdown(true)}
+                        onDropdownClose={() => setPageDropdown(false)}
+                        rightSectionPointerEvents="none"
+                        value={String(groupIndex)}
+                        data={groups.map((indices, index) => ({
+                          value: String(index),
+                          label: pageLabel(indices),
+                        }))}
+                        onChange={(value) => value !== null && goToGroup(Number(value))}
+                        onOptionSubmit={() => {
+                          setPageDropdown(false)
+                          focusStage()
+                        }}
+                        w={85}
+                      />
+                    </div>
+                  </Tooltip>
+                  <span className="reader-page-total">/ {images.length}</span>
+                </>
+              ) : (
+                <span className="reader-page-total">
+                  {pageLabel(group)} / {images.length}
+                </span>
+              )}
               {!webtoon &&
                 iconTool(
                   rtl ? tr('上一頁') : tr('下一頁'),
@@ -1274,8 +1282,9 @@ export function Reader({
                 </>
               )}
               {toolButton(immersiveTool)}
-              {(secondaryModeTools.length > 0 || !!extraTools) && (
-                <Popover position="bottom-end" withArrow shadow="md" zIndex={510}>
+              {extraTools}
+              {secondaryModeTools.length > 0 && (
+                <Popover position="bottom-end" withArrow shadow="md" zIndex={510} width={220}>
                   <Popover.Target>
                     <Tooltip zIndex={510} label={tr('閱讀設定')}>
                       <ActionIcon
@@ -1289,10 +1298,29 @@ export function Reader({
                     </Tooltip>
                   </Popover.Target>
                   <Popover.Dropdown className="reader-settings-popover">
-                    <Group gap={4} wrap="wrap">
-                      {secondaryModeTools.map((tool) => toolButton(tool))}
-                      {extraTools}
-                    </Group>
+                    <div className="reader-settings-list">
+                      {secondaryModeTools.map((tool) => (
+                        <Button
+                          key={tool.icon}
+                          size="xs"
+                          fullWidth
+                          justify="space-between"
+                          variant={tool.pressed ? 'light' : 'subtle'}
+                          color={tool.pressed ? undefined : 'gray'}
+                          aria-pressed={tool.pressed}
+                          disabled={tool.disabled}
+                          leftSection={<Icon name={tool.icon} size={15} />}
+                          rightSection={
+                            tool.key ? (
+                              <span className="reader-setting-key">{tool.key}</span>
+                            ) : undefined
+                          }
+                          onClick={tool.action}
+                        >
+                          {tool.label}
+                        </Button>
+                      ))}
+                    </div>
                   </Popover.Dropdown>
                 </Popover>
               )}

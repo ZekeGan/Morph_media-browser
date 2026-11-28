@@ -1211,14 +1211,6 @@
     overflow-wrap: anywhere;
 }
 
-.reader-toolbar>.media-viewer-source {
-    display: inline-flex;
-    align-items: center;
-    align-self: center;
-    min-height: 26px;
-    padding: 0;
-    line-height: 1.2;
-}
 
 .folder-panel-dock-tabs {
     display: flex;

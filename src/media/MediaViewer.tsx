@@ -113,7 +113,9 @@ export function MediaViewer({
     <Tooltip zIndex={450} label={showQueue ? tr('隱藏佇列') : tr('顯示佇列')}>
       <ActionIcon
         ref={queueToggle}
-        variant="subtle"
+        size="lg"
+        variant={showQueue ? 'light' : 'subtle'}
+        color={showQueue ? undefined : 'gray'}
         aria-label={tr('切換媒體佇列')}
         aria-controls="media-viewer-queue"
         aria-pressed={showQueue}
@@ -198,14 +200,7 @@ export function MediaViewer({
                       })
                     }
                   }}
-                  extraTools={
-                    <>
-                      <small className="media-viewer-source" title={row.path}>
-                        {row.name}
-                      </small>
-                      {queueButton}
-                    </>
-                  }
+                  extraTools={queueButton}
                 />
               ) : current?.kind === 'video' ? (
                 <VideoViewer

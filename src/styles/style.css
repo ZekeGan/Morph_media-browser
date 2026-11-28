@@ -485,6 +485,8 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .reader-toolbar .mantine-Select-input { background:transparent; border-color:var(--line); }
 .reader-toolbar .mantine-SegmentedControl-root { background:var(--viewer-bg); }
 .manga-reader>.reader-toolbar { position:relative; z-index:7; }
+.reader-settings-list { display:flex; flex-direction:column; gap:4px; }
+.reader-setting-key { font-size:11px; color:var(--muted); }
 .manga-reader>.reader-info { position:relative; z-index:7; border-top-color:var(--line); background:var(--overlay); }
 .manga-reader>.reader-stage { padding:0; overflow:hidden; }
 .reader-page-select { cursor:pointer; }

@@ -154,9 +154,9 @@ try {
     .getByRole('button', { name: /的更多選項$/ })
     .click()
   await page.getByRole('menuitem', { name: '另做一份給這個資料夾…', exact: true }).click()
-  const scheme = page.locator('.scheme-toolbar input').first()
+  const scheme = page.locator('.scheme-dropdown-button').first()
   await scheme.waitFor()
-  const own = await scheme.inputValue()
+  const own = (await scheme.innerText()).trim()
   assert.ok(own && own !== '預設版面', 'the editor opens on the folder template: ' + own)
   await page.locator('.scheme-toolbar').waitFor()
   await page
