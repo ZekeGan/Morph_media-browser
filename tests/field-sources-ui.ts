@@ -74,15 +74,16 @@ let passed = false
 try {
   await page.getByRole('button', { name: '開啟專案 Sources', exact: true }).first().click()
   await page.getByRole('button', { name: '目前資料夾設定', exact: true }).click()
-  // Your own field is editable; the empty one waits as a chip.
+  // Your own field is editable; the empty own field waits inside the compact "+ 填入其他" menu.
   await page.getByRole('textbox', { name: '備註', exact: true }).waitFor()
-  const chips = page.getByRole('group', { name: '補填' })
-  await chips.getByRole('button', { name: '評分' }).waitFor()
+  await page.getByRole('button', { name: '填入其他 (1)', exact: true }).click()
+  await page.getByRole('menuitem', { name: '評分', exact: true }).waitFor()
+  await page.keyboard.press('Escape')
   assert.equal(await page.getByRole('checkbox', { name: /顯示未填欄位/ }).count(), 0) // ui-names: ignore
-  // R-538: website-imported values are directly click-to-edit (no "change by hand" gate), auto-marked manual on edit,
-  // and offer "restore source value" both before and after saving.
+  // R-538 / R-561: website-imported values render as compact 2-column click-to-edit rows inside a source card.
   const site = page.locator('.site-fields')
   await site.locator('summary').click()
+  await site.getByRole('button', { name: '編輯 標題（VNDB）', exact: true }).click()
   const titleInput = site.getByRole('textbox', { name: '標題（VNDB）', exact: true })
   await titleInput.waitFor()
   assert.equal(await titleInput.inputValue(), 'Saya no Uta')
@@ -99,7 +100,7 @@ try {
   assert.equal(edited?.value, '沙耶の唄')
   assert.equal(edited?.source, 'manual')
   assert.equal(edited?.sourceRecord?.originalValue, 'Saya no Uta')
-  await page.screenshot({ path: path.join(base, 'shot', 'r538-fields.png') })
+  await page.screenshot({ path: path.join(base, 'shot', 'r561-fields.png') })
   // Restoring the source value returns the original imported value and source.
   await site.getByRole('button', { name: '恢復來源值 標題（VNDB）', exact: true }).click()
   for (let i = 0; i < 50; i++) {

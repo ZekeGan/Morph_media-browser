@@ -19,6 +19,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Redesigned the Folder Settings Data tab for clarity: removed the redundant "Folder data" header and divider, unified the top bar with website import and a compact `[Shared | This project]` scope pill, consolidated fields into two clean sections ("Own fields" with a `+ Fill other (N)` dropdown menu replacing the sprawling chip row, and compact collapsible website source cards with header refetch/remove icon buttons and two-column click-to-edit rows showing an `Edited` badge and restore icon) (R-561).
 - Made website-imported metadata fields directly click-to-edit in Folder Settings (removing the prerequisite "Change by hand" button), auto-marking edited fields as manual overrides while preserving `sourceRecord.originalValue` so users can restore the original imported value via "Restore source value" (`restoreAttribute`) (R-538).
 - Enabled left/right third click page turning in the image viewer and continuous cross-subfolder image browsing when "Include subfolders" is active (keeping manga folders isolated to a single book and using `rowId/id` identity so duplicate filenames across folders never collide) (R-559).
 - Prevented the detail panel's back-to-top button from overlapping content controls (compact circular icon-only button, Content tab only, safe bottom padding) and removed the 200-item page slicing when "Group by source" is active so all source groups render in one virtualized stream without splitting folders across pages (R-560).

@@ -117,8 +117,7 @@ try {
   const drawer = page.locator('.folder-panel-dock-settings')
   const layouts = drawer.getByRole('group', { name: '此資料夾的版面', exact: true })
   // Pending Manga shows the same folder, so the shared / this-project switch is offered here.
-  await drawer.locator('label').filter({ hasText: '僅目前專案' }).waitFor()
-  assert.equal(await drawer.locator('.mantine-Divider-root').count(), 1)
+  await drawer.locator('label').filter({ hasText: '僅此專案' }).waitFor()
   // The layouts are shown in the Appearance tab (R-235) and set in the layout window, which opens at this folder
   // (R-409); cancelling it writes nothing.
   await drawer.getByRole('tab', { name: '類型與版面', exact: true }).click()

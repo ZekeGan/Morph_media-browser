@@ -208,11 +208,9 @@ try {
   await button('目前資料夾設定').click()
   const drawer = page.getByRole('region', { name: '資料夾設定 · Library', exact: true })
   await drawer.waitFor()
-  // R-339: an empty field waits as a "fill in" chip.
-  await drawer
-    .getByRole('group', { name: '補填' })
-    .getByRole('button', { name: 'Verified flag' })
-    .click()
+  // R-561: an empty own field waits inside the "+ 填入其他" menu on the Own Fields header.
+  await drawer.getByRole('button', { name: /^填入其他/ }).click()
+  await page.getByRole('menuitem', { name: 'Verified flag', exact: true }).click()
   await choose('Verified flag', '否')
   await drawer.getByRole('button', { name: '保存欄位資料', exact: true }).click()
   await page.waitForFunction(async () => {

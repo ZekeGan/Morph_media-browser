@@ -1,14 +1,16 @@
 import {
+  ActionIcon,
   Alert,
   Badge,
   Button,
-  Divider,
   Group,
+  Menu,
   SegmentedControl,
   Select,
   Stack,
   Tabs,
   Text,
+  Tooltip,
 } from '@mantine/core'
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 
@@ -50,7 +52,7 @@ import {
 import { metadataSources } from '../../shared/sources'
 
 import { useIsWork, useParentKind } from '../browse/folderKind'
-import { HelpLabel, HelpTip } from '../common/HelpTip'
+import { HelpLabel } from '../common/HelpTip'
 import { Icon } from '../common/icons'
 import { commonFieldNames } from '../editor/commonFields'
 import { fieldSource, fieldSourceGroups, rowFieldAttributes } from '../editor/fieldSources'
@@ -335,7 +337,7 @@ export function FolderPanel({
     setEditedFields((ids) => ids.filter((id) => id !== attributeId))
   }
   // Where an imported value came from, shown under its label until the value is edited.
-  const fieldNote = (attributeId: string) => {
+  const fieldNote = (attributeId: string, hideOriginNote = false) => {
     const origin = fieldSource(attributeId, attributes)
     const attribute =
       (privateValues
@@ -345,14 +347,16 @@ export function FolderPanel({
       Object.hasOwn(values, attributeId) &&
       JSON.stringify(values[attributeId]) !== JSON.stringify(original[attributeId])
     if (draftChanged || attribute?.source === 'manual') {
-      return origin === tr('自建') ? undefined : `${origin} · ${tr('已手動修改')}`
+      if (origin === tr('自建')) return undefined
+      return hideOriginNote ? tr('已手動修改') : `${origin} · ${tr('已手動修改')}`
     }
+    if (hideOriginNote) return undefined
     if (!attribute) return origin === tr('自建') ? undefined : origin
     const provider = attribute.sourceRecord?.provider
     const name = metadataSources.find((item) => item.id === provider)?.name
     return name ? tr('來自 {0}', name) : tr('來自網站匯入')
   }
-  const renderField = (f: (typeof fields)[number]) => {
+  const renderField = (f: (typeof fields)[number], options?: { hideOriginNote?: boolean }) => {
     const sharedAttr = row.record?.attributes.find((a) => a.attributeId === f.attributeId)
     const hasSavedOriginal =
       !privateValues &&
@@ -372,7 +376,7 @@ export function FolderPanel({
           field={{ ...f, key: label }}
           value={effective(f.attributeId)}
           binding={project.fieldBindings.find((binding) => binding.attributeId === f.attributeId)}
-          note={fieldNote(f.attributeId)}
+          note={fieldNote(f.attributeId, options?.hideOriginNote)}
           disabled={disabled}
           busy={busy}
           draftOption={newOptions[f.attributeId] ?? ''}
@@ -471,7 +475,7 @@ export function FolderPanel({
                   : tr('指定的「{0}」目前沒有值。', alias(chosen))}
               </Text>
             )}
-            <Stack>{members.map(renderField)}</Stack>
+            <Stack>{members.map((f) => renderField(f))}</Stack>
           </Stack>
         </details>
       )
@@ -483,6 +487,20 @@ export function FolderPanel({
   const own = tr('自建')
   const ownFields = fields.filter((f) => fieldSource(f.attributeId, attributes) === own)
   const siteFields = fields.filter((f) => fieldSource(f.attributeId, attributes) !== own)
+  const [activeSiteFields, setActiveSiteFields] = useState<string[]>([])
+  useEffect(() => {
+    setActiveSiteFields([])
+  }, [row.rowId, privateValues])
+  const displaySiteValue = (value: unknown) =>
+    Array.isArray(value)
+      ? value.join('、')
+      : typeof value === 'boolean'
+        ? value
+          ? tr('是')
+          : tr('否')
+        : value == null || value === ''
+          ? '—'
+          : String(value)
   const refetch = (provider: string | undefined) => {
     const address =
       (provider &&
@@ -506,40 +524,111 @@ export function FolderPanel({
       const provider = providerOf(items[0].attributeId)
       const fold = section('site:' + source, false)
       return (
-        <details key={source} className="field-source-group site-fields" open={fold.open}>
-          <summary onClick={fold.onClick}>
-            {tr('來自 {0}', source)}{' '}
-            <Text component="span" size="xs" c="dimmed">
-              {tr('{0} 項', items.length)}
-            </Text>
+        <details key={source} className="site-source-card site-fields" open={fold.open}>
+          <summary className="site-card-header" onClick={fold.onClick}>
+            <span className="site-card-title">
+              <Icon name={fold.open ? 'chevron-down' : 'chevron-right'} size={13} />
+              <strong>{source}</strong>
+              <span className="site-card-count">{tr('{0} 項', items.length)}</span>
+            </span>
+            <span className="site-card-actions">
+              <Tooltip label={tr('重新取得')}>
+                <ActionIcon
+                  size="sm"
+                  variant="subtle"
+                  color="gray"
+                  aria-label={tr('重新取得 {0}', source)}
+                  disabled={disabled}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    refetch(provider)
+                  }}
+                >
+                  <Icon name="refresh" size={14} />
+                </ActionIcon>
+              </Tooltip>
+              {provider && (
+                <Tooltip label={tr('移除這個來源的資料')}>
+                  <ActionIcon
+                    size="sm"
+                    variant="subtle"
+                    color="red"
+                    aria-label={tr('移除這個來源的資料')}
+                    disabled={disabled || fieldDirty}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      removeSite(provider, source)
+                    }}
+                  >
+                    <Icon name="close" size={14} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
+            </span>
           </summary>
-          <Group gap="xs" mb="xs">
-            <Button
-              size="compact-xs"
-              variant="light"
-              disabled={disabled}
-              onClick={() => refetch(provider)}
-            >
-              {tr('重新取得')}
-            </Button>
-            {provider && (
-              <Button
-                size="compact-xs"
-                variant="subtle"
-                color="red"
-                disabled={disabled || fieldDirty}
-                onClick={() => removeSite(provider, source)}
-              >
-                {tr('移除這個來源的資料')}
-              </Button>
-            )}
-          </Group>
-          <Stack gap="xs">{items.map(renderField)}</Stack>
+          <div className="site-kv-list">
+            {items.map((field) => {
+              const id = field.attributeId
+              const isOpen = activeSiteFields.includes(id) || Object.hasOwn(values, id)
+              if (isOpen) return renderField(field, { hideOriginNote: true })
+              const label = fieldLabel(id)
+              const sharedAttr = row.record?.attributes.find((a) => a.attributeId === id)
+              const isManual =
+                (privateValues
+                  ? row.record?.projectOverrides[row.projectId]?.find((a) => a.attributeId === id)
+                  : sharedAttr
+                )?.source === 'manual'
+              const hasSavedOriginal =
+                !privateValues &&
+                sharedAttr?.source === 'manual' &&
+                !!sharedAttr.sourceRecord &&
+                Object.hasOwn(sharedAttr.sourceRecord, 'originalValue')
+              return (
+                <div key={id} className="site-kv-row">
+                  <button
+                    type="button"
+                    className="site-kv-trigger"
+                    disabled={disabled}
+                    aria-label={tr('編輯 {0}', label)}
+                    onClick={() =>
+                      setActiveSiteFields((ids) => (ids.includes(id) ? ids : [...ids, id]))
+                    }
+                  >
+                    <span className="site-kv-label">{label}</span>
+                    <span className="site-kv-value">{displaySiteValue(effective(id))}</span>
+                  </button>
+                  {isManual && (
+                    <span className="site-kv-meta">
+                      <Badge size="xs" variant="light" color="blue">
+                        {tr('已改')}
+                      </Badge>
+                      {hasSavedOriginal && (
+                        <Tooltip label={tr('恢復來源值')}>
+                          <ActionIcon
+                            size="xs"
+                            variant="subtle"
+                            color="gray"
+                            disabled={disabled || fieldDirty}
+                            aria-label={tr('恢復來源值 {0}', label)}
+                            onClick={() => void restoreField(id)}
+                          >
+                            <Icon name="undo" size={12} />
+                          </ActionIcon>
+                        </Tooltip>
+                      )}
+                    </span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </details>
       )
     })
-  // Empty fields of this project (yours, or a website's not filled here) wait as chips; a click opens the input.
-  const emptyFields = fields.filter(
+  // R-561: unfilled own fields live in the compact "+ 填入其他" menu on the Own Fields header (never mixed with site fields).
+  const emptyOwnFields = ownFields.filter(
     (f) =>
       configured.has(f.attributeId) &&
       !groupOfField(project, f.attributeId) &&
@@ -739,103 +828,117 @@ export function FolderPanel({
           {isGame && <Tabs.Tab value="game">{tr('遊戲操作')}</Tabs.Tab>}
           <Tabs.Tab value="advanced">{tr('進階')}</Tabs.Tab>
         </Tabs.List>
-        <Tabs.Panel value="fields" pt="md">
-          <Stack>
-            <Group justify="space-between">
-              <div>
-                <Group gap={4} wrap="nowrap">
-                  <Text fw={600}>{tr('資料夾資料')}</Text>
-                  <HelpTip
-                    text={
-                      privateValues ? tr('只有這個專案看得到。') : tr('其他專案也會看到這些修改。')
-                    }
-                  />
-                </Group>
+        <Tabs.Panel value="fields" pt="sm">
+          <Stack gap="sm">
+            {/* R-561: unified compact top bar — website import + optional shared/private scope pill. */}
+            <div className="data-tab-topbar">
+              <div className="data-tab-import">
+                <FolderSourceImport
+                  importer={importer}
+                  row={row}
+                  busy={busy}
+                  disabled={disabled}
+                  fieldDirty={fieldDirty}
+                  openSignal={importSignal}
+                  kind={effectiveKind(row, sample, parentKind)}
+                  run={run}
+                  setError={setError}
+                />
               </div>
               {(shared ||
                 privateValues ||
                 !!row.record?.projectOverrides[row.projectId]?.length) && (
-                <SegmentedControl
-                  size="xs"
-                  aria-label={tr('資料範圍')}
-                  value={privateValues ? 'private' : 'shared'}
-                  disabled={disabled}
-                  data={[
-                    { value: 'shared', label: tr('各專案共用的資訊') },
-                    { value: 'private', label: tr('僅目前專案') },
-                  ]}
-                  onChange={(value) => {
-                    if (
-                      !fieldDirty ||
-                      window.confirm(tr('切換後，還沒保存的修改會不見，確定嗎？'))
-                    ) {
-                      setValues({})
-                      setPrivate(value === 'private')
-                    }
-                  }}
-                />
+                <Tooltip
+                  label={
+                    privateValues ? tr('只有這個專案看得到。') : tr('其他專案也會看到這些修改。')
+                  }
+                >
+                  <SegmentedControl
+                    size="xs"
+                    className="data-scope-switch"
+                    aria-label={tr('資料範圍')}
+                    value={privateValues ? 'private' : 'shared'}
+                    disabled={disabled}
+                    data={[
+                      { value: 'shared', label: tr('共用') },
+                      { value: 'private', label: tr('僅此專案') },
+                    ]}
+                    onChange={(value) => {
+                      if (
+                        !fieldDirty ||
+                        window.confirm(tr('切換後，還沒保存的修改會不見，確定嗎？'))
+                      ) {
+                        setValues({})
+                        setPrivate(value === 'private')
+                      }
+                    }}
+                  />
+                </Tooltip>
               )}
-            </Group>
-            <FolderSourceImport
-              importer={importer}
-              row={row}
-              busy={busy}
-              disabled={disabled}
-              fieldDirty={fieldDirty}
-              openSignal={importSignal}
-              kind={effectiveKind(row, sample, parentKind)}
-              run={run}
-              setError={setError}
-            />
+            </div>
             {fieldDirty && (
               <Text size="xs" c="dimmed">
                 {tr('先保存或放棄下方未保存的變更，才能套用網站資料。')}
               </Text>
             )}
-            {row.record && (
-              <>
-                <Divider />
-              </>
-            )}
-            {renderFieldGroups()}
             {(() => {
               const mine = ownFields.filter(
                 (f) =>
                   !groupOfField(project, f.attributeId) &&
                   (isFilled(effective(f.attributeId)) || editedFields.includes(f.attributeId))
               )
-              return mine.length ? (
+              const hasGroups = (project.fieldGroups?.length ?? 0) > 0
+              if (!mine.length && !emptyOwnFields.length && !hasGroups) return null
+              return (
                 <section className="own-fields" aria-label={tr('你的欄位')}>
-                  <Text size="sm" fw={600} mb={4}>
-                    {tr('你的欄位')}
-                  </Text>
-                  <Stack>{mine.map(renderField)}</Stack>
+                  <div className="data-section-header">
+                    <Text size="xs" fw={600} c="dimmed" className="data-section-title">
+                      {tr('自建欄位')}
+                    </Text>
+                    {emptyOwnFields.length > 0 && (
+                      <Menu position="bottom-end" shadow="md">
+                        <Menu.Target>
+                          <Button
+                            size="compact-xs"
+                            variant="subtle"
+                            disabled={disabled}
+                            leftSection={<Icon name="plus" size={12} />}
+                          >
+                            {tr('填入其他 ({0})', emptyOwnFields.length)}
+                          </Button>
+                        </Menu.Target>
+                        <Menu.Dropdown>
+                          {emptyOwnFields.map((field) => (
+                            <Menu.Item
+                              key={field.attributeId}
+                              onClick={() =>
+                                setEditedFields((ids) =>
+                                  ids.includes(field.attributeId)
+                                    ? ids
+                                    : [...ids, field.attributeId]
+                                )
+                              }
+                            >
+                              {fieldLabel(field.attributeId)}
+                            </Menu.Item>
+                          ))}
+                        </Menu.Dropdown>
+                      </Menu>
+                    )}
+                  </div>
+                  {hasGroups && <Stack gap="xs">{renderFieldGroups()}</Stack>}
+                  {mine.length > 0 ? (
+                    <Stack gap="xs">{mine.map((f) => renderField(f))}</Stack>
+                  ) : (
+                    !hasGroups && (
+                      <Text size="xs" c="dimmed">
+                        {tr('尚未填寫自建欄位，可點右上角填入。')}
+                      </Text>
+                    )
+                  )}
                 </section>
-              ) : null
+              )
             })()}
-            {emptyFields.length > 0 && (
-              <div className="field-fill-chips" role="group" aria-label={tr('補填')}>
-                <Text size="xs" c="dimmed">
-                  {tr('補填：')}
-                </Text>
-                {emptyFields.map((field) => (
-                  <Button
-                    key={field.attributeId}
-                    size="compact-xs"
-                    variant="default"
-                    disabled={disabled}
-                    leftSection={<Icon name="plus" size={12} />}
-                    onClick={() =>
-                      setEditedFields((ids) =>
-                        ids.includes(field.attributeId) ? ids : [...ids, field.attributeId]
-                      )
-                    }
-                  >
-                    {fieldLabel(field.attributeId)}
-                  </Button>
-                ))}
-              </div>
-            )}
             {renderSites()}
             {!mainFields.length && !project.fieldGroups?.length && !siteFields.length && (
               <Group justify="space-between" wrap="nowrap" gap="xs">

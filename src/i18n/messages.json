@@ -1403,24 +1403,6 @@
     "en": "Advanced",
     "es": "Avanzado"
   },
-  "資料夾資料": {
-    "ja": "フォルダーデータ",
-    "zh-CN": "文件夹数据",
-    "en": "Folder data",
-    "es": "Datos de carpeta"
-  },
-  "僅目前專案": {
-    "ja": "このプロジェクトのみ",
-    "zh-CN": "仅目前项目",
-    "en": "Current project only",
-    "es": "Solo este proyecto"
-  },
-  "各專案共用的資訊": {
-    "ja": "プロジェクト間で共有する情報",
-    "zh-CN": "各项目共用的信息",
-    "en": "Info shared by all projects",
-    "es": "Información compartida entre proyectos"
-  },
   "保存": {
     "ja": "保存",
     "zh-CN": "保存",
@@ -10919,18 +10901,6 @@
     "ja": "このサイトのデータを削除",
     "es": "Quitar los datos de este sitio"
   },
-  "補填": {
-    "zh-CN": "补填",
-    "en": "Fill in",
-    "ja": "入力する",
-    "es": "Rellenar"
-  },
-  "補填：": {
-    "zh-CN": "补填：",
-    "en": "Fill in: ",
-    "ja": "入力する：",
-    "es": "Rellenar: "
-  },
   "來源不存在": {
     "zh-CN": "来源不存在",
     "en": "The source doesn't exist",
@@ -13516,5 +13486,47 @@
     "en": "No source value to restore",
     "ja": "元に戻せる取得値はありません",
     "es": "No hay un valor original para restaurar"
+  },
+  "自建欄位": {
+    "zh-CN": "自建字段",
+    "en": "Own fields",
+    "ja": "自分の項目",
+    "es": "Campos propios"
+  },
+  "填入其他 ({0})": {
+    "zh-CN": "填入其他 ({0})",
+    "en": "Fill other ({0})",
+    "ja": "他を入力 ({0})",
+    "es": "Rellenar otros ({0})"
+  },
+  "尚未填寫自建欄位，可點右上角填入。": {
+    "zh-CN": "尚未填写自建字段，可点右上角填入。",
+    "en": "No own fields filled yet. Use the menu on the right to add one.",
+    "ja": "自分の項目はまだ未入力です。右上のメニューから追加できます。",
+    "es": "Aún no hay campos propios rellenados. Usa el menú de la derecha para añadir uno."
+  },
+  "僅此專案": {
+    "zh-CN": "仅此项目",
+    "en": "This project",
+    "ja": "このプロジェクトのみ",
+    "es": "Solo este proyecto"
+  },
+  "重新取得 {0}": {
+    "zh-CN": "重新获取 {0}",
+    "en": "Refetch {0}",
+    "ja": "{0} を再取得",
+    "es": "Volver a obtener {0}"
+  },
+  "編輯 {0}": {
+    "zh-CN": "编辑 {0}",
+    "en": "Edit {0}",
+    "ja": "{0} を編集",
+    "es": "Editar {0}"
+  },
+  "已改": {
+    "zh-CN": "已改",
+    "en": "Edited",
+    "ja": "編集済",
+    "es": "Editado"
   }
 }

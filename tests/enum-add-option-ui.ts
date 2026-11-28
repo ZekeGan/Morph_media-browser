@@ -34,8 +34,9 @@ let passed = false
 try {
   await page.getByRole('button', { name: '開啟專案 Choices', exact: true }).first().click()
   await page.getByRole('button', { name: '目前資料夾設定', exact: true }).click()
-  // R-339: an empty field waits as a "fill in" chip.
-  await page.getByRole('group', { name: '補填' }).getByRole('button', { name: '狀態' }).click()
+  // R-561: an empty own field waits inside the "+ 填入其他" menu.
+  await page.getByRole('button', { name: /^填入其他/ }).click()
+  await page.getByRole('menuitem', { name: '狀態', exact: true }).click()
   const input = page.getByRole('textbox', { name: '新增選項 狀態', exact: true })
   await input.fill('暫停')
   await page.getByRole('button', { name: '新增選項', exact: true }).click()
@@ -59,7 +60,7 @@ try {
   await savebar.waitFor({ state: 'hidden' })
   assert.equal(await page.getByRole('textbox', { name: '狀態', exact: true }).inputValue(), '')
   // The shared / this-project switch only appears when another linked project also shows this folder.
-  assert.equal(await page.locator('label').filter({ hasText: '僅目前專案' }).count(), 0)
+  assert.equal(await page.locator('label').filter({ hasText: '僅此專案' }).count(), 0)
   // The folder type is detected and can be set by hand, in the Appearance tab (R-235).
   await page.getByRole('tab', { name: '類型與版面', exact: true }).click()
   const kind = page.getByRole('textbox', { name: '資料夾類型', exact: true })
