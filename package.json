@@ -1,7 +1,7 @@
 {
   "name": "morph",
   "productName": "Morph",
-  "version": "0.41.2-beta.1",
+  "version": "0.42.0-beta.1",
   "description": "M:orph (Media Browser): a local-first folder viewer where you decide how each folder is shown.",
   "license": "SEE LICENSE IN LICENSE",
   "author": "Zeke Gan",
@@ -39,10 +39,10 @@
     "lint": "eslint src shared electron tests scripts",
     "lint:fix": "eslint --fix src shared electron tests scripts",
     "dist": "pnpm build && electron-builder --win",
+    "dist:dir": "pnpm build && electron-builder --win dir",
     "check:packaged": "tsx tests/support/check-packaged.ts",
     "check:sources": "tsx scripts/check-sources.ts",
     "compat:sample": "tsx tests/support/make-compat-sample.ts",
-    "dist:dir": "pnpm build && electron-builder --win dir",
     "prepare": "node scripts/setup-hooks.mjs"
   },
   "dependencies": {

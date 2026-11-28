@@ -6,6 +6,7 @@ The application version is independent of portable record `schemaVersion`.
 
 | Versions | Theme |
 | --- | --- |
+| 0.42 (0.42.0-beta.1) | Comprehensive UX redesign: full-width browsing & single-click detail panel, unified view switcher, split layout button, focused Layout Editor with starter templates, single-row detail header & 80/20 media toolbar, redesigned Folder Settings Data tab & click-to-edit imported fields with restore, unified smart website import, redesigned Game Actions with Steam-style launch args, unified Reader toolbar & click-center immersive HUD, cross-subfolder image viewer, command-palette search, 4-tab App Settings, consolidated UI test suites |
 | 0.41 (0.41.0-beta.1 – 0.41.2-beta.1) | First Beta: name search across online sources with per-kind choices and keys, music / video / manga folder types (manga by page-number names), one layout window with Details layouts, novel reader, webtoon, CBR / CB7, embedded and picture subtitles, sort menu and file list toolbar, thumbnails twice as fast (sharp) |
 | 0.40 | Media queue previews and covers, one play-order button; reader icon toolbar, immersive edge panels (tools, progress with previews, queue), sliding page turns, swipe to turn, resume reading, next book; src grouped by feature |
 | 0.39 | Folder settings redesign (import inside Data, sticky save bar, image thumbnails and delete, "still to add" card, test launch), one top-bar refresh button, smaller package, translation fixes |
@@ -18,6 +19,10 @@ The application version is independent of portable record `schemaVersion`.
 | 0.20 – 0.21 | Japanese visual-novel engine detection, video failure help, UI audit fixes |
 
 ## Unreleased
+
+## 0.42.0-beta.1 — 2026-11-28
+
+UX redesign and stability beta release.
 
 - Consolidated 21 small same-domain UI tests into 5 shared-Electron domain suites (`reader-flow-ui`, `video-checks-ui`, `shell-checks-ui`, `fields-and-sources-ui`, `cells-and-images-ui`) keeping every regression assertion intact (64 → 48 UI test files), and updated `scripts/run-ui-tests.mjs` to invoke `tsx` directly without spawning `pnpm` per test (R-531).
 - Added 3 missing i18n keys (`編輯`, `全選`, `取消全選`), updated `decided-media.test.ts` for R-538 `sourceRecord.originalValue`, and synced all 25 legacy UI tests to the redesigned UX selectors so the entire suite passes (457/457 unit tests, 64/64 Electron UI tests) (R-564).
