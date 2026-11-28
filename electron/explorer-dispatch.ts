@@ -454,11 +454,25 @@ export async function dispatchRequest(
             application: selected,
           }
         } else {
+          const existing =
+            record.details?.targets && Object.hasOwn(record.details.targets, template.id)
+              ? record.details.targets[template.id]
+              : undefined
+          const locale =
+            template.kind === 'exe'
+              ? req.localeEmulator !== undefined
+                ? req.localeEmulator
+                  ? true
+                  : undefined
+                : existing?.kind === 'exe'
+                  ? existing.localeEmulator
+                  : undefined
+              : undefined
           target = {
             kind: template.kind,
             ...selected,
             args: template.kind === 'file' ? [] : req.args,
-            ...(template.kind === 'exe' && req.localeEmulator ? { localeEmulator: true } : {}),
+            ...(locale ? { localeEmulator: locale } : {}),
           }
         }
       }
@@ -830,6 +844,42 @@ export async function dispatchRequest(
           if (req.value === true) target.localeEmulator = true
           else if (localeProfileId(req.value)) target.localeEmulator = req.value
           else delete target.localeEmulator
+        })
+      )
+    case 'targetArgs': {
+      if (
+        !Array.isArray(req.args) ||
+        req.args.length > 100 ||
+        !req.args.every(
+          (arg) => typeof arg === 'string' && arg.length <= 10000 && !arg.includes('\0')
+        )
+      ) {
+        throw new Error('參數不合法')
+      }
+      return ex.after(
+        await ex.details(req.rowId, req.revision, (d) => {
+          const target =
+            d.targets && Object.hasOwn(d.targets, req.templateId)
+              ? d.targets[req.templateId]
+              : undefined
+          if (!target || !['exe', 'file-app'].includes(target.kind)) {
+            throw new Error('只有程式操作可以設定啟動參數')
+          }
+          target.args = req.args
+        })
+      )
+    }
+    case 'unbindTarget':
+      return ex.after(
+        await ex.details(req.rowId, req.revision, (d) => {
+          if (d.targets && Object.hasOwn(d.targets, req.templateId)) {
+            delete d.targets[req.templateId]
+            if (!Object.keys(d.targets).length) delete d.targets
+          }
+          if (d.hiddenActions) {
+            d.hiddenActions = d.hiddenActions.filter((id) => id !== req.templateId)
+            if (!d.hiddenActions.length) delete d.hiddenActions
+          }
         })
       )
     case 'chooseLocaleEmulator': {

@@ -447,6 +447,19 @@ export type ExplorerRequest =
       templateId: string
       value: boolean | string
     }
+  | {
+      action: 'targetArgs'
+      rowId: string
+      revision: number
+      templateId: string
+      args: string[]
+    }
+  | {
+      action: 'unbindTarget'
+      rowId: string
+      revision: number
+      templateId: string
+    }
   // R-282: open a text book, and keep where it was left.
   // R-285: website keys. Values only ever travel from the window to main, never back.
   | { action: 'keyStatus' }

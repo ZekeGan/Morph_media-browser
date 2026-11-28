@@ -1193,12 +1193,6 @@
     "en": "Launch “{0}”?",
     "es": "¿Iniciar «{0}»?"
   },
-  "尚未設定操作按鈕": {
-    "ja": "操作ボタンは未設定です",
-    "zh-CN": "尚未设定操作按钮",
-    "en": "No actions configured",
-    "es": "No hay acciones configuradas"
-  },
   "自訂操作與目標": {
     "ja": "操作と対象をカスタマイズ",
     "zh-CN": "自订操作与目标",
@@ -1517,18 +1511,6 @@
     "en": "Import selected data",
     "es": "Importar datos seleccionados"
   },
-  "啟動參數（JSON 字串陣列）": {
-    "ja": "起動引数（JSON文字列配列）",
-    "zh-CN": "启动参数（JSON 字串阵列）",
-    "en": "Launch arguments (JSON string array)",
-    "es": "Argumentos de inicio (matriz JSON de cadenas)"
-  },
-  "[\"--fullscreen\", \"含空白的值\"]": {
-    "ja": "[\"--fullscreen\", \"空白を含む値\"]",
-    "zh-CN": "[\"--fullscreen\", \"含空白的值\"]",
-    "en": "[\"--fullscreen\", \"value with spaces\"]",
-    "es": "[\"--fullscreen\", \"valor con espacios\"]"
-  },
   "還沒選要開的檔案": {
     "ja": "対象未設定",
     "zh-CN": "还没选要打开的文件",
@@ -1546,12 +1528,6 @@
     "zh-CN": "文件夹",
     "en": "Folder",
     "es": "Carpeta"
-  },
-  "並保存參數": {
-    "ja": "して引数を保存",
-    "zh-CN": "并保存参数",
-    "en": "and save arguments",
-    "es": "y guardar argumentos"
   },
   "掃描範圍": {
     "ja": "スキャン範囲",
@@ -3215,12 +3191,6 @@
     "zh-CN": "保存网址",
     "es": "Guardar URL"
   },
-  "選擇應用程式與檔案": {
-    "en": "Choose application and file",
-    "ja": "アプリとファイルを選択",
-    "zh-CN": "选择应用和文件",
-    "es": "Elegir aplicación y archivo"
-  },
   "取消變更": {
     "en": "Discard changes",
     "ja": "変更を破棄",
@@ -4085,18 +4055,6 @@
     "ja": "ゲームとして確定",
     "es": "Confirmar como juego"
   },
-  "尚未指定啟動檔，「啟動遊戲」按鈕暫時無法使用。": {
-    "zh-CN": "尚未指定启动文件，“启动游戏”按钮暂时无法使用。",
-    "en": "No launch file is set, so the Launch button is unavailable for now.",
-    "ja": "起動ファイルが未指定のため、「ゲームを起動」は使えません。",
-    "es": "No hay archivo de inicio, por lo que el botón de iniciar no está disponible."
-  },
-  "前往設定指定啟動檔": {
-    "zh-CN": "前往设置指定启动文件",
-    "en": "Set the launch file",
-    "ja": "設定で起動ファイルを指定",
-    "es": "Indicar el archivo de inicio"
-  },
   "尚無最愛": {
     "zh-CN": "尚无收藏",
     "en": "No favorites yet",
@@ -4156,12 +4114,6 @@
     "en": "Bind this shortcut",
     "ja": "このショートカットを割り当て",
     "es": "Vincular este acceso directo"
-  },
-  "啟動參數格式不正確。請用 JSON 字串陣列，每一項各用雙引號，例如：": {
-    "zh-CN": "启动参数格式不正确。请用 JSON 字符串数组，每一项各用双引号，例如：",
-    "en": "The launch arguments are not valid. Use a JSON array of strings, each in double quotes, for example:",
-    "ja": "起動引数の形式が正しくありません。二重引用符で囲んだ文字列の JSON 配列で指定してください。例：",
-    "es": "Los argumentos de inicio no son válidos. Usa un array JSON de cadenas entre comillas dobles, por ejemplo:"
   },
   "還沒有可用的動作，請先在版面編輯器的「啟動遊戲」新增": {
     "zh-CN": "还没有可用的动作，请先在版面编辑器的“启动游戏”新增",
@@ -4354,12 +4306,6 @@
     "en": "Reclass",
     "ja": "再分類",
     "es": "Reclasificación"
-  },
-  "還沒選要開的檔案，所以遊戲頁不會出現這顆按鈕": {
-    "zh-CN": "还没选要打开的文件，所以游戏页不会出现这个按钮",
-    "en": "No target bound yet, so the action bar will not show this button",
-    "ja": "対象が未割り当てのため、ボタン列にはこのボタンは表示されません",
-    "es": "Aún no hay destino vinculado, por lo que la barra no mostrará este botón"
   },
   "目前隱藏，點一下顯示": {
     "zh-CN": "目前隐藏，点一下显示",
@@ -7181,12 +7127,6 @@
     "ja": "先に「アプリの設定」で LEProc.exe を指定してください",
     "es": "Primero elige LEProc.exe en la configuración de la aplicación"
   },
-  "選擇遊戲資料夾內的檔案": {
-    "zh-CN": "选择游戏文件夹内的文件",
-    "en": "Choose a file in the game folder",
-    "ja": "ゲームフォルダー内のファイルを選択",
-    "es": "Elegir un archivo de la carpeta del juego"
-  },
   "透過 Steam 啟動，疊加介面與成就才會正常運作": {
     "zh-CN": "通过 Steam 启动，覆盖界面与成就才会正常运作",
     "en": "Start through Steam so the overlay and achievements work",
@@ -7252,12 +7192,6 @@
     "en": "Back to automatic",
     "ja": "自動に戻す",
     "es": "Volver a automático"
-  },
-  "附帶的程式與說明書": {
-    "zh-CN": "附带的程序与说明书",
-    "en": "Bundled tools and manuals",
-    "ja": "付属のツールと説明書",
-    "es": "Herramientas y manuales incluidos"
   },
   "設定程式": {
     "zh-CN": "设置程序",
@@ -10685,12 +10619,6 @@
     "ja": "{0} で開く",
     "es": "Abrir en {0}"
   },
-  "其他按鈕": {
-    "zh-CN": "其他按钮",
-    "en": "Other buttons",
-    "ja": "その他のボタン",
-    "es": "Otros botones"
-  },
   "展開全文": {
     "zh-CN": "展开全文",
     "en": "Show all",
@@ -11254,12 +11182,6 @@
     "en": "Page-turn transition",
     "ja": "ページ送りのアニメーション",
     "es": "Transición al pasar página"
-  },
-  "選擇啟動檔並保存參數": {
-    "zh-CN": "选择启动文件并保存参数",
-    "en": "Choose launch file and save arguments",
-    "ja": "起動ファイルを選択して引数を保存",
-    "es": "Elegir archivo de inicio y guardar argumentos"
   },
   "啟動程式或啟動檔": {
     "zh-CN": "启动程序或启动文件",
@@ -13163,18 +13085,6 @@
     "ja": "選ぶと .swf のゲームを開けるようになります。",
     "es": "Una vez elegido, se pueden abrir juegos .swf."
   },
-  "按眼睛圖示，就會顯示在遊戲頁。": {
-    "zh-CN": "按眼睛图标，就会显示在游戏页。",
-    "en": "Press the eye icon to show it on the game page.",
-    "ja": "目のアイコンを押すとゲームページに表示されます。",
-    "es": "Pulsa el icono del ojo para mostrarlo en la página del juego."
-  },
-  "按「加入」才會出現在遊戲頁。": {
-    "zh-CN": "按“加入”才会出现在游戏页。",
-    "en": "Press \"Add\" to show it on the game page.",
-    "ja": "「追加」を押すとゲームページに表示されます。",
-    "es": "Pulsa «Añadir» para que aparezca en la página del juego."
-  },
   "選好後，遊戲可以用日文等語系啟動，避免亂碼。": {
     "zh-CN": "选好后，游戏可以用日文等语系启动，避免乱码。",
     "en": "Once chosen, games can start in Japanese or another locale, so the text is not garbled.",
@@ -13216,12 +13126,6 @@
     "en": "To change how the card or details look, use the buttons below.",
     "ja": "カードや詳細の見た目を変えるには、下のボタンを押します。",
     "es": "Para cambiar el aspecto de la tarjeta o los detalles, usa los botones de abajo."
-  },
-  "選這個遊戲要開哪個檔案；新的按鈕種類在版面編輯器加。": {
-    "zh-CN": "选这个游戏要开哪个文件；新的按钮种类在版面编辑器加。",
-    "en": "Choose which file this game opens; new kinds of buttons are added in the layout editor.",
-    "ja": "このゲームで開くファイルを選びます。新しいボタンの種類はレイアウトエディターで追加します。",
-    "es": "Elige qué archivo abre este juego; los nuevos tipos de botón se añaden en el editor de diseño."
   },
   "從網站抓資料時，優先用哪種語言。": {
     "zh-CN": "从网站抓资料时，优先用哪种语言。",
@@ -13409,12 +13313,6 @@
     "ja": "表紙を追加",
     "es": "Añadir portada"
   },
-  "新增專案共用操作": {
-    "zh-CN": "新增项目共用操作",
-    "en": "Add project-shared action",
-    "ja": "プロジェクト共通の操作を追加",
-    "es": "Añadir acción compartida del proyecto"
-  },
   "此操作會加入專案共用清單，其他遊戲也能使用。": {
     "zh-CN": "此操作会加入项目共用清单，其他游戏也能使用。",
     "en": "This action is shared across the project so other games can bind it too.",
@@ -13492,5 +13390,95 @@
     "en": "↑↓ select · Enter / click to open · Esc to close",
     "ja": "↑↓ で選択 · Enter／クリックで開く · Esc で閉じる",
     "es": "↑↓ seleccionar · Enter / clic para abrir · Esc para cerrar"
+  },
+  "只有程式操作可以設定啟動參數": {
+    "zh-CN": "只有程序操作可以设置启动参数",
+    "en": "Only program actions can have launch arguments",
+    "ja": "起動引数を設定できるのはプログラム操作のみです",
+    "es": "Solo las acciones de programa pueden tener argumentos de inicio"
+  },
+  "參數格式不正確，請檢查雙引號是否成對閉合。": {
+    "zh-CN": "参数格式不正确，请检查双引号是否成对闭合。",
+    "en": "Invalid arguments format. Check that double quotes are properly closed.",
+    "ja": "引数の形式が正しくありません。二重引用符が閉じているか確認してください。",
+    "es": "Formato de argumentos no válido. Comprueba que las comillas dobles estén cerradas."
+  },
+  "已設參數": {
+    "zh-CN": "已设参数",
+    "en": "Args set",
+    "ja": "引数あり",
+    "es": "Con argumentos"
+  },
+  "選檔": {
+    "zh-CN": "选文件",
+    "en": "Choose file",
+    "ja": "ファイル選択",
+    "es": "Elegir archivo"
+  },
+  "進階設定": {
+    "zh-CN": "高级设置",
+    "en": "Advanced",
+    "ja": "詳細設定",
+    "es": "Avanzado"
+  },
+  "進階設定 {0}": {
+    "zh-CN": "高级设置 {0}",
+    "en": "Advanced settings for {0}",
+    "ja": "{0} の詳細設定",
+    "es": "Ajustes avanzados de {0}"
+  },
+  "啟動參數": {
+    "zh-CN": "启动参数",
+    "en": "Launch arguments",
+    "ja": "起動引数",
+    "es": "Argumentos de inicio"
+  },
+  "空白分隔，含空白請加雙引號": {
+    "zh-CN": "空格分隔，含空格请加双引号",
+    "en": "Space-separated; quote values with spaces",
+    "ja": "スペース区切り（空白を含む場合は二重引用符）",
+    "es": "Separados por espacios; usa comillas si hay espacios"
+  },
+  "儲存參數": {
+    "zh-CN": "保存参数",
+    "en": "Save args",
+    "ja": "引数を保存",
+    "es": "Guardar argumentos"
+  },
+  "清除目標": {
+    "zh-CN": "清除目标",
+    "en": "Clear target",
+    "ja": "対象を解除",
+    "es": "Borrar destino"
+  },
+  "遊戲頁按鈕": {
+    "zh-CN": "游戏页按钮",
+    "en": "Game page buttons",
+    "ja": "ゲームページのボタン",
+    "es": "Botones de la página del juego"
+  },
+  "點選檔設定目標，按眼睛切換遊戲頁顯示。": {
+    "zh-CN": "点选文件设置目标，按眼睛切换游戏页显示。",
+    "en": "Pick a target file and use the eye to toggle visibility.",
+    "ja": "対象ファイルを選び、目のアイコンで表示を切り替えます。",
+    "es": "Elige un destino y usa el ojo para mostrar u ocultar el botón."
+  },
+  "新增操作": {
+    "zh-CN": "新增操作",
+    "en": "Add action",
+    "ja": "操作を追加",
+    "es": "Añadir acción"
+  },
+  "可快速加入（{0}）": {
+    "zh-CN": "可快速添加（{0}）",
+    "en": "Quick add ({0})",
+    "ja": "クイック追加（{0}）",
+    "es": "Añadir rápido ({0})"
+  },
+  "未設定的專案操作（{0}）": {
+    "zh-CN": "未设置的项目操作（{0}）",
+    "en": "Unbound project actions ({0})",
+    "ja": "未設定のプロジェクト操作（{0}）",
+    "es": "Acciones del proyecto sin asignar ({0})"
   }
 }

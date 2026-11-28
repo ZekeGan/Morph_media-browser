@@ -252,3 +252,83 @@ test('game targets require explicit selection, preserve arguments and leave orig
     assert.equal(await fs.readFile(path.join(media, name), 'utf8'), value)
   }
 })
+
+test('R-555: targetArgs updates launch args without re-picking and unbindTarget clears binding and hidden state', async (t) => {
+  const base = path.resolve('.test-output')
+  await fs.mkdir(base, { recursive: true })
+  const root = await fs.mkdtemp(path.join(base, 'game-actions-r555-'))
+  const media = path.join(root, 'game')
+  await fs.mkdir(media)
+  await fs.writeFile(path.join(media, 'Game.exe'), 'CONTROLLED FAKE EXE')
+  const library = new Library(path.join(root, 'local'), undefined, false)
+  await library.init()
+  let chooseCount = 0
+  const desktop: DesktopOperations = {
+    choose: async () => {
+      chooseCount++
+      return path.join(media, 'Game.exe')
+    },
+    open: async () => {},
+    launch: async () => {},
+    external: async () => {},
+    thumbnail: async () => Buffer.alloc(0),
+  }
+  const explorer = new Explorer(library, library.userData, desktop)
+  t.after(async () => {
+    explorer.close()
+    const target = await fs.realpath(root)
+    assert.ok(target.startsWith(base + path.sep))
+    await fs.rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+  })
+  await library.create(media, { name: 'Games', depth: { mode: 'through', level: 1 } })
+  const row = () => library.snapshot().rows[0]
+  // Unbound target rejects targetArgs.
+  await assert.rejects(
+    explorer.request({
+      action: 'targetArgs',
+      rowId: row().rowId,
+      revision: row().record!.revision,
+      templateId: 'default-launch-game',
+      args: ['--fullscreen'],
+    }),
+    /程式操作/
+  )
+  await explorer.request({
+    action: 'bindTarget',
+    rowId: row().rowId,
+    revision: row().record!.revision,
+    templateId: 'default-launch-game',
+    args: ['--old'],
+  })
+  assert.equal(chooseCount, 1)
+  // Update args without triggering file picker.
+  await explorer.request({
+    action: 'targetArgs',
+    rowId: row().rowId,
+    revision: row().record!.revision,
+    templateId: 'default-launch-game',
+    args: ['--fullscreen', '含 空白'],
+  })
+  assert.equal(chooseCount, 1)
+  assert.deepEqual((await readFolder(media)).details?.targets?.['default-launch-game']?.args, [
+    '--fullscreen',
+    '含 空白',
+  ])
+  // Hide then unbind clears both target and hiddenActions.
+  await explorer.request({
+    action: 'actionVisible',
+    rowId: row().rowId,
+    revision: row().record!.revision,
+    templateId: 'default-launch-game',
+    visible: false,
+  })
+  await explorer.request({
+    action: 'unbindTarget',
+    rowId: row().rowId,
+    revision: row().record!.revision,
+    templateId: 'default-launch-game',
+  })
+  const after = await readFolder(media)
+  assert.equal(after.details?.targets?.['default-launch-game'], undefined)
+  assert.equal(after.details?.hiddenActions, undefined)
+})

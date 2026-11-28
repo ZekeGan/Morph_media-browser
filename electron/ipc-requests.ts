@@ -174,6 +174,8 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
     templateId: ref,
     value: (v) => typeof v === 'boolean' || localeProfileId(v),
   },
+  targetArgs: { ...revisionRow, templateId: ref, args: list(text, 100) },
+  unbindTarget: { ...revisionRow, templateId: ref },
   novel: { rowId: ref, fileId: ref, summary: opt(bool) },
   audioTags: { rowId: ref, fileIds: list(ref, 24) },
   folderFacts: { rowIds: list(ref, 60) },

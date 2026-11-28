@@ -56,7 +56,7 @@ import { commonFieldNames } from '../editor/commonFields'
 import { fieldSource, fieldSourceGroups, rowFieldAttributes } from '../editor/fieldSources'
 import { importedFieldLabels } from '../editor/importedFieldLabels'
 import { layoutName as presetName } from '../editor/layoutName'
-import { GameActionTargets, NewGameAction } from '../game/GameActions'
+import { GameActionTargets } from '../game/GameActions'
 import { GameExtraSettings } from '../game/GameExtras'
 import { t as tr, useLocale } from '../i18n'
 import { FolderSourceImport, useSourceImport } from '../metadata/FolderSourceImport'
@@ -966,11 +966,7 @@ export function FolderPanel({
           />
         </Tabs.Panel>
         <Tabs.Panel value="game" pt="md" keepMounted>
-          <Stack>
-            <Group gap={4} wrap="nowrap">
-              <Text fw={600}>{tr('遊戲操作')}</Text>
-              <HelpTip text={tr('選這個遊戲要開哪個檔案；新的按鈕種類在版面編輯器加。')} />
-            </Group>
+          <Stack gap="sm">
             <GameActionTargets
               key={row.rowId}
               row={row}
@@ -978,31 +974,17 @@ export function FolderPanel({
               disabled={disabled || fieldDirty}
               run={run}
               onDirty={setTargetDirty}
+              canAddAction={
+                !disabled && !fieldDirty && !targetDirty && gameActionTemplates(project).length < 30
+              }
+              onAddAction={(template) => {
+                const next = [...gameActionTemplates(project), template]
+                void act({
+                  action: 'saveProject',
+                  project: { ...project, actionTemplates: next },
+                })
+              }}
             />
-            {/* R-539: add a project-shared launch action directly here so it can be bound right away. */}
-            <details className="settings-section game-add-action">
-              <summary>{tr('新增專案共用操作')}</summary>
-              <Stack gap={6} mt={8}>
-                <Text size="xs" c="dimmed">
-                  {tr('此操作會加入專案共用清單，其他遊戲也能使用。')}
-                </Text>
-                <NewGameAction
-                  disabled={
-                    disabled ||
-                    fieldDirty ||
-                    targetDirty ||
-                    gameActionTemplates(project).length >= 30
-                  }
-                  onAdd={(template) => {
-                    const next = [...gameActionTemplates(project), template]
-                    void act({
-                      action: 'saveProject',
-                      project: { ...project, actionTemplates: next },
-                    })
-                  }}
-                />
-              </Stack>
-            </details>
             <GameExtraSettings
               row={row}
               disabled={disabled || fieldDirty || targetDirty}

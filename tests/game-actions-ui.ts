@@ -85,7 +85,7 @@ try {
     .dblclick()
   await page.locator('.game-actions').waitFor()
   assert.equal(await page.locator('.game-candidate').count(), 1)
-  // Nothing is bound yet, so no action button is offered, only the hint to bind one.
+  // Nothing is bound yet, so no launch action button is offered, only the in-place primary prompt.
   assert.equal(
     await page
       .locator('.game-actions')
@@ -93,7 +93,10 @@ try {
       .count(),
     0
   )
-  await page.locator('.game-launch-hint').waitFor()
+  await page
+    .locator('.game-actions')
+    .getByRole('button', { name: '指定啟動檔', exact: true })
+    .waitFor()
   // R-307, R-315: steam_appid.txt offers a Steam launch button, hidden until the game settings show it.
   const steam = page
     .locator('.game-actions')
@@ -103,13 +106,13 @@ try {
   await button('自訂遊戲操作').click()
   const drawer = page.locator('.folder-panel-dock-settings')
   await drawer.getByRole('tab', { name: '遊戲操作', exact: true }).waitFor()
-  // R-539: adding a project-shared launch action is available directly inside the Game Actions tab.
-  await drawer.locator('.game-add-action summary').waitFor()
+  // R-539 / R-555: adding a project-shared launch action is available in the Game Actions header.
+  await drawer.getByRole('button', { name: '新增操作', exact: true }).waitFor()
   assert.equal(
     await drawer.getByRole('tab', { name: '遊戲操作', exact: true }).getAttribute('aria-selected'),
     'true'
   )
-  // R-305 / R-306: the save folder line and the bundled manual offered as a suggestion, not added on its own.
+  // R-305 / R-306 / R-555: save folder, bundled manual suggestion, and Steam extra row are unified.
   await drawer.getByText('存檔資料夾', { exact: true }).waitFor()
   await drawer.getByRole('button', { name: '加入 manual.pdf', exact: true }).waitFor()
   await drawer.getByRole('button', { name: '顯示按鈕 用 Steam 啟動', exact: true }).click()
@@ -125,8 +128,10 @@ try {
   await idle()
   originalRecord = await fs.readFile(folderFile(game), 'utf8')
   await page.screenshot({ path: path.join(base, 'shot', 'r305-game-extras-settings.png') })
-  const args = drawer.getByRole('textbox', { name: '啟動參數（JSON 字串陣列）', exact: true })
-  await args.fill('["with spaces", "\\\"quoted\\\"", "$(literal)"]')
+  // R-555: expand advanced settings to edit Steam-style launch arguments.
+  await drawer.getByRole('button', { name: '進階設定 啟動遊戲', exact: true }).click()
+  const args = drawer.getByRole('textbox', { name: '啟動參數', exact: true })
+  await args.fill('"with spaces" "\\"quoted\\"" $(literal)')
   await drawer.getByRole('tab', { name: '資料', exact: true }).click()
   await drawer.getByRole('tab', { name: '遊戲操作', exact: true }).click()
   assert.ok((await args.inputValue()).includes('with spaces'))
@@ -137,7 +142,7 @@ try {
       return { canceled: true, filePaths: [] }
     }) as typeof dialog.showOpenDialog
   })
-  await drawer.getByRole('button', { name: '選擇啟動檔並保存參數', exact: true }).click()
+  await drawer.getByRole('button', { name: '選檔', exact: true }).first().click()
   await idle()
   const pickers = await app.evaluate(
     () => (globalThis as unknown as { gamePicker: { defaultPath?: string }[] }).gamePicker
@@ -147,6 +152,41 @@ try {
   assert.equal(await fs.readFile(projectFile(media, project.projectId), 'utf8'), originalProject)
   assert.ok((await args.inputValue()).includes('with spaces'))
   await drawer.getByRole('button', { name: '取消變更', exact: true }).click()
+  // R-555: bind Game.exe, update args independently without re-picking, then clear target.
+  await app.evaluate(
+    ({ dialog }, exePath) => {
+      ;(globalThis as unknown as { gamePicker: unknown[] }).gamePicker = []
+      dialog.showOpenDialog = (async (...params: unknown[]) => {
+        ;(globalThis as unknown as { gamePicker: unknown[] }).gamePicker.push(params.at(-1))
+        return { canceled: false, filePaths: [exePath] }
+      }) as typeof dialog.showOpenDialog
+    },
+    path.join(game, 'Game.exe')
+  )
+  await drawer.getByRole('button', { name: '選檔', exact: true }).first().click()
+  await idle()
+  await args.fill('--fullscreen "save dir"')
+  await drawer.getByRole('button', { name: '儲存參數', exact: true }).click()
+  await idle()
+  assert.equal(
+    await app.evaluate(
+      () => (globalThis as unknown as { gamePicker: unknown[] }).gamePicker.length
+    ),
+    1
+  )
+  assert.deepEqual(
+    JSON.parse(await fs.readFile(folderFile(game), 'utf8')).details.targets['default-launch-game']
+      .args,
+    ['--fullscreen', 'save dir']
+  )
+  await drawer.getByRole('button', { name: '清除目標', exact: true }).click()
+  await idle()
+  assert.equal(
+    JSON.parse(await fs.readFile(folderFile(game), 'utf8')).details.targets?.[
+      'default-launch-game'
+    ],
+    undefined
+  )
   // R-385: the toolbar dialog is gone; actions are added from the launch component in the layout editor (tested in
   // game-launch-cell-ui). Here a page action is added to the project directly so the folder can bind it.
   assert.equal(await drawer.getByRole('button', { name: '自訂工具列', exact: true }).count(), 0) // ui-names: ignore
@@ -171,6 +211,12 @@ try {
   await button('重新整理').click()
   await idle()
   await drawer.getByRole('tab', { name: '遊戲操作', exact: true }).click()
+  // R-555: unbound secondary project actions fold under "未設定的專案操作（1）".
+  await drawer.locator('.game-unbound-group summary').click()
+  await drawer
+    .locator('.game-unbound-group')
+    .getByRole('button', { name: '設定', exact: true })
+    .click()
   await drawer.getByRole('textbox', { name: '網址', exact: true }).fill('https://example.test/game')
   await drawer.getByRole('button', { name: '保存網址', exact: true }).click()
   await idle()

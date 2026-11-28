@@ -12,7 +12,8 @@ import { PanelCard } from '../cells/PanelContent'
 import { Icon } from '../common/icons'
 import { t as tr, useLocale } from '../i18n'
 import { FolderPage } from '../panel/FolderPage'
-import { GameExtraButtons } from './GameExtras'
+import { kindIcon } from './GameActions'
+import { GameExtraButtons, GamePlaytime } from './GameExtras'
 
 import './game-actions.css'
 
@@ -36,6 +37,18 @@ export function GamePage({
 }) {
   useLocale()
   const disabled = busy || !row.record || row.readonly || row.stopped || !!row.error
+  const templates = gameActionTemplates(project)
+  // Only actions that are bound in this folder get a button; the eye in the folder settings can hide more.
+  const boundTemplates = templates.filter(
+    (t) =>
+      row.record?.details?.targets?.[t.id]?.kind === t.kind &&
+      !row.record?.details?.hiddenActions?.includes(t.id)
+  )
+  // R-555: first bound launch action takes primary emphasis; other actions use lightweight default style with icons.
+  const primaryId = boundTemplates.find((t) => ['exe', 'file-app', 'shortcut'].includes(t.kind))?.id
+  const gap = launchGap(project, row.record?.details?.targets)
+  const noCover = !!row.record && !row.record.details?.bannerAssetId && !row.record.assets.length
+
   return (
     <FolderPage
       page="game"
@@ -113,19 +126,35 @@ export function GamePage({
                 </Button>
               </Group>
             )}
-          <Group className="game-actions" gap="sm">
-            {gameActionTemplates(project)
-              // Only actions that are bound in this folder get a button; the eye in the folder settings can hide more.
-              .filter(
-                (t) =>
-                  row.record?.details?.targets?.[t.id]?.kind === t.kind &&
-                  !row.record?.details?.hiddenActions?.includes(t.id)
-              )
-              .map((t) => (
+          <Group className="game-actions" gap="xs">
+            {/* R-555: in-place primary prompt when no launch target is bound yet. */}
+            {gap === 'target' && (
+              <Button
+                variant="light"
+                leftSection={<Icon name="play" size={14} />}
+                onClick={() => configure('game')}
+              >
+                {tr('指定啟動檔')}
+              </Button>
+            )}
+            {gap === 'action' && (
+              <Button
+                variant="light"
+                leftSection={<Icon name="plus" size={14} />}
+                onClick={() => configure('game')}
+              >
+                {tr('新增啟動操作')}
+              </Button>
+            )}
+            {boundTemplates.map((t) => {
+              const primary = t.id === primaryId
+              return (
                 <Button
                   key={t.id}
-                  color={t.color}
+                  variant={primary ? 'filled' : 'default'}
+                  color={primary ? t.color : undefined}
                   disabled={busy}
+                  leftSection={<Icon name={kindIcon(t.kind)} size={14} />}
                   title={row.record?.details?.targets?.[t.id]?.path}
                   onClick={() => {
                     if (
@@ -139,11 +168,9 @@ export function GamePage({
                 >
                   {tr(t.label)}
                 </Button>
-              ))}
+              )
+            })}
             <GameExtraButtons row={row} busy={busy} run={run} />
-            {!gameActionTemplates(project).length && (
-              <small className="muted">{tr('尚未設定操作按鈕')}</small>
-            )}
             <Tooltip label={tr('自訂操作與目標')}>
               <ActionIcon
                 aria-label={tr('自訂遊戲操作')}
@@ -154,35 +181,14 @@ export function GamePage({
               </ActionIcon>
             </Tooltip>
           </Group>
-          {/* R-541: lightweight one-click entry when key game items (action, launch target, cover) are missing. */}
-          {(() => {
-            const gap = launchGap(project, row.record?.details?.targets)
-            const noCover =
-              !!row.record && !row.record.details?.bannerAssetId && !row.record.assets.length
-            if (!gap && !noCover) return null
-            return (
-              <Group className="game-launch-hint" gap="xs" wrap="wrap">
-                {gap === 'action' && (
-                  <Button size="compact-xs" variant="light" onClick={() => configure('game')}>
-                    {tr('新增啟動操作')}
-                  </Button>
-                )}
-                {gap === 'target' && (
-                  <small className="muted">
-                    {tr('尚未指定啟動檔，「啟動遊戲」按鈕暫時無法使用。')}{' '}
-                    <Button size="compact-xs" variant="subtle" onClick={() => configure('game')}>
-                      {tr('前往設定指定啟動檔')}
-                    </Button>
-                  </small>
-                )}
-                {noCover && (
-                  <Button size="compact-xs" variant="subtle" onClick={() => configure('images')}>
-                    {tr('補上封面')}
-                  </Button>
-                )}
-              </Group>
-            )
-          })()}
+          <GamePlaytime row={row} />
+          {noCover && (
+            <Group className="game-launch-hint" gap="xs" wrap="wrap">
+              <Button size="compact-xs" variant="subtle" onClick={() => configure('images')}>
+                {tr('補上封面')}
+              </Button>
+            </Group>
+          )}
         </>
       }
     />

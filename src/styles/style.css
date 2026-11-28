@@ -638,8 +638,6 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .source-long.open>span { display:block; }
 .source-diff tr.same td, .source-diff tr.same th { color:var(--muted); }
 .image-library figure small { display:block; margin:2px 0; }
-.game-target { padding:10px 12px; }
-.game-target.unbound { border-color:var(--accent); }
 .pick-path { flex:1; min-width:0; display:flex; align-items:center; padding:0 12px; min-height:36px; border:1px solid var(--line); border-radius:8px; background:var(--soft); color:var(--text); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pick-path[data-empty="true"] { color:var(--muted); }
 .desktop-body { position: relative; }
@@ -938,7 +936,6 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .folder-todo-summary { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
 .source-import-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .applied-pill { display:inline-flex; align-items:center; gap:3px; padding:1px 7px; border-radius:999px; font-size:11px; font-weight:500; color:var(--accent); background:color-mix(in srgb, var(--accent) 12%, transparent); }
-.game-add-action > summary { cursor:pointer; font-size:13px; font-weight:600; color:var(--text); }
 
 /* R-535: folder context menu anchored at the pointer */
 .folder-menu-anchor { position:fixed; width:1px; height:1px; pointer-events:none; }

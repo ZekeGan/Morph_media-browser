@@ -1,6 +1,20 @@
-.game-target { display: grid; gap: 10px; }
+.game-actions-panel { padding: 10px 12px; }
+.game-add-inline { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--soft); }
+.game-action-row { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; background: var(--panel); }
+.game-action-row.unbound { opacity: 0.82; }
+.game-action-row.primary-unbound { opacity: 1; border-color: var(--accent); }
+.game-action-row.hidden-row { opacity: 0.72; }
+.game-action-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.game-action-icon { flex-shrink: 0; color: var(--muted); }
+.game-action-info { flex: 1; min-width: 0; }
+.game-action-controls { flex-shrink: 0; }
+.game-action-drawer { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.game-action-disclosure { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.game-action-disclosure > summary { cursor: pointer; font-size: 12px; font-weight: 600; color: var(--muted); user-select: none; }
+.game-suggestion-row { padding: 4px 6px; border-radius: 6px; background: var(--soft); }
+.game-playtime { display: block; margin-top: -2px; }
 
-.game-candidate { flex-basis:100%; color:var(--muted); font-size:12px; }
+.game-candidate { flex-basis: 100%; color: var(--muted); font-size: 12px; }
 .action-custom-color { margin-top: 8px; font-size: 12px; color: var(--muted); }
 .action-custom-color summary { cursor: pointer; }
 .action-custom-color > :not(summary) { margin-top: 8px; }
