@@ -213,9 +213,9 @@ export function App() {
     return () => window.removeEventListener('focus', onWindowFocus)
   }, [hasBlockingModal, selectedProjectId, requestLibrary])
 
-  const closeActiveEditors = () => {
+  const closeActiveEditors = (keepSelection = false) => {
     setEditorSession(null)
-    setSelectedRowId(undefined)
+    if (!keepSelection) setSelectedRowId(undefined)
     setProjectSettingsDraft(undefined)
     setIsAppSettingsOpen(false)
   }
@@ -231,7 +231,8 @@ export function App() {
 
   const beginCreateProject = () => {
     if (confirmLeave()) {
-      closeActiveEditors()
+      // R-563: opening the Add Project dialog should not clear the active detail selection / close the right panel.
+      closeActiveEditors(true)
       createProject.begin()
     }
   }

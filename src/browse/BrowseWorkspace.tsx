@@ -892,10 +892,15 @@ function BrowseWorkspaceBody({
     return () => window.clearTimeout(timer)
   }, [])
   // Closing the panel with its button or X is remembered: clicks then only select until it is opened again (R-533).
+  // R-563: derive toggle from actual panelOpen and fall back to currentFolder/rootRow if selection was cleared.
   const togglePanel = () => {
     if (panelSlot.current?.contains(document.activeElement)) panelToggle.current?.focus()
     setExpanded(false)
-    const opening = state.current.panelVisible === false
+    const opening = !panelOpen
+    if (opening && !detail) {
+      const fallback = currentFolder ?? rootRow
+      if (fallback) onSelect(fallback.rowId)
+    }
     persist({ ...state.current, panelVisible: opening, panelAuto: opening ? undefined : false })
   }
   // The dimmed list beside the overlay panel in a narrow window: a click there only puts the panel away.
@@ -912,14 +917,14 @@ function BrowseWorkspaceBody({
     >
       {toolbarTarget &&
         createPortal(
-          <Tooltip label={browse.panelVisible === false ? tr('顯示詳情內容') : tr('隱藏詳情內容')}>
+          <Tooltip label={panelOpen ? tr('隱藏詳情內容') : tr('顯示詳情內容')}>
             <ActionIcon
               ref={panelToggle}
               variant="subtle"
               color="gray"
               aria-label={tr('切換詳情內容')}
               onMouseEnter={preloadPanel}
-              aria-pressed={browse.panelVisible !== false}
+              aria-pressed={panelOpen}
               disabled={!ready}
               onClick={togglePanel}
             >
