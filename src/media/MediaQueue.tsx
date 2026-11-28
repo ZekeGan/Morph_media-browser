@@ -2,6 +2,7 @@ import { Tooltip } from '@mantine/core'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import type { MediaEntry } from '../../shared/explorer'
+import { mediaIdentity } from '../../shared/media'
 
 import { ViewToggle } from '../browse/ViewToggle'
 import { t as tr } from '../i18n'
@@ -40,7 +41,7 @@ export function MediaQueue({
   }, [])
   useEffect(() => {
     const node = root.current
-    const index = entries.findIndex((entry) => entry.id === selected)
+    const index = entries.findIndex((entry) => mediaIdentity(entry) === selected)
     if (!node || index < 0) return
     const top = index * height
     if (top < node.scrollTop || top + height > node.scrollTop + node.clientHeight) {
@@ -71,28 +72,32 @@ export function MediaQueue({
         }}
       >
         <div style={{ height: entries.length * height, position: 'relative' }}>
-          {entries.slice(first, last).map((entry, index) => (
-            <Tooltip
-              key={entry.id}
-              zIndex={450}
-              label={entry.name}
-              disabled={!thumbnails}
-              events={{ hover: true, focus: true, touch: false }}
-            >
-              <button
-                className={entry.id === selected ? 'active' : ''}
-                style={{ top: (first + index) * height, height }}
-                aria-label={entry.name}
-                aria-current={entry.id === selected ? 'true' : undefined}
-                onClick={() => choose(entry)}
+          {entries.slice(first, last).map((entry, index) => {
+            const id = mediaIdentity(entry)
+            const active = id === selected
+            return (
+              <Tooltip
+                key={id}
+                zIndex={450}
+                label={entry.name}
+                disabled={!thumbnails}
+                events={{ hover: true, focus: true, touch: false }}
               >
-                <div className="media-queue-preview">
-                  <MediaThumb entry={entry} />
-                </div>
-                {!thumbnails && <span>{entry.name}</span>}
-              </button>
-            </Tooltip>
-          ))}
+                <button
+                  className={active ? 'active' : ''}
+                  style={{ top: (first + index) * height, height }}
+                  aria-label={entry.name}
+                  aria-current={active ? 'true' : undefined}
+                  onClick={() => choose(entry)}
+                >
+                  <div className="media-queue-preview">
+                    <MediaThumb entry={entry} />
+                  </div>
+                  {!thumbnails && <span>{entry.name}</span>}
+                </button>
+              </Tooltip>
+            )
+          })}
         </div>
       </div>
     </aside>

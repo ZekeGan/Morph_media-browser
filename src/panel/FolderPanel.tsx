@@ -301,6 +301,39 @@ export function FolderPanel({
     edit(attributeId, option)
     setNewOptions((v) => ({ ...v, [attributeId]: '' }))
   }
+  const importedLabels = importedFieldLabels()
+  const fieldLabel = (attributeId: string) => {
+    const key = fields.find((field) => field.attributeId === attributeId)?.key ?? attributeId
+    return (
+      project.fieldBindings.find((binding) => binding.attributeId === attributeId)?.alias ??
+      importedLabels[key] ??
+      key
+    )
+  }
+  const restoreField = async (attributeId: string) => {
+    const sharedAttr = row.record?.attributes.find((a) => a.attributeId === attributeId)
+    const hasSavedOriginal =
+      !privateValues &&
+      sharedAttr?.source === 'manual' &&
+      !!sharedAttr.sourceRecord &&
+      Object.hasOwn(sharedAttr.sourceRecord, 'originalValue')
+    if (hasSavedOriginal && row.record) {
+      const response = await run({
+        action: 'restoreAttribute',
+        rowId: row.rowId,
+        revision: row.record.revision,
+        attributeId,
+      })
+      if (!response) return
+    }
+    setValues((prev) => {
+      if (!Object.hasOwn(prev, attributeId)) return prev
+      const next = { ...prev }
+      delete next[attributeId]
+      return next
+    })
+    setEditedFields((ids) => ids.filter((id) => id !== attributeId))
+  }
   // Where an imported value came from, shown under its label until the value is edited.
   const fieldNote = (attributeId: string) => {
     const origin = fieldSource(attributeId, attributes)
@@ -308,7 +341,10 @@ export function FolderPanel({
       (privateValues
         ? row.record?.projectOverrides[row.projectId]?.find((a) => a.attributeId === attributeId)
         : undefined) ?? row.record?.attributes.find((a) => a.attributeId === attributeId)
-    if (Object.hasOwn(values, attributeId) || attribute?.source === 'manual') {
+    const draftChanged =
+      Object.hasOwn(values, attributeId) &&
+      JSON.stringify(values[attributeId]) !== JSON.stringify(original[attributeId])
+    if (draftChanged || attribute?.source === 'manual') {
       return origin === tr('自建') ? undefined : `${origin} · ${tr('已手動修改')}`
     }
     if (!attribute) return origin === tr('自建') ? undefined : origin
@@ -316,21 +352,50 @@ export function FolderPanel({
     const name = metadataSources.find((item) => item.id === provider)?.name
     return name ? tr('來自 {0}', name) : tr('來自網站匯入')
   }
-  const renderField = (f: (typeof fields)[number]) => (
-    <FolderFieldInput
-      key={f.attributeId}
-      field={f}
-      value={effective(f.attributeId)}
-      binding={project.fieldBindings.find((binding) => binding.attributeId === f.attributeId)}
-      note={fieldNote(f.attributeId)}
-      disabled={disabled}
-      busy={busy}
-      draftOption={newOptions[f.attributeId] ?? ''}
-      onDraftOption={(text) => setNewOptions((v) => ({ ...v, [f.attributeId]: text }))}
-      onChange={(value) => edit(f.attributeId, value)}
-      onAddOption={(option) => void addOption(f.attributeId, option)}
-    />
-  )
+  const renderField = (f: (typeof fields)[number]) => {
+    const sharedAttr = row.record?.attributes.find((a) => a.attributeId === f.attributeId)
+    const hasSavedOriginal =
+      !privateValues &&
+      sharedAttr?.source === 'manual' &&
+      !!sharedAttr.sourceRecord &&
+      Object.hasOwn(sharedAttr.sourceRecord, 'originalValue')
+    const hasDraftImportedChange =
+      !privateValues &&
+      Object.hasOwn(values, f.attributeId) &&
+      sharedAttr?.source !== 'manual' &&
+      !!sharedAttr?.sourceRecord &&
+      JSON.stringify(values[f.attributeId]) !== JSON.stringify(original[f.attributeId])
+    const label = fieldLabel(f.attributeId)
+    return (
+      <div key={f.attributeId} className="field-with-action">
+        <FolderFieldInput
+          field={{ ...f, key: label }}
+          value={effective(f.attributeId)}
+          binding={project.fieldBindings.find((binding) => binding.attributeId === f.attributeId)}
+          note={fieldNote(f.attributeId)}
+          disabled={disabled}
+          busy={busy}
+          draftOption={newOptions[f.attributeId] ?? ''}
+          onDraftOption={(text) => setNewOptions((v) => ({ ...v, [f.attributeId]: text }))}
+          onChange={(value) => edit(f.attributeId, value)}
+          onAddOption={(option) => void addOption(f.attributeId, option)}
+        />
+        {(hasSavedOriginal || hasDraftImportedChange) && (
+          <div className="field-restore-row">
+            <Button
+              size="compact-xs"
+              variant="subtle"
+              disabled={disabled || (hasSavedOriginal && fieldDirty)}
+              aria-label={tr('恢復來源值 {0}', label)}
+              onClick={() => void restoreField(f.attributeId)}
+            >
+              {tr('恢復來源值')}
+            </Button>
+          </div>
+        )}
+      </div>
+    )
+  }
   // Field sections (sources and groups) start folded so the Data tab stays short; the titles show how many hold data.
   // A list with a single section shows it open. What the user opens stays open until another folder is shown (R-231).
   const [openSections, setOpenSections] = useState<string[]>([])
@@ -418,31 +483,6 @@ export function FolderPanel({
   const own = tr('自建')
   const ownFields = fields.filter((f) => fieldSource(f.attributeId, attributes) === own)
   const siteFields = fields.filter((f) => fieldSource(f.attributeId, attributes) !== own)
-  const handMade = (attributeId: string) =>
-    editedFields.includes(attributeId) ||
-    (privateValues
-      ? row.record?.projectOverrides[row.projectId]?.find((a) => a.attributeId === attributeId)
-      : row.record?.attributes.find((a) => a.attributeId === attributeId)
-    )?.source === 'manual'
-  const shownValue = (value: unknown) =>
-    Array.isArray(value)
-      ? value.join('、')
-      : typeof value === 'boolean'
-        ? value
-          ? tr('是')
-          : tr('否')
-        : value == null
-          ? ''
-          : String(value)
-  const importedLabels = importedFieldLabels()
-  const fieldLabel = (attributeId: string) => {
-    const key = fields.find((field) => field.attributeId === attributeId)?.key ?? attributeId
-    return (
-      project.fieldBindings.find((binding) => binding.attributeId === attributeId)?.alias ??
-      importedLabels[key] ??
-      key
-    )
-  }
   const refetch = (provider: string | undefined) => {
     const address =
       (provider &&
@@ -460,7 +500,7 @@ export function FolderPanel({
   }
   const renderSites = () =>
     fieldSourceGroups(
-      siteFields.filter((f) => isFilled(effective(f.attributeId)) || handMade(f.attributeId)),
+      siteFields.filter((f) => visibleField(f)),
       attributes
     ).map(({ source, fields: items }) => {
       const provider = providerOf(items[0].attributeId)
@@ -494,35 +534,7 @@ export function FolderPanel({
               </Button>
             )}
           </Group>
-          <Stack gap="xs">
-            {items.map((field) =>
-              handMade(field.attributeId) ? (
-                renderField(field)
-              ) : (
-                <div key={field.attributeId} className="site-field">
-                  <Text size="xs" c="dimmed">
-                    {fieldLabel(field.attributeId)}
-                  </Text>
-                  <Text size="sm" className="site-field-value">
-                    {shownValue(effective(field.attributeId))}
-                  </Text>
-                  <Button
-                    size="compact-xs"
-                    variant="subtle"
-                    disabled={disabled}
-                    aria-label={tr('改成手動 {0}', fieldLabel(field.attributeId))}
-                    onClick={() =>
-                      setEditedFields((ids) =>
-                        ids.includes(field.attributeId) ? ids : [...ids, field.attributeId]
-                      )
-                    }
-                  >
-                    {tr('改成手動')}
-                  </Button>
-                </div>
-              )
-            )}
-          </Stack>
+          <Stack gap="xs">{items.map(renderField)}</Stack>
         </details>
       )
     })

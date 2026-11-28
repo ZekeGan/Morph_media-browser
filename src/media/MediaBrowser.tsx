@@ -20,7 +20,7 @@ import {
   type MediaPrefs,
   type OverviewEntry,
 } from '../../shared/explorer'
-import type { FolderKind } from '../../shared/kind'
+import { effectiveKind, type FolderKind } from '../../shared/kind'
 import {
   canPreviewMedia,
   matchesMedia,
@@ -266,8 +266,14 @@ export function MediaBrowser({
   // follow under it. Looking through subfolders or at one other type shows the usual list.
   const asAlbum = album && scope === 'current' && (filter === 'all' || filter === 'audio')
   const sourceFiles = session ? ordered.filter((entry) => entry.rowId === session.source.rowId) : []
+  // R-559: when "include subfolders" is active and viewing images (not a manga/book folder), browse across subfolders continuously.
+  const crossSubfolderImages =
+    !!session &&
+    scope === 'descendants' &&
+    session.file.kind === 'image' &&
+    effectiveKind(session.source) !== 'book'
   const viewerFiles = session
-    ? sourceFiles.filter(
+    ? (crossSubfolderImages ? ordered : sourceFiles).filter(
         (entry) => entry.kind === 'subtitle' || matchesMedia(entry, session.filter)
       )
     : []

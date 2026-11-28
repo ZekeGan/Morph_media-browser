@@ -162,7 +162,29 @@ try {
     .click()
   await page.locator('.media-viewer-shell .is-active').waitFor()
   await page.getByRole('button', { name: '切換媒體佇列', exact: true }).click()
-  assert.equal(await page.locator('.media-queue-scroll button').count(), 2)
+  // R-559: when "Include subfolders" is active, image viewer browses all 5 filtered images across subfolders continuously.
+  assert.equal(await page.locator('.media-queue-scroll button').count(), 5)
+  // R-559: clicking the right/left third of the image viewer turns to the next/previous image.
+  const stage = page.locator('.media-viewer-shell .reader-stage')
+  const box = await stage.boundingBox()
+  assert.ok(box)
+  const beforeCounter = (
+    await page.locator('.media-viewer-shell .reader-page-total').innerText()
+  ).trim()
+  await page.mouse.click(box.x + box.width * 0.85, box.y + box.height * 0.5)
+  await page.waitForFunction(
+    (prev) =>
+      document.querySelector('.media-viewer-shell .reader-page-total')?.textContent?.trim() !==
+      prev,
+    beforeCounter
+  )
+  await page.mouse.click(box.x + box.width * 0.15, box.y + box.height * 0.5)
+  await page.waitForFunction(
+    (prev) =>
+      document.querySelector('.media-viewer-shell .reader-page-total')?.textContent?.trim() ===
+      prev,
+    beforeCounter
+  )
   // The viewer's queue follows the list's order: sorted from large to small, 002 comes before 001 (R-486).
   await page.getByRole('button', { name: '退出閱讀器', exact: true }).click()
   await page.locator('.media-viewer-shell').waitFor({ state: 'detached' })

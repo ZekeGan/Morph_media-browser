@@ -359,6 +359,7 @@ export type ExplorerRequest =
   // R-505: make thumbnails for these folders' first pictures while the window is idle; an empty list stops it.
   | { action: 'warmThumbnails'; rowIds: string[] }
   | { action: 'attributes'; rowId: string; revision: number; values: Attribute[]; private: boolean }
+  | { action: 'restoreAttribute'; rowId: string; revision: number; attributeId: string }
   | { action: 'removeSource'; rowId: string; revision: number; provider: string }
   | {
       action: 'batch'

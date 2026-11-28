@@ -312,9 +312,12 @@ export function Gallery({
     () => entries.filter((entry) => (mixed ? entry.kind !== 'folder' : entry.kind === 'image')),
     [entries, mixed]
   )
+  // R-560: grouped source view renders all groups in one virtualized stream so no folder is split across pages.
+  const activePage = groupBySource ? 0 : page
   const items = useMemo(
-    () => images.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE),
-    [images, page]
+    () =>
+      groupBySource ? images : images.slice(activePage * PAGE_SIZE, (activePage + 1) * PAGE_SIZE),
+    [images, activePage, groupBySource]
   )
   const kind: GalleryMode =
     manga || presentation === 'tiles'
@@ -323,6 +326,10 @@ export function Gallery({
         ? 'list'
         : 'masonry'
   useEffect(() => {
+    if (groupBySource) {
+      if (page !== 0) setPage(0)
+      return
+    }
     if (!loading) {
       const last = Math.max(0, Math.ceil(images.length / PAGE_SIZE) - 1)
       if (page > last) {
@@ -330,7 +337,7 @@ export function Gallery({
         setFocused(-1)
       }
     }
-  }, [images.length, loading, page])
+  }, [images.length, loading, page, groupBySource])
   const pageRatios = useMemo(
     () =>
       new Map(
@@ -379,8 +386,8 @@ export function Gallery({
         : { ...galleryLayout(items.length, view.width || 300, kind, pageRatios), headers: [] },
     [items.length, view.width, kind, pageRatios, sourceGroups, collapsed, groupBySource]
   )
-  const current = useRef({ layout, view, page })
-  current.current = { layout, view, page }
+  const current = useRef({ layout, view, page: activePage })
+  current.current = { layout, view, page: activePage }
   const measure = useCallback(() => {
     const element = grid.current
     const root = scroll.current
@@ -654,7 +661,7 @@ export function Gallery({
           if ((!delta && !['Home', 'End'].includes(event.key)) || next === undefined) return
           event.preventDefault()
           if (event.shiftKey && onEnqueue) {
-            pickAnchor.current ??= page * PAGE_SIZE + index
+            pickAnchor.current ??= activePage * PAGE_SIZE + index
             pick(next, 'range')
           }
           focusNext.current = next
@@ -726,7 +733,7 @@ export function Gallery({
               tile={tile}
               mode={kind}
               playing={!suspended && reader === undefined && items[tile.index].mime === 'image/gif'}
-              selected={selected === page * PAGE_SIZE + tile.index}
+              selected={selected === activePage * PAGE_SIZE + tile.index}
               open={open}
               select={select}
               ratio={reportRatio}
@@ -782,7 +789,7 @@ export function Gallery({
           </dl>
         )}
       </Modal>
-      {images.length > PAGE_SIZE && (
+      {!groupBySource && images.length > PAGE_SIZE && (
         <Center mt="sm" style={{ marginBottom: 40 }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <ActionIcon

@@ -163,6 +163,13 @@ function isValidAttribute(item: unknown): item is Attribute {
     if (!isBoundedText(source.fetchedAt, 40) || !Number.isFinite(Date.parse(source.fetchedAt))) {
       return false
     }
+    if (
+      Object.hasOwn(source, 'originalValue') &&
+      source.originalValue !== undefined &&
+      !validFieldValue(item.type, source.originalValue)
+    ) {
+      return false
+    }
   }
   return true
 }

@@ -10919,18 +10919,6 @@
     "ja": "このサイトのデータを削除",
     "es": "Quitar los datos de este sitio"
   },
-  "改成手動 {0}": {
-    "zh-CN": "改成手动 {0}",
-    "en": "Change {0} by hand",
-    "ja": "{0} を手動に変更",
-    "es": "Cambiar {0} a mano"
-  },
-  "改成手動": {
-    "zh-CN": "改成手动",
-    "en": "Change by hand",
-    "ja": "手動に変更",
-    "es": "Cambiar a mano"
-  },
   "補填": {
     "zh-CN": "补填",
     "en": "Fill in",
@@ -13510,5 +13498,23 @@
     "en": "Manage all fields",
     "ja": "すべての項目を管理",
     "es": "Administrar todos los campos"
+  },
+  "恢復來源值": {
+    "zh-CN": "恢复来源值",
+    "en": "Restore source value",
+    "ja": "元の値に戻す",
+    "es": "Restaurar valor original"
+  },
+  "恢復來源值 {0}": {
+    "zh-CN": "恢复来源值 {0}",
+    "en": "Restore source value: {0}",
+    "ja": "{0} を元の値に戻す",
+    "es": "Restaurar valor original de {0}"
+  },
+  "沒有可恢復的來源值": {
+    "zh-CN": "没有可恢复的来源值",
+    "en": "No source value to restore",
+    "ja": "元に戻せる取得値はありません",
+    "es": "No hay un valor original para restaurar"
   }
 }

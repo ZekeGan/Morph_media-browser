@@ -20,6 +20,7 @@ import {
 import { createPortal } from 'react-dom'
 
 import type { MediaEntry, ReadingPrefs } from '../../shared/explorer'
+import { mediaIdentity } from '../../shared/media'
 import {
   bookFinished,
   type ImageSize,
@@ -870,14 +871,14 @@ export function Reader({
   useEffect(() => {
     // The viewer's selection still points at the clicked first page while resuming elsewhere.
     if (resumeAt !== undefined && selectedId === openedWith.current) return
-    const index = images.findIndex((entry) => entry.id === selectedId)
+    const index = images.findIndex((entry) => mediaIdentity(entry) === selectedId)
     if (index >= 0 && !groups[groupIndex]?.includes(index)) setPage(index)
   }, [selectedId])
   useEffect(() => {
-    if (active && !webtoon) onActive?.(images[active.indices[0]].id)
+    if (active && !webtoon) onActive?.(mediaIdentity(images[active.indices[0]]))
   }, [activeKey])
   useEffect(() => {
-    if (webtoon && images[page]) onActive?.(images[page].id)
+    if (webtoon && images[page]) onActive?.(mediaIdentity(images[page]))
   }, [webtoon, page])
   // R-256: suggest webtoon mode once per book when one of its first pages is much taller than wide.
   useEffect(() => {
@@ -1416,7 +1417,7 @@ export function Reader({
                 } else releaseDrag(0)
                 return
               }
-              // R-392 / R-558: middle third toggles immersive HUD (both manga & image viewer); left/right thirds turn manga pages.
+              // R-392 / R-558 / R-559: middle third toggles immersive HUD; left/right thirds turn pages in both manga and image viewer.
               if (
                 start &&
                 !start.moved &&
@@ -1425,7 +1426,11 @@ export function Reader({
                 const bounds = event.currentTarget.getBoundingClientRect()
                 const third = (event.clientX - bounds.left) / bounds.width
                 if (third >= 1 / 3 && third <= 2 / 3) toggleChrome()
-                else if (manga) step(readerArrowStep(third < 0.5 ? 'ArrowLeft' : 'ArrowRight', rtl))
+                else {
+                  step(
+                    readerArrowStep(third < 0.5 ? 'ArrowLeft' : 'ArrowRight', manga ? rtl : false)
+                  )
+                }
               }
             }}
             onPointerCancel={() => {
@@ -1475,7 +1480,7 @@ export function Reader({
                     >
                       {frame.indices.map((index, position) => (
                         <img
-                          key={images[index].id}
+                          key={mediaIdentity(images[index])}
                           ref={(image) => {
                             if (image?.complete && image.naturalWidth) {
                               void frameReady(image, frame, index)
@@ -1509,7 +1514,7 @@ export function Reader({
                   >
                     {indices.map((index, position) => (
                       <img
-                        key={images[index].id}
+                        key={mediaIdentity(images[index])}
                         src={images[index].url}
                         alt=""
                         draggable={false}

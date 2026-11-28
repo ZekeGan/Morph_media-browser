@@ -246,41 +246,43 @@ export function BrowsePanel(props: Props) {
           }
           footer={
             <>
-              {canReturnTop && (
-                <Button
-                  className="manga-top"
-                  size="compact-sm"
-                  variant="default"
-                  aria-label={tr('返回頂部')}
-                  onClick={() => {
-                    const body = panelBody.current
-                    if (!body) return
-                    // R-462: pictures that finish loading during a smooth scroll can shift it (scroll anchoring), so
-                    // it may stop short of the top; once it ends, anything left is closed at once.
-                    body.addEventListener(
-                      'scrollend',
-                      () => body.scrollTop && body.scrollTo({ top: 0 }),
-                      {
-                        once: true,
-                      }
-                    )
-                    body.scrollTo({
-                      top: 0,
-                      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
-                        ? 'instant'
-                        : 'smooth',
-                    })
-                    // Chromium sometimes drops a smooth scroll without starting it (no scroll, so no scrollend);
-                    // a scroll that has not moved at all shortly after goes to the top at once.
-                    const from = body.scrollTop
-                    window.setTimeout(() => {
-                      if (body.scrollTop && body.scrollTop === from) body.scrollTo({ top: 0 })
-                    }, 400)
-                  }}
-                >
-                  <Icon name="arrow-up" size={15} />
-                  {tr('返回頂部')}
-                </Button>
+              {canReturnTop && !config && (
+                <Tooltip label={tr('返回頂部')} position="left">
+                  <ActionIcon
+                    className="manga-top"
+                    size="lg"
+                    radius="xl"
+                    variant="default"
+                    aria-label={tr('返回頂部')}
+                    onClick={() => {
+                      const body = panelBody.current
+                      if (!body) return
+                      // R-462: pictures that finish loading during a smooth scroll can shift it (scroll anchoring), so
+                      // it may stop short of the top; once it ends, anything left is closed at once.
+                      body.addEventListener(
+                        'scrollend',
+                        () => body.scrollTop && body.scrollTo({ top: 0 }),
+                        {
+                          once: true,
+                        }
+                      )
+                      body.scrollTo({
+                        top: 0,
+                        behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
+                          ? 'instant'
+                          : 'smooth',
+                      })
+                      // Chromium sometimes drops a smooth scroll without starting it (no scroll, so no scrollend);
+                      // a scroll that has not moved at all shortly after goes to the top at once.
+                      const from = body.scrollTop
+                      window.setTimeout(() => {
+                        if (body.scrollTop && body.scrollTop === from) body.scrollTo({ top: 0 })
+                      }, 400)
+                    }}
+                  >
+                    <Icon name="arrow-up" size={16} />
+                  </ActionIcon>
+                </Tooltip>
               )}
             </>
           }

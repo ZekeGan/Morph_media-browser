@@ -148,6 +148,8 @@ export interface SourceRecord {
   provider: string
   url: string
   fetchedAt: string
+  // R-538: preserved when a website-imported field is manually edited so the user can restore the source value.
+  originalValue?: unknown
 }
 
 export interface Attribute {

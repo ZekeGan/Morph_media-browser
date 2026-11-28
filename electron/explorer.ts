@@ -404,12 +404,26 @@ export class Explorer {
       if (old && old.type !== value.type && !dateOrText(old.type, value.type)) {
         throw new Error('只在這個專案的值格式不符')
       }
-      const a = {
+      const a: Attribute = {
         ...value,
         key: binding.key ?? ('alias' in binding ? binding.alias : ''),
         source: 'manual',
       }
       delete a.sourceRecord
+      // R-538: preserve the website import origin & original value when a shared imported field is manually edited,
+      // provided the original value still matches the attribute's current type (R-240 dateOrText switch safety).
+      if (!privateValues && old?.sourceRecord) {
+        if (old.source !== 'manual') {
+          if (validFieldValue(a.type, old.value)) {
+            a.sourceRecord = { ...old.sourceRecord, originalValue: old.value }
+          }
+        } else if (
+          Object.hasOwn(old.sourceRecord, 'originalValue') &&
+          validFieldValue(a.type, old.sourceRecord.originalValue)
+        ) {
+          a.sourceRecord = { ...old.sourceRecord }
+        }
+      }
       const i = target.findIndex((a) => a.attributeId === value.attributeId)
       if (i < 0) target.push(a)
       else target[i] = a

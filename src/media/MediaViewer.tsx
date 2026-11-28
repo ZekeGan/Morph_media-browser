@@ -9,7 +9,7 @@ import type {
   ReadingPrefs,
 } from '../../shared/explorer'
 import { effectiveKind } from '../../shared/kind'
-import { canPreviewMedia, mediaQueue } from '../../shared/media'
+import { canPreviewMedia, mediaIdentity, mediaQueue } from '../../shared/media'
 import type { FolderRow, Project, Request, Response } from '../../shared/model'
 
 import { Icon } from '../common/icons'
@@ -67,7 +67,7 @@ export function MediaViewer({
   resume?: boolean
 }) {
   const [queueView, setQueueView] = useState<'list' | 'images'>('list')
-  const [selected, setSelected] = useState(file.id)
+  const [selected, setSelected] = useState(() => mediaIdentity(file))
   const [showQueue, setShowQueue] = useState(false)
   const [immersive, setImmersive] = useState(false)
   const [queueMounted, setQueueMounted] = useState(false)
@@ -80,8 +80,10 @@ export function MediaViewer({
   const closing = useRef(close)
   closing.current = close
   const queue = mediaQueue(entries, file)
-  const current = queue.find((entry) => entry.id === selected)
-  const index = queue.findIndex((entry) => entry.id === selected)
+  const current = queue.find((entry) => mediaIdentity(entry) === selected)
+  const index = queue.findIndex((entry) => mediaIdentity(entry) === selected)
+  const currentRowId =
+    (current && 'rowId' in current ? String(current.rowId) : undefined) ?? row.rowId
   const unavailable = !loading && !current
   useEffect(() => {
     if (!supported) return
@@ -151,7 +153,7 @@ export function MediaViewer({
               <ActionIcon
                 variant="subtle"
                 aria-label={tr('開啟所在資料夾')}
-                onClick={() => void act({ action: 'open', rowId: row.rowId })}
+                onClick={() => void act({ action: 'open', rowId: currentRowId })}
               >
                 <Icon name="folder" />
               </ActionIcon>
@@ -174,7 +176,7 @@ export function MediaViewer({
                 <p role="alert">{tr('檔案已不存在於目前清單，請關閉後重新整理。')}</p>
               ) : current?.kind === 'image' ? (
                 <Reader
-                  openFolder={() => void act({ action: 'open', rowId: row.rowId })}
+                  openFolder={() => void act({ action: 'open', rowId: currentRowId })}
                   embedded
                   images={queue}
                   start={index}
@@ -212,27 +214,32 @@ export function MediaViewer({
                   autoNext={false}
                   changeAutoNext={async () => false}
                   changeAutoplay={async () => false}
-                  initialFileId={selected}
+                  initialFileId={current?.id ?? file.id}
                   hideStrip
-                  onSelected={setSelected}
+                  onSelected={(id) => {
+                    const found = queue.find((entry) => entry.id === id)
+                    if (found) setSelected(mediaIdentity(found))
+                  }}
                 />
               ) : current?.kind === 'audio' ? (
                 <AudioViewer
-                  key={current.id}
+                  key={mediaIdentity(current)}
                   file={current}
                   cover={cover ? `media://asset/${row.rowId}/${cover.assetId}` : undefined}
                   covers={coverEntries.filter((entry) => entry.kind === 'image')}
-                  previous={index > 0 ? () => setSelected(queue[index - 1].id) : undefined}
+                  previous={
+                    index > 0 ? () => setSelected(mediaIdentity(queue[index - 1])) : undefined
+                  }
                   next={
                     index >= 0 && index + 1 < queue.length
-                      ? () => setSelected(queue[index + 1].id)
+                      ? () => setSelected(mediaIdentity(queue[index + 1]))
                       : undefined
                   }
-                  first={index > 0 ? () => setSelected(queue[0].id) : undefined}
+                  first={index > 0 ? () => setSelected(mediaIdentity(queue[0])) : undefined}
                 />
               ) : current && ['pdf', 'archive', 'text'].includes(current.kind) ? (
                 <DocumentViewer
-                  key={current.id}
+                  key={mediaIdentity(current)}
                   embedded
                   rowId={row.rowId}
                   file={current}
@@ -243,7 +250,7 @@ export function MediaViewer({
                     index >= 0 && index + 1 < queue.length
                       ? {
                           name: queue[index + 1].name,
-                          open: () => setSelected(queue[index + 1].id),
+                          open: () => setSelected(mediaIdentity(queue[index + 1])),
                         }
                       : undefined
                   }
@@ -267,7 +274,7 @@ export function MediaViewer({
               <MediaQueue
                 entries={queue}
                 selected={selected}
-                choose={(entry) => setSelected(entry.id)}
+                choose={(entry) => setSelected(mediaIdentity(entry))}
                 loading={loading}
                 tiles={file.kind === 'video' || file.kind === 'image'}
                 view={queueView}

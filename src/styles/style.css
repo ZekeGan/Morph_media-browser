@@ -75,6 +75,7 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .folder-panel-header { padding: 8px 12px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); }
 .folder-panel-header strong { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; }
 .folder-panel-body { padding: 14px; overflow: auto; flex: 1; min-height: 0; }
+.folder-panel-body:not(:has(.folder-panel-dock-settings)) { padding-bottom: 56px; }
 .panel-resizer { width: 5px; cursor: col-resize; flex-shrink: 0; touch-action: none; }
 .panel-resizer:hover { background: var(--accent); }
 .workspace-expanded .browse-split { min-height: 0; }
@@ -477,7 +478,7 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .reader-info { flex-shrink:0; min-height:36px; display:flex; align-items:center; gap:12px; border-top:1px solid var(--line); padding:8px 14px; background:var(--panel); font-size:11px; color:var(--muted); }
 .reader-info>strong,.reader-info>span:last-child { white-space:nowrap; }
 .reader-image-info { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.manga-top { position:absolute; right:18px; bottom:18px; z-index:6; box-shadow:0 3px 14px var(--shadow); }
+.manga-top { position:absolute; right:16px; bottom:16px; z-index:6; box-shadow:0 3px 14px var(--shadow); }
 .reader-toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px 16px; padding:8px 62px 8px 12px; background:var(--overlay); backdrop-filter:blur(12px); border-bottom-color:var(--line); }
 .reader-tool-group { flex-shrink:0; }
 .reader-page-total { font-size:11px; color:var(--muted); margin-right:3px; }
@@ -907,8 +908,8 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .browse-panel-name { display:inline-flex; align-items:center; min-width:0; }
 /* R-339: empty fields as "+ fill in" chips; a website's imported values read-only, each with "change by hand". */
 .field-fill-chips { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
-.site-field { display:grid; grid-template-columns:minmax(6em, max-content) 1fr auto; align-items:baseline; gap:4px 10px; }
-.site-field-value { min-width:0; overflow-wrap:anywhere; white-space:pre-wrap; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:4; overflow:hidden; }
+.field-with-action { display:flex; flex-direction:column; gap:2px; }
+.field-restore-row { display:flex; justify-content:flex-end; }
 .card-display-advanced summary { cursor:pointer; color:var(--muted); font-size:12px; margin-bottom:6px; }
 
 /* R-542, R-543, R-551: empty home 3-step guide, neutral shield & pending status split, search hint bar */

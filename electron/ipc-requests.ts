@@ -128,6 +128,7 @@ const explorer: Record<ExplorerRequest['action'], Shape> = {
   visit: { rowId: ref },
   warmThumbnails: { rowIds: list(ref, 100) },
   attributes: { ...revisionRow, values: list(object, 10_000), private: bool },
+  restoreAttribute: { ...revisionRow, attributeId: ref },
   batch: { rows, attributeId: ref, value: any, mode: oneOf('replace', 'add', 'remove') },
   reading: { ...revisionRow, prefs: object },
   folderKind: { ...revisionRow, kind: nullable(ref) },

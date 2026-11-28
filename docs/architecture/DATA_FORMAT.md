@@ -41,7 +41,7 @@ M:orph 的資料以**可攜的 JSON 記錄**為準，SQLite 搜尋索引只是�
 | `type` | `string`、`tags`、`number`、`datetime`、`boolean`、`enum`、`url`、`date` |
 | `value` | 依型別驗證；字串 ≤ 10000 字，標籤 ≤ 200 個、每個 ≤ 100 字 |
 | `source` | `manual`，或匯入時的來源網址 |
-| `sourceRecord`（選用） | `{ provider, url, fetchedAt }`，追溯匯入來源 |
+| `sourceRecord`（選用） | `{ provider, url, fetchedAt, originalValue? }`，追溯匯入來源；手動修改匯入欄位後保留 `originalValue` 供恢復來源值（R-538） |
 
 **`details`（`FolderDetails`，`schemaVersion: 1`）** 常用欄位：
 

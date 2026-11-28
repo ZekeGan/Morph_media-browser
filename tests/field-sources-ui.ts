@@ -79,24 +79,49 @@ try {
   const chips = page.getByRole('group', { name: '補填' })
   await chips.getByRole('button', { name: '評分' }).waitFor()
   assert.equal(await page.getByRole('checkbox', { name: /顯示未填欄位/ }).count(), 0) // ui-names: ignore
-  // The website's values are shown, not editable, until "change by hand".
+  // R-538: website-imported values are directly click-to-edit (no "change by hand" gate), auto-marked manual on edit,
+  // and offer "restore source value" both before and after saving.
   const site = page.locator('.site-fields')
   await site.locator('summary').click()
-  await site.getByText('Saya no Uta', { exact: true }).waitFor()
-  assert.equal(await page.getByRole('textbox', { name: '標題（VNDB）', exact: true }).count(), 0)
-  await page.screenshot({ path: path.join(base, 'shot', 'r339-fields.png') })
-  await site.getByRole('button', { name: '改成手動 標題（VNDB）', exact: true }).click()
-  await site.getByRole('textbox').first().fill('沙耶の唄')
+  const titleInput = site.getByRole('textbox', { name: '標題（VNDB）', exact: true })
+  await titleInput.waitFor()
+  assert.equal(await titleInput.inputValue(), 'Saya no Uta')
+  await titleInput.fill('沙耶の唄')
   await page.getByRole('button', { name: '保存欄位資料', exact: true }).click()
   await page.waitForFunction(() => !document.querySelector('.settings-savebar'))
-  // The hand-made value is on disk, and the panel has the new revision, before removing the site.
+  // The hand-made value is on disk with originalValue preserved for restore.
+  for (let i = 0; i < 50; i++) {
+    const now = (await readFolder(media)).attributes.find((x) => x.attributeId === 'vndb-title')
+    if (now?.value === '沙耶の唄' && now.source === 'manual') break
+    await page.waitForTimeout(100)
+  }
+  let edited = (await readFolder(media)).attributes.find((x) => x.attributeId === 'vndb-title')
+  assert.equal(edited?.value, '沙耶の唄')
+  assert.equal(edited?.source, 'manual')
+  assert.equal(edited?.sourceRecord?.originalValue, 'Saya no Uta')
+  await page.screenshot({ path: path.join(base, 'shot', 'r538-fields.png') })
+  // Restoring the source value returns the original imported value and source.
+  await site.getByRole('button', { name: '恢復來源值 標題（VNDB）', exact: true }).click()
+  for (let i = 0; i < 50; i++) {
+    const now = (await readFolder(media)).attributes.find((x) => x.attributeId === 'vndb-title')
+    if (now?.value === 'Saya no Uta' && now.source !== 'manual') break
+    await page.waitForTimeout(100)
+  }
+  const restored = (await readFolder(media)).attributes.find((x) => x.attributeId === 'vndb-title')
+  assert.equal(restored?.value, 'Saya no Uta')
+  assert.notEqual(restored?.source, 'manual')
+  assert.equal(restored?.sourceRecord?.originalValue, undefined)
+  // Edit again and save so we can verify "remove this site's data" keeps manual edits and strips sourceRecord.
+  await titleInput.fill('沙耶の唄')
+  await page.getByRole('button', { name: '保存欄位資料', exact: true }).click()
+  await page.waitForFunction(() => !document.querySelector('.settings-savebar'))
   for (let i = 0; i < 50; i++) {
     const now = (await readFolder(media)).attributes.find((x) => x.attributeId === 'vndb-title')
     if (now?.value === '沙耶の唄' && now.source === 'manual') break
     await page.waitForTimeout(100)
   }
   await page.waitForTimeout(300)
-  // Removing VNDB's data keeps the value changed by hand.
+  // Removing VNDB's data keeps the value changed by hand and removes the site's sourceRecord.
   await page.evaluate(() => {
     window.confirm = () => true
   })
@@ -113,10 +138,15 @@ try {
       ['vndb-title', '沙耶の唄'],
     ].sort()
   )
+  assert.equal(
+    saved.attributes.find((a) => a.attributeId === 'vndb-title')?.sourceRecord,
+    undefined
+  )
   assert.deepEqual(errors, [])
   passed = true
   console.log(
-    'PASS own fields, fill-in chips, read-only site values, change by hand, remove a site. ' + root
+    'PASS own fields, fill-in chips, click-to-edit site values, restore source value, remove a site. ' +
+      root
   )
 } catch (error) {
   await reportFailure(page, root)

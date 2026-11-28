@@ -20,7 +20,13 @@ import { isFolderKind } from '../shared/kind'
 import { projectImageCells } from '../shared/layouts'
 import { isGameFolder } from '../shared/media'
 import { fmt } from '../shared/message'
-import { DATA_DIR, type FolderRecord, localeProfileId, validateDetails } from '../shared/model'
+import {
+  type Attribute,
+  DATA_DIR,
+  type FolderRecord,
+  localeProfileId,
+  validateDetails,
+} from '../shared/model'
 import { completionNotice } from '../shared/notifications'
 import { metadataSources } from '../shared/sources'
 import { parseSubtitles } from '../shared/subtitles'
@@ -156,17 +162,57 @@ export async function dispatchRequest(
     case 'attributes':
       await ex.attributes(req.rowId, req.revision, req.values, req.private)
       return ex.after(await ex.library.refreshRecord(req.rowId))
+    case 'restoreAttribute': {
+      // R-538: restore a manually overridden website-imported field back to its recorded source value.
+      const { row, record } = await ex.record(req.rowId, req.revision)
+      const index = record.attributes.findIndex((a) => a.attributeId === req.attributeId)
+      const old = index >= 0 ? record.attributes[index] : undefined
+      if (
+        !old ||
+        old.source !== 'manual' ||
+        !old.sourceRecord ||
+        !Object.hasOwn(old.sourceRecord, 'originalValue')
+      ) {
+        throw new Error('沒有可恢復的來源值')
+      }
+      const { originalValue, ...sourceRecord } = old.sourceRecord
+      const restored: Attribute = {
+        ...old,
+        value: originalValue,
+        source: sourceRecord.url.length <= 100 ? sourceRecord.url : sourceRecord.provider,
+        sourceRecord,
+      }
+      ex.checkValue(restored, record)
+      record.attributes[index] = restored
+      await saveFolder(row.path, record, req.revision)
+      return ex.after(await ex.library.refreshRecord(req.rowId))
+    }
     case 'removeSource': {
-      // R-339: only a known website's own fields (its id prefix), and only values not changed by hand.
+      // R-339 / R-538: only a known website's own fields (its id prefix), and only values not changed by hand;
+      // strip sourceRecord from kept manual overrides so removed source snapshots do not linger.
       if (!metadataSources.some((source) => source.id === req.provider)) {
         throw new Error('來源不存在')
       }
       const { row, record } = await ex.record(req.rowId, req.revision)
       const prefix = req.provider + '-'
-      const kept = record.attributes.filter(
-        (a) => !a.attributeId.startsWith(prefix) || a.source === 'manual'
-      )
-      if (kept.length === record.attributes.length) return ex.after(ex.library.snapshot())
+      let changed = false
+      const kept: Attribute[] = []
+      for (const a of record.attributes) {
+        if (!a.attributeId.startsWith(prefix)) {
+          kept.push(a)
+        } else if (a.source === 'manual') {
+          if (a.sourceRecord) {
+            const { sourceRecord: _, ...rest } = a
+            kept.push(rest)
+            changed = true
+          } else {
+            kept.push(a)
+          }
+        } else {
+          changed = true
+        }
+      }
+      if (!changed) return ex.after(ex.library.snapshot())
       record.attributes = kept
       await saveFolder(row.path, record, req.revision)
       return ex.after(await ex.library.refreshRecord(req.rowId))
