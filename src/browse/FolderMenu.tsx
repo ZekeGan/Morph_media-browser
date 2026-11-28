@@ -40,9 +40,23 @@ export function FolderMenu({
   useLocale()
   // Focus goes back where it was when the menu closes (Mantine would return it to the invisible anchor).
   const opener = useRef(document.activeElement as HTMLElement | null)
+  const onClose = useRef(close)
+  onClose.current = close
   useEffect(() => {
     const previous = opener.current
+    // Capture phase: React Flow stops pointer/mouse events on its canvas from bubbling, so Mantine's bubble-phase
+    // outside-click handler would never hear left clicks on the tree area.
+    const away = (event: Event) => {
+      if (!(event.target as HTMLElement | null)?.closest?.('.mantine-Menu-dropdown')) {
+        onClose.current()
+      }
+    }
+    const blur = () => onClose.current()
+    document.addEventListener('pointerdown', away, true)
+    window.addEventListener('blur', blur)
     return () => {
+      document.removeEventListener('pointerdown', away, true)
+      window.removeEventListener('blur', blur)
       if (previous?.isConnected && !document.activeElement?.closest('.mantine-Menu-dropdown')) {
         previous.focus({ preventScroll: true })
       }

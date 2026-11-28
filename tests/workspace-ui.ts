@@ -276,10 +276,15 @@ try {
       .map((row) => row.rowId)
       .sort()
   )
-  await page
+  // R-535: right-clicking a tree node opens the menu, and left-clicking the tree canvas closes it.
+  const nodeB = page
     .locator('.react-flow__node')
     .filter({ has: page.getByText('B', { exact: true }) })
-    .dblclick()
+  await nodeB.click({ button: 'right' })
+  await page.getByRole('menuitem', { name: '資料夾設定', exact: true }).waitFor()
+  await page.locator('.react-flow__pane').click({ position: { x: 20, y: 200 } })
+  await page.getByRole('menuitem', { name: '資料夾設定', exact: true }).waitFor({ state: 'hidden' })
+  await nodeB.dblclick()
   await header().getByText('B', { exact: true }).waitFor()
   // R-534 & R-537: double-clicking a leaf folder expands details full-width; Esc returns to TREE.
   await page.locator('.project-workspace.content-expanded').waitFor()
