@@ -40,6 +40,7 @@ try {
     .getByRole('button', { name: '開啟專案 Cbz immersive test', exact: true })
     .first()
     .click()
+  await page.getByRole('button', { name: '切換詳情內容', exact: true }).click()
   await page.getByRole('button', { name: '開始閱讀 vol1.cbz', exact: true }).click()
   await reader().waitFor()
   await page.waitForFunction(() =>

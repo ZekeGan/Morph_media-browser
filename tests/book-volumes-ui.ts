@@ -43,6 +43,7 @@ const shown = () =>
 const shelf = () => page.locator('.book-shelf li')
 try {
   await page.getByRole('button', { name: '開啟專案 Volumes test', exact: true }).first().click()
+  await page.getByRole('button', { name: '切換詳情內容', exact: true }).click()
   await page.locator('.book-shelf').waitFor()
   // A list, not tiles; numbers count as numbers; CBR is listed.
   assert.equal(await page.locator('.book-volumes').count(), 0)

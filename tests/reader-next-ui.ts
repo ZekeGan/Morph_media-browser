@@ -61,15 +61,14 @@ if (server) {
 const errors: string[] = []
 const { app, page } = await launchApp(local, errors)
 const reader = () => page.getByRole('dialog', { name: '漫畫閱讀器', exact: true })
-const source = () => page.locator('.media-viewer-source').first()
 const fullscreen = (value: boolean) =>
   page.waitForFunction((expected) => !!document.fullscreenElement === expected, value)
 try {
   await page.getByRole('button', { name: '開啟專案 Next test', exact: true }).first().click()
   await page.locator('.folder-card', { hasText: 'Book 1' }).first().click()
+  await page.locator('.folder-panel-header strong').getByText('Book 1', { exact: true }).waitFor()
   await page.locator('.manga-gallery .media-thumbnail').first().click()
   await reader().waitFor()
-  assert.equal(await source().textContent(), 'Book 1')
   // Immersive, then to the last spread and past it twice (right to left: the left arrow goes forward).
   await page.keyboard.press('F11')
   await fullscreen(true)

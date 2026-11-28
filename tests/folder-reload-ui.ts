@@ -33,6 +33,7 @@ const { app, page } = await launchApp(local, errors, { width: 1500, height: 950 
 let passed = false
 try {
   await page.getByRole('button', { name: '開啟專案 Reload', exact: true }).first().click()
+  await page.getByRole('button', { name: '切換詳情內容', exact: true }).click()
   const all = page.locator('.media-type-chip').first()
   await page.waitForFunction(
     (n) =>

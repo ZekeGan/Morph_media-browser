@@ -112,6 +112,10 @@ async function runGroup(group: Group, fixture: string) {
 
   const open = async () => {
     await page.getByRole('button', { name: '開啟專案 Player QA', exact: true }).first().click()
+    await page.locator('.center-pane').waitFor()
+    if (!(await page.locator('.folder-panel').count())) {
+      await page.getByRole('button', { name: '切換詳情內容', exact: true }).click()
+    }
     await page.locator('.mixed-media-browser').waitFor()
     await page.locator('.media-thumbnail').filter({ hasText: '01-first.mp4' }).click()
     await page.waitForFunction(() => {

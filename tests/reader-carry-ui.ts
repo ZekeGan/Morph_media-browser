@@ -42,7 +42,6 @@ await library.create(shelf, {
 const errors: string[] = []
 const { app, page } = await launchApp(local, errors)
 const reader = () => page.getByRole('dialog', { name: '漫畫閱讀器', exact: true })
-const source = () => page.locator('.media-viewer-source').first()
 const shown = () =>
   page.evaluate(
     () => document.querySelector('.reader-frame-layer.is-active')?.getAttribute('data-pages') ?? ''
@@ -56,14 +55,16 @@ const waitPages = (expected: string) =>
 try {
   await page.getByRole('button', { name: '開啟專案 Carry test', exact: true }).first().click()
   await page.locator('.folder-card', { hasText: 'Book 1' }).first().click()
+  await page.locator('.folder-panel-header strong').getByText('Book 1', { exact: true }).waitFor()
   await page.locator('.manga-gallery .media-thumbnail').first().click()
   await reader().waitFor()
-  assert.equal(await source().textContent(), 'Book 1')
   // Two pages at a time, left to right (the right arrow reads on).
   await reader().getByRole('button', { name: '雙頁', exact: true }).click()
   await waitPages('1–2')
-  await reader().getByRole('button', { name: '由右至左', exact: true }).click()
-  await reader().getByRole('button', { name: '由左至右', exact: true }).waitFor()
+  await reader().getByRole('button', { name: '閱讀設定', exact: true }).click()
+  await page.getByRole('button', { name: '由右至左', exact: true }).click()
+  await page.getByRole('button', { name: '由左至右', exact: true }).waitFor()
+  await reader().getByRole('button', { name: '閱讀設定', exact: true }).click()
   for (const pages of ['3–4', '5–6']) {
     await page.keyboard.press('ArrowRight')
     await waitPages(pages)
@@ -74,10 +75,12 @@ try {
   await page.keyboard.press('ArrowRight')
   // R-430: Book 2 has no settings of its own yet; it opens reading with two pages, left to right.
   await page.waitForFunction(
-    () => document.querySelector('.media-viewer-source')?.textContent === 'Book 2'
+    () => document.querySelector('.folder-panel-header strong')?.textContent?.trim() === 'Book 2'
   )
   await waitPages('1–2')
-  await reader().getByRole('button', { name: '由左至右', exact: true }).waitFor()
+  await reader().getByRole('button', { name: '閱讀設定', exact: true }).click()
+  await page.getByRole('button', { name: '由左至右', exact: true }).waitFor()
+  await reader().getByRole('button', { name: '閱讀設定', exact: true }).click()
   await page.keyboard.press('ArrowRight')
   await waitPages('3–4')
   await page.keyboard.press('Escape')
@@ -91,7 +94,6 @@ try {
   await page.getByText('讀到 6 / 6 頁').first().waitFor()
   await page.locator('.manga-gallery .media-thumbnail').first().click()
   await reader().waitFor()
-  assert.equal(await source().textContent(), 'Book 1')
   await waitPages('1–2')
   assert.equal(await shown(), '1–2', 'a finished book opens from the beginning')
   await page.keyboard.press('Escape')

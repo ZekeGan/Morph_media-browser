@@ -35,6 +35,7 @@ try {
   const crumb = async () =>
     (await page.locator('.workspace-breadcrumb').innerText()).replace(/\s+/g, ' ')
   await card('Game B').waitFor()
+  await page.getByRole('button', { name: '切換詳情內容', exact: true }).click()
   await page.waitForFunction(
     () => document.querySelector('.folder-panel-header strong')?.textContent === 'Games'
   )
@@ -66,10 +67,9 @@ try {
     () => document.querySelector('.folder-panel-header strong')?.textContent === 'Games'
   )
 
+  // R-534: double-clicking a leaf work folder expands full-width details instead of entering an empty list.
   await card('Game B').dblclick()
-  await page.waitForFunction(
-    () => document.querySelector('.breadcrumb-current')?.textContent?.trim() === 'Game B'
-  )
+  await page.locator('.project-workspace.content-expanded').waitFor()
   assert.equal((await title().innerText()).trim(), 'Game B')
   assert.deepEqual(errors, [])
   passed = true

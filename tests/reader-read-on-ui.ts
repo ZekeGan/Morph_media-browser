@@ -62,6 +62,7 @@ const scrollTop = () =>
 let passed = false
 try {
   await page.getByRole('button', { name: '開啟專案 Read on test', exact: true }).first().click()
+  await page.getByRole('button', { name: '切換詳情內容', exact: true }).click()
   await page.locator('.manga-gallery .media-thumbnail').first().click()
   await reader().waitFor()
   await waitPages('1')
@@ -124,19 +125,18 @@ try {
   await waitPages('4')
   await page.keyboard.press('ArrowUp')
   await waitPages('3')
-  // R-392: a click in the middle third shows or hides the toolbar instead of turning the page.
+  // R-558: in non-immersive mode, clicking the middle third keeps the toolbar visible and does not turn the page.
   const stage = (await reader().locator('.reader-stage').boundingBox())!
   await page.mouse.click(stage.x + stage.width / 2, stage.y + stage.height / 2)
-  await page.locator('.reader-toolbar').waitFor({ state: 'detached' })
-  assert.equal(await shown(), '3')
-  await page.mouse.click(stage.x + stage.width / 2, stage.y + stage.height / 2)
   await page.locator('.reader-toolbar').waitFor()
+  assert.equal(await shown(), '3')
   // R-392: dragging part of the way shows the page beside it coming in; letting go short puts both back.
   const middle = { x: stage.x + stage.width / 2, y: stage.y + stage.height / 2 }
   await page.mouse.move(middle.x, middle.y)
   await page.mouse.down()
   await page.mouse.move(middle.x - 40, middle.y, { steps: 4 })
   await page.mouse.move(middle.x - 80, middle.y, { steps: 4 })
+  await page.waitForTimeout(100)
   const peek = page.locator('.reader-peek-right')
   assert.equal(await peek.evaluate((node) => getComputedStyle(node).visibility), 'visible')
   assert.ok((await peek.locator('img').count()) >= 1, 'the next page is drawn beside')
@@ -156,15 +156,20 @@ try {
   await page.waitForTimeout(400)
   assert.equal(await peek.evaluate((node) => getComputedStyle(node).visibility), 'hidden')
   assert.equal(await shown(), '3', 'a short drag does not turn')
-  // R-378: with the page-turn transition off (A, or its toolbar button) the new page just appears.
-  const transition = reader().getByRole('button', { name: '翻頁過渡', exact: true })
+  // R-378 / R-557: page-turn transition lives inside the Reading Settings popover (or toggled via 'a').
+  const settingsBtn = reader().getByRole('button', { name: '閱讀設定', exact: true })
+  const transition = page.getByRole('button', { name: /^翻頁過渡/ })
+  await settingsBtn.click()
   assert.equal(await transition.getAttribute('aria-pressed'), 'true')
+  await settingsBtn.click()
   const entering = () =>
     page.evaluate(() =>
       /enter-/.test(document.querySelector('.reader-frame-layer.is-active')?.className ?? '')
     )
   await page.keyboard.press('a')
+  await settingsBtn.click()
   assert.equal(await transition.getAttribute('aria-pressed'), 'false')
+  await settingsBtn.click()
   // R-392: with the transition off a drag does not move the page or show the one beside.
   await page.mouse.move(middle.x, middle.y)
   await page.mouse.down()
@@ -186,8 +191,10 @@ try {
   await page.keyboard.press(' ')
   await waitPages('4')
   assert.equal(await entering(), false, 'no slide with the transition off')
+  await settingsBtn.click()
   await transition.click()
   assert.equal(await transition.getAttribute('aria-pressed'), 'true')
+  await settingsBtn.click()
   await reader().locator('.reader-stage').focus()
   await page.keyboard.press('PageUp')
   await waitPages('3')

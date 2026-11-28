@@ -77,6 +77,7 @@ const choose = async (name: string) => {
 let passed = false
 try {
   await page.getByRole('button', { name: '開啟專案 Novel test', exact: true }).first().click()
+  await page.getByRole('button', { name: '切換詳情內容', exact: true }).click()
   // R-338: the folder lists its books with how far each has been read.
   await page.locator('.book-shelf').waitFor()
   assert.equal(await page.locator('.book-shelf li').count(), 3)
@@ -510,7 +511,7 @@ try {
   if (await reader().isVisible()) await page.keyboard.press('Escape')
   await reader().waitFor({ state: 'detached' })
   // R-337, R-338: one book in the right panel shows its cover, title, author and chapters.
-  await page.locator('.workspace-toolbar').getByText('檔案', { exact: true }).click()
+  await page.locator('.workspace-toolbar').getByText('檔案總覽', { exact: true }).click()
   await page.locator('.file-overview-item').filter({ hasText: 'book.epub' }).click()
   const filePage = page.locator('.file-page')
   await filePage.locator('h3', { hasText: 'Picture Book' }).waitFor()

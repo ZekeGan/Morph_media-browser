@@ -104,6 +104,7 @@ const { app, page } = await launchApp(local, errors, { width: 1300, height: 860 
 let passed = false
 try {
   await page.getByRole('button', { name: '開啟專案 Embedded QA', exact: true }).first().click()
+  await page.getByRole('button', { name: '切換詳情內容', exact: true }).click()
   await page.locator('.mixed-media-browser').waitFor()
   await page.locator('.media-thumbnail').filter({ hasText: 'movie.mkv' }).click()
   await page.waitForFunction(() => {

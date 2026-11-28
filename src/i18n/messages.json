@@ -13486,5 +13486,23 @@
     "en": "Dates follow the website; fields you edited by hand will not be overwritten.",
     "ja": "日付はサイトの表記に従います。手動で編集した項目は上書きされません。",
     "es": "Las fechas siguen lo indicado por el sitio; los campos editados manualmente no se sobrescriben."
+  },
+  "編輯": {
+    "zh-CN": "编辑",
+    "en": "Edit",
+    "ja": "編集",
+    "es": "Editar"
+  },
+  "全選": {
+    "zh-CN": "全选",
+    "en": "Select all",
+    "ja": "すべて選択",
+    "es": "Seleccionar todo"
+  },
+  "取消全選": {
+    "zh-CN": "取消全选",
+    "en": "Deselect all",
+    "ja": "選択解除",
+    "es": "Deseleccionar todo"
   }
 }

@@ -669,9 +669,10 @@ test('source preview and fill/replace protect manual edits, preserve provenance,
       .value,
     'EDITED'
   )
+  // R-538: manual edits of an imported field preserve sourceRecord.originalValue so the user can restore it.
   assert.equal(
     (await readFolder(media)).attributes.find((value) => value.attributeId === 'bangumi-title')!
-      .sourceRecord,
-    undefined
+      .sourceRecord?.originalValue,
+    'Second'
   )
 })

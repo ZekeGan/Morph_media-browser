@@ -49,6 +49,7 @@ const shownPage = () =>
 let passed = false
 try {
   await page.getByRole('button', { name: '開啟專案 Webtoon test', exact: true }).first().click()
+  await page.getByRole('button', { name: '切換詳情內容', exact: true }).click()
   await page.locator('.manga-gallery .media-thumbnail').first().click()
   await reader().waitFor()
   await page.getByText('這本看起來是條漫', { exact: true }).waitFor()

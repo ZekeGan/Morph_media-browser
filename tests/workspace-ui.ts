@@ -301,7 +301,10 @@ try {
   assert.equal(await page.getByLabel('組件 卡片外觀').count(), 0)
   assert.equal(await page.getByRole('button', { name: '卡片 顯示設定', exact: true }).count(), 0)
   // R-466 & R-547: the nodes can be drawn as the folders' cards, toggled from View Options.
-  await page.getByRole('button', { name: '檢視選項', exact: true }).click()
+  await page
+    .locator('.workspace-toolbar')
+    .getByRole('button', { name: '檢視選項', exact: true })
+    .click()
   const cardNodes = page.getByRole('switch', { name: '以卡片顯示節點', exact: true })
   await cardNodes.click()
   await page.locator('.react-flow__node-card .folder-card .card-grid').first().waitFor()
@@ -386,7 +389,7 @@ try {
   )
   await page.getByRole('button', { name: '應用程式設定', exact: true }).click()
   const settings = page.getByRole('dialog', { name: '應用程式設定', exact: true })
-  await settings.getByRole('tab', { name: '備份', exact: true }).click()
+  await settings.getByRole('tab', { name: '備份與還原', exact: true }).click()
   await settings.getByRole('button', { name: '建立備份', exact: true }).waitFor()
   assert.equal(await settings.getByLabel('專案名稱', { exact: true }).count(), 0)
   await page.keyboard.press('Escape')

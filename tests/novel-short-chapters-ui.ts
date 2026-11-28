@@ -77,6 +77,7 @@ const choose = async (name: string) => {
 const chapterNumber = async () => Number(/第 (\d+) \//.exec(await info())?.[1] ?? 0)
 try {
   await win.getByRole('button', { name: '開啟專案 Short test', exact: true }).first().click()
+  await win.getByRole('button', { name: '切換詳情內容', exact: true }).click()
   await win.getByRole('button', { name: /^(開始|繼續)閱讀 short.epub$/ }).click()
   await reader().waitFor()
   await win.waitForFunction(() => !!document.querySelector('.novel-info strong')?.textContent)

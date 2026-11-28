@@ -428,13 +428,7 @@ try {
         .click()
       await page.keyboard.press('Control+k')
       await page.locator('.folder-search-dialog').waitFor()
-      await page.locator('.search-footer button').first().focus()
-      assert.equal(
-        await page
-          .locator('.search-footer')
-          .evaluate((element) => getComputedStyle(element).position),
-        'static'
-      )
+      await page.locator('.search-hint-bar').waitFor()
       await page.screenshot({ path: path.join(screens, `search-${theme}.png`) })
       await page.keyboard.press('Escape')
     }
@@ -464,7 +458,7 @@ try {
       await edit()
       await page.locator('.scheme-toolbar').waitFor()
       await button('卡片外觀').click()
-      await page.getByRole('menuitem', { name: '新增外觀', exact: true }).click()
+      await page.getByRole('menuitem', { name: tr('新增外觀'), exact: true }).click()
       await page
         .getByRole('textbox', { name: tr('外觀名稱'), exact: true })
         .fill('Long scheme name · 長方案名稱 '.repeat(3))
@@ -484,14 +478,11 @@ try {
       await page.keyboard.press('Control+k')
       await page.locator('.folder-search-dialog').waitFor()
       assert.ok(
-        await page.locator('.search-footer button').evaluateAll((elements) =>
-          elements.every((element) => {
-            const rect = element.getBoundingClientRect()
-            return rect.left >= 0 && rect.right <= innerWidth
-          })
-        )
+        await page.locator('.search-hint-bar').evaluate((element) => {
+          const rect = element.getBoundingClientRect()
+          return rect.left >= 0 && rect.right <= innerWidth
+        })
       )
-      await page.locator('.search-footer button').first().focus()
       await page.screenshot({ path: path.join(screens, `search-${next}-narrow.png`) })
       await page.keyboard.press('Escape')
       await resize(1440)

@@ -122,21 +122,19 @@ try {
   const modeText = (await page.locator('.center-mode').textContent()) ?? ''
   for (const name of ['卡片', '表格', '樹狀圖']) assert.ok(modeText.includes(name), name)
   await page.locator('.center-mode').getByText('表格', { exact: true }).click()
-  await button('切換詳情內容').click()
+  // R-533 / R-534: project starts collapsed; double-clicking a leaf folder expands full-width details, and Back steps out.
   assert.equal(await page.locator('.folder-panel').count(), 0)
   await page
     .locator('.folder-table tbody tr')
     .filter({ has: page.getByText('A', { exact: true }) })
     .dblclick()
-  assert.equal(
-    await page.locator('.folder-panel').count(),
-    0,
-    'entering a folder must not open a hidden pane'
-  )
-  await button('切換詳情內容').click()
-  await button('返回').click()
+  await page.locator('.project-workspace.content-expanded').waitFor()
+  await page
+    .locator('.folder-panel-header')
+    .getByRole('button', { name: '返回', exact: true })
+    .click()
   await page.locator('.folder-panel').waitFor()
-  await page.locator('.folder-panel-header strong').getByText('Library', { exact: true }).waitFor()
+  await page.locator('.folder-panel-header strong').getByText('A', { exact: true }).waitFor()
   await page.locator('.center-mode').getByText('卡片', { exact: true }).click()
   await openLayoutEditor(page)
   await page.locator('.editor-page').waitFor()
@@ -226,12 +224,11 @@ try {
     .getByText('內建詳情', { exact: true })
     .waitFor()
   await drawer.getByRole('tab', { name: /^資料/ }).click()
-  // The source is recognised from the address; the preview button is enabled only for a known site.
+  // R-562: single smart input detects URLs/App IDs automatically; non-HTTPS URLs are rejected.
+  await drawer.getByRole('button', { name: '從網站匯入…', exact: true }).click()
   const address = drawer.getByRole('textbox', { name: '搜尋名稱或貼上網址', exact: true })
   const preview = drawer.getByRole('button', { name: '取得預覽', exact: true })
-  assert.equal(await preview.isDisabled(), true)
-  // Text that is not an address cannot be previewed; any other HTTPS page is read as a generic web page (R-283).
-  await address.fill('not an address')
+  await address.fill('http://not-https.example.test/work/1')
   assert.equal(await preview.isDisabled(), true)
   await drawer.getByText('無法辨識這個網址的來源').waitFor()
   await address.fill('https://unknown.example.test/work/1')
@@ -248,7 +245,7 @@ try {
     .getByRole('tab', { name: '內容', exact: true })
     .click()
 
-  await page.locator('[aria-label="展示內容"]').getByText('檔案', { exact: true }).click()
+  await page.locator('[aria-label="展示內容"]').getByText('檔案總覽', { exact: true }).click()
   await page.locator('.file-overview-item').first().waitFor()
   await page.waitForFunction(() =>
     document.querySelector('.file-overview')?.textContent?.includes('242')
@@ -327,7 +324,7 @@ try {
   )
   await page.keyboard.press('Escape')
   await button('應用程式設定').click()
-  await settings().getByRole('tab', { name: '備份', exact: true }).click()
+  await settings().getByRole('tab', { name: '備份與還原', exact: true }).click()
   // Backups are kept in the app's own folder; "Create backup" asks nothing.
   const backups = path.join(local, 'backups')
   await settings().getByRole('button', { name: '建立備份', exact: true }).click()
@@ -372,7 +369,7 @@ try {
   await page.getByRole('heading', { name: '你的資料夾，你的瀏覽方式' }).waitFor()
   // The restore left an automatic backup of the state before it; restoring that one undoes it.
   await button('應用程式設定').click()
-  await settings().getByRole('tab', { name: '備份', exact: true }).click()
+  await settings().getByRole('tab', { name: '備份與還原', exact: true }).click()
   // The settings restore offers its way back right there; it makes no backup entry of its own.
   const back = settings().getByRole('button', { name: '回到還原之前', exact: true })
   await back.waitFor()
@@ -381,7 +378,7 @@ try {
   await back.click()
   await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark')
   await button('應用程式設定').click()
-  await settings().getByRole('tab', { name: '備份', exact: true }).click()
+  await settings().getByRole('tab', { name: '備份與還原', exact: true }).click()
   assert.equal(await back.count(), 0)
   await page.keyboard.press('Escape')
   for (const [file, bytes] of originals) assert.deepEqual(await fs.readFile(file), bytes)

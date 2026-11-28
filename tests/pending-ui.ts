@@ -149,14 +149,14 @@ try {
   await body.evaluate((element) => element.querySelector('#controlled-scroll-content')?.remove())
   const toolbar = page.locator('.workspace-toolbar')
   const mode = toolbar.locator('.center-mode')
-  // R-413: the layout picker became the button that opens the layout setup window.
-  const preset = toolbar.getByRole('button', { name: /^版面配置：/ })
+  // R-544: the layout picker became a split button (edit current layout + options menu).
+  const preset = toolbar.locator('.layout-split-button')
   const modeBox = (await mode.boundingBox())!
   const presetBox = (await preset.boundingBox())!
   assert.ok(Math.abs(modeBox.y - presetBox.y) < 12)
   const toggle = toolbar.locator('[aria-label="展示內容"]')
   const before = await toggle.boundingBox()
-  await toolbar.getByText('檔案', { exact: true }).click()
+  await toolbar.getByText('檔案總覽', { exact: true }).click()
   assert.equal(await button('卡片顯示設定').count(), 0)
   assert.equal(await preset.count(), 0)
   if (before) {
@@ -179,7 +179,7 @@ try {
     () => document.querySelector('.reader-zoom-value')?.textContent === '100%'
   )
   await button('退出閱讀器').click()
-  await toolbar.getByText('資料夾', { exact: true }).click()
+  await toolbar.getByText('逐層瀏覽', { exact: true }).click()
   await openLayoutEditor(page)
   await page.locator('.editor-toolbar').waitFor()
   const saveBox = (await button('儲存').boundingBox())!
@@ -203,6 +203,7 @@ try {
   assert.equal(await button('欄位操作 Flag').count(), 0)
   await page.getByRole('button', { name: /^(放棄變更|關閉)$/ }).click()
   await button('開啟專案 Pending Manga').first().click()
+  await button('切換詳情內容').click()
   await page.locator('.media-subfolders').getByRole('button', { name: 'a', exact: true }).click()
   await page.locator('.media-thumbnail').filter({ hasText: 'page.png' }).click()
   await page.getByRole('dialog', { name: '漫畫閱讀器', exact: true }).waitFor()

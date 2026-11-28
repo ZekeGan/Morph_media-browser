@@ -90,6 +90,7 @@ try {
       .getByRole('button', { name: '開啟專案 Large ' + category, exact: true })
       .first()
       .click()
+    await page.getByRole('button', { name: '切換詳情內容', exact: true }).click()
     const gallery = page.locator('.masonry-gallery, .manga-gallery')
     await gallery.waitFor()
     await page.waitForFunction(() =>

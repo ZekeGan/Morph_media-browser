@@ -50,6 +50,7 @@ const reader = () => page.getByRole('dialog', { name: '小說閱讀器', exact: 
 let passed = false
 try {
   await page.getByRole('button', { name: '開啟專案 Markdown test', exact: true }).first().click()
+  await page.getByRole('button', { name: '切換詳情內容', exact: true }).click()
   await page.getByText('note.md', { exact: true }).dblclick()
   await reader().waitFor()
   await reader().locator('.novel-md h1').waitFor()

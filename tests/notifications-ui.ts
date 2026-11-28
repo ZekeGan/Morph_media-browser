@@ -47,7 +47,7 @@ const createBackup = async () => {
   }, out)
   await page.getByRole('button', { name: '應用程式設定', exact: true }).click()
   const settings = page.getByRole('dialog', { name: '應用程式設定', exact: true })
-  await settings.getByRole('tab', { name: '備份', exact: true }).click()
+  await settings.getByRole('tab', { name: '備份與還原', exact: true }).click()
   await settings.getByRole('button', { name: '建立備份', exact: true }).click()
   await toast.waitFor()
   await page.keyboard.press('Escape')
