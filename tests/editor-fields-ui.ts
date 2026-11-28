@@ -107,15 +107,14 @@ try {
   // An added field has no state mark in the left list; use counts are in Manage fields (R-229).
   assert.equal(await row('Zzz').locator('.palette-row-state').count(), 0)
 
-  // The value filter on the section heading hides fields the previewed folder has no value for.
+  // R-550: the eye toggle turns into a bright "有值 ×" pill, replacing the separate hidden-count bar.
   await page.getByRole('textbox', { name: '使用真實資料預覽', exact: true }).click()
   await page.getByRole('option', { name: /^Library · / }).click()
   await button('只看有值').click()
-  await fields.getByText(/^已隱藏 \d+ 個未填欄位$/).waitFor()
+  assert.equal(await button('只看有值').getAttribute('aria-pressed'), 'true')
   assert.equal(await row('NAME').count(), 0)
   assert.equal(await row('TITLE').count(), 1)
-  await fields.getByRole('button', { name: '顯示全部', exact: true }).click()
-  await fields.getByText(/^已隱藏 \d+ 個未填欄位$/).waitFor({ state: 'hidden' })
+  await button('只看有值').click()
   assert.equal(await button('只看有值').getAttribute('aria-pressed'), 'false')
 
   // "Reference only" adds the field to the project without putting it on the card.
@@ -198,8 +197,9 @@ try {
   await page.getByRole('tab', { name: '內容', exact: true }).click()
   await page.getByText(`群組「${groupName}」`, { exact: true }).waitFor()
 
-  // Field management window (R-225): the same source groups, one field's details beside the list.
-  await button('管理欄位').click()
+  // Field management window (R-225 / R-550): opened from the "⋯" menu on "你的欄位".
+  await button('更多欄位操作').click()
+  await page.getByRole('menuitem', { name: '管理全部欄位', exact: true }).click()
   const manager = page.getByRole('dialog', { name: '管理欄位', exact: true })
   const managed = (name: string) =>
     manager.locator('.field-manager-row').filter({ has: page.getByText(name, { exact: true }) })

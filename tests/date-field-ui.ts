@@ -81,7 +81,8 @@ try {
   await page.getByRole('button', { name: '開啟專案 Dates', exact: true }).first().click()
   await openLayoutEditor(page)
   await page.locator('.editor-page').waitFor()
-  await page.getByRole('button', { name: '管理欄位', exact: true }).click()
+  await page.getByRole('button', { name: '更多欄位操作', exact: true }).click()
+  await page.getByRole('menuitem', { name: '管理全部欄位', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: '管理欄位' })
   const field = (name: string) => dialog.locator('button').filter({ hasText: name }).first().click()
 

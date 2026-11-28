@@ -506,3 +506,123 @@ export function fromPanelEditor(
     original.fieldGroups ?? []
   )
 }
+
+// R-546: 3 starter card templates selectable from the editor layout dropdown (undoable like any edit).
+export type StarterCardTemplate = 'cover' | 'detailed' | 'compact'
+
+const baseCellStyle = (): Cell['style'] => ({
+  textColor: '#e4e6e8',
+  backgroundColor: 'transparent',
+})
+
+export function starterCardCells(
+  template: StarterCardTemplate,
+  project: Pick<Project, 'fieldBindings'>,
+  makeId: () => string = () => crypto.randomUUID()
+): Cell[] {
+  const fieldKindOf = (type: string): Cell['kind'] | undefined =>
+    ({
+      string: 'field-text',
+      tags: 'field-tags',
+      number: 'field-number',
+      date: 'field-date',
+      datetime: 'field-date',
+      boolean: 'field-boolean',
+      enum: 'field-enum',
+      url: 'field-url',
+    })[type] as Cell['kind'] | undefined
+
+  if (template === 'cover') {
+    return [
+      {
+        cellId: makeId(),
+        kind: 'image',
+        imageCover: true,
+        imageFit: 'cover',
+        grid: { x: 0, y: 0, w: 12, h: 4 },
+        style: baseCellStyle(),
+      },
+      {
+        cellId: makeId(),
+        kind: 'name',
+        grid: { x: 0, y: 4, w: 12, h: 1 },
+        style: { ...baseCellStyle(), weight: 'bold' },
+      },
+    ]
+  }
+  if (template === 'compact') {
+    return [
+      {
+        cellId: makeId(),
+        kind: 'image',
+        imageCover: true,
+        imageFit: 'cover',
+        grid: { x: 0, y: 0, w: 3, h: 2 },
+        style: baseCellStyle(),
+      },
+      {
+        cellId: makeId(),
+        kind: 'name',
+        grid: { x: 3, y: 0, w: 9, h: 1 },
+        style: { ...baseCellStyle(), weight: 'bold' },
+      },
+      {
+        cellId: makeId(),
+        kind: 'system-info',
+        systemInfo: 'category',
+        grid: { x: 3, y: 1, w: 6, h: 1 },
+        style: baseCellStyle(),
+      },
+      {
+        cellId: makeId(),
+        kind: 'open-folder',
+        grid: { x: 9, y: 1, w: 3, h: 1 },
+        style: baseCellStyle(),
+      },
+    ]
+  }
+  // 'detailed': cover + name + category + path + up to 2 bound project fields.
+  const cells: Cell[] = [
+    {
+      cellId: makeId(),
+      kind: 'image',
+      imageCover: true,
+      imageFit: 'cover',
+      grid: { x: 0, y: 0, w: 12, h: 3 },
+      style: baseCellStyle(),
+    },
+    {
+      cellId: makeId(),
+      kind: 'name',
+      grid: { x: 0, y: 3, w: 12, h: 1 },
+      style: { ...baseCellStyle(), weight: 'bold' },
+    },
+    {
+      cellId: makeId(),
+      kind: 'system-info',
+      systemInfo: 'category',
+      grid: { x: 0, y: 4, w: 6, h: 1 },
+      style: baseCellStyle(),
+    },
+    {
+      cellId: makeId(),
+      kind: 'path',
+      grid: { x: 6, y: 4, w: 6, h: 1 },
+      style: baseCellStyle(),
+    },
+  ]
+  let y = 5
+  for (const field of project.fieldBindings.slice(0, 2)) {
+    const kind = fieldKindOf(field.type)
+    if (!kind) continue
+    cells.push({
+      cellId: makeId(),
+      kind,
+      attributeId: field.attributeId,
+      grid: { x: 0, y, w: 12, h: 1 },
+      style: baseCellStyle(),
+    })
+    y++
+  }
+  return cells
+}

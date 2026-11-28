@@ -3,7 +3,6 @@ import {
   Badge,
   Button,
   Checkbox,
-  Group,
   Menu,
   Modal,
   Text,
@@ -559,6 +558,8 @@ export function EditorPalette(props: EditorPaletteProps) {
       )
     )
   }
+  const sourceGroups = orderedFieldSourceGroups(shownFields, attributes)
+  const sourceNames = sourceGroups.map((group) => group.source)
   return (
     <aside className="editor-palette" aria-label={tr('素材')}>
       <div className="palette-search">
@@ -571,6 +572,7 @@ export function EditorPalette(props: EditorPaletteProps) {
           onChange={(e) => setSearch(e.currentTarget.value)}
         />
       </div>
+      {/* R-550: fixed sections on top (info → game → layout → panel kind), dynamic "你的欄位" at the bottom. */}
       {componentSection('info', tr('資料夾資訊'), [
         'name',
         'path',
@@ -578,6 +580,27 @@ export function EditorPalette(props: EditorPaletteProps) {
         'image',
         'open-folder',
       ])}
+      {hasGames &&
+        componentSection('game', tr('遊戲'), [
+          'game-launch',
+          'game-extra',
+          'system-info:playTime',
+          'system-info:lastPlayed',
+          'system-info:engine',
+          'open-folder',
+        ])}
+      {componentSection('layout', tr('排版'), ['static-text', 'spacer', 'divider'])}
+      {/* R-452: like the game section, the main visuals sit in one section per kind. The right panel being edited
+          shows its own kind's section, and any other whose components are already on it. */}
+      {panel &&
+        kindSections
+          .filter(
+            (section) =>
+              !panelKind ||
+              section.kind === panelKind ||
+              draft.cells.some((cell) => (section.kinds as string[]).includes(cell.kind))
+          )
+          .map((section) => componentSection(section.id, tr(section.title), section.kinds))}
       <Section
         id="fields"
         title={tr('你的欄位')}
@@ -586,31 +609,35 @@ export function EditorPalette(props: EditorPaletteProps) {
         toggle={toggle}
         action={
           <>
-            {/* The value filter only applies to fields, so it sits on this section's heading. */}
+            {/* R-550: eye toggles to a bright "有值 ×" pill, replacing the separate hidden-count bar. */}
             <Tooltip label={tr('只看預覽資料夾有值的欄位')} openDelay={300}>
-              <Button
-                size="compact-xs"
-                variant={onlyFilled ? 'light' : 'subtle'}
-                color={onlyFilled ? undefined : 'gray'}
-                className="palette-value-filter"
-                aria-pressed={onlyFilled}
-                disabled={!preview}
-                leftSection={<Icon name={onlyFilled ? 'check' : 'eye'} size={12} />}
-                onClick={() => setOnlyFilled(!onlyFilled)}
-              >
-                {tr('只看有值')}
-              </Button>
-            </Tooltip>
-            <Tooltip label={tr('管理欄位')}>
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                size="sm"
-                aria-label={tr('管理欄位')}
-                onClick={() => setManaging({})}
-              >
-                <Icon name="settings" size={14} />
-              </ActionIcon>
+              {onlyFilled ? (
+                <Button
+                  size="compact-xs"
+                  variant="light"
+                  className="palette-value-filter is-active"
+                  aria-label={tr('只看有值')}
+                  aria-pressed={true}
+                  disabled={!preview}
+                  rightSection={<Icon name="close" size={11} />}
+                  onClick={() => setOnlyFilled(false)}
+                >
+                  {tr('有值')}
+                </Button>
+              ) : (
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="sm"
+                  className="palette-value-filter"
+                  aria-label={tr('只看有值')}
+                  aria-pressed={false}
+                  disabled={!preview}
+                  onClick={() => setOnlyFilled(true)}
+                >
+                  <Icon name="eye" size={14} />
+                </ActionIcon>
+              )}
             </Tooltip>
             <Tooltip label={tr('新增欄位')}>
               <ActionIcon
@@ -622,19 +649,48 @@ export function EditorPalette(props: EditorPaletteProps) {
                 <Icon name="plus" size={14} />
               </ActionIcon>
             </Tooltip>
+            <Menu position="bottom-end" withinPortal>
+              <Menu.Target>
+                <Tooltip label={tr('更多欄位操作')}>
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    size="sm"
+                    aria-label={tr('更多欄位操作')}
+                  >
+                    <Icon name="more" size={14} />
+                  </ActionIcon>
+                </Tooltip>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  leftSection={<Icon name="settings" size={14} />}
+                  onClick={() => setManaging({})}
+                >
+                  {tr('管理全部欄位')}
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<Icon name="plus" size={14} />}
+                  onClick={() => change(addCommonFields(draft, commonFieldNames()))}
+                >
+                  {tr('加入常用欄位')}
+                </Menu.Item>
+                {sourceGroups.length > 1 && (
+                  <>
+                    <Menu.Divider />
+                    <Menu.Item onClick={() => folding.expandAll(sourceNames)}>
+                      {tr('全部展開')}
+                    </Menu.Item>
+                    <Menu.Item onClick={() => folding.collapseAll(sourceNames)}>
+                      {tr('全部收合')}
+                    </Menu.Item>
+                  </>
+                )}
+              </Menu.Dropdown>
+            </Menu>
           </>
         }
       >
-        {hiddenCount > 0 && (
-          <Group gap={4} mb={4} className="palette-hidden-note">
-            <Text size="xs" c="dimmed">
-              {tr('已隱藏 {0} 個未填欄位', hiddenCount)}
-            </Text>
-            <Button size="compact-xs" variant="subtle" onClick={() => setOnlyFilled(false)}>
-              {tr('顯示全部')}
-            </Button>
-          </Group>
-        )}
         {!allFields.length && (
           <>
             <Text size="xs" c="dimmed" mb={6}>
@@ -712,52 +768,76 @@ export function EditorPalette(props: EditorPaletteProps) {
                 ))}
               </div>
             )}
-            {orderedFieldSourceGroups(shownFields, attributes).map(({ source, fields }) => {
-              const addedFields = fields.filter((f) => bound(f.attributeId))
-              const unadded = fields.filter((f) => !bound(f.attributeId))
-              return (
-                <details
-                  key={source}
-                  className="field-source-group"
-                  open={folding.isOpen(source, addedFields.length > 0)}
-                >
-                  <summary
-                    onClick={(event) => {
-                      event.preventDefault()
-                      folding.toggle(source, addedFields.length > 0)
-                    }}
-                  >
-                    {source}{' '}
-                    <Text component="span" size="xs" c="dimmed">
-                      {tr(
-                        '{0} 項有資料',
-                        fields.filter((f) =>
-                          preview
-                            ? isFilled(fieldValue(preview, f.attributeId))
-                            : sources.find((s) => s.attributeId === f.attributeId)?.hasData
-                        ).length
+            {sourceGroups.length === 1
+              ? (() => {
+                  const { source, fields } = sourceGroups[0]
+                  const addedFields = fields.filter((f) => bound(f.attributeId))
+                  const unadded = fields.filter((f) => !bound(f.attributeId))
+                  return (
+                    <div className="palette-rows">
+                      {addedFields.map(fieldRow)}
+                      {unadded.length > 0 && !folding.showsUnadded(source) ? (
+                        <Button
+                          size="compact-xs"
+                          variant="subtle"
+                          color="gray"
+                          className="palette-unadded"
+                          onClick={() => folding.showUnadded(source)}
+                        >
+                          {tr('＋ {0} 個尚未加入', unadded.length)}
+                        </Button>
+                      ) : (
+                        unadded.map(fieldRow)
                       )}
-                    </Text>
-                  </summary>
-                  <div className="palette-rows">
-                    {addedFields.map(fieldRow)}
-                    {unadded.length > 0 && !folding.showsUnadded(source) ? (
-                      <Button
-                        size="compact-xs"
-                        variant="subtle"
-                        color="gray"
-                        className="palette-unadded"
-                        onClick={() => folding.showUnadded(source)}
+                    </div>
+                  )
+                })()
+              : sourceGroups.map(({ source, fields }) => {
+                  const addedFields = fields.filter((f) => bound(f.attributeId))
+                  const unadded = fields.filter((f) => !bound(f.attributeId))
+                  return (
+                    <details
+                      key={source}
+                      className="field-source-group"
+                      open={folding.isOpen(source, addedFields.length > 0)}
+                    >
+                      <summary
+                        onClick={(event) => {
+                          event.preventDefault()
+                          folding.toggle(source, addedFields.length > 0)
+                        }}
                       >
-                        {tr('＋ {0} 個尚未加入', unadded.length)}
-                      </Button>
-                    ) : (
-                      unadded.map(fieldRow)
-                    )}
-                  </div>
-                </details>
-              )
-            })}
+                        {source}{' '}
+                        <Text component="span" size="xs" c="dimmed">
+                          {tr(
+                            '{0} 項有資料',
+                            fields.filter((f) =>
+                              preview
+                                ? isFilled(fieldValue(preview, f.attributeId))
+                                : sources.find((s) => s.attributeId === f.attributeId)?.hasData
+                            ).length
+                          )}
+                        </Text>
+                      </summary>
+                      <div className="palette-rows">
+                        {addedFields.map(fieldRow)}
+                        {unadded.length > 0 && !folding.showsUnadded(source) ? (
+                          <Button
+                            size="compact-xs"
+                            variant="subtle"
+                            color="gray"
+                            className="palette-unadded"
+                            onClick={() => folding.showUnadded(source)}
+                          >
+                            {tr('＋ {0} 個尚未加入', unadded.length)}
+                          </Button>
+                        ) : (
+                          unadded.map(fieldRow)
+                        )}
+                      </div>
+                    </details>
+                  )
+                })}
             {allFields.length > 0 && !shownFields.length && !query && !hiddenCount && (
               <Text size="xs" c="dimmed">
                 {tr('沒有符合的欄位')}
@@ -777,27 +857,6 @@ export function EditorPalette(props: EditorPaletteProps) {
           </>
         )}
       </Section>
-      {componentSection('layout', tr('排版'), ['static-text', 'spacer', 'divider'])}
-      {hasGames &&
-        componentSection('game', tr('遊戲'), [
-          'game-launch',
-          'game-extra',
-          'system-info:playTime',
-          'system-info:lastPlayed',
-          'system-info:engine',
-          'open-folder',
-        ])}
-      {/* R-452: like the game section, the main visuals sit in one section per kind. The right panel being edited
-          shows its own kind's section, and any other whose components are already on it. */}
-      {panel &&
-        kindSections
-          .filter(
-            (section) =>
-              !panelKind ||
-              section.kind === panelKind ||
-              draft.cells.some((cell) => (section.kinds as string[]).includes(cell.kind))
-          )
-          .map((section) => componentSection(section.id, tr(section.title), section.kinds))}
       <Modal
         opened={adding}
         onClose={() => setAdding(false)}

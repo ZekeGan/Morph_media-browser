@@ -383,6 +383,7 @@ export function App() {
       <RefreshContext.Provider value={refreshNonce}>
         <DesktopShell
           toolbarRef={setToolbarTarget}
+          editorOpen={isEditorOpen}
           projects={snapshot.projects}
           rows={snapshot.rows}
           selected={selectedProjectId}

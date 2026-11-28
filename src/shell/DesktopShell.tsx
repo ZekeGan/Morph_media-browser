@@ -47,6 +47,7 @@ interface Props {
   onDirty: (value: boolean) => void
   onSnapshot: (snapshot: Snapshot) => void
   toolbarRef?: (node: HTMLDivElement | null) => void
+  editorOpen?: boolean
   banner: ReactNode
   status: string
   children: ReactNode
@@ -160,12 +161,18 @@ export function DesktopShell(props: Props) {
     }
   }, [])
   const prefs = workspace.prefs
+  // R-550: temporarily collapse the project sidebar while the layout editor is open, restoring on exit.
+  const [editorSidebarOverride, setEditorSidebarOverride] = useState(false)
+  useEffect(() => {
+    setEditorSidebarOverride(false)
+  }, [props.editorOpen])
+  const sidebarHidden = !!prefs.sidebarHidden || (!!props.editorOpen && !editorSidebarOverride)
   // While the sidebar is hidden, resting the pointer on its button in the top bar lays it over the page without moving
   // anything; it goes away again when the pointer leaves or a project is picked. The window's left edge does not open
   // it (R-360): the pointer passes there too often by accident.
   const [peek, setPeek] = useState(false)
   const peekTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const peeking = peek && !!prefs.sidebarHidden
+  const peeking = peek && sidebarHidden
   // Closing on purpose (Esc, picking a project) while the pointer rests on the button must not reopen it: the browser
   // sends a mouse move after the layout change, which the button would take as a fresh hover.
   // So it stays closed until the pointer has left the button once.
@@ -184,7 +191,7 @@ export function DesktopShell(props: Props) {
     clearTimeout(peekTimer.current)
     // Immersive reading owns the left edge for its tool rail.
     if (document.querySelector('.reader-focused')) return
-    if (prefs.sidebarHidden && !peekBlocked.current) setPeek(true)
+    if (sidebarHidden && !peekBlocked.current) setPeek(true)
   }
   const closePeekSoon = () => {
     clearTimeout(peekTimer.current)
@@ -221,9 +228,9 @@ export function DesktopShell(props: Props) {
   useLayoutEffect(() => {
     const slot = sidebarSlot.current
     if (!slot) return
-    if (prefs.sidebarHidden && slot.contains(document.activeElement)) sidebarToggle.current?.focus()
-    slot.inert = !!prefs.sidebarHidden && !peeking
-  }, [prefs.sidebarHidden, peeking])
+    if (sidebarHidden && slot.contains(document.activeElement)) sidebarToggle.current?.focus()
+    slot.inert = sidebarHidden && !peeking
+  }, [sidebarHidden, peeking])
   // A failed settings write must not hide otherwise usable projects.
   const placements = { ...prefs.projects }
   projects.forEach((p, i) => {
@@ -572,7 +579,7 @@ export function DesktopShell(props: Props) {
         >
           <BrandMark height={17} />
         </button>
-        <Tooltip label={prefs.sidebarHidden ? tr('顯示專案欄') : tr('隱藏專案欄')}>
+        <Tooltip label={sidebarHidden ? tr('顯示專案欄') : tr('隱藏專案欄')}>
           <ActionIcon
             ref={sidebarToggle}
             color="gray"
@@ -581,7 +588,13 @@ export function DesktopShell(props: Props) {
             disabled={locked}
             onMouseEnter={openPeek}
             onMouseLeave={() => peeking && closePeekSoon()}
-            onClick={() => void mutate({ action: 'layout', sidebarHidden: !prefs.sidebarHidden })}
+            onClick={() => {
+              if (props.editorOpen && !prefs.sidebarHidden) {
+                setEditorSidebarOverride((open) => !open)
+              } else {
+                void mutate({ action: 'layout', sidebarHidden: !prefs.sidebarHidden })
+              }
+            }}
           >
             <Icon name="panel-left" />
           </ActionIcon>
@@ -668,12 +681,12 @@ export function DesktopShell(props: Props) {
         <div
           ref={sidebarSlot}
           className="sidebar-slot"
-          data-open={!prefs.sidebarHidden}
+          data-open={!sidebarHidden}
           data-peek={peeking}
           onMouseEnter={() => peeking && clearTimeout(peekTimer.current)}
           onMouseLeave={() => peeking && closePeekSoon()}
           data-resizing={liveWidth !== undefined}
-          aria-hidden={!!prefs.sidebarHidden && !peeking}
+          aria-hidden={sidebarHidden && !peeking}
           style={
             { '--sidebar-width': (liveWidth ?? prefs.sidebarWidth) + 'px' } as React.CSSProperties
           }

@@ -1,6 +1,6 @@
 # CELL 編輯器
 
-> 最後確認：2026-11-28（R-544 R-545）。積木（卡片版面）編輯器的現行規則。程式：`src/editor/Editor.tsx`、`src/editor/EditorPalette.tsx`、`src/editor/EditorInspector.tsx`、`src/cells/CellStyleEditor.tsx`、`src/editor/FieldManager.tsx`、`src/editor/FieldGroupPalette.tsx`、`src/editor/DisplaySource.tsx`、`src/editor/OptionTagsInput.tsx`、`src/editor/fieldTypes.ts`、`shared/fieldGroups.ts`、`shared/layouts.ts`；測試：`tests/field-types.test.ts`、`tests/date-fields.test.ts`、`tests/field-groups.test.ts`、`tests/cell-editor-ui.ts`、`tests/field-edit-ui.ts`、`tests/date-field-ui.ts`、`tests/editor-fields-ui.ts`、`tests/cell-style-ui.ts`、`tests/decided-ui.ts`。
+> 最後確認：2026-11-28（R-550,R-546）。積木（卡片版面）編輯器的現行規則。程式：`src/editor/Editor.tsx`、`src/editor/EditorPalette.tsx`、`src/editor/EditorInspector.tsx`、`src/cells/CellStyleEditor.tsx`、`src/editor/FieldManager.tsx`、`src/editor/FieldGroupPalette.tsx`、`src/editor/DisplaySource.tsx`、`src/editor/OptionTagsInput.tsx`、`src/editor/fieldTypes.ts`、`shared/fieldGroups.ts`、`shared/layouts.ts`；測試：`tests/field-types.test.ts`、`tests/date-fields.test.ts`、`tests/field-groups.test.ts`、`tests/cell-editor-ui.ts`、`tests/field-edit-ui.ts`、`tests/date-field-ui.ts`、`tests/editor-fields-ui.ts`、`tests/cell-style-ui.ts`、`tests/decided-ui.ts`。
 
 本頁持有模板編輯與編輯器內的方案管理行為；CELL 種類只列在 [CELL_CATALOG](CELL_CATALOG.md)，瀏覽時的 CARD 工具列與方案切換由 [工作區](WORKSPACE_REVISION.md) 持有。實作入口：[Editor](../../src/editor/Editor.tsx)、[Card](../../src/cells/Card.tsx)、[shared/layouts](../../shared/layouts.ts)。
 
@@ -14,7 +14,7 @@ CARD 專案方案與單一資料夾指定既有方案共用穩定方案身分；
 
 ## 操作區配置
 
-上方工具列由左至右：方案（SELECT、新增方案、⋯）、預覽資料小選單、復原／重做、關閉與唯一主按鈕「儲存」。
+進入編輯器時自動暫時收起左側專案欄，離開時恢復（R-550）。上方工具列收斂為 4 組：左側返回（關閉／放棄變更）與標題、版面下拉選單（整合切換版面、3 套卡片起手範本「大封面極簡／資訊完整／緊湊清單」與新增／複製／重新命名／刪除外觀，R-546）、預覽資料夾切換、右側復原／重做與主按鈕「儲存」。
 
 組件、畫布、組件設定採可讀寬度；空間不足時將設定區移至畫布下方，再於窄視窗改成縱向排列，不把兩側表單壓窄。三欄並排時貼合視窗剩餘高度、各自捲動（組件與設定一律到底，畫布太長只捲畫布）；兩欄或一欄時整頁捲動。
 
@@ -22,7 +22,7 @@ CARD 專案方案與單一資料夾指定既有方案共用穩定方案身分；
 
 新增欄位以同一表單連接名稱 → 型別 → 新增，從「你的欄位」標題的「＋」、欄位管理視窗的「新增欄位」或搜尋不到時的「＋ 建立欄位『…』」（帶入搜尋文字）開啟；新增後出現在「你的欄位」，可點擊或拖入。表單是「名稱 → 點一張用途卡 → 新增」，用途見 [欄位用途](#欄位用途)。建立定義不寫入假資料。
 
-素材面板分四區、同一標題樣式且可收合：資料夾資訊（名稱、路徑、系統資訊、圖片、開啟資料夾）、你的欄位、排版（版面文字、空白間距、分隔線）、遊戲（只在專案有遊戲或卡片已用遊戲組件時出現）。來源及使用次數見 [組件與欄位區](#組件與欄位區)。新增資料型組件須先建立／選擇欄位，不從泛型文字按鈕暗中建立定義。
+素材面板固定區塊在上、動態成長的「你的欄位」置底（R-550）：依序為資料夾資訊（名稱、路徑、系統資訊、圖片、開啟資料夾）、遊戲（只在專案有遊戲或卡片已用遊戲組件時出現）、排版（版面文字、空白間距、分隔線）、詳情版面專屬區與你的欄位。「你的欄位」標題列僅保留 `👁`（開啟變亮色膠囊「有值 ×」取代下方提示列）、`＋`（新增）與 `⋯`（收納管理全部欄位、加入常用欄位、全部展開／收合）；僅有單一來源時省略來源折疊頭，單列 `⋯` 於 hover／焦點時浮現。來源及使用次數見 [組件與欄位區](#組件與欄位區)。新增資料型組件須先建立／選擇欄位，不從泛型文字按鈕暗中建立定義。
 
 資料夾記錄裡尚未加入本專案配置的欄位與專案欄位在同一來源組內：每組直接列出已加入的欄位，尚未加入的收成「＋ N 個尚未加入」，點開後名稱變淡；沒有已加入欄位的來源組預設收合（自建除外），搜尋或「只看有值」時全部展開。點擊或拖入即加入並建立組件，「⋯」的「只引用欄位」只加入專案配置。引用時保留 attributeId，不複製值，不列其他專案私有欄位；有型別衝突的來源停用。
 

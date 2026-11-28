@@ -72,6 +72,14 @@ export function useSourceFolding(showAll: boolean) {
       setChosen((now) => ({ ...now, [source]: true }))
       setUnfolded((now) => [...now, source])
     },
+    expandAll: (sources: string[]) => {
+      setFoldedForNow([])
+      setChosen((now) => ({ ...now, ...Object.fromEntries(sources.map((s) => [s, true])) }))
+    },
+    collapseAll: (sources: string[]) => {
+      if (showAll) setFoldedForNow(sources)
+      else setChosen((now) => ({ ...now, ...Object.fromEntries(sources.map((s) => [s, false])) }))
+    },
   }
 }
 

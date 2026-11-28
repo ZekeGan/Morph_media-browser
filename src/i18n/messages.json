@@ -2705,12 +2705,6 @@
     "en": "New scheme",
     "es": "Nuevo diseño"
   },
-  "外觀操作": {
-    "ja": "レイアウトの操作",
-    "zh-CN": "外观操作",
-    "en": "Scheme actions",
-    "es": "Acciones del diseño"
-  },
   "複製外觀": {
     "ja": "レイアウトを複製",
     "zh-CN": "复制外观",
@@ -5722,18 +5716,6 @@
     "en": "Only fields with values in the preview folder",
     "ja": "プレビュー中のフォルダーに値があるフィールドのみ",
     "es": "Solo campos con valores en la carpeta de vista previa"
-  },
-  "已隱藏 {0} 個未填欄位": {
-    "zh-CN": "已隐藏 {0} 个未填字段",
-    "en": "{0} empty fields hidden",
-    "ja": "未入力の {0} フィールドを非表示",
-    "es": "{0} campos vacíos ocultos"
-  },
-  "顯示全部": {
-    "zh-CN": "显示全部",
-    "en": "Show all",
-    "ja": "すべて表示",
-    "es": "Mostrar todos"
   },
   "沒有符合的欄位": {
     "zh-CN": "没有符合的字段",
@@ -13486,5 +13468,47 @@
     "en": "Available when subfolders are included",
     "ja": "「サブフォルダを含む」をオンにすると利用可能",
     "es": "Disponible al incluir subcarpetas"
+  },
+  "切換版面": {
+    "zh-CN": "切换版面",
+    "en": "Switch layout",
+    "ja": "レイアウトを切替",
+    "es": "Cambiar diseño"
+  },
+  "套用起手範本": {
+    "zh-CN": "套用起步模板",
+    "en": "Apply starter template",
+    "ja": "スターターテンプレートを適用",
+    "es": "Aplicar plantilla inicial"
+  },
+  "大封面極簡": {
+    "zh-CN": "大封面极简",
+    "en": "Large cover minimal",
+    "ja": "大カバー・シンプル",
+    "es": "Portada grande minimalista"
+  },
+  "資訊完整": {
+    "zh-CN": "信息完整",
+    "en": "Full details",
+    "ja": "情報充実",
+    "es": "Información completa"
+  },
+  "緊湊清單": {
+    "zh-CN": "紧凑列表",
+    "en": "Compact list",
+    "ja": "コンパクト一覧",
+    "es": "Lista compacta"
+  },
+  "更多欄位操作": {
+    "zh-CN": "更多字段操作",
+    "en": "More field actions",
+    "ja": "その他の項目操作",
+    "es": "Más acciones de campo"
+  },
+  "管理全部欄位": {
+    "zh-CN": "管理全部字段",
+    "en": "Manage all fields",
+    "ja": "すべての項目を管理",
+    "es": "Administrar todos los campos"
   }
 }

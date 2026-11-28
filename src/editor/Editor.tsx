@@ -29,6 +29,8 @@ import {
   renamePreset,
   samplePreviewRow,
   selectPreset,
+  starterCardCells,
+  type StarterCardTemplate,
   syncPresetDraft,
 } from '../../shared/layouts'
 import { isGameFolder } from '../../shared/media'
@@ -777,41 +779,86 @@ export function Editor({
   return (
     <section className="editor-page">
       <header className="editor-toolbar">
-        <strong title={project.name}>
-          {tr('版面編輯')} · {targetLabel}
-          {dirty && <span className="tab-dirty-dot" role="img" aria-label={tr('未保存')} />}
-        </strong>
+        {/* R-550: 4-group focused top bar — 1. back + title, 2. layout dropdown (+ starter templates), 3. preview, 4. undo/redo + save. */}
+        <Group className="editor-back" gap="xs" wrap="nowrap">
+          <Button
+            size="xs"
+            variant="subtle"
+            leftSection={<Icon name="arrow-left" size={14} />}
+            onClick={leave}
+          >
+            {dirty ? tr('放棄變更') : tr('關閉')}
+          </Button>
+          <strong title={project.name}>
+            {tr('版面編輯')} · {targetLabel}
+            {dirty && <span className="tab-dirty-dot" role="img" aria-label={tr('未保存')} />}
+          </strong>
+        </Group>
         {presetUi && (
-          <Group className="scheme-toolbar" align="end" gap="xs">
-            <Select
-              title={
-                draft.layoutPresets!.find((preset) => preset.id === draft.activeLayoutId)?.name
-              }
-              label={tr('卡片外觀')}
-              allowDeselect={false}
-              value={draft.activeLayoutId}
-              data={draft.layoutPresets!.map((preset) => ({
-                value: preset.id,
-                label: layoutName(preset),
-              }))}
-              onChange={(id) => id && switchTo(id)}
-            />
-            <Button
-              variant="default"
-              onClick={() => {
-                setSchemeName('')
-                setSchemeAction('new')
-              }}
-            >
-              {tr('新增外觀')}
-            </Button>
-            <Menu>
+          <div className="scheme-toolbar">
+            <Menu position="bottom-start" shadow="md" width={230}>
               <Menu.Target>
-                <ActionIcon size="input-sm" aria-label={tr('外觀操作')} variant="default">
-                  <Icon name="more" />
-                </ActionIcon>
+                <Button
+                  size="xs"
+                  variant="default"
+                  className="scheme-dropdown-button"
+                  aria-label={tr('卡片外觀')}
+                  rightSection={<Icon name="chevron-down" size={12} />}
+                  title={
+                    draft.layoutPresets!.find((preset) => preset.id === draft.activeLayoutId)?.name
+                  }
+                >
+                  {layoutName(
+                    draft.layoutPresets!.find((preset) => preset.id === draft.activeLayoutId)!
+                  )}
+                </Button>
               </Menu.Target>
               <Menu.Dropdown>
+                <Menu.Label>{tr('切換版面')}</Menu.Label>
+                {draft.layoutPresets!.map((preset) => (
+                  <Menu.Item
+                    key={preset.id}
+                    leftSection={
+                      preset.id === draft.activeLayoutId ? <Icon name="check" size={14} /> : null
+                    }
+                    onClick={() => switchTo(preset.id)}
+                  >
+                    {layoutName(preset)}
+                  </Menu.Item>
+                ))}
+                {!panelKind && (
+                  <>
+                    <Menu.Divider />
+                    <Menu.Label>{tr('套用起手範本')}</Menu.Label>
+                    {(
+                      [
+                        ['cover', tr('大封面極簡')],
+                        ['detailed', tr('資訊完整')],
+                        ['compact', tr('緊湊清單')],
+                      ] as [StarterCardTemplate, string][]
+                    ).map(([template, label]) => (
+                      <Menu.Item
+                        key={template}
+                        onClick={() => {
+                          change({ ...draft, cells: starterCardCells(template, draft) })
+                          setSelected('')
+                        }}
+                      >
+                        {label}
+                      </Menu.Item>
+                    ))}
+                  </>
+                )}
+                <Menu.Divider />
+                <Menu.Item
+                  leftSection={<Icon name="plus" size={14} />}
+                  onClick={() => {
+                    setSchemeName('')
+                    setSchemeAction('new')
+                  }}
+                >
+                  {tr('新增外觀')}
+                </Menu.Item>
                 <Menu.Item
                   onClick={() => {
                     setSchemeName('')
@@ -839,11 +886,12 @@ export function Editor({
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
-          </Group>
+          </div>
         )}
         <Group className="editor-preview" gap={4} wrap="nowrap">
           <Tooltip label={tr('上一個資料夾')}>
             <ActionIcon
+              size="sm"
               variant="subtle"
               aria-label={tr('上一個資料夾')}
               disabled={!rows.length}
@@ -853,7 +901,7 @@ export function Editor({
             </ActionIcon>
           </Tooltip>
           <Select
-            size="sm"
+            size="xs"
             aria-label={tr('使用真實資料預覽')}
             title={tr('使用真實資料預覽')}
             placeholder={tr('尚無資料夾')}
@@ -888,6 +936,7 @@ export function Editor({
           />
           <Tooltip label={tr('下一個資料夾')}>
             <ActionIcon
+              size="sm"
               variant="subtle"
               aria-label={tr('下一個資料夾')}
               disabled={!rows.length}
@@ -897,9 +946,10 @@ export function Editor({
             </ActionIcon>
           </Tooltip>
         </Group>
-        <Group className="editor-history" gap="xs">
+        <Group className="editor-save" gap={6} wrap="nowrap">
           <Tooltip label={tr('復原')}>
             <ActionIcon
+              size="sm"
               aria-label={tr('復原')}
               variant="subtle"
               disabled={!past.length}
@@ -914,6 +964,7 @@ export function Editor({
           </Tooltip>
           <Tooltip label={tr('重做')}>
             <ActionIcon
+              size="sm"
               aria-label={tr('重做')}
               variant="subtle"
               disabled={!future.length}
@@ -926,12 +977,8 @@ export function Editor({
               <Icon name="redo" />
             </ActionIcon>
           </Tooltip>
-        </Group>
-        <Group className="editor-save" gap="xs">
-          <Button variant="default" onClick={leave}>
-            {dirty ? tr('放棄變更') : tr('關閉')}
-          </Button>
           <Button
+            size="xs"
             loading={busy}
             onClick={async () => {
               if (await save(presetUi ? syncPresetDraft(draft) : draft)) close()
