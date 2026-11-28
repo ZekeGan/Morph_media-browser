@@ -227,7 +227,7 @@ try {
     .waitFor()
   await drawer.getByRole('tab', { name: /^資料/ }).click()
   // The source is recognised from the address; the preview button is enabled only for a known site.
-  const address = drawer.getByRole('textbox', { name: '作品網址或 ID', exact: true })
+  const address = drawer.getByRole('textbox', { name: '搜尋名稱或貼上網址', exact: true })
   const preview = drawer.getByRole('button', { name: '取得預覽', exact: true })
   assert.equal(await preview.isDisabled(), true)
   // Text that is not an address cannot be previewed; any other HTTPS page is read as a generic web page (R-283).

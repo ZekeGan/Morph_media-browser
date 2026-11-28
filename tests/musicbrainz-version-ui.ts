@@ -84,7 +84,7 @@ try {
   await drawer.getByRole('tab', { name: /^資料/ }).click()
   await drawer.getByRole('button', { name: '從網站匯入…', exact: true }).click()
   await drawer
-    .getByRole('textbox', { name: '作品網址或 ID', exact: true })
+    .getByRole('textbox', { name: '搜尋名稱或貼上網址', exact: true })
     .fill('https://musicbrainz.org/release-group/' + group)
   await drawer.getByRole('button', { name: '取得預覽', exact: true }).click()
   const menu = drawer.getByRole('textbox', { name: '版本', exact: true })
@@ -94,7 +94,7 @@ try {
   const preview = drawer.locator('.source-preview')
   const barcode = preview.getByRole('checkbox', { name: '條碼', exact: true })
   await preview.getByText('BAR-a', { exact: true }).waitFor()
-  await preview.getByRole('rowheader', { name: '最早發行日', exact: true }).waitFor()
+  await preview.getByText('最早發行日', { exact: true }).waitFor()
   // Untick one field, switch to the digital version: the field stays unticked, the values are the new version's.
   await barcode.uncheck()
   await page.screenshot({ path: path.join(base, 'shot', 'r449-versions.png') })

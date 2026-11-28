@@ -608,18 +608,14 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .folder-settings-intro { display:flex; align-items:center; gap:8px; min-width:0; }
 .folder-settings-intro .path-line { flex:1; min-width:0; margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .folder-todo { border-color:var(--accent); }
-.source-diff { width:100%; border-collapse:collapse; font-size:12px; }
-.source-diff th, .source-diff td { padding:5px 6px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; overflow-wrap:anywhere; }
-.source-diff thead th { color:var(--muted); font-weight:500; white-space:nowrap; }
-/* R-332: field names stay on one line; long values are clamped until opened. */
-.source-diff th[scope='row'] { white-space:nowrap; overflow-wrap:normal; }
-/* R-443: the name search row: the text box, the sources button and the search button side by side. */
-.source-search { display:flex; align-items:flex-end; gap:6px; }
-.source-search-input { flex:1; min-width:0; }
-.source-search-sources { flex:none; max-width:160px; }
+/* R-562: single smart import row (search or URL/ID) + compact vertical preview checklist & thumbnail picker. */
+.source-search { display:flex; align-items:flex-start; gap:6px; flex-wrap:wrap; }
+.source-search-input { flex:1 1 180px; min-width:0; }
+.source-search-sources { flex:none; max-width:140px; }
 .source-search-sources .mantine-Button-label { overflow:hidden; }
 .source-search-sources-text { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .source-search-sources[data-empty] { color:var(--error); border-color:var(--error); }
+.source-supported-footer { border-top:1px solid var(--line); padding-top:8px; }
 .source-candidates ul { list-style:none; margin:4px 0 0; padding:0; max-height:220px; overflow:auto; border:1px solid var(--line); border-radius:6px; }
 .source-candidates ul:empty { display:none; }
 .source-candidates li+li { border-top:1px solid var(--line); }
@@ -628,18 +624,35 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .source-candidates button:disabled { opacity:.6; cursor:not-allowed; }
 .source-candidates .candidate-title { flex:1; min-width:0; overflow-wrap:anywhere; }
 .source-candidates .candidate-detail { color:var(--muted); font-size:12px; white-space:nowrap; }
-.source-images { margin:12px 0 0; padding:0; border:0; }
-.source-images legend { padding:0; font-size:12px; color:var(--muted); }
-.source-images ul { list-style:none; margin:6px 0 0; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); gap:8px; }
-.source-images li { display:grid; gap:4px; }
-.source-images img { width:100%; height:80px; object-fit:contain; background:var(--inset); border:1px solid var(--line); border-radius:4px; }
-.source-site-list { display:grid; gap:4px; margin:6px 0 0; font-size:12px; }
-.source-site-list>div { display:grid; grid-template-columns:7em 1fr; gap:8px; }
+.source-site-list { display:grid; gap:3px; margin:0; font-size:11px; }
+.source-site-list>div { display:grid; grid-template-columns:5.5em 1fr; gap:6px; }
 .source-site-list dt { color:var(--muted); white-space:nowrap; }
-.source-site-list dd { margin:0; overflow-wrap:anywhere; }
+.source-site-list dd { margin:0; overflow-wrap:anywhere; color:var(--muted); }
+.source-import-summary { font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px; }
+.source-preview-head { display:flex; align-items:flex-start; gap:10px; }
+.source-preview-title { flex:1; min-width:0; }
+.source-preview-fields { margin-top:10px; }
+.source-preview-fields-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+.source-preview-list { display:flex; flex-direction:column; border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+.source-preview-item { display:flex; align-items:flex-start; gap:8px; padding:6px 8px; font-size:12px; }
+.source-preview-item+.source-preview-item { border-top:1px solid var(--line); }
+.source-preview-item.is-same { opacity:.65; }
+.source-preview-item-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.source-preview-item-top { display:flex; align-items:center; gap:6px; }
+.source-preview-label { font-weight:600; font-size:12px; }
+.source-preview-value { font-size:12px; overflow-wrap:anywhere; }
+.source-preview-old { font-size:11px; color:var(--muted); overflow-wrap:anywhere; }
+.source-images-fold { margin-top:10px; border:1px solid var(--line); border-radius:6px; padding:6px 8px; }
+.source-images-fold>summary { display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; font-weight:600; color:var(--muted); }
+.source-images-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(104px, 1fr)); gap:6px; margin-top:8px; }
+.source-image-tile { position:relative; display:flex; flex-direction:column; padding:0; border:2px solid var(--line); border-radius:6px; overflow:hidden; background:var(--inset); cursor:pointer; text-align:left; color:inherit; }
+.source-image-tile.picked { border-color:var(--accent); }
+.source-image-tile img { width:100%; height:68px; object-fit:cover; display:block; }
+.source-image-check { position:absolute; top:4px; right:4px; width:18px; height:18px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; }
+.source-image-caption { font-size:11px; padding:3px 5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.source-preview-bar { margin-top:10px; }
 .source-long>span { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:4; overflow:hidden; }
 .source-long.open>span { display:block; }
-.source-diff tr.same td, .source-diff tr.same th { color:var(--muted); }
 .image-library figure small { display:block; margin:2px 0; }
 .pick-path { flex:1; min-width:0; display:flex; align-items:center; padding:0 12px; min-height:36px; border:1px solid var(--line); border-radius:8px; background:var(--soft); color:var(--text); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pick-path[data-empty="true"] { color:var(--muted); }

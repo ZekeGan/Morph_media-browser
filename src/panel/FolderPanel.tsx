@@ -507,9 +507,12 @@ export function FolderPanel({
         row.record?.attributes.find((a) => a.attributeId === provider + '-source_url')?.value) ??
       row.record?.attributes.find((a) => providerOf(a.attributeId) === provider)?.sourceRecord?.url
     if (typeof address === 'string') importer.setSource(address)
-    const input = document.getElementById('folder-source-url')
-    input?.scrollIntoView({ block: 'center' })
-    input?.focus()
+    setImportSignal((n) => n + 1)
+    requestAnimationFrame(() => {
+      const input = document.getElementById('folder-source-search')
+      input?.scrollIntoView({ block: 'center' })
+      input?.focus()
+    })
   }
   const removeSite = (provider: string | undefined, name: string) => {
     if (!provider || !row.record) return
@@ -684,7 +687,7 @@ export function FolderPanel({
           setTab('fields')
           setImportSignal((n) => n + 1)
           requestAnimationFrame(() => {
-            const input = document.getElementById('folder-source-url')
+            const input = document.getElementById('folder-source-search')
             input?.scrollIntoView({ block: 'center' })
             input?.focus()
           })

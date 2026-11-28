@@ -33,7 +33,6 @@ import {
   sourceForUrl,
 } from '../../shared/sources'
 
-import { HelpLabel, HelpTip } from '../common/HelpTip'
 import { Icon } from '../common/icons'
 import { importedFieldLabels } from '../editor/importedFieldLabels'
 import { t as tr } from '../i18n'
@@ -130,14 +129,13 @@ export function FolderSourceImport({
   const { images, setImages, albumCover, setAlbumCover } = importer
   // R-511: sources only offer screenshots now.
   const imageLabel = (image: { n?: number }) => tr('截圖 {0}', image.n ?? 0)
-  // R-418: search the sources by the folder's name (editable); picking a candidate previews its address.
-  const [query, setQuery] = useState(row.name)
+  // R-562: single smart input holds either a search keyword (defaults to folder name) or a pasted URL/App ID.
   const [searching, setSearching] = useState(false)
   const [found, setFound] = useState<{ list: MetadataCandidate[]; failed: string[] }>()
   // R-549: collapsed to a compact action bar by default; opens on click, via todo shortcut, or while active.
   const [expanded, setExpanded] = useState(false)
   useEffect(() => {
-    setQuery(row.name)
+    setSource(row.name)
     setFound(undefined)
     setExpanded(false)
   }, [row.rowId])
@@ -189,13 +187,14 @@ export function FolderSourceImport({
         setError(errorMessage(error instanceof Error ? error.message : String(error)))
       )
   }
-  const search = async () => {
+  const search = async (term = source.trim()) => {
+    if (!term) return
     setError('')
     setSearching(true)
     try {
       const result = await window.explorer.request({
         action: 'metadataSearch',
-        query,
+        query: term,
         sources: chosen,
       })
       setFound({ list: result.candidates ?? [], failed: result.failedSources ?? [] })
@@ -205,9 +204,10 @@ export function FolderSourceImport({
       setSearching(false)
     }
   }
-  // The source is recognised from the pasted address alone; the preview button only works for a known site.
-  const detected = sourceForUrl(source.trim())
-  const [listOpen, setListOpen] = useState(false)
+  // R-562: smart input detects URLs/App IDs automatically; everything else searches by name.
+  const trimmed = source.trim()
+  const detected = sourceForUrl(trimmed)
+  const unknownUrl = /^https?:\/\//i.test(trimmed) && !detected
   // R-285: a site that needs the user's own key says so here, with a way to the settings, before anything is asked.
   const keyed = detected ? keySite(detected) : undefined
   const [keyStatus, setKeyStatus] = useState<Record<string, KeyStatus>>()
@@ -289,8 +289,10 @@ export function FolderSourceImport({
     ]
       .filter(Boolean)
       .join(' · ')
+  const importableValues = preview ? preview.values.filter((v) => !noteKeys.includes(v.key)) : []
+  const allSelected = importableValues.length > 0 && keys.length === importableValues.length
   return (
-    <Stack gap="sm" className="folder-source">
+    <Stack gap="xs" className="folder-source">
       <div className="source-import-bar">
         <Button
           size="xs"
@@ -302,36 +304,57 @@ export function FolderSourceImport({
         >
           {tr('從網站匯入…')}
         </Button>
-        <Badge size="xs" variant="light" color="gray" title={chosen.map(sourceName).join('、')}>
-          {chosenLabel}
-        </Badge>
-        <HelpTip text={tr('從網站抓作品的標題、標籤等資料。')} />
+        {!shown && (
+          <span className="source-import-summary" title={chosen.map(sourceName).join('、')}>
+            {chosenLabel}
+          </span>
+        )}
       </div>
       {shown && (
         <>
-          <section className="settings-section">
-            <Stack gap="sm">
+          <section className="settings-section source-import-panel">
+            <Stack gap="xs">
               <form
                 className="source-search"
                 onSubmit={(event) => {
                   event.preventDefault()
-                  if (query.trim() && chosen.length && !searching && !disabled && !fieldDirty) {
-                    void search()
+                  if (disabled || fieldDirty || busy || !trimmed || unknownUrl) return
+                  if (detected) {
+                    if (!missingKey) void loadPreview(trimmed)
+                  } else if (chosen.length && !searching) {
+                    void search(trimmed)
                   }
                 }}
               >
                 <TextInput
                   id="folder-source-search"
+                  size="xs"
                   disabled={busy}
-                  maxLength={200}
-                  label={
-                    <HelpLabel label={tr('用名稱搜尋')} help={tr('用名稱找作品，挑一個再預覽。')} />
+                  maxLength={500}
+                  aria-label={tr('搜尋名稱或貼上網址')}
+                  placeholder={tr('輸入作品名稱、網址或 Steam App ID')}
+                  error={unknownUrl ? tr('無法辨識這個網址的來源') : undefined}
+                  rightSectionWidth={detectedName ? 94 : undefined}
+                  rightSection={
+                    detectedName ? (
+                      <Badge
+                        size="xs"
+                        color="teal"
+                        variant="light"
+                        leftSection={<Icon name="check" size={10} />}
+                      >
+                        {detectedName}
+                      </Badge>
+                    ) : undefined
                   }
-                  value={query}
-                  onChange={(event) => setQuery(event.currentTarget.value)}
+                  value={source}
+                  onChange={(event) => {
+                    setSource(event.currentTarget.value)
+                    if (preview) setPreview(undefined)
+                  }}
                   className="source-search-input"
                 />
-                <Popover position="bottom-end" withArrow shadow="md" width={300}>
+                <Popover position="bottom-end" withArrow shadow="md" width={310}>
                   <Popover.Target>
                     <Button
                       size="xs"
@@ -374,37 +397,70 @@ export function FolderSourceImport({
                         </Group>
                       </div>
                     ))}
-                    {keyless.length > 0 && (
+                    <Group gap="xs" mb={8}>
+                      {keyless.length > 0 && (
+                        <Button
+                          size="compact-xs"
+                          variant="subtle"
+                          onClick={() =>
+                            window.dispatchEvent(
+                              new CustomEvent('morph:open-settings', {
+                                detail: { tab: 'keys', site: keyless[0] },
+                              })
+                            )
+                          }
+                        >
+                          {tr('設定金鑰')}
+                        </Button>
+                      )}
                       <Button
                         size="compact-xs"
                         variant="subtle"
-                        onClick={() =>
-                          window.dispatchEvent(
-                            new CustomEvent('morph:open-settings', {
-                              detail: { tab: 'keys', site: keyless[0] },
-                            })
-                          )
-                        }
+                        onClick={() => chooseSources(defaultSearchSources(kind))}
                       >
-                        {tr('設定金鑰')}
+                        {tr('還原此類型預設')}
                       </Button>
-                    )}
-                    <Button
-                      size="compact-xs"
-                      variant="subtle"
-                      onClick={() => chooseSources(defaultSearchSources(kind))}
-                    >
-                      {tr('還原此類型預設')}
-                    </Button>
+                    </Group>
+                    <div className="source-supported-footer">
+                      <Text size="xs" fw={600} c="dimmed" mb={4}>
+                        {tr('支援的網站')}
+                      </Text>
+                      <dl className="source-site-list">
+                        {[...new Set(metadataSources.map((item) => item.group))].map((group) => (
+                          <div key={group}>
+                            <dt>{tr(group)}</dt>
+                            <dd>
+                              {metadataSources
+                                .filter((item) => item.group === group)
+                                .map((item) => item.name)
+                                .join('、')}
+                            </dd>
+                          </div>
+                        ))}
+                        <div>
+                          <dt>{tr('經 VNDB')}</dt>
+                          <dd>
+                            Getchu、{tr('批評空間')}、Melonbooks、{tr('虎之穴')}、FANZA
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
                   </Popover.Dropdown>
                 </Popover>
                 <Button
                   type="submit"
                   size="xs"
-                  loading={searching}
-                  disabled={disabled || fieldDirty || busy || !query.trim() || !chosen.length}
+                  loading={detected ? busy : searching}
+                  disabled={
+                    disabled ||
+                    fieldDirty ||
+                    busy ||
+                    !trimmed ||
+                    unknownUrl ||
+                    (detected ? missingKey : !chosen.length)
+                  }
                 >
-                  {tr('搜尋')}
+                  {detected || unknownUrl ? tr('取得預覽') : tr('搜尋')}
                 </Button>
               </form>
               {found && (
@@ -446,73 +502,6 @@ export function FolderSourceImport({
                   </ul>
                 </div>
               )}
-              <TextInput
-                id="folder-source-url"
-                disabled={busy}
-                label={
-                  <HelpLabel label={tr('作品網址或 ID')} help={tr('例如 https://vndb.org/v97')} />
-                }
-                placeholder={tr('貼上作品網址（Steam 可直接輸入 App ID）')}
-                error={source.trim() && !detected ? tr('無法辨識這個網址的來源') : undefined}
-                rightSectionWidth={detectedName ? 96 : undefined}
-                rightSection={
-                  detectedName ? (
-                    <Badge
-                      color="teal"
-                      variant="light"
-                      leftSection={<Icon name="check" size={10} />}
-                    >
-                      {detectedName}
-                    </Badge>
-                  ) : undefined
-                }
-                value={source}
-                onChange={(event) => {
-                  setSource(event.currentTarget.value)
-                  setPreview(undefined)
-                }}
-              />
-              {/* R-329: the supported sites, by kind, only when asked for. */}
-              <div>
-                <Button
-                  variant="subtle"
-                  size="compact-xs"
-                  aria-expanded={listOpen}
-                  onClick={() => setListOpen((open) => !open)}
-                >
-                  {listOpen ? tr('收合支援的網站') : tr('支援的網站')}
-                </Button>
-                {listOpen && (
-                  <dl className="source-site-list">
-                    {[...new Set(metadataSources.map((item) => item.group))].map((group) => (
-                      <div key={group}>
-                        <dt>{tr(group)}</dt>
-                        <dd>
-                          {metadataSources
-                            .filter((item) => item.group === group)
-                            .map((item) => item.name)
-                            .join('、')}
-                        </dd>
-                      </div>
-                    ))}
-                    <div>
-                      <dt>{tr('經 VNDB')}</dt>
-                      <dd>
-                        Getchu、{tr('批評空間')}、Melonbooks、{tr('虎之穴')}、FANZA
-                      </dd>
-                    </div>
-                  </dl>
-                )}
-              </div>
-              <Group justify="flex-end">
-                <Button
-                  disabled={disabled || fieldDirty || !detected || missingKey}
-                  loading={busy}
-                  onClick={() => void loadPreview()}
-                >
-                  {tr('取得預覽')}
-                </Button>
-              </Group>
             </Stack>
           </section>
 
@@ -534,33 +523,50 @@ export function FolderSourceImport({
             )}
           {importer.result && <Alert color="teal">{importer.result}</Alert>}
           {preview && (
-            <Checkbox
-              label={
-                <HelpLabel
-                  label={tr('更新已從網站匯入的欄位')}
-                  help={tr('勾選後，網站的新資料會取代舊的；你自己填的不會被改。')}
-                />
-              }
-              checked={importer.replace}
-              onChange={(event) => importer.setReplace(event.currentTarget.checked)}
-            />
-          )}
-          {preview && (
             <section className="settings-section source-preview">
-              <Group align="start">
+              <div className="source-preview-head">
                 {preview.image && (
                   <img className="metadata-cover" src={preview.image} alt={tr('可選的封面')} />
                 )}
-                <div>
-                  <Text fw={600}>{preview.title}</Text>
+                <div className="source-preview-title">
+                  <Text fw={600} size="sm">
+                    {preview.title}
+                  </Text>
                   <Text size="xs" c="dimmed" className="path">
                     {preview.source}
                   </Text>
+                  {preview.image && (
+                    <Checkbox
+                      size="xs"
+                      mt={6}
+                      label={
+                        preview.albumImage ? tr('同時保存這個版本的封面') : tr('同時保存封面圖片')
+                      }
+                      checked={cover}
+                      onChange={(e) => setCover(e.currentTarget.checked)}
+                    />
+                  )}
+                  {preview.albumImage && (
+                    <Group gap="xs" mt={4} wrap="nowrap">
+                      <img
+                        className="metadata-cover small"
+                        src={preview.albumImage}
+                        alt={tr('專輯封面')}
+                      />
+                      <Checkbox
+                        size="xs"
+                        label={tr('同時保存專輯的封面')}
+                        checked={albumCover}
+                        onChange={(e) => setAlbumCover(e.currentTarget.checked)}
+                      />
+                    </Group>
+                  )}
                 </div>
-              </Group>
+              </div>
               {preview.versions && (
-                <Stack gap={4} mt="sm">
+                <Stack gap={4} mt="xs">
                   <Select
+                    size="xs"
                     label={tr('版本')}
                     allowDeselect={false}
                     disabled={disabled || busy}
@@ -595,9 +601,9 @@ export function FolderSourceImport({
                 </Stack>
               )}
               {preview.related && (
-                <Alert color="blue" mt="sm" className="source-related">
+                <Alert color="blue" mt="xs" className="source-related">
                   <Group gap="xs" justify="space-between" wrap="nowrap">
-                    <Text size="sm">
+                    <Text size="xs">
                       {tr('VNDB 也有這部作品：{0}', preview.related.title || preview.related.url)}
                     </Text>
                     <Button
@@ -615,29 +621,24 @@ export function FolderSourceImport({
                   </Group>
                 </Alert>
               )}
-              <Text size="sm" c="dimmed" my="sm">
-                {preview.provider === 'steam'
-                  ? tr('日期照 Steam 上寫的，不一定是作品第一次發行的日子。')
-                  : tr('日期照網站上寫的，不一定是作品第一次發行的日子。')}
-                {/* Attribution the sources' terms ask for. */}
-                {preview.provider === 'tmdb' &&
-                  ' ' + tr('本產品使用 TMDB API，但未經 TMDB 認可或認證。')}
-                {preview.provider === 'fanza' && ' Powered by FANZA Webサービス'}
-                {tr('只補空白的欄位；你自己填的不會被改。')}
-              </Text>
-              <table className="source-diff">
-                <thead>
-                  <tr>
-                    <th aria-label={tr('匯入')} />
-                    <th>{tr('欄位')}</th>
-                    <th>{tr('現值')}</th>
-                    <th>{tr('新值')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {preview.values
-                    .filter((v) => !noteKeys.includes(v.key))
-                    .map((v) => {
+              {importableValues.length > 0 && (
+                <div className="source-preview-fields">
+                  <div className="source-preview-fields-header">
+                    <Text size="xs" fw={600} c="dimmed">
+                      {tr('可匯入欄位 ({0}/{1})', keys.length, importableValues.length)}
+                    </Text>
+                    <Button
+                      size="compact-xs"
+                      variant="subtle"
+                      onClick={() =>
+                        setKeys(allSelected ? [] : importableValues.map((item) => item.key))
+                      }
+                    >
+                      {allSelected ? tr('取消全選') : tr('全選')}
+                    </Button>
+                  </div>
+                  <div className="source-preview-list">
+                    {importableValues.map((v) => {
                       const next = Array.isArray(v.value) ? v.value.join('、') : String(v.value)
                       const existing = row.record?.attributes.find(
                         (attribute) =>
@@ -650,120 +651,153 @@ export function FolderSourceImport({
                           : String(existing.value)
                         : ''
                       const same = !!existing && current === next
+                      const label = fieldLabel(v.key)
                       return (
-                        <tr key={v.key} className={same ? 'same' : undefined}>
-                          <td>
-                            <Checkbox
-                              aria-label={fieldLabel(v.key)}
-                              checked={keys.includes(v.key)}
-                              onChange={(e) =>
-                                setKeys((list) =>
-                                  e.currentTarget.checked
-                                    ? [...list, v.key]
-                                    : list.filter((k) => k !== v.key)
-                                )
-                              }
-                            />
-                          </td>
-                          <th scope="row">{fieldLabel(v.key)}</th>
-                          <td>{current ? <LongValue text={current} /> : '—'}</td>
-                          <td>{same ? tr('相同') : <LongValue text={next} />}</td>
-                        </tr>
+                        <div
+                          key={v.key}
+                          className={'source-preview-item' + (same ? ' is-same' : '')}
+                        >
+                          <Checkbox
+                            size="xs"
+                            aria-label={label}
+                            checked={keys.includes(v.key)}
+                            onChange={(e) =>
+                              setKeys((list) =>
+                                e.currentTarget.checked
+                                  ? [...list, v.key]
+                                  : list.filter((k) => k !== v.key)
+                              )
+                            }
+                          />
+                          <div className="source-preview-item-body">
+                            <div className="source-preview-item-top">
+                              <span className="source-preview-label">{label}</span>
+                              {same && (
+                                <Badge size="xs" variant="light" color="gray">
+                                  {tr('相同')}
+                                </Badge>
+                              )}
+                            </div>
+                            {!same && (
+                              <div className="source-preview-value">
+                                <LongValue text={next} />
+                              </div>
+                            )}
+                            {current && !same && (
+                              <div className="source-preview-old">{tr('原：{0}', current)}</div>
+                            )}
+                          </div>
+                        </div>
                       )
                     })}
-                </tbody>
-              </table>
+                  </div>
+                </div>
+              )}
               {preview.values.find((v) => v.key === 'COVER_STATUS') && (
-                <Alert color="orange" mt="sm">
+                <Alert color="orange" mt="xs">
                   {String(preview.values.find((v) => v.key === 'COVER_STATUS')!.value)}
                 </Alert>
               )}
               {languageNotice(preview.values.find((v) => v.key === 'LANGUAGE_NOTICE')?.value) && (
-                <Alert color="orange" mt="sm">
+                <Alert color="orange" mt="xs">
                   {languageNotice(preview.values.find((v) => v.key === 'LANGUAGE_NOTICE')!.value)}
                 </Alert>
               )}
-              {preview.image && (
-                <Checkbox
-                  mt="md"
-                  label={preview.albumImage ? tr('同時保存這個版本的封面') : tr('同時保存封面圖片')}
-                  checked={cover}
-                  onChange={(e) => setCover(e.currentTarget.checked)}
-                />
-              )}
-              {preview.albumImage && (
-                <Group gap="sm" mt="xs" wrap="nowrap">
-                  <img
-                    className="metadata-cover small"
-                    src={preview.albumImage}
-                    alt={tr('專輯封面')}
-                  />
-                  <Checkbox
-                    label={tr('同時保存專輯的封面')}
-                    checked={albumCover}
-                    onChange={(e) => setAlbumCover(e.currentTarget.checked)}
-                  />
-                </Group>
-              )}
               {!!preview.images?.length && (
-                <fieldset className="source-images">
-                  <legend>{tr('同時保存來源的圖片')}</legend>
-                  <ul>
-                    {preview.images.map((image, index) => (
-                      <li key={index}>
-                        <img src={image.image} alt="" />
-                        <Checkbox
-                          size="xs"
-                          label={imageLabel(image)}
-                          checked={images.includes(index)}
-                          onChange={(e) =>
+                <details className="source-images-fold">
+                  <summary>
+                    <span>{tr('更多圖片 ({0})', preview.images.length)}</span>
+                    {images.length > 0 && (
+                      <Badge size="xs" variant="light" color="blue">
+                        {tr('已選 {0}', images.length)}
+                      </Badge>
+                    )}
+                  </summary>
+                  <div className="source-images-grid">
+                    {preview.images.map((image, index) => {
+                      const picked = images.includes(index)
+                      const label = imageLabel(image)
+                      return (
+                        <button
+                          key={index}
+                          type="button"
+                          className={'source-image-tile' + (picked ? ' picked' : '')}
+                          aria-pressed={picked}
+                          aria-label={label}
+                          onClick={() =>
                             setImages((list) =>
-                              e.currentTarget.checked
-                                ? [...list, index]
-                                : list.filter((i) => i !== index)
+                              picked ? list.filter((i) => i !== index) : [...list, index]
                             )
                           }
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </fieldset>
+                        >
+                          <img src={image.image} alt="" />
+                          {picked && (
+                            <span className="source-image-check" aria-hidden="true">
+                              <Icon name="check" size={11} />
+                            </span>
+                          )}
+                          <span className="source-image-caption">{label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </details>
               )}
-              <Group justify="flex-end" mt="md" className="settings-savebar">
-                <Button variant="default" disabled={busy} onClick={() => setPreview(undefined)}>
-                  {tr('取消預覽')}
-                </Button>
-                <Button
-                  disabled={
-                    disabled ||
-                    fieldDirty ||
-                    (!keys.length &&
-                      !(preview.image && cover) &&
-                      !(preview.albumImage && albumCover) &&
-                      !images.length)
-                  }
-                  onClick={async () => {
-                    if (
-                      await run({
-                        action: 'metadataApply',
-                        rowId: row.rowId,
-                        revision: row.record!.revision,
-                        token: preview.token,
-                        keys,
-                        image: !!preview.image && cover,
-                        ...(preview.albumImage && albumCover ? { albumImage: true } : {}),
-                        mode: importer.replace ? 'replace' : 'fill',
-                        ...(images.length ? { images } : {}),
-                      })
-                    ) {
-                      importer.setResult(tr('已匯入選定資料，可至「資料」查看。'))
-                      setPreview(undefined)
+              <Text size="xs" c="dimmed" mt="xs">
+                {tr('日期依網站標示；你手動改過的欄位不會被覆蓋。')}
+                {preview.provider === 'tmdb' &&
+                  ' ' + tr('本產品使用 TMDB API，但未經 TMDB 認可或認證。')}
+                {preview.provider === 'fanza' && ' Powered by FANZA Webサービス'}
+              </Text>
+              <div className="settings-savebar source-preview-bar">
+                <Checkbox
+                  size="xs"
+                  label={tr('更新已從網站匯入的欄位')}
+                  checked={importer.replace}
+                  onChange={(event) => importer.setReplace(event.currentTarget.checked)}
+                />
+                <Group gap="xs" wrap="nowrap">
+                  <Button
+                    size="xs"
+                    variant="default"
+                    disabled={busy}
+                    onClick={() => setPreview(undefined)}
+                  >
+                    {tr('取消預覽')}
+                  </Button>
+                  <Button
+                    size="xs"
+                    disabled={
+                      disabled ||
+                      fieldDirty ||
+                      (!keys.length &&
+                        !(preview.image && cover) &&
+                        !(preview.albumImage && albumCover) &&
+                        !images.length)
                     }
-                  }}
-                >
-                  {tr('匯入選定資料')}
-                </Button>
-              </Group>
+                    onClick={async () => {
+                      if (
+                        await run({
+                          action: 'metadataApply',
+                          rowId: row.rowId,
+                          revision: row.record!.revision,
+                          token: preview.token,
+                          keys,
+                          image: !!preview.image && cover,
+                          ...(preview.albumImage && albumCover ? { albumImage: true } : {}),
+                          mode: importer.replace ? 'replace' : 'fill',
+                          ...(images.length ? { images } : {}),
+                        })
+                      ) {
+                        importer.setResult(tr('已匯入選定資料，可至「資料」查看。'))
+                        setPreview(undefined)
+                      }
+                    }}
+                  >
+                    {tr('匯入選定資料')}
+                  </Button>
+                </Group>
+              </div>
             </section>
           )}
         </>

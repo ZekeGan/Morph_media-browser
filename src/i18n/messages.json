@@ -1463,12 +1463,6 @@
     "en": "Cover preview",
     "es": "Vista previa de portada"
   },
-  "日期照 Steam 上寫的，不一定是作品第一次發行的日子。": {
-    "ja": "発売日はSteamストアの表記を保持し、作品の初回発売日とはみなしません。",
-    "zh-CN": "日期照 Steam 上写的，不一定是作品第一次发行的日子。",
-    "en": "Release dates follow the Steam store and are not assumed to be the work's original release date.",
-    "es": "Las fechas respetan la tienda Steam y no se consideran necesariamente el lanzamiento original de la obra."
-  },
   "同時保存封面圖片": {
     "ja": "カバー画像も保存",
     "zh-CN": "同时保存封面图片",
@@ -2963,23 +2957,11 @@
     "en": "The URL does not match the selected source",
     "es": "La URL no coincide con la fuente seleccionada"
   },
-  "作品網址或 ID": {
-    "ja": "作品URLまたはID",
-    "zh-CN": "作品网址或 ID",
-    "en": "Work URL or ID",
-    "es": "URL o ID de la obra"
-  },
   "更新已從網站匯入的欄位": {
     "ja": "サイトから取り込んだ項目を更新",
     "zh-CN": "更新已从网站导入的栏位",
     "en": "Update fields imported from websites",
     "es": "Actualizar los campos importados de webs"
-  },
-  "只補空白的欄位；你自己填的不會被改。": {
-    "ja": "空の項目だけを埋めます。自分で入力したものは変わりません。",
-    "zh-CN": "只补空白的栏位；你自己填的不会被改。",
-    "en": "Only empty fields are filled; what you filled in yourself is never changed.",
-    "es": "Solo se rellenan los campos vacíos; lo que escribiste tú no se cambia."
   },
   "漫畫／動畫": {
     "ja": "漫画／アニメ",
@@ -2998,12 +2980,6 @@
     "zh-CN": "图片／插画",
     "en": "Images / illustrations",
     "es": "Imágenes / ilustraciones"
-  },
-  "日期照網站上寫的，不一定是作品第一次發行的日子。": {
-    "ja": "日付は出典に従い、初版発売日とは推定しません。",
-    "zh-CN": "日期照网站上写的，不一定是作品第一次发行的日子。",
-    "en": "Dates are kept as reported by the source; they do not imply the first release.",
-    "es": "Se conserva la fecha de la fuente; no implica la primera publicación."
   },
   "類型": {
     "ja": "ジャンル",
@@ -4331,12 +4307,6 @@
     "ja": "このアドレスの取得元を判別できません",
     "es": "No se reconoce el origen de esta dirección"
   },
-  "貼上作品網址（Steam 可直接輸入 App ID）": {
-    "zh-CN": "粘贴作品网址（Steam 可直接输入 App ID）",
-    "en": "Paste the work's address (for Steam, the App ID works too)",
-    "ja": "作品のアドレスを貼り付け（Steam は App ID でも可）",
-    "es": "Pega la dirección de la obra (en Steam sirve el App ID)"
-  },
   "斜體": {
     "zh-CN": "斜体",
     "en": "Italic",
@@ -4756,18 +4726,6 @@
     "zh-CN": "导入",
     "en": "Import",
     "es": "Importar"
-  },
-  "現值": {
-    "ja": "現在の値",
-    "zh-CN": "现值",
-    "en": "Current",
-    "es": "Actual"
-  },
-  "新值": {
-    "ja": "新しい値",
-    "zh-CN": "新值",
-    "en": "New",
-    "es": "Nuevo"
   },
   "相同": {
     "ja": "同じ",
@@ -10679,12 +10637,6 @@
     "ja": "VNDB 経由",
     "es": "vía VNDB"
   },
-  "收合支援的網站": {
-    "zh-CN": "收起支持的网站",
-    "en": "Hide supported sites",
-    "ja": "対応サイトを閉じる",
-    "es": "Ocultar sitios admitidos"
-  },
   "支援的網站": {
     "zh-CN": "支持的网站",
     "en": "Supported sites",
@@ -11789,12 +11741,6 @@
     "ja": "スクリーンショットのアドレス",
     "es": "Direcciones de capturas"
   },
-  "用名稱搜尋": {
-    "zh-CN": "按名称搜索",
-    "en": "Search by name",
-    "ja": "名前で検索",
-    "es": "Buscar por nombre"
-  },
   "{0} 搜尋失敗": {
     "zh-CN": "{0} 搜索失败",
     "en": "{0}: search failed",
@@ -11872,12 +11818,6 @@
     "en": "Icon",
     "ja": "アイコン",
     "es": "Icono"
-  },
-  "同時保存來源的圖片": {
-    "zh-CN": "同时保存来源的图片",
-    "en": "Also save pictures from the source",
-    "ja": "ソースの画像も保存",
-    "es": "Guardar también las imágenes de la fuente"
   },
   "匯入圖片不合法": {
     "zh-CN": "导入图片不合法",
@@ -13025,30 +12965,6 @@
     "ja": "選ぶと、日本語などのロケールでゲームを起動でき、文字化けを防げます。",
     "es": "Una vez elegido, los juegos pueden iniciarse en japonés u otro idioma, sin texto ilegible."
   },
-  "從網站抓作品的標題、標籤等資料。": {
-    "zh-CN": "从网站抓作品的标题、标签等资料。",
-    "en": "Get a work's title, tags and more from a website.",
-    "ja": "サイトから作品のタイトルやタグなどを取得します。",
-    "es": "Obtén el título, las etiquetas y más de una web."
-  },
-  "用名稱找作品，挑一個再預覽。": {
-    "zh-CN": "用名称找作品，挑一个再预览。",
-    "en": "Search for the work by name, then pick one to preview.",
-    "ja": "名前で作品を探し、1 つ選んでプレビューします。",
-    "es": "Busca la obra por nombre y elige una para verla."
-  },
-  "例如 https://vndb.org/v97": {
-    "zh-CN": "例如 https://vndb.org/v97",
-    "en": "For example https://vndb.org/v97",
-    "ja": "例：https://vndb.org/v97",
-    "es": "Por ejemplo https://vndb.org/v97"
-  },
-  "勾選後，網站的新資料會取代舊的；你自己填的不會被改。": {
-    "zh-CN": "勾选后，网站的新资料会取代旧的；你自己填的不会被改。",
-    "en": "When ticked, new data from the website replaces the old; what you filled in yourself is never changed.",
-    "ja": "チェックすると、サイトの新しいデータで古いものを置き換えます。自分で入力したものは変わりません。",
-    "es": "Si se marca, los datos nuevos de la web sustituyen a los antiguos; lo que escribiste tú no se cambia."
-  },
   "遊戲和工具裡的檔案不會被讀取或改動。": {
     "zh-CN": "游戏和工具里的文件不会被读取或改动。",
     "en": "Files inside games and tools are never read or changed.",
@@ -13528,5 +13444,47 @@
     "en": "Edited",
     "ja": "編集済",
     "es": "Editado"
+  },
+  "搜尋名稱或貼上網址": {
+    "zh-CN": "搜索名称或粘贴网址",
+    "en": "Search by name or paste URL",
+    "ja": "名前で検索または URL を貼り付け",
+    "es": "Buscar por nombre o pegar URL"
+  },
+  "輸入作品名稱、網址或 Steam App ID": {
+    "zh-CN": "输入作品名称、网址或 Steam App ID",
+    "en": "Enter title, URL, or Steam App ID",
+    "ja": "作品名、URL、または Steam App ID を入力",
+    "es": "Introduce título, URL o Steam App ID"
+  },
+  "可匯入欄位 ({0}/{1})": {
+    "zh-CN": "可导入字段 ({0}/{1})",
+    "en": "Importable fields ({0}/{1})",
+    "ja": "取り込み項目 ({0}/{1})",
+    "es": "Campos importables ({0}/{1})"
+  },
+  "原：{0}": {
+    "zh-CN": "原：{0}",
+    "en": "Current: {0}",
+    "ja": "現在：{0}",
+    "es": "Actual: {0}"
+  },
+  "更多圖片 ({0})": {
+    "zh-CN": "更多图片 ({0})",
+    "en": "More images ({0})",
+    "ja": "その他の画像 ({0})",
+    "es": "Más imágenes ({0})"
+  },
+  "已選 {0}": {
+    "zh-CN": "已选 {0}",
+    "en": "{0} selected",
+    "ja": "{0} 件選択",
+    "es": "{0} seleccionadas"
+  },
+  "日期依網站標示；你手動改過的欄位不會被覆蓋。": {
+    "zh-CN": "日期按网站标注；你手动修改过的字段不会被覆盖。",
+    "en": "Dates follow the website; fields you edited by hand will not be overwritten.",
+    "ja": "日付はサイトの表記に従います。手動で編集した項目は上書きされません。",
+    "es": "Las fechas siguen lo indicado por el sitio; los campos editados manualmente no se sobrescriben."
   }
 }

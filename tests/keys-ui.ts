@@ -43,7 +43,8 @@ try {
   await page.getByRole('button', { name: '開啟專案 Keys test', exact: true }).first().click()
   await page.getByRole('button', { name: '目前資料夾設定', exact: true }).click()
   const drawer = page.locator('.folder-panel-dock-settings')
-  const address = drawer.getByRole('textbox', { name: '作品網址或 ID', exact: true })
+  await drawer.getByRole('button', { name: '從網站匯入…', exact: true }).click()
+  const address = drawer.getByRole('textbox', { name: '搜尋名稱或貼上網址', exact: true })
   await address.fill('https://www.themoviedb.org/movie/603-the-matrix')
   await drawer.getByText('TMDB 需要你自己的金鑰才能查資料。', { exact: true }).waitFor()
   assert.equal(
