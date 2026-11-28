@@ -121,6 +121,18 @@ try {
   const huge = await boxes('Huge')
   assert.equal(huge[1].height, 4 * 42 + 3 * 4, JSON.stringify(huge))
   assert.equal(huge[2].top - huge[1].bottom, 4)
+  // R-565: optional lightweight masonry switch in CARD View Options packs cards into shortest columns.
+  await page
+    .locator('.workspace-toolbar')
+    .getByRole('button', { name: '檢視選項', exact: true })
+    .click()
+  const masonrySwitch = page.getByRole('switch', { name: '瀑布流排列', exact: true })
+  await masonrySwitch.click()
+  await page.locator('.cards.cards-masonry .cards-masonry-col').first().waitFor()
+  assert.equal(await page.locator('.cards.cards-masonry .folder-card').count(), 3)
+  await masonrySwitch.click()
+  await page.locator('.cards.cards-masonry').waitFor({ state: 'detached' })
+  await page.keyboard.press('Escape')
   // Resizing the window re-wraps the text, and the card follows without a reload.
   await app.evaluate(({ BrowserWindow }) =>
     BrowserWindow.getAllWindows()[0].setBounds({ x: 0, y: 0, width: 420, height: 900 })

@@ -42,6 +42,8 @@ export interface BrowseState {
   foldersFirst?: boolean
   // R-466: TREE draws each node as the folder's card (default off).
   treeCards?: boolean
+  // R-565: CARD packs cards into shortest columns left-to-right when cards have different heights (default off).
+  cardMasonry?: boolean
   media?: MediaPrefs
   scroll?: number
   scrolls?: Partial<Record<BrowseMode, number>>

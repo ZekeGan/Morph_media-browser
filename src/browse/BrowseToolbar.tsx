@@ -317,6 +317,16 @@ export function BrowseToolbar(props: Props) {
                       changedCard()
                     }}
                   />
+                  <Switch
+                    size="xs"
+                    label={tr('瀑布流排列')}
+                    aria-label={tr('瀑布流排列')}
+                    checked={!!browse.cardMasonry}
+                    disabled={busy || !ready}
+                    onChange={(event) =>
+                      persist({ ...state.current, cardMasonry: event.currentTarget.checked })
+                    }
+                  />
                   {cardSaveError && (
                     <Button size="compact-xs" color="red" variant="subtle" onClick={changedCard}>
                       {cardSaveError}

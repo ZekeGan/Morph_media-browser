@@ -1108,6 +1108,7 @@ function BrowseWorkspaceBody({
               rows={current}
               project={project}
               itemsPerRow={liveList.itemsPerRow}
+              masonry={!!browse.cardMasonry}
               highlight={highlight}
               marked={marked}
               gestures={gestures}

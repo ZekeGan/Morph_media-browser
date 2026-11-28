@@ -13504,5 +13504,11 @@
     "en": "Deselect all",
     "ja": "選択解除",
     "es": "Deseleccionar todo"
+  },
+  "瀑布流排列": {
+    "zh-CN": "瀑布流排列",
+    "en": "Masonry layout",
+    "ja": "メイソンリー表示",
+    "es": "Diseño en cascada"
   }
 }

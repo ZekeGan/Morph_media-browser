@@ -20,6 +20,8 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Added an optional lightweight "Masonry layout" toggle (`cardMasonry`) in Card mode's View Options popover that packs variable-height folder cards into the shortest column left-to-right, eliminating same-row whitespace without altering card layouts or portable data (R-565).
+
 ## 0.42.0-beta.1 — 2026-11-28
 
 UX redesign and stability beta release.

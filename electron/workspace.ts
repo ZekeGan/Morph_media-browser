@@ -233,6 +233,7 @@ export function validateWorkspace(v: unknown): asserts v is WorkspacePrefs {
             ))) ||
         (b.foldersFirst !== undefined && typeof b.foldersFirst !== 'boolean') ||
         (b.treeCards !== undefined && typeof b.treeCards !== 'boolean') ||
+        (b.cardMasonry !== undefined && typeof b.cardMasonry !== 'boolean') ||
         (b.media !== undefined &&
           (!object(b.media) ||
             (b.media.scope !== undefined && !['current', 'descendants'].includes(b.media.scope)) ||
