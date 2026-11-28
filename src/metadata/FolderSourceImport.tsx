@@ -107,6 +107,7 @@ export function FolderSourceImport({
   kind,
   run,
   setError,
+  openSignal = 0,
 }: {
   importer: SourceImport
   row: FolderRow
@@ -116,6 +117,8 @@ export function FolderSourceImport({
   kind: FolderKind
   run: Run
   setError: (error: string) => void
+  // R-549: incremented when a "still to add" button asks to open the import area.
+  openSignal?: number
 }) {
   const sourceLabels = importedFieldLabels()
   // R-449: MusicBrainz keeps the album's first release date apart from the version's own date.
@@ -131,10 +134,17 @@ export function FolderSourceImport({
   const [query, setQuery] = useState(row.name)
   const [searching, setSearching] = useState(false)
   const [found, setFound] = useState<{ list: MetadataCandidate[]; failed: string[] }>()
+  // R-549: collapsed to a compact action bar by default; opens on click, via todo shortcut, or while active.
+  const [expanded, setExpanded] = useState(false)
   useEffect(() => {
     setQuery(row.name)
     setFound(undefined)
+    setExpanded(false)
   }, [row.rowId])
+  useEffect(() => {
+    if (openSignal > 0) setExpanded(true)
+  }, [openSignal])
+  const shown = expanded || !!preview || !!found || !!importer.result
   const sourceName = (id: string) => metadataSources.find((item) => item.id === id)?.name ?? id
   // R-424: which sources a name search asks. The choice is kept per folder kind on this computer (workspace prefs);
   // until the user has chosen for a kind, the kind's defaults are ticked. TMDB and FANZA need the user's own key.
@@ -281,455 +291,482 @@ export function FolderSourceImport({
       .join(' · ')
   return (
     <Stack gap="sm" className="folder-source">
-      <div>
-        <Group gap={4} wrap="nowrap">
-          <Text fw={600}>{tr('從網站補充資訊')}</Text>
-          <HelpTip text={tr('從網站抓作品的標題、標籤等資料。')} />
-        </Group>
+      <div className="source-import-bar">
+        <Button
+          size="xs"
+          variant={shown ? 'light' : 'default'}
+          leftSection={<Icon name="search" size={14} />}
+          rightSection={<Icon name={shown ? 'chevron-down' : 'chevron-right'} size={12} />}
+          aria-expanded={shown}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          {tr('從網站匯入…')}
+        </Button>
+        <Badge size="xs" variant="light" color="gray" title={chosen.map(sourceName).join('、')}>
+          {chosenLabel}
+        </Badge>
+        <HelpTip text={tr('從網站抓作品的標題、標籤等資料。')} />
       </div>
-      <section className="settings-section">
-        <Stack gap="sm">
-          <form
-            className="source-search"
-            onSubmit={(event) => {
-              event.preventDefault()
-              if (query.trim() && chosen.length && !searching && !disabled && !fieldDirty) {
-                void search()
-              }
-            }}
-          >
-            <TextInput
-              id="folder-source-search"
-              disabled={busy}
-              maxLength={200}
-              label={
-                <HelpLabel label={tr('用名稱搜尋')} help={tr('用名稱找作品，挑一個再預覽。')} />
-              }
-              value={query}
-              onChange={(event) => setQuery(event.currentTarget.value)}
-              className="source-search-input"
-            />
-            <Popover position="bottom-end" withArrow shadow="md" width={300}>
-              <Popover.Target>
-                <Button
-                  size="xs"
-                  variant="default"
-                  className="source-search-sources"
-                  color={chosen.length ? undefined : 'red'}
+      {shown && (
+        <>
+          <section className="settings-section">
+            <Stack gap="sm">
+              <form
+                className="source-search"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  if (query.trim() && chosen.length && !searching && !disabled && !fieldDirty) {
+                    void search()
+                  }
+                }}
+              >
+                <TextInput
+                  id="folder-source-search"
                   disabled={busy}
-                  rightSection={<Icon name="chevron-down" size={12} />}
-                  aria-label={tr(
-                    '搜尋的來源：{0}',
-                    chosen.map(sourceName).join('、') || tr('未選來源')
-                  )}
-                  data-empty={chosen.length ? undefined : ''}
-                  title={chosen.map(sourceName).join('、') || tr('未選來源')}
-                >
-                  <span className="source-search-sources-text">{chosenLabel}</span>
-                </Button>
-              </Popover.Target>
-              <Popover.Dropdown className="source-search-menu">
-                {sourceGroups.map((group) => (
-                  <div key={group.label} className="source-search-group">
-                    <Text size="xs" fw={600}>
-                      {group.label}
-                    </Text>
-                    <Group gap="xs" mt={4} mb={8}>
-                      {group.ids.map((id) => (
-                        <Checkbox
-                          key={id}
-                          size="xs"
-                          label={
-                            needsKey(id) ? tr('{0}（需要金鑰）', sourceName(id)) : sourceName(id)
-                          }
-                          checked={chosen.includes(id)}
-                          disabled={needsKey(id)}
-                          onChange={(event) => tick(id, event.currentTarget.checked)}
-                        />
-                      ))}
-                    </Group>
-                  </div>
-                ))}
-                {keyless.length > 0 && (
-                  <Button
-                    size="compact-xs"
-                    variant="subtle"
-                    onClick={() =>
-                      window.dispatchEvent(
-                        new CustomEvent('morph:open-settings', {
-                          detail: { tab: 'keys', site: keyless[0] },
-                        })
-                      )
-                    }
-                  >
-                    {tr('設定金鑰')}
-                  </Button>
-                )}
-                <Button
-                  size="compact-xs"
-                  variant="subtle"
-                  onClick={() => chooseSources(defaultSearchSources(kind))}
-                >
-                  {tr('還原此類型預設')}
-                </Button>
-              </Popover.Dropdown>
-            </Popover>
-            <Button
-              type="submit"
-              size="xs"
-              loading={searching}
-              disabled={disabled || fieldDirty || busy || !query.trim() || !chosen.length}
-            >
-              {tr('搜尋')}
-            </Button>
-          </form>
-          {found && (
-            <div className="source-candidates">
-              {found.failed.length > 0 && (
-                <Text size="xs" c="orange">
-                  {tr('{0} 搜尋失敗', found.failed.map(sourceName).join('、'))}
-                </Text>
-              )}
-              {!found.list.length && (
-                <Text size="xs" c="dimmed">
-                  {tr('沒有找到結果，可以改個名稱再搜尋，或直接貼上網址。')}
-                </Text>
-              )}
-              <ul>
-                {found.list.map((item) => (
-                  <li key={item.url}>
-                    <button
-                      type="button"
-                      disabled={disabled || fieldDirty || busy}
-                      onClick={() => {
-                        setSource(item.url)
-                        void loadPreview(item.url)
-                      }}
-                    >
-                      <span className="candidate-title">{item.title}</span>
-                      {item.detail && <span className="candidate-detail">{item.detail}</span>}
-                      {item.adult && (
-                        <Badge variant="light" size="sm" color="red">
-                          {tr('成人')}
-                        </Badge>
+                  maxLength={200}
+                  label={
+                    <HelpLabel label={tr('用名稱搜尋')} help={tr('用名稱找作品，挑一個再預覽。')} />
+                  }
+                  value={query}
+                  onChange={(event) => setQuery(event.currentTarget.value)}
+                  className="source-search-input"
+                />
+                <Popover position="bottom-end" withArrow shadow="md" width={300}>
+                  <Popover.Target>
+                    <Button
+                      size="xs"
+                      variant="default"
+                      className="source-search-sources"
+                      color={chosen.length ? undefined : 'red'}
+                      disabled={busy}
+                      rightSection={<Icon name="chevron-down" size={12} />}
+                      aria-label={tr(
+                        '搜尋的來源：{0}',
+                        chosen.map(sourceName).join('、') || tr('未選來源')
                       )}
-                      <Badge variant="light" size="sm">
-                        {sourceName(item.provider)}
-                      </Badge>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <TextInput
-            id="folder-source-url"
-            disabled={busy}
-            label={<HelpLabel label={tr('作品網址或 ID')} help={tr('例如 https://vndb.org/v97')} />}
-            placeholder={tr('貼上作品網址（Steam 可直接輸入 App ID）')}
-            error={source.trim() && !detected ? tr('無法辨識這個網址的來源') : undefined}
-            rightSectionWidth={detectedName ? 96 : undefined}
-            rightSection={
-              detectedName ? (
-                <Badge color="teal" variant="light" leftSection={<Icon name="check" size={10} />}>
-                  {detectedName}
-                </Badge>
-              ) : undefined
-            }
-            value={source}
-            onChange={(event) => {
-              setSource(event.currentTarget.value)
-              setPreview(undefined)
-            }}
-          />
-          {/* R-329: the supported sites, by kind, only when asked for. */}
-          <div>
-            <Button
-              variant="subtle"
-              size="compact-xs"
-              aria-expanded={listOpen}
-              onClick={() => setListOpen((open) => !open)}
-            >
-              {listOpen ? tr('收合支援的網站') : tr('支援的網站')}
-            </Button>
-            {listOpen && (
-              <dl className="source-site-list">
-                {[...new Set(metadataSources.map((item) => item.group))].map((group) => (
-                  <div key={group}>
-                    <dt>{tr(group)}</dt>
-                    <dd>
-                      {metadataSources
-                        .filter((item) => item.group === group)
-                        .map((item) => item.name)
-                        .join('、')}
-                    </dd>
-                  </div>
-                ))}
-                <div>
-                  <dt>{tr('經 VNDB')}</dt>
-                  <dd>
-                    Getchu、{tr('批評空間')}、Melonbooks、{tr('虎之穴')}、FANZA
-                  </dd>
-                </div>
-              </dl>
-            )}
-          </div>
-          <Group justify="flex-end">
-            <Button
-              disabled={disabled || fieldDirty || !detected || missingKey}
-              loading={busy}
-              onClick={() => void loadPreview()}
-            >
-              {tr('取得預覽')}
-            </Button>
-          </Group>
-        </Stack>
-      </section>
-
-      {keyed &&
-        (missingKey || (keyed.need === 'optional' && keyStatus && !keyStatus[keyed.id]?.set)) && (
-          <Alert color={missingKey ? 'orange' : 'gray'}>
-            <Group justify="space-between" wrap="nowrap">
-              <span>
-                {missingKey
-                  ? tr('{0} 需要你自己的金鑰才能查資料。', keyed.name)
-                  : tr('{0} 可以加上你的金鑰：{1}', keyed.name, tr(keyed.purpose))}
-              </span>
-              <Button size="xs" variant="light" onClick={openKeys}>
-                {tr('前往設定')}
-              </Button>
-            </Group>
-          </Alert>
-        )}
-      {importer.result && <Alert color="teal">{importer.result}</Alert>}
-      {preview && (
-        <Checkbox
-          label={
-            <HelpLabel
-              label={tr('更新已從網站匯入的欄位')}
-              help={tr('勾選後，網站的新資料會取代舊的；你自己填的不會被改。')}
-            />
-          }
-          checked={importer.replace}
-          onChange={(event) => importer.setReplace(event.currentTarget.checked)}
-        />
-      )}
-      {preview && (
-        <section className="settings-section source-preview">
-          <Group align="start">
-            {preview.image && (
-              <img className="metadata-cover" src={preview.image} alt={tr('可選的封面')} />
-            )}
-            <div>
-              <Text fw={600}>{preview.title}</Text>
-              <Text size="xs" c="dimmed" className="path">
-                {preview.source}
-              </Text>
-            </div>
-          </Group>
-          {preview.versions && (
-            <Stack gap={4} mt="sm">
-              <Select
-                label={tr('版本')}
-                allowDeselect={false}
-                disabled={disabled || busy}
-                value={preview.version ?? ''}
-                data={[
-                  ...preview.versions.map((version) => ({
-                    value: version.id,
-                    label: versionLabel(version),
-                  })),
-                  { value: '', label: tr('不選版本，只用專輯資料') },
-                ]}
-                onChange={(value) =>
-                  value !== null &&
-                  value !== (preview.version ?? '') &&
-                  void loadPreview(
-                    String(
-                      preview.values.find((v) => v.key === 'RELEASE_GROUP_URL')?.value ??
-                        preview.source
-                    ),
-                    value || null
-                  )
-                }
-              />
-              {preview.versionPick === 'fallback' && !!row.contents?.audio && (
-                <Text size="xs" c="orange">
-                  {tr(
-                    '沒有曲數與資料夾（{0} 首）相符的版本，先選了最早的正式版。',
-                    row.contents.audio
-                  )}
-                </Text>
-              )}
-            </Stack>
-          )}
-          {preview.related && (
-            <Alert color="blue" mt="sm" className="source-related">
-              <Group gap="xs" justify="space-between" wrap="nowrap">
-                <Text size="sm">
-                  {tr('VNDB 也有這部作品：{0}', preview.related.title || preview.related.url)}
-                </Text>
+                      data-empty={chosen.length ? undefined : ''}
+                      title={chosen.map(sourceName).join('、') || tr('未選來源')}
+                    >
+                      <span className="source-search-sources-text">{chosenLabel}</span>
+                    </Button>
+                  </Popover.Target>
+                  <Popover.Dropdown className="source-search-menu">
+                    {sourceGroups.map((group) => (
+                      <div key={group.label} className="source-search-group">
+                        <Text size="xs" fw={600}>
+                          {group.label}
+                        </Text>
+                        <Group gap="xs" mt={4} mb={8}>
+                          {group.ids.map((id) => (
+                            <Checkbox
+                              key={id}
+                              size="xs"
+                              label={
+                                needsKey(id)
+                                  ? tr('{0}（需要金鑰）', sourceName(id))
+                                  : sourceName(id)
+                              }
+                              checked={chosen.includes(id)}
+                              disabled={needsKey(id)}
+                              onChange={(event) => tick(id, event.currentTarget.checked)}
+                            />
+                          ))}
+                        </Group>
+                      </div>
+                    ))}
+                    {keyless.length > 0 && (
+                      <Button
+                        size="compact-xs"
+                        variant="subtle"
+                        onClick={() =>
+                          window.dispatchEvent(
+                            new CustomEvent('morph:open-settings', {
+                              detail: { tab: 'keys', site: keyless[0] },
+                            })
+                          )
+                        }
+                      >
+                        {tr('設定金鑰')}
+                      </Button>
+                    )}
+                    <Button
+                      size="compact-xs"
+                      variant="subtle"
+                      onClick={() => chooseSources(defaultSearchSources(kind))}
+                    >
+                      {tr('還原此類型預設')}
+                    </Button>
+                  </Popover.Dropdown>
+                </Popover>
                 <Button
-                  size="compact-xs"
-                  variant="light"
-                  disabled={disabled}
-                  onClick={() => {
-                    const url = preview.related!.url
-                    setSource(url)
-                    void loadPreview(url)
-                  }}
+                  type="submit"
+                  size="xs"
+                  loading={searching}
+                  disabled={disabled || fieldDirty || busy || !query.trim() || !chosen.length}
                 >
-                  {tr('改看 VNDB 的資料')}
+                  {tr('搜尋')}
+                </Button>
+              </form>
+              {found && (
+                <div className="source-candidates">
+                  {found.failed.length > 0 && (
+                    <Text size="xs" c="orange">
+                      {tr('{0} 搜尋失敗', found.failed.map(sourceName).join('、'))}
+                    </Text>
+                  )}
+                  {!found.list.length && (
+                    <Text size="xs" c="dimmed">
+                      {tr('沒有找到結果，可以改個名稱再搜尋，或直接貼上網址。')}
+                    </Text>
+                  )}
+                  <ul>
+                    {found.list.map((item) => (
+                      <li key={item.url}>
+                        <button
+                          type="button"
+                          disabled={disabled || fieldDirty || busy}
+                          onClick={() => {
+                            setSource(item.url)
+                            void loadPreview(item.url)
+                          }}
+                        >
+                          <span className="candidate-title">{item.title}</span>
+                          {item.detail && <span className="candidate-detail">{item.detail}</span>}
+                          {item.adult && (
+                            <Badge variant="light" size="sm" color="red">
+                              {tr('成人')}
+                            </Badge>
+                          )}
+                          <Badge variant="light" size="sm">
+                            {sourceName(item.provider)}
+                          </Badge>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <TextInput
+                id="folder-source-url"
+                disabled={busy}
+                label={
+                  <HelpLabel label={tr('作品網址或 ID')} help={tr('例如 https://vndb.org/v97')} />
+                }
+                placeholder={tr('貼上作品網址（Steam 可直接輸入 App ID）')}
+                error={source.trim() && !detected ? tr('無法辨識這個網址的來源') : undefined}
+                rightSectionWidth={detectedName ? 96 : undefined}
+                rightSection={
+                  detectedName ? (
+                    <Badge
+                      color="teal"
+                      variant="light"
+                      leftSection={<Icon name="check" size={10} />}
+                    >
+                      {detectedName}
+                    </Badge>
+                  ) : undefined
+                }
+                value={source}
+                onChange={(event) => {
+                  setSource(event.currentTarget.value)
+                  setPreview(undefined)
+                }}
+              />
+              {/* R-329: the supported sites, by kind, only when asked for. */}
+              <div>
+                <Button
+                  variant="subtle"
+                  size="compact-xs"
+                  aria-expanded={listOpen}
+                  onClick={() => setListOpen((open) => !open)}
+                >
+                  {listOpen ? tr('收合支援的網站') : tr('支援的網站')}
+                </Button>
+                {listOpen && (
+                  <dl className="source-site-list">
+                    {[...new Set(metadataSources.map((item) => item.group))].map((group) => (
+                      <div key={group}>
+                        <dt>{tr(group)}</dt>
+                        <dd>
+                          {metadataSources
+                            .filter((item) => item.group === group)
+                            .map((item) => item.name)
+                            .join('、')}
+                        </dd>
+                      </div>
+                    ))}
+                    <div>
+                      <dt>{tr('經 VNDB')}</dt>
+                      <dd>
+                        Getchu、{tr('批評空間')}、Melonbooks、{tr('虎之穴')}、FANZA
+                      </dd>
+                    </div>
+                  </dl>
+                )}
+              </div>
+              <Group justify="flex-end">
+                <Button
+                  disabled={disabled || fieldDirty || !detected || missingKey}
+                  loading={busy}
+                  onClick={() => void loadPreview()}
+                >
+                  {tr('取得預覽')}
                 </Button>
               </Group>
-            </Alert>
+            </Stack>
+          </section>
+
+          {keyed &&
+            (missingKey ||
+              (keyed.need === 'optional' && keyStatus && !keyStatus[keyed.id]?.set)) && (
+              <Alert color={missingKey ? 'orange' : 'gray'}>
+                <Group justify="space-between" wrap="nowrap">
+                  <span>
+                    {missingKey
+                      ? tr('{0} 需要你自己的金鑰才能查資料。', keyed.name)
+                      : tr('{0} 可以加上你的金鑰：{1}', keyed.name, tr(keyed.purpose))}
+                  </span>
+                  <Button size="xs" variant="light" onClick={openKeys}>
+                    {tr('前往設定')}
+                  </Button>
+                </Group>
+              </Alert>
+            )}
+          {importer.result && <Alert color="teal">{importer.result}</Alert>}
+          {preview && (
+            <Checkbox
+              label={
+                <HelpLabel
+                  label={tr('更新已從網站匯入的欄位')}
+                  help={tr('勾選後，網站的新資料會取代舊的；你自己填的不會被改。')}
+                />
+              }
+              checked={importer.replace}
+              onChange={(event) => importer.setReplace(event.currentTarget.checked)}
+            />
           )}
-          <Text size="sm" c="dimmed" my="sm">
-            {preview.provider === 'steam'
-              ? tr('日期照 Steam 上寫的，不一定是作品第一次發行的日子。')
-              : tr('日期照網站上寫的，不一定是作品第一次發行的日子。')}
-            {/* Attribution the sources' terms ask for. */}
-            {preview.provider === 'tmdb' &&
-              ' ' + tr('本產品使用 TMDB API，但未經 TMDB 認可或認證。')}
-            {preview.provider === 'fanza' && ' Powered by FANZA Webサービス'}
-            {tr('只補空白的欄位；你自己填的不會被改。')}
-          </Text>
-          <table className="source-diff">
-            <thead>
-              <tr>
-                <th aria-label={tr('匯入')} />
-                <th>{tr('欄位')}</th>
-                <th>{tr('現值')}</th>
-                <th>{tr('新值')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {preview.values
-                .filter((v) => !noteKeys.includes(v.key))
-                .map((v) => {
-                  const next = Array.isArray(v.value) ? v.value.join('、') : String(v.value)
-                  const existing = row.record?.attributes.find(
-                    (attribute) =>
-                      attribute.attributeId ===
-                      (preview.provider ?? 'eh') + '-' + v.key.toLowerCase()
-                  )
-                  const current = existing
-                    ? Array.isArray(existing.value)
-                      ? existing.value.join('、')
-                      : String(existing.value)
-                    : ''
-                  const same = !!existing && current === next
-                  return (
-                    <tr key={v.key} className={same ? 'same' : undefined}>
-                      <td>
+          {preview && (
+            <section className="settings-section source-preview">
+              <Group align="start">
+                {preview.image && (
+                  <img className="metadata-cover" src={preview.image} alt={tr('可選的封面')} />
+                )}
+                <div>
+                  <Text fw={600}>{preview.title}</Text>
+                  <Text size="xs" c="dimmed" className="path">
+                    {preview.source}
+                  </Text>
+                </div>
+              </Group>
+              {preview.versions && (
+                <Stack gap={4} mt="sm">
+                  <Select
+                    label={tr('版本')}
+                    allowDeselect={false}
+                    disabled={disabled || busy}
+                    value={preview.version ?? ''}
+                    data={[
+                      ...preview.versions.map((version) => ({
+                        value: version.id,
+                        label: versionLabel(version),
+                      })),
+                      { value: '', label: tr('不選版本，只用專輯資料') },
+                    ]}
+                    onChange={(value) =>
+                      value !== null &&
+                      value !== (preview.version ?? '') &&
+                      void loadPreview(
+                        String(
+                          preview.values.find((v) => v.key === 'RELEASE_GROUP_URL')?.value ??
+                            preview.source
+                        ),
+                        value || null
+                      )
+                    }
+                  />
+                  {preview.versionPick === 'fallback' && !!row.contents?.audio && (
+                    <Text size="xs" c="orange">
+                      {tr(
+                        '沒有曲數與資料夾（{0} 首）相符的版本，先選了最早的正式版。',
+                        row.contents.audio
+                      )}
+                    </Text>
+                  )}
+                </Stack>
+              )}
+              {preview.related && (
+                <Alert color="blue" mt="sm" className="source-related">
+                  <Group gap="xs" justify="space-between" wrap="nowrap">
+                    <Text size="sm">
+                      {tr('VNDB 也有這部作品：{0}', preview.related.title || preview.related.url)}
+                    </Text>
+                    <Button
+                      size="compact-xs"
+                      variant="light"
+                      disabled={disabled}
+                      onClick={() => {
+                        const url = preview.related!.url
+                        setSource(url)
+                        void loadPreview(url)
+                      }}
+                    >
+                      {tr('改看 VNDB 的資料')}
+                    </Button>
+                  </Group>
+                </Alert>
+              )}
+              <Text size="sm" c="dimmed" my="sm">
+                {preview.provider === 'steam'
+                  ? tr('日期照 Steam 上寫的，不一定是作品第一次發行的日子。')
+                  : tr('日期照網站上寫的，不一定是作品第一次發行的日子。')}
+                {/* Attribution the sources' terms ask for. */}
+                {preview.provider === 'tmdb' &&
+                  ' ' + tr('本產品使用 TMDB API，但未經 TMDB 認可或認證。')}
+                {preview.provider === 'fanza' && ' Powered by FANZA Webサービス'}
+                {tr('只補空白的欄位；你自己填的不會被改。')}
+              </Text>
+              <table className="source-diff">
+                <thead>
+                  <tr>
+                    <th aria-label={tr('匯入')} />
+                    <th>{tr('欄位')}</th>
+                    <th>{tr('現值')}</th>
+                    <th>{tr('新值')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {preview.values
+                    .filter((v) => !noteKeys.includes(v.key))
+                    .map((v) => {
+                      const next = Array.isArray(v.value) ? v.value.join('、') : String(v.value)
+                      const existing = row.record?.attributes.find(
+                        (attribute) =>
+                          attribute.attributeId ===
+                          (preview.provider ?? 'eh') + '-' + v.key.toLowerCase()
+                      )
+                      const current = existing
+                        ? Array.isArray(existing.value)
+                          ? existing.value.join('、')
+                          : String(existing.value)
+                        : ''
+                      const same = !!existing && current === next
+                      return (
+                        <tr key={v.key} className={same ? 'same' : undefined}>
+                          <td>
+                            <Checkbox
+                              aria-label={fieldLabel(v.key)}
+                              checked={keys.includes(v.key)}
+                              onChange={(e) =>
+                                setKeys((list) =>
+                                  e.currentTarget.checked
+                                    ? [...list, v.key]
+                                    : list.filter((k) => k !== v.key)
+                                )
+                              }
+                            />
+                          </td>
+                          <th scope="row">{fieldLabel(v.key)}</th>
+                          <td>{current ? <LongValue text={current} /> : '—'}</td>
+                          <td>{same ? tr('相同') : <LongValue text={next} />}</td>
+                        </tr>
+                      )
+                    })}
+                </tbody>
+              </table>
+              {preview.values.find((v) => v.key === 'COVER_STATUS') && (
+                <Alert color="orange" mt="sm">
+                  {String(preview.values.find((v) => v.key === 'COVER_STATUS')!.value)}
+                </Alert>
+              )}
+              {languageNotice(preview.values.find((v) => v.key === 'LANGUAGE_NOTICE')?.value) && (
+                <Alert color="orange" mt="sm">
+                  {languageNotice(preview.values.find((v) => v.key === 'LANGUAGE_NOTICE')!.value)}
+                </Alert>
+              )}
+              {preview.image && (
+                <Checkbox
+                  mt="md"
+                  label={preview.albumImage ? tr('同時保存這個版本的封面') : tr('同時保存封面圖片')}
+                  checked={cover}
+                  onChange={(e) => setCover(e.currentTarget.checked)}
+                />
+              )}
+              {preview.albumImage && (
+                <Group gap="sm" mt="xs" wrap="nowrap">
+                  <img
+                    className="metadata-cover small"
+                    src={preview.albumImage}
+                    alt={tr('專輯封面')}
+                  />
+                  <Checkbox
+                    label={tr('同時保存專輯的封面')}
+                    checked={albumCover}
+                    onChange={(e) => setAlbumCover(e.currentTarget.checked)}
+                  />
+                </Group>
+              )}
+              {!!preview.images?.length && (
+                <fieldset className="source-images">
+                  <legend>{tr('同時保存來源的圖片')}</legend>
+                  <ul>
+                    {preview.images.map((image, index) => (
+                      <li key={index}>
+                        <img src={image.image} alt="" />
                         <Checkbox
-                          aria-label={fieldLabel(v.key)}
-                          checked={keys.includes(v.key)}
+                          size="xs"
+                          label={imageLabel(image)}
+                          checked={images.includes(index)}
                           onChange={(e) =>
-                            setKeys((list) =>
+                            setImages((list) =>
                               e.currentTarget.checked
-                                ? [...list, v.key]
-                                : list.filter((k) => k !== v.key)
+                                ? [...list, index]
+                                : list.filter((i) => i !== index)
                             )
                           }
                         />
-                      </td>
-                      <th scope="row">{fieldLabel(v.key)}</th>
-                      <td>{current ? <LongValue text={current} /> : '—'}</td>
-                      <td>{same ? tr('相同') : <LongValue text={next} />}</td>
-                    </tr>
-                  )
-                })}
-            </tbody>
-          </table>
-          {preview.values.find((v) => v.key === 'COVER_STATUS') && (
-            <Alert color="orange" mt="sm">
-              {String(preview.values.find((v) => v.key === 'COVER_STATUS')!.value)}
-            </Alert>
+                      </li>
+                    ))}
+                  </ul>
+                </fieldset>
+              )}
+              <Group justify="flex-end" mt="md" className="settings-savebar">
+                <Button variant="default" disabled={busy} onClick={() => setPreview(undefined)}>
+                  {tr('取消預覽')}
+                </Button>
+                <Button
+                  disabled={
+                    disabled ||
+                    fieldDirty ||
+                    (!keys.length &&
+                      !(preview.image && cover) &&
+                      !(preview.albumImage && albumCover) &&
+                      !images.length)
+                  }
+                  onClick={async () => {
+                    if (
+                      await run({
+                        action: 'metadataApply',
+                        rowId: row.rowId,
+                        revision: row.record!.revision,
+                        token: preview.token,
+                        keys,
+                        image: !!preview.image && cover,
+                        ...(preview.albumImage && albumCover ? { albumImage: true } : {}),
+                        mode: importer.replace ? 'replace' : 'fill',
+                        ...(images.length ? { images } : {}),
+                      })
+                    ) {
+                      importer.setResult(tr('已匯入選定資料，可至「資料」查看。'))
+                      setPreview(undefined)
+                    }
+                  }}
+                >
+                  {tr('匯入選定資料')}
+                </Button>
+              </Group>
+            </section>
           )}
-          {languageNotice(preview.values.find((v) => v.key === 'LANGUAGE_NOTICE')?.value) && (
-            <Alert color="orange" mt="sm">
-              {languageNotice(preview.values.find((v) => v.key === 'LANGUAGE_NOTICE')!.value)}
-            </Alert>
-          )}
-          {preview.image && (
-            <Checkbox
-              mt="md"
-              label={preview.albumImage ? tr('同時保存這個版本的封面') : tr('同時保存封面圖片')}
-              checked={cover}
-              onChange={(e) => setCover(e.currentTarget.checked)}
-            />
-          )}
-          {preview.albumImage && (
-            <Group gap="sm" mt="xs" wrap="nowrap">
-              <img className="metadata-cover small" src={preview.albumImage} alt={tr('專輯封面')} />
-              <Checkbox
-                label={tr('同時保存專輯的封面')}
-                checked={albumCover}
-                onChange={(e) => setAlbumCover(e.currentTarget.checked)}
-              />
-            </Group>
-          )}
-          {!!preview.images?.length && (
-            <fieldset className="source-images">
-              <legend>{tr('同時保存來源的圖片')}</legend>
-              <ul>
-                {preview.images.map((image, index) => (
-                  <li key={index}>
-                    <img src={image.image} alt="" />
-                    <Checkbox
-                      size="xs"
-                      label={imageLabel(image)}
-                      checked={images.includes(index)}
-                      onChange={(e) =>
-                        setImages((list) =>
-                          e.currentTarget.checked
-                            ? [...list, index]
-                            : list.filter((i) => i !== index)
-                        )
-                      }
-                    />
-                  </li>
-                ))}
-              </ul>
-            </fieldset>
-          )}
-          <Group justify="flex-end" mt="md" className="settings-savebar">
-            <Button variant="default" disabled={busy} onClick={() => setPreview(undefined)}>
-              {tr('取消預覽')}
-            </Button>
-            <Button
-              disabled={
-                disabled ||
-                fieldDirty ||
-                (!keys.length &&
-                  !(preview.image && cover) &&
-                  !(preview.albumImage && albumCover) &&
-                  !images.length)
-              }
-              onClick={async () => {
-                if (
-                  await run({
-                    action: 'metadataApply',
-                    rowId: row.rowId,
-                    revision: row.record!.revision,
-                    token: preview.token,
-                    keys,
-                    image: !!preview.image && cover,
-                    ...(preview.albumImage && albumCover ? { albumImage: true } : {}),
-                    mode: importer.replace ? 'replace' : 'fill',
-                    ...(images.length ? { images } : {}),
-                  })
-                ) {
-                  importer.setResult(tr('已匯入選定資料，可至「資料」查看。'))
-                  setPreview(undefined)
-                }
-              }}
-            >
-              {tr('匯入選定資料')}
-            </Button>
-          </Group>
-        </section>
+        </>
       )}
     </Stack>
   )

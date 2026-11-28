@@ -75,6 +75,9 @@ try {
   await button('開啟專案 Game actions test').first().click()
   assert.equal(await page.locator('.game-content').count(), 0)
   await page.locator('.browse-main .folder-card').first().dblclick()
+  if (await page.locator('.project-workspace.content-expanded').count()) {
+    await page.keyboard.press('Escape')
+  }
   await page
     .locator(
       `.browse-main .folder-card[data-row-id="${snapshot.structure!.find((row) => row.path === game)!.rowId}"]`
@@ -100,6 +103,8 @@ try {
   await button('自訂遊戲操作').click()
   const drawer = page.locator('.folder-panel-dock-settings')
   await drawer.getByRole('tab', { name: '遊戲操作', exact: true }).waitFor()
+  // R-539: adding a project-shared launch action is available directly inside the Game Actions tab.
+  await drawer.locator('.game-add-action summary').waitFor()
   assert.equal(
     await drawer.getByRole('tab', { name: '遊戲操作', exact: true }).getAttribute('aria-selected'),
     'true'
@@ -205,7 +210,7 @@ try {
     BrowserWindow.getAllWindows()[0].setBounds({ width: 1350, height: 900 })
   )
   await button('開啟專案 Image title test').first().click()
-  await page.locator('.workspace-toolbar').getByText('檔案', { exact: true }).click()
+  await page.locator('.workspace-toolbar').getByText('檔案總覽', { exact: true }).click()
   await page.locator('.file-overview-item').filter({ hasText: imageName }).click()
   const heading = page.locator('.file-page-heading')
   assert.equal(await heading.locator('h3').getAttribute('title'), imageName)

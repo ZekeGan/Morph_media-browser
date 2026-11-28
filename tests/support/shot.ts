@@ -239,7 +239,7 @@ try {
     }
   }
   if (args.includes('--settings')) {
-    await page.getByRole('tab', { name: '設定', exact: true }).click()
+    await page.getByRole('button', { name: '目前資料夾設定', exact: true }).click()
   }
   if (option('backup') === 'undo')
   // Shows the way back after a settings restore (the id is only displayed, not used).

@@ -1475,12 +1475,6 @@
     "en": "Cover image",
     "es": "Imagen de portada"
   },
-  "從網站補充資訊": {
-    "ja": "Webから情報を補足",
-    "zh-CN": "从网站补充信息",
-    "en": "Enrich from the web",
-    "es": "Completar información desde la web"
-  },
   "Steam 商店網址或 App ID": {
     "ja": "SteamストアURLまたはApp ID",
     "zh-CN": "Steam 商店网址或 App ID",
@@ -4042,12 +4036,6 @@
     "en": "Choose the folder to browse first",
     "ja": "先に閲覧するフォルダーを選択してください",
     "es": "Elige primero la carpeta que quieres explorar"
-  },
-  "在檔案總管開啟資料夾 {0}": {
-    "zh-CN": "在文件资源管理器中打开文件夹 {0}",
-    "en": "Open folder {0} in File Explorer",
-    "ja": "フォルダー {0} をエクスプローラーで開く",
-    "es": "Abrir la carpeta {0} en el Explorador de archivos"
   },
   "用系統預設播放器開啟": {
     "zh-CN": "用系统默认播放器打开",
@@ -13396,5 +13384,47 @@
     "en": "No custom details layouts yet; click “Edit details layout” to create one.",
     "ja": "カスタム詳細レイアウトはまだありません。「詳細レイアウトを編集」から作成できます。",
     "es": "Aún no hay diseños de detalles personalizados; haz clic en «Editar diseño de detalles» para crear uno."
+  },
+  "更多詳情操作": {
+    "zh-CN": "更多详情操作",
+    "en": "More details actions",
+    "ja": "詳細のその他の操作",
+    "es": "Más acciones de detalles"
+  },
+  "複製路徑：{0}": {
+    "zh-CN": "复制路径：{0}",
+    "en": "Copy path: {0}",
+    "ja": "パスをコピー：{0}",
+    "es": "Copiar ruta: {0}"
+  },
+  "從網站匯入…": {
+    "zh-CN": "从网站导入…",
+    "en": "Import from website…",
+    "ja": "サイトから取り込む…",
+    "es": "Importar desde sitio web…"
+  },
+  "還缺 {0} 項": {
+    "zh-CN": "还缺 {0} 项",
+    "en": "{0} to add",
+    "ja": "未設定 {0} 件",
+    "es": "Faltan {0}"
+  },
+  "補上封面": {
+    "zh-CN": "补上封面",
+    "en": "Add cover",
+    "ja": "表紙を追加",
+    "es": "Añadir portada"
+  },
+  "新增專案共用操作": {
+    "zh-CN": "新增项目共用操作",
+    "en": "Add project-shared action",
+    "ja": "プロジェクト共通の操作を追加",
+    "es": "Añadir acción compartida del proyecto"
+  },
+  "此操作會加入專案共用清單，其他遊戲也能使用。": {
+    "zh-CN": "此操作会加入项目共用清单，其他游戏也能使用。",
+    "en": "This action is shared across the project so other games can bind it too.",
+    "ja": "この操作はプロジェクト共通リストに追加され、他のゲームでも使えます。",
+    "es": "Esta acción se comparte en todo el proyecto para que otros juegos también puedan usarla."
   }
 }

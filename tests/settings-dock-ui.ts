@@ -29,9 +29,17 @@ try {
   await button('開啟專案 Dock Test').first().click()
   await openPanel(page)
   await page.locator('.folder-panel-header').waitFor()
+  // R-548: Content / Settings pill lives inside the single-row header.
+  assert.equal(await page.locator('.folder-panel-header .folder-panel-dock-tabs').count(), 1)
   // Settings always dock into the right panel; there is no drawer or dock toggle.
   await page.getByRole('tab', { name: '設定', exact: true }).click()
   await page.locator('.folder-panel-dock-settings').waitFor()
+  // R-549: path is a single-line copyable button and website import starts collapsed.
+  await page.locator('.path-copy-button').click()
+  await page.locator('.path-copy-button').getByText('已複製', { exact: true }).waitFor()
+  assert.equal(await page.locator('#folder-source-search').count(), 0)
+  await page.getByRole('button', { name: '從網站匯入…', exact: true }).click()
+  await page.locator('#folder-source-search').waitFor()
   assert.equal(await page.locator('.mantine-Drawer-content').count(), 0)
   assert.equal(await button('改為抽屜顯示設定').count(), 0)
   assert.equal(await page.getByRole('tab', { name: /^設定/ }).getAttribute('aria-selected'), 'true')

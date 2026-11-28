@@ -1,4 +1,4 @@
-import { Button, Menu, Stack, Text } from '@mantine/core'
+import { Button, Group, Menu, Stack, Text } from '@mantine/core'
 import { useEffect, useState } from 'react'
 
 import type { ExplorerRequest, ExplorerResponse } from '../../shared/explorer'
@@ -34,6 +34,8 @@ export function FolderImages({
   locked,
   act,
   run,
+  applied,
+  onApplied,
 }: {
   row: FolderRow
   assets: Asset[]
@@ -43,6 +45,8 @@ export function FolderImages({
   locked: boolean
   act: Act
   run: Run
+  applied?: boolean
+  onApplied?: () => void
 }) {
   const details = row.record?.details
   // Pictures the main process could not find (no image in the folder): shown as empty instead of a broken image.
@@ -202,7 +206,15 @@ export function FolderImages({
     <Stack>
       {!!row.record && (
         <section className="settings-section image-cover">
-          <Text fw={600}>{tr('封面')}</Text>
+          <Group gap="xs" align="center">
+            <Text fw={600}>{tr('封面')}</Text>
+            {applied && (
+              <span className="applied-pill" role="status">
+                <Icon name="check" size={12} />
+                {tr('已套用')}
+              </span>
+            )}
+          </Group>
           <Text size="xs" c="dimmed" mb="sm">
             {coverSource}
           </Text>
@@ -216,7 +228,7 @@ export function FolderImages({
                 rowId: row.rowId,
                 revision: row.record!.revision,
                 assetId,
-              }),
+              }).then((r) => r && onApplied?.()),
             // An imported picture becomes the cover right away (the same as picking it from the list).
             onImport: async () => {
               const result = await act({
@@ -230,12 +242,13 @@ export function FolderImages({
                   : undefined
               const asset = next?.assets.at(-1)
               if (next && asset) {
-                await run({
+                const updated = await run({
                   action: 'banner',
                   rowId: row.rowId,
                   revision: next.revision,
                   assetId: asset.assetId,
                 })
+                if (updated) onApplied?.()
               }
             },
           })}

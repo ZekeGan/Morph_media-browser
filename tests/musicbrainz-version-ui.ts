@@ -82,6 +82,7 @@ try {
   await page.getByRole('button', { name: '目前資料夾設定', exact: true }).click()
   const drawer = page.locator('.folder-panel-dock-settings')
   await drawer.getByRole('tab', { name: /^資料/ }).click()
+  await drawer.getByRole('button', { name: '從網站匯入…', exact: true }).click()
   await drawer
     .getByRole('textbox', { name: '作品網址或 ID', exact: true })
     .fill('https://musicbrainz.org/release-group/' + group)

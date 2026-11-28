@@ -71,7 +71,7 @@ export function FolderContent({
   onChild: (name: string) => void
   act: (r: Request) => Promise<Response | undefined>
   busy: boolean
-  configure: (tab?: 'game') => void
+  configure: (tab?: 'game' | 'images') => void
   sourceRows: FolderRow[]
   onSource: (id: string) => void
   childNames?: string[]

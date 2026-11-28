@@ -236,13 +236,13 @@ try {
   await page.locator('.mixed-media-browser').waitFor()
   await current('Media')
   await buttons(false, false)
-  // The header icon opens the folder in Windows Explorer; it never navigates inside the app.
+  // R-548: lower-frequency actions live in the ⋯ menu; opening in File Explorer stays there and never navigates inside.
+  await right().getByRole('button', { name: '更多詳情操作', exact: true }).click()
   assert.equal(
-    await right()
-      .getByRole('button', { name: '在檔案總管開啟資料夾 Media', exact: true })
-      .isEnabled(),
+    await page.getByRole('menuitem', { name: '在檔案總管開啟', exact: true }).isEnabled(),
     true
   )
+  await page.keyboard.press('Escape')
   assert.equal(
     await right()
       .getByRole('button', { name: /^前往資料夾/ })

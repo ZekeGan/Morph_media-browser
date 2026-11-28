@@ -1,4 +1,4 @@
-import { ActionIcon, Alert, Button, Group, Text, Tooltip } from '@mantine/core'
+import { ActionIcon, Alert, Button, Group, Menu, Text, Tooltip } from '@mantine/core'
 import { lazy, Suspense } from 'react'
 
 import { pathKey } from '../../shared/browse'
@@ -157,46 +157,36 @@ export function BrowsePanel(props: Props) {
                   <Icon name="arrow-right" />
                 </ActionIcon>
               </Tooltip>
-              <strong className="browse-panel-name">
+              <strong className="browse-panel-name" title={detail.name}>
                 <KindIcon row={detail} size={16} />
-                {detail.name}
+                <span>{detail.name}</span>
               </strong>
-
-              <Tooltip label={tr('在檔案總管開啟')}>
-                <ActionIcon
-                  aria-label={tr('在檔案總管開啟資料夾 {0}', detail.name)}
-                  variant="subtle"
-                  disabled={busy}
-                  onClick={() => void act({ action: 'open', rowId: detail.rowId })}
-                >
-                  <Icon name="folder-go" />
-                </ActionIcon>
-              </Tooltip>
-              {canEnter && (
+              {/* R-548: Content / Settings pill lives in the single-row header; low-frequency actions go in ⋯. */}
+              <div
+                className="folder-panel-dock-tabs"
+                role="tablist"
+                aria-label={tr('詳情面板分頁')}
+              >
                 <Button
                   size="compact-xs"
-                  variant="light"
-                  disabled={busy}
-                  leftSection={<Icon name="arrow-right" size={14} />}
-                  onClick={() => void open(detail.rowId)}
+                  variant={config ? 'subtle' : 'light'}
+                  role="tab"
+                  aria-selected={!config}
+                  onClick={closeConfig}
                 >
-                  {tr('進入此資料夾')}
+                  {tr('內容')}
                 </Button>
-              )}
-              {/* R-445: every kind: the layout window opens on its right panel with this folder picked. */}
-              {detail && (
-                <Tooltip label={tr('詳情版面配置…')}>
-                  <ActionIcon
-                    aria-label={tr('詳情版面配置…')}
-                    variant="subtle"
-                    color="gray"
-                    disabled={busy}
-                    onClick={() => layoutConfig(detail)}
-                  >
-                    <Icon name="layout" />
-                  </ActionIcon>
-                </Tooltip>
-              )}
+                <Button
+                  size="compact-xs"
+                  variant={config ? 'light' : 'subtle'}
+                  role="tab"
+                  aria-selected={!!config}
+                  disabled={busy}
+                  onClick={() => !config && openConfig(detail.rowId)}
+                >
+                  {tr('設定')}
+                </Button>
+              </div>
               <ActionIcon
                 aria-label={expanded ? tr('還原內容區') : tr('放大內容區')}
                 variant="subtle"
@@ -205,6 +195,45 @@ export function BrowsePanel(props: Props) {
               >
                 <Icon name="maximize" />
               </ActionIcon>
+              <Menu position="bottom-end" shadow="md" width={200}>
+                <Menu.Target>
+                  <Tooltip label={tr('更多詳情操作')}>
+                    <ActionIcon
+                      aria-label={tr('更多詳情操作')}
+                      variant="subtle"
+                      color="gray"
+                      disabled={busy}
+                    >
+                      <Icon name="more" />
+                    </ActionIcon>
+                  </Tooltip>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  {canEnter && (
+                    <Menu.Item
+                      leftSection={<Icon name="arrow-right" size={14} />}
+                      disabled={busy}
+                      onClick={() => void open(detail.rowId)}
+                    >
+                      {tr('進入此資料夾')}
+                    </Menu.Item>
+                  )}
+                  <Menu.Item
+                    leftSection={<Icon name="folder-go" size={14} />}
+                    disabled={busy}
+                    onClick={() => void act({ action: 'open', rowId: detail.rowId })}
+                  >
+                    {tr('在檔案總管開啟')}
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<Icon name="layout" size={14} />}
+                    disabled={busy}
+                    onClick={() => layoutConfig(detail)}
+                  >
+                    {tr('詳情版面配置…')}
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
               <ActionIcon
                 aria-label={tr('關閉資料夾內容')}
                 variant="subtle"
@@ -214,29 +243,6 @@ export function BrowsePanel(props: Props) {
                 <Icon name="close" />
               </ActionIcon>
             </>
-          }
-          tabs={
-            <div className="folder-panel-dock-tabs" role="tablist" aria-label={tr('詳情面板分頁')}>
-              <Button
-                size="compact-sm"
-                variant={config ? 'subtle' : 'light'}
-                role="tab"
-                aria-selected={!config}
-                onClick={closeConfig}
-              >
-                {tr('內容')}
-              </Button>
-              <Button
-                size="compact-sm"
-                variant={config ? 'light' : 'subtle'}
-                role="tab"
-                aria-selected={!!config}
-                disabled={busy}
-                onClick={() => !config && openConfig(detail.rowId)}
-              >
-                {tr('設定')}
-              </Button>
-            </div>
           }
           footer={
             <>

@@ -32,7 +32,7 @@ export function GamePage({
   run: (r: ExplorerRequest) => Promise<ExplorerResponse | undefined>
   act: (r: Request) => Promise<Response | undefined>
   busy: boolean
-  configure: (tab?: 'game') => void
+  configure: (tab?: 'game' | 'images') => void
 }) {
   useLocale()
   const disabled = busy || !row.record || row.readonly || row.stopped || !!row.error
@@ -154,14 +154,35 @@ export function GamePage({
               </ActionIcon>
             </Tooltip>
           </Group>
-          {launchGap(project, row.record?.details?.targets) === 'target' && (
-            <small className="muted game-launch-hint">
-              {tr('尚未指定啟動檔，「啟動遊戲」按鈕暫時無法使用。')}{' '}
-              <Button size="compact-xs" variant="subtle" onClick={() => configure('game')}>
-                {tr('前往設定指定啟動檔')}
-              </Button>
-            </small>
-          )}
+          {/* R-541: lightweight one-click entry when key game items (action, launch target, cover) are missing. */}
+          {(() => {
+            const gap = launchGap(project, row.record?.details?.targets)
+            const noCover =
+              !!row.record && !row.record.details?.bannerAssetId && !row.record.assets.length
+            if (!gap && !noCover) return null
+            return (
+              <Group className="game-launch-hint" gap="xs" wrap="wrap">
+                {gap === 'action' && (
+                  <Button size="compact-xs" variant="light" onClick={() => configure('game')}>
+                    {tr('新增啟動操作')}
+                  </Button>
+                )}
+                {gap === 'target' && (
+                  <small className="muted">
+                    {tr('尚未指定啟動檔，「啟動遊戲」按鈕暫時無法使用。')}{' '}
+                    <Button size="compact-xs" variant="subtle" onClick={() => configure('game')}>
+                      {tr('前往設定指定啟動檔')}
+                    </Button>
+                  </small>
+                )}
+                {noCover && (
+                  <Button size="compact-xs" variant="subtle" onClick={() => configure('images')}>
+                    {tr('補上封面')}
+                  </Button>
+                )}
+              </Group>
+            )
+          })()}
         </>
       }
     />

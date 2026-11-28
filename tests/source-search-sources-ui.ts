@@ -24,6 +24,8 @@ let passed = false
 try {
   await page.getByRole('button', { name: '開啟專案 Search', exact: true }).first().click()
   await page.getByRole('button', { name: '目前資料夾設定', exact: true }).click()
+  // R-549: website import starts collapsed as an on-demand action bar.
+  await page.getByRole('button', { name: '從網站匯入…', exact: true }).click()
   // A general folder searches every keyless source by default: the first one and "+N".
   const sources = page.locator('.source-search-sources')
   await sources.waitFor()

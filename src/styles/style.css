@@ -917,6 +917,22 @@ pre, .file-list { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30
 .site-field-value { min-width:0; overflow-wrap:anywhere; white-space:pre-wrap; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:4; overflow:hidden; }
 .card-display-advanced summary { cursor:pointer; color:var(--muted); font-size:12px; margin-bottom:6px; }
 
+/* R-548, R-549, R-540, R-541: compact single-row panel header pill, copyable path, collapsible todo bar, applied pill */
+.folder-panel-header .browse-panel-name { display:inline-flex; align-items:center; gap:6px; min-width:0; overflow:hidden; margin-right:auto; }
+.folder-panel-header .browse-panel-name > span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.folder-panel-header .folder-panel-dock-tabs { display:inline-flex; align-items:center; gap:2px; padding:2px; border:1px solid var(--line); border-radius:999px; background:var(--surface); flex-shrink:0; }
+.folder-panel-header .folder-panel-dock-tabs .mantine-Button-root { border-radius:999px; height:24px; padding-inline:10px; }
+.path-copy-button { display:inline-flex; align-items:center; gap:6px; min-width:0; max-width:100%; padding:2px 6px; margin:-2px -6px; border:0; border-radius:6px; background:transparent; color:var(--muted); font-size:12px; cursor:pointer; text-align:left; }
+.path-copy-button:hover { background:var(--hover); color:var(--text); }
+.path-copy-button .path-line { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.folder-todo-bar { padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:var(--surface); }
+.folder-todo-bar > summary { display:flex; align-items:center; gap:8px; cursor:pointer; list-style:none; font-size:12px; color:var(--muted); }
+.folder-todo-bar > summary::-webkit-details-marker { display:none; }
+.folder-todo-summary { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.source-import-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.applied-pill { display:inline-flex; align-items:center; gap:3px; padding:1px 7px; border-radius:999px; font-size:11px; font-weight:500; color:var(--accent); background:color-mix(in srgb, var(--accent) 12%, transparent); }
+.game-add-action > summary { cursor:pointer; font-size:13px; font-weight:600; color:var(--text); }
+
 /* R-535: folder context menu anchored at the pointer */
 .folder-menu-anchor { position:fixed; width:1px; height:1px; pointer-events:none; }
 .folder-menu-blank { display:inline-block; width:14px; }

@@ -17,6 +17,7 @@ import {
   builtinPanel,
   type ExplorerRequest,
   type ExplorerResponse,
+  gameActionTemplates,
   launchGap,
 } from '../../shared/explorer'
 import { groupOfField, setGroupSource } from '../../shared/fieldGroups'
@@ -55,7 +56,7 @@ import { commonFieldNames } from '../editor/commonFields'
 import { fieldSource, fieldSourceGroups, rowFieldAttributes } from '../editor/fieldSources'
 import { importedFieldLabels } from '../editor/importedFieldLabels'
 import { layoutName as presetName } from '../editor/layoutName'
-import { GameActionTargets } from '../game/GameActions'
+import { GameActionTargets, NewGameAction } from '../game/GameActions'
 import { GameExtraSettings } from '../game/GameExtras'
 import { t as tr, useLocale } from '../i18n'
 import { FolderSourceImport, useSourceImport } from '../metadata/FolderSourceImport'
@@ -580,6 +581,7 @@ export function FolderPanel({
         button: tr('從網址取得資料'),
         go: () => {
           setTab('fields')
+          setImportSignal((n) => n + 1)
           requestAnimationFrame(() => {
             const input = document.getElementById('folder-source-url')
             input?.scrollIntoView({ block: 'center' })
@@ -589,6 +591,36 @@ export function FolderPanel({
       })
     }
   }
+  const [copiedPath, setCopiedPath] = useState(false)
+  const [importSignal, setImportSignal] = useState(0)
+  // R-540: brief "Applied" feedback next to instant-save controls (type, layout, cover).
+  const [appliedMark, setAppliedMark] = useState<'kind' | 'layout' | 'cover' | ''>('')
+  const flashApplied = (mark: 'kind' | 'layout' | 'cover') => setAppliedMark(mark)
+  useEffect(() => {
+    if (!appliedMark) return
+    const timer = window.setTimeout(() => setAppliedMark(''), 2000)
+    return () => window.clearTimeout(timer)
+  }, [appliedMark])
+  useEffect(() => {
+    if (!copiedPath) return
+    const timer = window.setTimeout(() => setCopiedPath(false), 1800)
+    return () => window.clearTimeout(timer)
+  }, [copiedPath])
+  const lastLayoutKey = `${shownCard.name}|${shownPanel.name}`
+  const prevLayoutKey = useMemo(() => ({ rowId: row.rowId, key: lastLayoutKey }), [row.rowId])
+  useEffect(() => {
+    if (prevLayoutKey.rowId === row.rowId && prevLayoutKey.key !== lastLayoutKey) {
+      prevLayoutKey.key = lastLayoutKey
+      flashApplied('layout')
+    }
+  }, [row.rowId, lastLayoutKey, prevLayoutKey])
+  const appliedPill = (mark: 'kind' | 'layout') =>
+    appliedMark === mark ? (
+      <span className="applied-pill" role="status">
+        <Icon name="check" size={12} />
+        {tr('已套用')}
+      </span>
+    ) : null
   return (
     <Stack
       gap="md"
@@ -600,10 +632,26 @@ export function FolderPanel({
         }
       }}
     >
+      {/* R-549: compact single-line copyable path header. */}
       <div className="folder-settings-intro">
-        <Text size="xs" c="dimmed" className="path-line" title={row.path}>
-          {row.path}
-        </Text>
+        <button
+          type="button"
+          className="path-copy-button"
+          title={row.path}
+          aria-label={tr('複製路徑：{0}', row.path)}
+          onClick={() => {
+            void navigator.clipboard?.writeText(row.path).catch(() => {})
+            setCopiedPath(true)
+          }}
+        >
+          <span className="path-line">{row.path}</span>
+          <Icon name={copiedPath ? 'check' : 'copy'} size={12} />
+          {copiedPath && (
+            <Badge size="xs" variant="light" color="teal">
+              {tr('已複製')}
+            </Badge>
+          )}
+        </button>
         {(row.error || row.readonly || row.stopped) && (
           <Badge color={row.error ? 'red' : 'orange'}>
             {row.error ? tr('需要處理') : row.readonly ? tr('受保護') : tr('已停止記錄')}
@@ -642,12 +690,16 @@ export function FolderPanel({
           </Group>
         </Alert>
       )}
+      {/* R-541: compact single-line collapsible "still to add" bar. */}
       {todo.length > 0 && (
-        <section className="settings-section folder-todo" aria-label={tr('還可以補上')}>
-          <Text fw={600} size="sm" mb={6}>
-            {tr('還可以補上')}
-          </Text>
-          <Stack gap={6}>
+        <details className="folder-todo-bar" aria-label={tr('還可以補上')}>
+          <summary>
+            <Badge size="xs" variant="light" color="blue">
+              {tr('還缺 {0} 項', todo.length)}
+            </Badge>
+            <span className="folder-todo-summary">{todo.map((item) => item.text).join(' · ')}</span>
+          </summary>
+          <Stack gap={6} mt={8}>
             {todo.map((item) => (
               <Group key={item.key} justify="space-between" wrap="nowrap" gap="xs">
                 <Text size="sm">{item.text}</Text>
@@ -657,7 +709,7 @@ export function FolderPanel({
               </Group>
             ))}
           </Stack>
-        </section>
+        </details>
       )}
       <Tabs value={tab} onChange={setTab} keepMounted={false}>
         <Tabs.List>
@@ -718,6 +770,7 @@ export function FolderPanel({
               busy={busy}
               disabled={disabled}
               fieldDirty={fieldDirty}
+              openSignal={importSignal}
               kind={effectiveKind(row, sample, parentKind)}
               run={run}
               setError={setError}
@@ -823,10 +876,13 @@ export function FolderPanel({
             {row.record && (
               <Select
                 label={
-                  <HelpLabel
-                    label={tr('資料夾類型')}
-                    help={tr('決定點開時的畫面，例如遊戲、漫畫、音樂。')}
-                  />
+                  <Group gap="xs" wrap="nowrap">
+                    <HelpLabel
+                      label={tr('資料夾類型')}
+                      help={tr('決定點開時的畫面，例如遊戲、漫畫、音樂。')}
+                    />
+                    {appliedPill('kind')}
+                  </Group>
                 }
                 allowDeselect={false}
                 value={row.record.details?.kind ?? 'auto'}
@@ -845,16 +901,19 @@ export function FolderPanel({
                     rowId: row.rowId,
                     revision: row.record!.revision,
                     kind: value === 'auto' ? null : (value as (typeof folderKinds)[number]),
-                  })
+                  }).then((r) => r && flashApplied('kind'))
                 }
               />
             )}
             {row.record && (
               <div className="folder-layouts" role="group" aria-label={tr('此資料夾的版面')}>
-                <HelpLabel
-                  label={<Text size="sm">{tr('此資料夾的版面')}</Text>}
-                  help={tr('要換卡片或詳情的樣子，按下面的按鈕。')}
-                />
+                <Group gap="xs" wrap="nowrap">
+                  <HelpLabel
+                    label={<Text size="sm">{tr('此資料夾的版面')}</Text>}
+                    help={tr('要換卡片或詳情的樣子，按下面的按鈕。')}
+                  />
+                  {appliedPill('layout')}
+                </Group>
                 <dl>
                   <dt>{tr('卡片')}</dt>
                   <dd>
@@ -902,6 +961,8 @@ export function FolderPanel({
             locked={fieldDirty}
             act={act}
             run={run}
+            applied={appliedMark === 'cover'}
+            onApplied={() => flashApplied('cover')}
           />
         </Tabs.Panel>
         <Tabs.Panel value="game" pt="md" keepMounted>
@@ -918,6 +979,30 @@ export function FolderPanel({
               run={run}
               onDirty={setTargetDirty}
             />
+            {/* R-539: add a project-shared launch action directly here so it can be bound right away. */}
+            <details className="settings-section game-add-action">
+              <summary>{tr('新增專案共用操作')}</summary>
+              <Stack gap={6} mt={8}>
+                <Text size="xs" c="dimmed">
+                  {tr('此操作會加入專案共用清單，其他遊戲也能使用。')}
+                </Text>
+                <NewGameAction
+                  disabled={
+                    disabled ||
+                    fieldDirty ||
+                    targetDirty ||
+                    gameActionTemplates(project).length >= 30
+                  }
+                  onAdd={(template) => {
+                    const next = [...gameActionTemplates(project), template]
+                    void act({
+                      action: 'saveProject',
+                      project: { ...project, actionTemplates: next },
+                    })
+                  }}
+                />
+              </Stack>
+            </details>
             <GameExtraSettings
               row={row}
               disabled={disabled || fieldDirty || targetDirty}
