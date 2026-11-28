@@ -89,14 +89,10 @@ export function FolderDetails({
         <div className="folder-details-row">
           <dt>{tr('位置')}</dt>
           <dd>
-            <span className="folder-details-path" title={row.path}>
-              {shortPath}
-            </span>
             <Tooltip label={copied ? tr('已複製') : tr('複製完整路徑')}>
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                size="sm"
+              <button
+                type="button"
+                className="path-copy-button folder-details-path-button"
                 aria-label={tr('複製完整路徑')}
                 onClick={async () => {
                   try {
@@ -110,8 +106,12 @@ export function FolderDetails({
                   }
                 }}
               >
-                <Icon name={copied ? 'check' : 'file'} size={14} />
-              </ActionIcon>
+                <Icon name={copied ? 'check' : 'copy'} size={13} />
+                <span className="folder-details-path" title={row.path}>
+                  {shortPath}
+                </span>
+                {copied && <span className="applied-pill">{tr('已複製')}</span>}
+              </button>
             </Tooltip>
             <Tooltip label={tr('在檔案總管開啟')}>
               <ActionIcon

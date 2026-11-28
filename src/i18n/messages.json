@@ -12977,12 +12977,6 @@
     "ja": "降順（↓）",
     "es": "Descendente (↓)"
   },
-  "依來源分組（要先包含子資料夾）": {
-    "zh-CN": "按来源分组（需先包含子文件夹）",
-    "en": "Group by source (include subfolders first)",
-    "ja": "ソース別にグループ化（先にサブフォルダーを含める）",
-    "es": "Agrupar por origen (incluye subcarpetas primero)"
-  },
   "縮圖預備範圍不合法": {
     "zh-CN": "缩略图预备范围不合法",
     "en": "Invalid range for preparing thumbnails",
@@ -13480,5 +13474,17 @@
     "en": "Unbound project actions ({0})",
     "ja": "未設定のプロジェクト操作（{0}）",
     "es": "Acciones del proyecto sin asignar ({0})"
+  },
+  "取消包含子資料夾": {
+    "zh-CN": "取消包含子文件夹",
+    "en": "Stop including subfolders",
+    "ja": "サブフォルダを含めない",
+    "es": "Dejar de incluir subcarpetas"
+  },
+  "開啟「包含子資料夾」後可用": {
+    "zh-CN": "开启「包含子文件夹」后可用",
+    "en": "Available when subfolders are included",
+    "ja": "「サブフォルダを含む」をオンにすると利用可能",
+    "es": "Disponible al incluir subcarpetas"
   }
 }

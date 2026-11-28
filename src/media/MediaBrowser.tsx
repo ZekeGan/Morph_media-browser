@@ -1,4 +1,14 @@
-import { Button, Menu, SegmentedControl, Select, Switch, Tooltip } from '@mantine/core'
+import {
+  ActionIcon,
+  Button,
+  Menu,
+  Popover,
+  SegmentedControl,
+  Select,
+  Stack,
+  Switch,
+  Tooltip,
+} from '@mantine/core'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import {
@@ -292,106 +302,142 @@ export function MediaBrowser({
       }
       controls={
         <div className="mixed-media-toolbar">
-          <Switch
-            className="media-scope-switch"
-            size="xs"
-            label={tr('包含子資料夾')}
-            checked={scope === 'descendants'}
-            disabled={busy || !!opening}
-            onChange={(event) => setScope(event.currentTarget.checked ? 'descendants' : 'current')}
-          />
-          <div className="media-type-chips" role="group" aria-label={tr('檔案類型')}>
-            {types.map((type) => (
-              <button
-                key={type}
-                type="button"
-                className={'media-type-chip' + (filter === type ? ' active' : '')}
-                aria-pressed={filter === type}
-                onClick={() => setFilter(type)}
-              >
-                {typeNames[type]} <span>{counts[type]}</span>
-              </button>
-            ))}
-          </div>
-          <Select
-            className="media-type-select"
-            aria-label={tr('檔案類型')}
-            size="xs"
-            allowDeselect={false}
-            value={filter}
-            onChange={(value) => value && setFilter(value as MediaFilter)}
-            data={types.map((type) => ({
-              value: type,
-              label: typeNames[type] + ' ' + counts[type],
-            }))}
-          />
-          <Menu position="bottom-end">
-            <Menu.Target>
-              <Button
-                size="xs"
-                variant="default"
-                className="media-sort-button"
-                aria-label={tr('排序：{0}', sortSummary)}
-                leftSection={<Icon name="sort" size={15} />}
-              >
-                <span className="media-sort-summary">{sortSummary}</span>
-              </Button>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Label>{tr('排序依據')}</Menu.Label>
-              {mediaSortFields.map((field) => (
-                <Menu.Item
-                  key={field}
-                  leftSection={current.field === field ? <Icon name="check" /> : null}
-                  onClick={() => setSort({ field, asc: current.asc })}
+          <div className="media-toolbar-filters">
+            <div className="media-type-chips" role="group" aria-label={tr('檔案類型')}>
+              {types.map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  className={'media-type-chip' + (filter === type ? ' active' : '')}
+                  aria-pressed={filter === type}
+                  onClick={() => setFilter(type)}
                 >
-                  {sortNames[field]}
-                </Menu.Item>
+                  {typeNames[type]} <span>{counts[type]}</span>
+                </button>
               ))}
-              <Menu.Divider />
-              {([true, false] as const).map((asc) => (
-                <Menu.Item
-                  key={String(asc)}
-                  leftSection={current.asc === asc ? <Icon name="check" /> : null}
-                  onClick={() => setSort({ field: current.field, asc })}
-                >
-                  {asc ? tr('由小到大（↑）') : tr('由大到小（↓）')}
-                </Menu.Item>
-              ))}
-            </Menu.Dropdown>
-          </Menu>
-          <SegmentedControl
-            className="media-view-select"
-            aria-label={tr('檔案展示方式')}
-            size="xs"
-            value={view}
-            onChange={setView}
-            data={(
-              [
-                ['masonry', 'masonry', '瀑布流'],
-                ['tiles', 'grid', '縮圖'],
-                ['list', 'list', '列表'],
-              ] as const
-            ).map(([value, icon, label]) => ({ value, label: iconLabel(icon, tr(label)) }))}
-          />
-          <Tooltip
-            label={
-              scope === 'descendants' ? tr('依來源分組') : tr('依來源分組（要先包含子資料夾）')
-            }
-            withArrow
-          >
-            <Button
+            </div>
+            <Select
+              className="media-type-select"
+              aria-label={tr('檔案類型')}
               size="xs"
-              variant={grouped && scope === 'descendants' ? 'light' : 'default'}
-              className="media-group-button"
-              aria-label={tr('依來源分組')}
-              aria-pressed={grouped && scope === 'descendants'}
-              disabled={scope !== 'descendants'}
-              onClick={() => setGrouped((value) => !value)}
-            >
-              <Icon name="folder" size={15} />
-            </Button>
-          </Tooltip>
+              allowDeselect={false}
+              value={filter}
+              onChange={(value) => value && setFilter(value as MediaFilter)}
+              data={types.map((type) => ({
+                value: type,
+                label: typeNames[type] + ' ' + counts[type],
+              }))}
+            />
+            {scope === 'descendants' && (
+              <button
+                type="button"
+                className="media-scope-pill"
+                disabled={busy || !!opening}
+                aria-label={tr('取消包含子資料夾')}
+                onClick={() => setScope('current')}
+              >
+                <span>{tr('含子資料夾')}</span>
+                <Icon name="close" size={11} />
+              </button>
+            )}
+          </div>
+          <div className="media-toolbar-controls">
+            <Menu position="bottom-end">
+              <Menu.Target>
+                <Button
+                  size="xs"
+                  variant="default"
+                  className="media-sort-button"
+                  aria-label={tr('排序：{0}', sortSummary)}
+                  leftSection={<Icon name="sort" size={14} />}
+                >
+                  <span className="media-sort-summary">{sortSummary}</span>
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Label>{tr('排序依據')}</Menu.Label>
+                {mediaSortFields.map((field) => (
+                  <Menu.Item
+                    key={field}
+                    leftSection={current.field === field ? <Icon name="check" /> : null}
+                    onClick={() => setSort({ field, asc: current.asc })}
+                  >
+                    {sortNames[field]}
+                  </Menu.Item>
+                ))}
+                <Menu.Divider />
+                {([true, false] as const).map((asc) => (
+                  <Menu.Item
+                    key={String(asc)}
+                    leftSection={current.asc === asc ? <Icon name="check" /> : null}
+                    onClick={() => setSort({ field: current.field, asc })}
+                  >
+                    {asc ? tr('由小到大（↑）') : tr('由大到小（↓）')}
+                  </Menu.Item>
+                ))}
+              </Menu.Dropdown>
+            </Menu>
+            <div className="media-toolbar-view-group">
+              <SegmentedControl
+                className="media-view-select"
+                aria-label={tr('檔案展示方式')}
+                size="xs"
+                value={view}
+                onChange={setView}
+                data={(
+                  [
+                    ['masonry', 'masonry', '瀑布流'],
+                    ['tiles', 'grid', '縮圖'],
+                    ['list', 'list', '列表'],
+                  ] as const
+                ).map(([value, icon, label]) => ({ value, label: iconLabel(icon, tr(label)) }))}
+              />
+              <Popover position="bottom-end" shadow="md" width={220}>
+                <Popover.Target>
+                  <Tooltip label={tr('檢視選項')}>
+                    <ActionIcon
+                      size={28}
+                      variant={scope === 'descendants' ? 'light' : 'default'}
+                      color={scope === 'descendants' ? undefined : 'gray'}
+                      className={
+                        'media-options-button' + (scope === 'descendants' ? ' active' : '')
+                      }
+                      aria-label={tr('檢視選項')}
+                    >
+                      <Icon name="sliders" size={14} />
+                      {scope === 'descendants' && (
+                        <span className="media-options-dot" aria-hidden="true" />
+                      )}
+                    </ActionIcon>
+                  </Tooltip>
+                </Popover.Target>
+                <Popover.Dropdown>
+                  <Stack gap="xs">
+                    <Switch
+                      size="xs"
+                      label={tr('包含子資料夾')}
+                      checked={scope === 'descendants'}
+                      disabled={busy || !!opening}
+                      onChange={(event) =>
+                        setScope(event.currentTarget.checked ? 'descendants' : 'current')
+                      }
+                    />
+                    <Switch
+                      size="xs"
+                      label={tr('依來源分組')}
+                      aria-label={tr('依來源分組')}
+                      description={
+                        scope !== 'descendants' ? tr('開啟「包含子資料夾」後可用') : undefined
+                      }
+                      checked={grouped && scope === 'descendants'}
+                      disabled={scope !== 'descendants'}
+                      onChange={(event) => setGrouped(event.currentTarget.checked)}
+                    />
+                  </Stack>
+                </Popover.Dropdown>
+              </Popover>
+            </div>
+          </div>
         </div>
       }
       notice={

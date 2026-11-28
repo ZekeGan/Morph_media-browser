@@ -1,15 +1,16 @@
-/* R-488: scope switch, type chips with counts, sort, layout buttons and the grouping toggle in one wrapping row. */
+/* R-556: 80/20 split media toolbar — filters + active scope pill on left, sort + view + options popover on right. */
 .mixed-media-toolbar {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
-    gap: 6px 10px;
+    justify-content: space-between;
+    gap: 8px;
     margin-bottom: 10px;
 }
 
 .mixed-media-toolbar .mantine-Input-input {
-    height: 30px;
-    min-height: 30px;
+    height: 28px;
+    min-height: 28px;
     font-size: 12px;
 }
 
@@ -19,13 +20,27 @@
     min-width: 0;
 }
 
-.media-scope-switch {
-    flex: 0 0 auto;
+.media-toolbar-filters {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-width: 0;
+    flex: 1 1 auto;
 }
 
-.media-scope-switch .mantine-Switch-label {
-    font-size: 12px;
-    white-space: nowrap;
+.media-toolbar-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.media-toolbar-view-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
 }
 
 .media-type-chips {
@@ -36,7 +51,7 @@
 }
 
 .media-type-chip {
-    height: 26px;
+    height: 28px;
     padding: 0 10px;
     border: 1px solid var(--line);
     border-radius: 999px;
@@ -62,9 +77,30 @@
     font-variant-numeric: tabular-nums;
 }
 
-.media-type-chip:focus-visible {
+.media-type-chip:focus-visible,
+.media-scope-pill:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
+}
+
+.media-scope-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 28px;
+    padding: 0 8px 0 10px;
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.media-scope-pill:hover {
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 /* A narrow list swaps the chips for a dropdown with the same choices. */
@@ -75,6 +111,46 @@
     max-width: 180px;
 }
 
+.media-sort-button {
+    height: 28px;
+    min-height: 28px;
+}
+
+.media-sort-button .media-sort-summary {
+    white-space: nowrap;
+}
+
+.media-view-select {
+    height: 28px;
+}
+
+.media-options-button {
+    position: relative;
+}
+
+.media-options-dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--accent);
+}
+
+@container(max-width:519px) {
+    .mixed-media-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+
+    .media-toolbar-controls {
+        justify-content: space-between;
+        width: 100%;
+    }
+}
+
 @container(max-width:300px) {
     .media-type-chips {
         display: none;
@@ -83,14 +159,6 @@
     .media-type-select {
         display: block;
     }
-}
-
-.media-sort-button .media-sort-summary {
-    white-space: nowrap;
-}
-
-.media-group-button {
-    padding-inline: 8px;
 }
 
 .gallery-source-header {
@@ -166,10 +234,10 @@
 
 .folder-details-row {
     display: grid;
-    grid-template-columns: minmax(48px, 22%) minmax(0, 1fr);
+    grid-template-columns: minmax(48px, 76px) minmax(0, 1fr);
     gap: 8px;
     align-items: center;
-    padding: 3px 0;
+    padding: 2px 0;
 }
 
 .folder-details dt {
@@ -183,10 +251,10 @@
 .folder-details dd {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
     min-width: 0;
     margin: 0;
-    font-size: 14px;
+    font-size: 13px;
 }
 
 .folder-details dd>span {
@@ -196,8 +264,19 @@
     white-space: nowrap;
 }
 
+.folder-details-path-button {
+    flex: 1;
+    min-width: 0;
+    padding: 3px 8px;
+}
+
 .folder-details-path {
     flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
 }
 
 .folder-details dd>.mantine-ActionIcon-root {
@@ -205,7 +284,7 @@
 }
 
 .folder-details summary:focus-visible,
-.folder-details-path:focus-visible {
+.folder-details-path-button:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
@@ -1310,15 +1389,6 @@
 .boundary-evidence summary { cursor: pointer; }
 .boundary-evidence ul { margin: 6px 0 0; padding-left: 18px; }
 
-/* The folder's full path wraps instead of cutting off the end, which is the folder's own name. */
-.folder-details dd > .folder-details-path { white-space: normal; overflow-wrap: anywhere; overflow: visible; text-overflow: clip; font-size: 13px; }
-.folder-details-sources { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0 2px; white-space: normal !important; }
-.source-link { display: inline-flex; align-items: center; gap: 3px; padding: 0; border: 0; background: transparent; color: var(--accent); font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
-.source-link:hover { filter: brightness(1.15); }
-.source-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
-
-/* The folder's full path wraps instead of cutting off the end, which is the folder's own name. */
-.folder-details dd > .folder-details-path { white-space: normal; overflow-wrap: anywhere; overflow: visible; text-overflow: clip; font-size: 13px; }
 .folder-details-sources { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0 2px; white-space: normal !important; }
 .source-link { display: inline-flex; align-items: center; gap: 3px; padding: 0; border: 0; background: transparent; color: var(--accent); font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .source-link:hover { filter: brightness(1.15); }

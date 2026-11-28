@@ -58,10 +58,29 @@ page.setDefaultTimeout(15000)
 await page.evaluate('window.__name=(target)=>target')
 const errors: string[] = []
 page.on('pageerror', (error) => errors.push(error.message))
-// R-488: scope is a switch, grouping a toggle button and the layout three icon buttons.
+// R-556: scope and source grouping live inside the media toolbar's "檢視選項" Popover, with a quick-dismiss pill when active.
+const mediaOptions = () =>
+  page.locator('.mixed-media-toolbar').getByRole('button', { name: '檢視選項', exact: true })
+const openOptions = async () => {
+  if (!(await page.getByRole('switch', { name: '包含子資料夾', exact: true }).isVisible())) {
+    await mediaOptions().click()
+    await page.getByRole('switch', { name: '包含子資料夾', exact: true }).waitFor()
+  }
+}
+const closeOptions = async () => {
+  if (await page.getByRole('switch', { name: '包含子資料夾', exact: true }).isVisible()) {
+    await mediaOptions().click()
+    await page
+      .getByRole('switch', { name: '包含子資料夾', exact: true })
+      .waitFor({ state: 'hidden' })
+  }
+}
 const scopeSwitch = () => page.getByRole('switch', { name: '包含子資料夾', exact: true })
+const groupSwitch = () => page.getByRole('switch', { name: '依來源分組', exact: true })
 const grouped = async () => {
-  await page.getByRole('button', { name: '依來源分組', exact: true }).click()
+  await openOptions()
+  await groupSwitch().check()
+  await closeOptions()
 }
 const layout = async (name: string) => {
   await page.locator('.media-view-select label').filter({ hasText: name }).click()
@@ -73,10 +92,14 @@ try {
   await page.getByRole('button', { name: '開啟專案 Media scope', exact: true }).first().click()
   await page.getByRole('button', { name: '切換詳情內容', exact: true }).click()
   await page.locator('.media-thumbnail').waitFor()
+  await openOptions()
   assert.equal(await scopeSwitch().isChecked(), false)
   assert.equal(await page.locator('.media-thumbnail').count(), 1)
   await scopeSwitch().check()
+  await closeOptions()
   await page.waitForFunction(() => document.querySelectorAll('.media-thumbnail').length === 5)
+  // R-556: active scope shows a quick-dismiss pill beside the type filters.
+  await page.getByRole('button', { name: '取消包含子資料夾', exact: true }).waitFor()
   // R-486: the sort button orders the files by one field and a direction (name, ascending, until it is changed).
   const fileNames = () =>
     page
@@ -111,17 +134,18 @@ try {
     await a.locator('button[aria-expanded]').click()
     assert.equal(await page.locator('.media-thumbnail').count(), 5)
   }
-  // Grouping is by source folder: with subfolders left out nothing is grouped and the toggle is off and unavailable;
-  // including them again brings the grouping back.
-  await scopeSwitch().uncheck()
+  // Grouping is by source folder: dismissing the scope pill turns off grouping and disables it in the popover;
+  // including subfolders again brings the grouping back.
+  await page.getByRole('button', { name: '取消包含子資料夾', exact: true }).click()
   await page.waitForFunction(() => document.querySelectorAll('.media-thumbnail').length === 1)
   assert.equal(await page.locator('.gallery-source-header').count(), 0)
-  const groupButton = page.getByRole('button', { name: '依來源分組', exact: true })
-  assert.equal(await groupButton.getAttribute('aria-pressed'), 'false')
-  assert.equal(await groupButton.isDisabled(), true)
+  await openOptions()
+  assert.equal(await groupSwitch().isChecked(), false)
+  assert.equal(await groupSwitch().isDisabled(), true)
   await scopeSwitch().check()
   await page.locator('.gallery-source-header').first().waitFor()
-  assert.equal(await groupButton.getAttribute('aria-pressed'), 'true')
+  assert.equal(await groupSwitch().isChecked(), true)
+  await closeOptions()
   const sourcePath = path.join(media, 'A') + '/001.png'
   await page
     .locator('.media-thumbnail')
@@ -137,6 +161,8 @@ try {
     .and(page.locator('[title=' + JSON.stringify(sourcePath) + ']'))
     .click()
   await page.locator('.media-viewer-shell .is-active').waitFor()
+  // R-553: viewer extraTools (source badge & queue toggle) live inside the Reader's "閱讀設定" popover.
+  await page.getByRole('button', { name: '閱讀設定', exact: true }).click()
   assert.equal(await page.locator('.media-viewer-source').innerText(), 'A')
   await page.getByRole('button', { name: '切換媒體佇列', exact: true }).click()
   assert.equal(await page.locator('.media-queue-scroll button').count(), 2)
@@ -151,6 +177,7 @@ try {
     .and(page.locator('[title=' + JSON.stringify(sourcePath) + ']'))
     .click()
   await page.locator('.media-viewer-shell .is-active').waitFor()
+  await page.getByRole('button', { name: '閱讀設定', exact: true }).click()
   await page.getByRole('button', { name: '切換媒體佇列', exact: true }).click()
   const queued = await page.locator('.media-queue-scroll button').allInnerTexts()
   assert.ok(
@@ -166,11 +193,12 @@ try {
     .and(page.locator('[title=' + JSON.stringify(sourcePath) + ']'))
     .click()
   await page.locator('.media-viewer-shell .is-active').waitFor()
+  await page.getByRole('button', { name: '閱讀設定', exact: true }).click()
   await page.getByRole('button', { name: '切換媒體佇列', exact: true }).click()
   await page.getByRole('button', { name: '退出閱讀器', exact: true }).click()
   await page.locator('.media-viewer-shell').waitFor({ state: 'detached' })
   assert.equal((await page.locator('.breadcrumb-current').innerText()).trim(), 'Media')
-  assert.equal(await scopeSwitch().isChecked(), true)
+  await page.getByRole('button', { name: '取消包含子資料夾', exact: true }).waitFor()
   assert.equal(await page.locator('.media-thumbnail').count(), 5)
   // The panel's own back button is hidden while the center is visible; read its state from the DOM.
   assert.equal(
@@ -184,7 +212,7 @@ try {
   await page.getByRole('button', { name: '返回首頁', exact: true }).click()
   await page.getByRole('button', { name: '開啟專案 Media scope', exact: true }).first().click()
   await page.locator('.media-thumbnail').first().waitFor()
-  assert.equal(await scopeSwitch().isChecked(), true)
+  await page.getByRole('button', { name: '取消包含子資料夾', exact: true }).waitFor()
   assert.equal(await page.locator('.gallery-source-header').count(), 3)
   assert.equal(await page.locator('.media-thumbnail').count(), 5)
   await page

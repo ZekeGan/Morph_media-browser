@@ -341,9 +341,17 @@ try {
   await close()
   await filter('圖片')
   await button('下一組').click()
+  await page
+    .locator('.mixed-media-toolbar')
+    .getByRole('button', { name: '檢視選項', exact: true })
+    .click()
   await page.getByRole('switch', { name: '包含子資料夾', exact: true }).check()
   await page.locator('.gallery-loading').waitFor({ state: 'detached' })
   await page.getByRole('switch', { name: '包含子資料夾', exact: true }).uncheck()
+  await page
+    .locator('.mixed-media-toolbar')
+    .getByRole('button', { name: '檢視選項', exact: true })
+    .click()
   await page.locator('.media-thumbnail').filter({ hasText: 'image-001.png' }).waitFor()
   await filter('全部')
   await page.locator('.media-subfolders button').filter({ hasText: 'Child' }).click()
