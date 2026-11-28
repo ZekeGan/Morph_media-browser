@@ -26,7 +26,7 @@
       ],
       "ui": [
         "workspace-ui",
-        "sidebar-peek-ui",
+        "shell-checks-ui",
         "audio-playback-ui"
       ],
       "tests": [
@@ -74,7 +74,7 @@
         "workspace-polish-ui",
         "settings-dock-ui",
         "game-folder-page-ui",
-        "image-delete-ui"
+        "cells-and-images-ui"
       ],
       "tests": [
         "browse.test.ts",
@@ -110,8 +110,8 @@
         "settings-dock-ui",
         "folder-navigation-ui",
         "game-folder-page-ui",
-        "image-delete-ui",
-        "panel-preview-ui",
+        "cells-and-images-ui",
+        "shell-checks-ui",
         "pending-ui"
       ],
       "tests": [
@@ -212,7 +212,7 @@
         "gallery-performance-ui",
         "media-scope-ui",
         "reader-ui",
-        "image-nth-ui"
+        "cells-and-images-ui"
       ],
       "tests": [
         "gallery.test.ts",
@@ -237,10 +237,7 @@
         "reader-ui",
         "reader-read-on-ui",
         "webtoon-ui",
-        "reader-next-ui",
-        "reader-carry-ui",
-        "reader-cbz-next-ui",
-        "reader-cbz-immersive-ui",
+        "reader-flow-ui",
         "media-scope-ui"
       ],
       "tests": [
@@ -294,9 +291,8 @@
       ],
       "ui": [
         "video-player-ui",
-        "video-failure-ui",
-        "video-embedded-ui",
-        "player-focus-ui"
+        "video-checks-ui",
+        "video-embedded-ui"
       ],
       "tests": [
         "embedded-subtitles.test.ts",
@@ -316,8 +312,7 @@
       ],
       "ui": [
         "reader-ui",
-        "reader-cbz-next-ui",
-        "reader-cbz-immersive-ui",
+        "reader-flow-ui",
         "book-volumes-ui",
         "novel-ui",
         "decided-ui"
@@ -360,13 +355,12 @@
       "ui": [
         "cell-editor-ui",
         "layout-config-ui",
-        "layout-breadcrumb-ui",
+        "shell-checks-ui",
         "field-edit-ui",
         "editor-fields-ui",
         "decided-ui",
-        "yes-no-wording-ui",
-        "condition-rules-ui",
-        "date-field-ui"
+        "fields-and-sources-ui",
+        "cells-and-images-ui"
       ],
       "tests": [
         "decided.test.ts",
@@ -410,12 +404,11 @@
         "cell-editor-ui",
         "field-edit-ui",
         "cell-style-ui",
-        "cell-scroll-ui",
+        "cells-and-images-ui",
         "card-grid-ui",
-        "image-nth-ui",
         "game-cover-cell-ui",
         "game-launch-cell-ui",
-        "enum-add-option-ui",
+        "fields-and-sources-ui",
         "editor-fields-ui"
       ],
       "tests": [
@@ -498,7 +491,7 @@
         "src/game/BoundaryFlag*"
       ],
       "ui": [
-        "problems-ui",
+        "shell-checks-ui",
         "game-folder-page-ui"
       ],
       "tests": [
@@ -530,9 +523,7 @@
       "ui": [
         "media-feedback-ui",
         "keys-ui",
-        "source-language-ui",
-        "field-sources-ui",
-        "source-search-sources-ui",
+        "fields-and-sources-ui",
         "musicbrainz-version-ui"
       ],
       "tests": [
@@ -604,7 +595,7 @@
       ],
       "ui": [
         "notifications-ui",
-        "error-recovery-ui"
+        "shell-checks-ui"
       ],
       "tests": [
         "error-message.test.ts"
@@ -628,7 +619,7 @@
       ],
       "ui": [
         "@smoke",
-        "problems-ui",
+        "shell-checks-ui",
         "decided-ui"
       ],
       "tests": [
@@ -648,7 +639,7 @@
         "shared/upgrade*"
       ],
       "ui": [
-        "problems-ui"
+        "shell-checks-ui"
       ],
       "tests": [
         "upgrade.test.ts",
@@ -697,7 +688,7 @@
       ],
       "ui": [
         "decided-ui",
-        "problems-ui"
+        "shell-checks-ui"
       ],
       "tests": [
         "maintenance.test.ts",

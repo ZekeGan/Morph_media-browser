@@ -134,10 +134,10 @@ const results = []
 // A test that has not finished in UI_TEST_TIMEOUT seconds (default 240; the slowest normally takes under a minute)
 // is stuck, usually on a prompt nobody answers: it is stopped, reported as TIMEOUT and not run again.
 const limit = Number(process.env.UI_TEST_TIMEOUT || 240) * 1000
+const tsxCli = resolve('node_modules/tsx/dist/cli.mjs')
 const execute = (name) => {
-  const run = spawnSync('pnpm', ['exec', 'tsx', `tests/${name}.ts`], {
+  const run = spawnSync(process.execPath, [tsxCli, `tests/${name}.ts`], {
     encoding: 'utf8',
-    shell: true,
     timeout: limit,
   })
   const timedOut = run.error?.code === 'ETIMEDOUT'

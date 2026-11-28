@@ -19,6 +19,7 @@ The application version is independent of portable record `schemaVersion`.
 
 ## Unreleased
 
+- Consolidated 21 small same-domain UI tests into 5 shared-Electron domain suites (`reader-flow-ui`, `video-checks-ui`, `shell-checks-ui`, `fields-and-sources-ui`, `cells-and-images-ui`) keeping every regression assertion intact (64 → 48 UI test files), and updated `scripts/run-ui-tests.mjs` to invoke `tsx` directly without spawning `pnpm` per test (R-531).
 - Added 3 missing i18n keys (`編輯`, `全選`, `取消全選`), updated `decided-media.test.ts` for R-538 `sourceRecord.originalValue`, and synced all 25 legacy UI tests to the redesigned UX selectors so the entire suite passes (457/457 unit tests, 64/64 Electron UI tests) (R-564).
 - Fixed opening "Add project" clearing the active folder selection and closing the right detail panel, and made the top-bar "Toggle details" button fall back to the current folder whenever selection is empty so it never becomes unresponsive (R-563).
 - Redesigned "Import from website" inside Folder Settings: unified name search and URL/Steam App ID entry into one smart input box with auto-detected source badge and dynamic "Search / Preview" submit button, folded supported sites into the source selector popover, replaced the cramped 4-column diff table with a compact vertical checklist (with Select all and inline `Old:` diff notes), moved "Update previously imported fields" into the preview action bar, and collapsed screenshots into a click-to-toggle thumbnail grid (R-562).
