@@ -8,23 +8,29 @@ import {
   SegmentedControl,
   Select,
   Stack,
-  Text,
+  Switch,
   TextInput,
   Tooltip,
 } from '@mantine/core'
+import type { ReactNode } from 'react'
 
 import { cardDisplay } from '../../shared/browse'
 import type { BrowseMode, BrowseState } from '../../shared/explorer'
+import { cardPresets } from '../../shared/layouts'
 import { type FolderRow, type Project } from '../../shared/model'
 
 import { iconLabel } from '../common/IconLabel'
 import { Icon } from '../common/icons'
+import { layoutName } from '../editor/layoutName'
 import { t as tr } from '../i18n'
 import { SortMenu } from './SortMenu'
 
 import '../media/media-workspace.css'
 
+export type ViewAxis = 'step' | 'works' | 'files'
+
 type Props = {
+  nav?: ReactNode
   browse: BrowseState
   busy: boolean
   cardSaveError: string
@@ -35,12 +41,15 @@ type Props = {
   density: { itemsPerRow: number | string; pageSize: number | string }
   display: ReturnType<typeof cardDisplay>
   folderMode: boolean
-  switchContent: (value: 'folders' | 'files') => void
+  viewAxis: ViewAxis
+  switchView: (value: ViewAxis) => void
   openConfig: (id: string, tab?: string) => void
   orderedColumns: { id: string; label: string }[]
   persist: (next: BrowseState) => void
-  // R-413: the layout the current folder uses, shown on the button that opens the layout configuration window.
+  // R-544: the layout the current folder uses; main button edits it, arrow opens layout menu & configuration.
   layoutLabel: string
+  editCurrentLayout: () => void
+  setDefaultLayout: (id: string) => void
   openLayouts: () => void
   project: Project
   ready: boolean
@@ -54,9 +63,11 @@ type Props = {
   switchMode: (mode: BrowseMode) => Promise<void>
 }
 
-// The folder-mode toolbar (view mode, presets, filters, tools) and the CARD display controls under it.
+// R-547, R-536, R-544: single-row main toolbar (with inline root nav on wide panes), unified view switcher,
+// split layout button, and one View Options popover for density/depth/tree-cards/table-columns.
 export function BrowseToolbar(props: Props) {
   const {
+    nav,
     browse,
     busy,
     cardSaveError,
@@ -67,12 +78,16 @@ export function BrowseToolbar(props: Props) {
     density,
     display,
     folderMode,
-    switchContent,
+    viewAxis,
+    switchView,
     openConfig,
     orderedColumns,
     persist,
     layoutLabel,
+    editCurrentLayout,
+    setDefaultLayout,
     openLayouts,
+    project,
     ready,
     setColumnQuery,
     setDensity,
@@ -83,189 +98,200 @@ export function BrowseToolbar(props: Props) {
     state,
     switchMode,
   } = props
+  const presets = cardPresets(project)
+  const defaultLayoutId = project.activeLayoutId ?? presets[0].id
   return (
-    <>
-      <div className={'workspace-toolbar' + (folderMode ? '' : ' file-mode-toolbar')}>
-        <div className="toolbar-left">
+    <div
+      className={
+        'workspace-toolbar' +
+        (folderMode ? '' : ' file-mode-toolbar') +
+        (nav ? ' has-inline-nav' : '')
+      }
+    >
+      {nav}
+      <div className="toolbar-left">
+        <SegmentedControl
+          className="content-switch"
+          aria-label={tr('展示內容')}
+          size="xs"
+          value={viewAxis}
+          disabled={busy || !ready}
+          data={[
+            {
+              value: 'step',
+              label: (
+                <span className="content-switch-label">
+                  <Icon name="folder" size={14} />
+                  {tr('逐層瀏覽')}
+                </span>
+              ),
+            },
+            {
+              value: 'works',
+              label: (
+                <span className="content-switch-label">
+                  <Icon name="layers" size={14} />
+                  {tr('所有作品')}
+                </span>
+              ),
+            },
+            {
+              value: 'files',
+              label: (
+                <span className="content-switch-label">
+                  <Icon name="file" size={14} />
+                  {tr('檔案總覽')}
+                </span>
+              ),
+            },
+          ]}
+          onChange={(value) => switchView(value as ViewAxis)}
+        />
+        {folderMode && (
           <SegmentedControl
-            className="content-switch"
-            aria-label={tr('展示內容')}
+            className="center-mode"
+            aria-label={tr('瀏覽模式')}
             size="xs"
-            value={browse.contentMode ?? 'folders'}
+            value={browse.mode}
+            data={(['CARD', 'TABLE', 'TREE'] as const).map((mode) => ({
+              value: mode,
+              label: iconLabel(
+                mode === 'CARD' ? 'grid' : mode === 'TABLE' ? 'list' : 'tree',
+                mode === 'CARD' ? tr('卡片') : mode === 'TABLE' ? tr('表格') : tr('樹狀圖')
+              ),
+            }))}
             disabled={busy || !ready}
-            data={[
-              {
-                value: 'folders',
-                label: (
-                  <span className="content-switch-label">
-                    <Icon name="folder" size={15} />
-                    {tr('資料夾')}
-                  </span>
-                ),
-              },
-              {
-                value: 'files',
-                label: (
-                  <span className="content-switch-label">
-                    <Icon name="file" size={15} />
-                    {tr('檔案')}
-                  </span>
-                ),
-              },
-            ]}
-            onChange={(value) => switchContent(value as 'folders' | 'files')}
+            onChange={(mode) => void switchMode(mode as BrowseMode)}
           />
-          {folderMode && (
-            <SegmentedControl
-              className="center-mode"
-              aria-label={tr('瀏覽模式')}
-              size="xs"
-              value={browse.mode}
-              data={(['CARD', 'TABLE', 'TREE'] as const).map((mode) => ({
-                value: mode,
-                label: iconLabel(
-                  mode === 'CARD' ? 'grid' : mode === 'TABLE' ? 'list' : 'tree',
-                  mode === 'CARD' ? tr('卡片') : mode === 'TABLE' ? tr('表格') : tr('樹狀圖')
-                ),
-              }))}
-              disabled={busy || !ready}
-              onChange={(mode) => void switchMode(mode as BrowseMode)}
-            />
-          )}
-          <div
-            ref={setOverviewTools}
-            className="workspace-file-tools"
-            style={{ display: folderMode ? 'none' : undefined }}
+        )}
+        <div
+          ref={setOverviewTools}
+          className="workspace-file-tools"
+          style={{ display: folderMode ? 'none' : undefined }}
+        />
+        {folderMode && browse.mode !== 'TREE' && (
+          <SortMenu
+            columns={orderedColumns}
+            keys={browse.sortKeys ?? []}
+            foldersFirst={browse.foldersFirst !== false}
+            busy={busy || !ready}
+            onChange={(sortKeys, foldersFirst) => {
+              persist({ ...state.current, sortKeys, foldersFirst })
+              setPage(1)
+            }}
           />
-          {folderMode && browse.mode !== 'TABLE' && (
-            // R-413: which layout each folder uses is set in the layout configuration window. R-470: one button, with
-            // the layout icon every layout entry uses; a narrow toolbar keeps only the icon. R-481: the tree has it
-            // too, since its nodes can be the folders' cards.
-            <Tooltip label={tr('版面配置') + '：' + layoutLabel} withArrow>
+        )}
+        {folderMode && browse.mode !== 'TABLE' && (
+          // R-544: main button opens the editor on the current layout directly; split arrow switches default or opens LayoutConfig.
+          <Button.Group className="layout-split-button">
+            <Tooltip label={tr('編輯目前版面：{0}', layoutLabel)} withArrow>
               <Button
                 size="xs"
                 variant="default"
                 className="layout-config-button"
                 leftSection={<Icon name="layout" size={15} />}
-                aria-label={tr('版面配置') + '：' + layoutLabel}
+                aria-label={tr('編輯目前版面：{0}', layoutLabel)}
                 disabled={busy}
-                onClick={openLayouts}
+                onClick={editCurrentLayout}
               >
                 <span className="layout-config-label">{layoutLabel}</span>
               </Button>
             </Tooltip>
-          )}
-          {folderMode && browse.mode === 'TREE' && (
-            // R-466: nodes as the folders' cards, sized by the card layout each folder uses.
-            <Tooltip label={tr('以卡片顯示節點')} withArrow>
-              <ActionIcon
-                className="tree-cards-toggle"
-                variant={browse.treeCards ? 'light' : 'subtle'}
-                aria-label={tr('以卡片顯示節點')}
-                aria-pressed={!!browse.treeCards}
-                disabled={busy || !ready}
-                onClick={() => persist({ ...state.current, treeCards: !state.current.treeCards })}
-              >
-                <Icon name="grid" />
-              </ActionIcon>
-            </Tooltip>
-          )}
-          {folderMode && browse.mode !== 'TREE' && (
-            <SortMenu
-              columns={orderedColumns}
-              keys={browse.sortKeys ?? []}
-              foldersFirst={browse.foldersFirst !== false}
-              busy={busy || !ready}
-              onChange={(sortKeys, foldersFirst) => {
-                persist({ ...state.current, sortKeys, foldersFirst })
-                setPage(1)
-              }}
-            />
-          )}
-        </div>
-        <div className="toolbar-right">
-          <div
-            ref={setOverviewScope}
-            className="workspace-file-scope"
-            style={{ display: folderMode ? 'none' : undefined }}
-          />
-          {folderMode && browse.mode === 'CARD' && (
-            // R-331: a fade, not the default scale, so the switch inside measures its real size when it opens.
-            <Popover
-              position="bottom-end"
-              withArrow
-              shadow="md"
-              width={260}
-              transitionProps={{ transition: 'fade' }}
-            >
-              <Popover.Target>
-                <Button
+            <Menu position="bottom-end" shadow="md" width={210}>
+              <Menu.Target>
+                <Tooltip label={tr('版面選單')} withArrow>
+                  <Button
+                    size="xs"
+                    variant="default"
+                    className="layout-split-arrow"
+                    aria-label={tr('版面選單')}
+                    disabled={busy}
+                  >
+                    <Icon name="chevron-down" size={14} />
+                  </Button>
+                </Tooltip>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Label>{tr('預設卡片版面')}</Menu.Label>
+                {presets.map((preset) => (
+                  <Menu.Item
+                    key={preset.id}
+                    disabled={busy}
+                    leftSection={
+                      preset.id === defaultLayoutId ? (
+                        <Icon name="check" size={14} />
+                      ) : (
+                        <span className="folder-menu-blank" />
+                      )
+                    }
+                    onClick={() => preset.id !== defaultLayoutId && setDefaultLayout(preset.id)}
+                  >
+                    {layoutName(preset)}
+                  </Menu.Item>
+                ))}
+                <Menu.Divider />
+                <Menu.Item leftSection={<Icon name="sliders" size={14} />} onClick={openLayouts}>
+                  {tr('版面配置…')}
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Button.Group>
+        )}
+      </div>
+      <div className="toolbar-right">
+        <div
+          ref={setOverviewScope}
+          className="workspace-file-scope"
+          style={{ display: folderMode ? 'none' : undefined }}
+        />
+        {folderMode && (
+          // R-547: density, max depth, tree card-nodes switch, and table columns all live in one View Options popover.
+          <Popover
+            position="bottom-end"
+            withArrow
+            shadow="md"
+            width={browse.mode === 'TABLE' ? 240 : 250}
+            transitionProps={{ transition: 'fade' }}
+          >
+            <Popover.Target>
+              <Tooltip label={tr('檢視選項')} withArrow>
+                <ActionIcon
                   className="card-display-button scope-button"
-                  size="xs"
                   variant="default"
-                  aria-label={tr('卡片顯示設定')}
-                  leftSection={<Icon name="sliders" size={14} />}
+                  aria-label={tr('檢視選項')}
+                  disabled={busy || !ready}
                 >
-                  <span className="card-display-summary">
-                    {display.works
-                      ? tr('所有作品') +
-                        (display.level === 'all' ? '' : ' · ' + tr('最多 {0} 層', display.level))
-                      : tr('逐層瀏覽')}
-                  </span>
-                </Button>
-              </Popover.Target>
-              <Popover.Dropdown>
+                  <Icon name="sliders" size={15} />
+                </ActionIcon>
+              </Tooltip>
+            </Popover.Target>
+            <Popover.Dropdown>
+              {browse.mode === 'CARD' ? (
                 <div className="card-inline-controls">
-                  <div>
-                    <Text size="xs" c="dimmed" mb={4}>
-                      {tr('層級顯示')}
-                    </Text>
-                    <SegmentedControl
+                  {display.works && (
+                    <Select
                       size="xs"
-                      fullWidth
-                      aria-label={tr('層級顯示')}
-                      value={display.works ? 'works' : 'step'}
+                      label={tr('最多往下幾層')}
+                      aria-label={tr('最多往下幾層')}
+                      value={String(display.level)}
+                      allowDeselect={false}
                       data={[
-                        { value: 'step', label: tr('逐層瀏覽') },
-                        { value: 'works', label: tr('所有作品') },
+                        { value: 'all', label: tr('不限') },
+                        ...Array.from({ length: deepest }, (_, index) => ({
+                          value: String(index + 1),
+                          label: tr('{0} 層', index + 1),
+                        })),
                       ]}
                       onChange={(value) => {
-                        setDisplay(
-                          value === 'works'
-                            ? { mode: 'multi', level: 'all', works: true }
-                            : { mode: 'single', level: 1, works: false }
-                        )
-                        changedCard()
+                        if (value) {
+                          setDisplay({
+                            ...display,
+                            level: value === 'all' ? 'all' : Number(value),
+                          })
+                          changedCard()
+                        }
                       }}
                     />
-                  </div>
-                  {display.works && (
-                    <details className="card-display-advanced">
-                      <summary>{tr('進階')}</summary>
-                      <Select
-                        size="xs"
-                        label={tr('最多往下幾層')}
-                        aria-label={tr('最多往下幾層')}
-                        value={String(display.level)}
-                        allowDeselect={false}
-                        data={[
-                          { value: 'all', label: tr('不限') },
-                          ...Array.from({ length: deepest }, (_, index) => ({
-                            value: String(index + 1),
-                            label: tr('{0} 層', index + 1),
-                          })),
-                        ]}
-                        onChange={(value) => {
-                          if (value) {
-                            setDisplay({
-                              ...display,
-                              level: value === 'all' ? 'all' : Number(value),
-                            })
-                            changedCard()
-                          }
-                        }}
-                      />
-                    </details>
                   )}
                   <NumberInput
                     size="xs"
@@ -297,73 +323,79 @@ export function BrowseToolbar(props: Props) {
                     </Button>
                   )}
                 </div>
-              </Popover.Dropdown>
-            </Popover>
-          )}
-          {folderMode && browse.mode === 'TABLE' && (
-            <Menu closeOnItemClick={false}>
-              <Menu.Target>
-                <Button
-                  size="xs"
-                  variant="default"
-                  aria-label={tr('選擇表格欄位')}
-                  leftSection={<Icon name="list" size={14} />}
-                >
-                  {tr('欄位')}
-                </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <TextInput
-                  placeholder={tr('搜尋欄位')}
-                  aria-label={tr('搜尋欄位')}
-                  value={columnQuery}
-                  onChange={(event) => setColumnQuery(event.currentTarget.value)}
-                />
-                <Stack gap="xs" p="xs" style={{ maxHeight: 'min(48vh,320px)', overflowY: 'auto' }}>
-                  {orderedColumns
-                    .filter((column) =>
-                      column.label.toLocaleLowerCase().includes(columnQuery.toLocaleLowerCase())
-                    )
-                    .map((column) => (
-                      <Checkbox
-                        key={column.id}
-                        label={column.label}
-                        disabled={column.id === 'name' || busy}
-                        checked={column.id === 'name' || !browse.hiddenColumns?.includes(column.id)}
-                        onChange={(event) =>
-                          persist({
-                            ...state.current,
-                            hiddenColumns: event.currentTarget.checked
-                              ? (state.current.hiddenColumns ?? []).filter((id) => id !== column.id)
-                              : [...new Set([...(state.current.hiddenColumns ?? []), column.id])],
-                          })
-                        }
-                      />
-                    ))}
+              ) : browse.mode === 'TREE' ? (
+                <div className="card-inline-controls">
+                  <Switch
+                    size="xs"
+                    label={tr('以卡片顯示節點')}
+                    aria-label={tr('以卡片顯示節點')}
+                    checked={!!browse.treeCards}
+                    disabled={busy || !ready}
+                    onChange={(event) =>
+                      persist({ ...state.current, treeCards: event.currentTarget.checked })
+                    }
+                  />
+                </div>
+              ) : (
+                <Stack gap="xs">
+                  <TextInput
+                    size="xs"
+                    placeholder={tr('搜尋欄位')}
+                    aria-label={tr('搜尋欄位')}
+                    value={columnQuery}
+                    onChange={(event) => setColumnQuery(event.currentTarget.value)}
+                  />
+                  <Stack gap="xs" style={{ maxHeight: 'min(48vh,320px)', overflowY: 'auto' }}>
+                    {orderedColumns
+                      .filter((column) =>
+                        column.label.toLocaleLowerCase().includes(columnQuery.toLocaleLowerCase())
+                      )
+                      .map((column) => (
+                        <Checkbox
+                          key={column.id}
+                          size="xs"
+                          label={column.label}
+                          disabled={column.id === 'name' || busy}
+                          checked={
+                            column.id === 'name' || !browse.hiddenColumns?.includes(column.id)
+                          }
+                          onChange={(event) =>
+                            persist({
+                              ...state.current,
+                              hiddenColumns: event.currentTarget.checked
+                                ? (state.current.hiddenColumns ?? []).filter(
+                                    (id) => id !== column.id
+                                  )
+                                : [...new Set([...(state.current.hiddenColumns ?? []), column.id])],
+                            })
+                          }
+                        />
+                      ))}
+                  </Stack>
+                  <Button
+                    variant="subtle"
+                    size="xs"
+                    onClick={() => persist({ ...state.current, hiddenColumns: [] })}
+                  >
+                    {tr('恢復預設')}
+                  </Button>
                 </Stack>
-                <Button
-                  variant="subtle"
-                  size="xs"
-                  onClick={() => persist({ ...state.current, hiddenColumns: [] })}
-                >
-                  {tr('恢復預設')}
-                </Button>
-              </Menu.Dropdown>
-            </Menu>
-          )}
-          <Tooltip label={tr('目前資料夾設定')}>
-            <ActionIcon
-              variant="subtle"
-              color="gray"
-              aria-label={tr('目前資料夾設定')}
-              disabled={!currentFolder || busy}
-              onClick={() => currentFolder && openConfig(currentFolder.rowId)}
-            >
-              <Icon name="folder-settings" />
-            </ActionIcon>
-          </Tooltip>
-        </div>
+              )}
+            </Popover.Dropdown>
+          </Popover>
+        )}
+        <Tooltip label={tr('目前資料夾設定')}>
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            aria-label={tr('目前資料夾設定')}
+            disabled={!currentFolder || busy}
+            onClick={() => currentFolder && openConfig(currentFolder.rowId)}
+          >
+            <Icon name="folder-settings" />
+          </ActionIcon>
+        </Tooltip>
       </div>
-    </>
+    </div>
   )
 }

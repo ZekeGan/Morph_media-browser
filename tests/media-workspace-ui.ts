@@ -147,7 +147,7 @@ try {
   await page.locator('.mixed-media-browser').waitFor()
   await page.locator('.gallery-loading').waitFor({ state: 'detached' })
   assert.equal(await button('套用').count(), 0)
-  await button('卡片顯示設定').click()
+  await button('檢視選項').click()
   assert.equal(await page.getByLabel('每列卡片數', { exact: true }).inputValue(), '3')
   await page.getByLabel('每列卡片數', { exact: true }).fill('4')
   await page.getByLabel('每頁筆數', { exact: true }).fill('31')

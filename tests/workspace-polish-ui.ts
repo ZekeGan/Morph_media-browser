@@ -134,13 +134,17 @@ const button = (text: string) => page.getByRole('button', { name: tr(text), exac
 // R-445: the editor opens from the layout window; the names follow the language the test switched to.
 const edit = async () => {
   await page
-    .getByRole('button', { name: new RegExp('^' + tr('版面配置')) })
+    .getByRole('button', {
+      name: new RegExp(
+        '^' +
+          tr('編輯目前版面：{0}')
+            .replace('{0}', '')
+            .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      ),
+    })
     .filter({ visible: true })
     .first()
     .click()
-  const dialog = page.getByRole('dialog', { name: tr('版面配置') })
-  await dialog.getByRole('button', { name: tr('編輯卡片版面'), exact: true }).click()
-  await dialog.waitFor({ state: 'hidden' })
 }
 const open = async (name: string) => {
   await page
@@ -385,12 +389,12 @@ try {
       await page.emulateMedia({ reducedMotion: 'no-preference' })
     }
     // The files view follows the path bar and stays usable in a narrow window.
-    await page.locator('[aria-label="展示內容"]').getByText('檔案', { exact: true }).click()
+    await page.locator('[aria-label="展示內容"]').getByText('檔案總覽', { exact: true }).click()
     await resize(800, 700)
     if (await button('關閉資料夾內容').isVisible()) await button('關閉資料夾內容').click()
     await page.screenshot({ path: path.join(screens, 'file-view-narrow.png') })
     await resize(1440)
-    await page.locator('[aria-label="展示內容"]').getByText('資料夾', { exact: true }).click()
+    await page.locator('[aria-label="展示內容"]').getByText('逐層瀏覽', { exact: true }).click()
   }
   if (process.env.POLISH_SCOPE !== 'folders') {
     for (const [theme, index] of ['dark', 'glass', 'paper'].map(

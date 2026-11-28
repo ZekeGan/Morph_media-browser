@@ -72,7 +72,7 @@ await page.evaluate('window.__name=(target)=>target')
 const errors: string[] = []
 page.on('pageerror', (error) => errors.push(error.message))
 const button = (name: string) => page.getByRole('button', { name, exact: true })
-const center = () => page.locator('.workspace-breadcrumb')
+const center = () => page.locator('.toolbar-nav, .workspace-breadcrumb')
 const right = () => page.locator('.folder-panel-header')
 const current = async (name: string) => {
   await page
@@ -103,7 +103,7 @@ const current = async (name: string) => {
 const buttons = async (back: boolean, forward: boolean) => {
   await page.waitForFunction(
     ({ back, forward }) =>
-      ['.workspace-breadcrumb', '.folder-panel-header'].every((selector) => {
+      ['.toolbar-nav, .workspace-breadcrumb', '.folder-panel-header'].every((selector) => {
         const buttons = Array.from(
           document.querySelectorAll<HTMLButtonElement>(selector + ' button')
         )

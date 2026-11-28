@@ -6,7 +6,7 @@ import type { Cell } from '../shared/model'
 
 import { projectFile } from '../electron/files'
 import { Library } from '../electron/library'
-import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
+import { closeApp, launchApp, openLayoutConfig, removeTestRoot, reportFailure } from './support/app'
 
 // R-413: the layout configuration window. A folder that is not a work takes its level's layout, a work its kind's;
 // the tree shows each choice and where it comes from, and a folder's own layout set there is saved in the project's
@@ -51,8 +51,7 @@ try {
   const card = page.locator('.folder-card').filter({ hasText: 'Artist' }).first()
   // Artist holds only a folder: not a work, so it takes the first level's layout.
   await card.getByText('LAYOUT-T').waitFor()
-  const button = page.getByRole('button', { name: /^版面配置：/ }).first()
-  await button.click()
+  await openLayoutConfig(page)
   const dialog = page.getByRole('dialog', { name: '版面配置' })
   await dialog.waitFor()
   await fs.mkdir(path.resolve('.test-output', 'shot'), { recursive: true })
@@ -150,11 +149,7 @@ try {
   // R-459: Artist (a card at the top level of the browser) is selected before the editor is opened.
   await card.click()
   await page.locator('.folder-panel-header strong').getByText('Artist', { exact: true }).waitFor()
-  await page
-    .getByRole('button', { name: /^版面配置/ })
-    .filter({ visible: true })
-    .first()
-    .click()
+  await openLayoutConfig(page)
   await dialog.waitFor()
   await dialog.getByText('詳情', { exact: true }).click()
   await item('Album').click()
@@ -178,7 +173,7 @@ try {
   await page.locator('.folder-panel-header strong').getByText('Artist', { exact: true }).waitFor()
   assert.equal(
     (await page
-      .getByRole('button', { name: /^版面配置/ })
+      .getByRole('button', { name: /^編輯目前版面：/ })
       .filter({ visible: true })
       .count()) > 0,
     true

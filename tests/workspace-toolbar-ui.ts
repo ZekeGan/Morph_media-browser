@@ -42,15 +42,18 @@ try {
   assert.equal(await button('重新整理').count(), 1)
   assert.equal(await page.locator('.titlebar').getByRole('button', { name: '重新整理' }).count(), 1)
   assert.equal(await button('重新掃描').count(), 0)
-  // Display settings live in one popover button instead of a permanent row.
+  // R-547: at root on a wide window, navigation merges into the main toolbar (no separate breadcrumb bar).
+  assert.equal(await page.locator('.toolbar-nav').count(), 1)
+  assert.equal(await page.locator('.workspace-breadcrumb').count(), 0)
+  // Display settings live in one View Options popover button instead of a permanent row.
   assert.equal(await page.locator('.card-inline-controls').count(), 0)
-  await button('卡片顯示設定').click()
+  await button('檢視選項').click()
   await page.locator('.card-inline-controls').waitFor()
   assert.equal(await page.getByLabel('每頁筆數', { exact: true }).count(), 1)
-  await button('卡片顯示設定').click()
+  await button('檢視選項').click()
   await page.locator('.card-inline-controls').waitFor({ state: 'detached' })
   await page.locator('.center-mode').getByText('表格', { exact: true }).click()
-  await button('選擇表格欄位').click()
+  await button('檢視選項').click()
   await page.getByRole('checkbox', { name: '目前路徑', exact: true }).uncheck()
   assert.equal(
     await page.getByRole('checkbox', { name: '資料夾名稱', exact: true }).isDisabled(),
@@ -90,7 +93,7 @@ try {
     .locator('.folder-panel-dock-tabs')
     .getByRole('tab', { name: '內容', exact: true })
     .click()
-  await page.locator('.workspace-toolbar').getByText('檔案', { exact: true }).click()
+  await page.locator('.workspace-toolbar').getByText('檔案總覽', { exact: true }).click()
   await page.locator('.workspace-file-scope [aria-label="檔案總覽範圍設定"]').waitFor()
   // R-402, R-446: the first time the scope switch opens (in a popover still appearing), the chosen item is marked by
   // its own background; the sliding indicator, which was measured too early, is not drawn.
@@ -108,10 +111,12 @@ try {
   assert.deepEqual(mark, { indicator: 'none', mark: 'block' }, 'the chosen item is marked itself')
   await page.keyboard.press('Escape')
   assert.equal(await page.locator('.file-overview .file-overview-toolbar').count(), 0)
-  assert.equal(await button('卡片顯示設定').count(), 0)
+  assert.equal(await button('檢視選項').count(), 0)
   await app.evaluate(({ BrowserWindow }) =>
     BrowserWindow.getAllWindows()[0].setBounds({ width: 700, height: 760 })
   )
+  // R-547: in a narrow window the slim breadcrumb bar appears below the toolbar.
+  await page.locator('.workspace-breadcrumb').waitFor()
   await page.screenshot({ path: path.join(root, 'narrow.png') })
   assert.ok((await page.locator('.workspace-file-tools').boundingBox())!.width < 700)
   assert.deepEqual(await fs.readFile(path.join(media, '.media-viewer', 'folder.json')), original)

@@ -135,6 +135,7 @@ export function LayoutConfig({
       return !open
     })
   // R-444: each group of rules on the left folds on its heading (remembered on this computer).
+  // R-545: "by level" starts folded whenever the current target has no level rules set.
   const [folded, setFolded] = useState<string[]>(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('layoutConfig.ruleSections') ?? '[]')
@@ -143,6 +144,16 @@ export function LayoutConfig({
       return []
     }
   })
+  const foldLevelsIfEmpty = (rule: LayoutRule) => {
+    const hasLevels = !!rule.levels?.some(Boolean)
+    setFolded((now) =>
+      hasLevels
+        ? now.filter((id) => id !== 'levels')
+        : now.includes('levels')
+          ? now
+          : [...now, 'levels']
+    )
+  }
   const ruleHead = (id: string, label: string) => {
     const open = !folded.includes(id)
     return (
@@ -220,9 +231,11 @@ export function LayoutConfig({
   })
   useEffect(() => {
     if (!opened) return
+    const nextDrafts = savedRules()
     setTarget(initialTarget)
-    setDrafts(savedRules())
+    setDrafts(nextDrafts)
     setBases(savedBases())
+    foldLevelsIfEmpty(nextDrafts[initialTarget])
     setPicked(start?.rowId)
     setQuery('')
     setOnly('all')
@@ -521,7 +534,11 @@ export function LayoutConfig({
         size="xs"
         aria-label={tr('設定哪一種版面')}
         value={target}
-        onChange={(value) => setTarget(value as Target)}
+        onChange={(value) => {
+          const next = value as Target
+          setTarget(next)
+          foldLevelsIfEmpty(drafts[next])
+        }}
         data={[
           { value: 'card', label: tr('卡片') },
           { value: 'panel', label: tr('詳情') },
@@ -529,6 +546,14 @@ export function LayoutConfig({
       />
       <div className={'layout-config' + (rulesOpen ? '' : ' rules-closed')}>
         <aside className="layout-config-rules" aria-label={tr('規則')} hidden={!rulesOpen}>
+          {/* R-545: when only one layout exists (or none for details), show a compact hint instead of visual noise. */}
+          {presets.length <= 1 && (
+            <p className="layout-config-single-hint">
+              {panel
+                ? tr('目前還沒有自訂詳情版面；點「編輯詳情版面」即可建立。')
+                : tr('目前只有一套卡片版面；新增其他版面後，就能依類型或層級套用不同外觀。')}
+            </p>
+          )}
           {/* R-444: the rules read top to bottom in the order they apply; the default comes last. */}
           <section>
             {ruleHead('types', panel ? tr('依類型') : tr('作品依類型'))}

@@ -617,12 +617,6 @@
     "en": "Display scope",
     "es": "Ámbito de vista"
   },
-  "層級顯示": {
-    "ja": "階層表示",
-    "zh-CN": "层级显示",
-    "en": "Level display",
-    "es": "Vista por niveles"
-  },
   "每列卡片數": {
     "ja": "1行のカード数",
     "zh-CN": "每行卡片数",
@@ -3143,12 +3137,6 @@
     "zh-CN": "已验证备份：{0}",
     "es": "Copias verificadas: {0}"
   },
-  "選擇表格欄位": {
-    "en": "Choose table columns",
-    "ja": "表の列を選択",
-    "zh-CN": "选择表格列",
-    "es": "Elegir columnas"
-  },
   "搜尋欄位": {
     "en": "Search columns",
     "ja": "列を検索",
@@ -4030,12 +4018,6 @@
     "en": "Your folders and their info are not changed by this. Reload to keep working.",
     "ja": "フォルダーとその情報はこれによって変更されません。再読み込みすると続けて使えます。",
     "es": "Esto no cambia tus carpetas ni su información. Recarga para seguir trabajando."
-  },
-  "卡片顯示設定": {
-    "zh-CN": "卡片显示设置",
-    "en": "Card display settings",
-    "ja": "カード表示設定",
-    "es": "Ajustes de visualización de tarjetas"
   },
   "此資料夾沒有子資料夾": {
     "zh-CN": "此文件夹没有子文件夹",
@@ -13372,5 +13354,47 @@
     "en": "Choose layout…",
     "ja": "レイアウトを指定…",
     "es": "Elegir diseño…"
+  },
+  "檢視選項": {
+    "zh-CN": "视图选项",
+    "en": "View options",
+    "ja": "表示オプション",
+    "es": "Opciones de vista"
+  },
+  "編輯目前版面：{0}": {
+    "zh-CN": "编辑当前版面：{0}",
+    "en": "Edit current layout: {0}",
+    "ja": "現在のレイアウトを編集：{0}",
+    "es": "Editar diseño actual: {0}"
+  },
+  "版面選單": {
+    "zh-CN": "版面菜单",
+    "en": "Layout menu",
+    "ja": "レイアウトメニュー",
+    "es": "Menú de diseño"
+  },
+  "版面配置…": {
+    "zh-CN": "版面配置…",
+    "en": "Layout configuration…",
+    "ja": "レイアウト設定…",
+    "es": "Configuración de diseño…"
+  },
+  "預設卡片版面": {
+    "zh-CN": "默认卡片版面",
+    "en": "Default card layout",
+    "ja": "既定のカードレイアウト",
+    "es": "Diseño de tarjeta predeterminado"
+  },
+  "目前只有一套卡片版面；新增其他版面後，就能依類型或層級套用不同外觀。": {
+    "zh-CN": "目前只有一套卡片版面；新增其他版面后，就能按类型或层级应用不同外观。",
+    "en": "There is only one card layout so far; add more to assign different looks by type or level.",
+    "ja": "カードレイアウトは現在 1 つだけです。追加すると種類や階層ごとに使い分けられます。",
+    "es": "Solo hay un diseño de tarjeta por ahora; añade más para asignar distintos estilos por tipo o nivel."
+  },
+  "目前還沒有自訂詳情版面；點「編輯詳情版面」即可建立。": {
+    "zh-CN": "目前还没有自定义详情版面；点击“编辑详情版面”即可创建。",
+    "en": "No custom details layouts yet; click “Edit details layout” to create one.",
+    "ja": "カスタム詳細レイアウトはまだありません。「詳細レイアウトを編集」から作成できます。",
+    "es": "Aún no hay diseños de detalles personalizados; haz clic en «Editar diseño de detalles» para crear uno."
   }
 }

@@ -96,16 +96,23 @@ export async function withoutFlush<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-// R-445: the card editor opens from the layout window, at the layout the current folder uses.
+// R-544: the split layout button's main click opens the card editor directly on the current folder's layout.
 export async function openLayoutEditor(page: Page) {
   await page
-    .getByRole('button', { name: /^版面配置/ })
+    .getByRole('button', { name: /^編輯目前版面：/ })
     .filter({ visible: true })
     .first()
     .click()
-  const dialog = page.getByRole('dialog', { name: '版面配置' })
-  await dialog.getByRole('button', { name: '編輯卡片版面', exact: true }).click()
-  await dialog.waitFor({ state: 'hidden' })
+}
+
+// R-544: opens the LayoutConfig dialog from the split button's arrow menu.
+export async function openLayoutConfig(page: Page) {
+  await page
+    .getByRole('button', { name: '版面選單', exact: true })
+    .filter({ visible: true })
+    .first()
+    .click()
+  await page.getByRole('menuitem', { name: '版面配置…', exact: true }).click()
 }
 
 // R-533: a fresh project starts with the detail panel closed; tests that inspect it open it explicitly.

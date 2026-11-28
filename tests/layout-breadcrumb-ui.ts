@@ -3,7 +3,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 
 import { Library } from '../electron/library'
-import { closeApp, launchApp, removeTestRoot, reportFailure } from './support/app'
+import { closeApp, launchApp, openLayoutConfig, removeTestRoot, reportFailure } from './support/app'
 
 // R-483: the layout configuration window starts its folder list at the folder being browsed; a breadcrumb above the
 // list moves the start up to any folder above it without closing the window.
@@ -27,12 +27,15 @@ try {
   // Enter Artist from the folder bar so it is the folder being browsed.
   await page.locator('.folder-card').filter({ hasText: 'Artist' }).first().dblclick()
   await page.getByRole('navigation', { name: '資料夾路徑' }).getByText('Artist').waitFor()
-  await page
-    .getByRole('button', { name: /^版面配置：/ })
-    .first()
-    .click()
+  await openLayoutConfig(page)
   const dialog = page.getByRole('dialog', { name: '版面配置' })
   await dialog.waitFor()
+  // R-545: with only one card layout and no level rules, show the concise hint and fold "by level".
+  await dialog.locator('.layout-config-single-hint').waitFor()
+  assert.equal(
+    await dialog.getByRole('button', { name: '依層級', exact: true }).getAttribute('aria-expanded'),
+    'false'
+  )
   const item = (name: string) =>
     dialog.locator('.layout-config-item').filter({ has: page.getByText(name, { exact: true }) })
   const crumbs = dialog.getByRole('navigation', { name: '清單從哪個資料夾開始' })
@@ -49,10 +52,7 @@ try {
   // Closing and opening again starts from the folder being browsed once more.
   await dialog.getByRole('button', { name: '取消' }).click()
   await dialog.waitFor({ state: 'hidden' })
-  await page
-    .getByRole('button', { name: /^版面配置：/ })
-    .first()
-    .click()
+  await openLayoutConfig(page)
   await item('Album').first().waitFor()
   assert.equal(await item('Other').count(), 0)
   assert.deepEqual(errors, [])

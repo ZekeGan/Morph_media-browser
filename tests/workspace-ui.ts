@@ -300,11 +300,12 @@ try {
   )
   assert.equal(await page.getByLabel('組件 卡片外觀').count(), 0)
   assert.equal(await page.getByRole('button', { name: '卡片 顯示設定', exact: true }).count(), 0)
-  // R-466: the nodes can be drawn as the folders' cards, sized by their card layout, and back.
-  const cardNodes = page.getByRole('button', { name: '以卡片顯示節點', exact: true })
+  // R-466 & R-547: the nodes can be drawn as the folders' cards, toggled from View Options.
+  await page.getByRole('button', { name: '檢視選項', exact: true }).click()
+  const cardNodes = page.getByRole('switch', { name: '以卡片顯示節點', exact: true })
   await cardNodes.click()
   await page.locator('.react-flow__node-card .folder-card .card-grid').first().waitFor()
-  assert.equal(await cardNodes.getAttribute('aria-pressed'), 'true')
+  assert.equal(await cardNodes.isChecked(), true)
   const cardHeight = await page
     .locator('.react-flow__node-card')
     .first()
@@ -312,6 +313,7 @@ try {
   assert.ok(cardHeight > 76, 'a card node is as tall as its card layout')
   await cardNodes.click()
   await page.locator('.react-flow__node-card').first().waitFor({ state: 'detached' })
+  await page.keyboard.press('Escape')
   await mode('TABLE')
   await page.locator('.folder-table').waitFor()
   assert.equal(

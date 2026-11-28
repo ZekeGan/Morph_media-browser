@@ -44,7 +44,7 @@ import { playValue, usePlaytimes } from '../game/playtime'
 import { currentLocale, t as tr, useLocale } from '../i18n'
 import { BrowseNav } from './BrowseNav'
 import { BrowsePanel } from './BrowsePanel'
-import { BrowseToolbar } from './BrowseToolbar'
+import { BrowseToolbar, type ViewAxis } from './BrowseToolbar'
 import { FolderCards } from './FolderCards'
 import { isLayoutWork, KindRowsContext, LayoutWorksContext } from './folderKind'
 import { FolderMenu, type FolderMenuAt } from './FolderMenu'
@@ -176,6 +176,17 @@ function BrowseWorkspaceBody({
   const navigation = useRef(0)
   const mounted = useRef(false)
   const workspaceRoot = useRef<HTMLDivElement>(null)
+  const centerPane = useRef<HTMLElement>(null)
+  const [narrowBar, setNarrowBar] = useState(false)
+  useEffect(() => {
+    const node = centerPane.current
+    if (!node) return
+    const update = () => setNarrowBar(node.clientWidth > 0 && node.clientWidth <= 960)
+    const observer = new ResizeObserver(update)
+    observer.observe(node)
+    update()
+    return () => observer.disconnect()
+  }, [])
   const sideNavigation = useRef<(event: FolderNavigation) => void>(() => {})
   useEffect(() => window.desktop.onFolderNavigation((event) => sideNavigation.current(event)), [])
   useEffect(() => {
@@ -802,15 +813,24 @@ function BrowseWorkspaceBody({
     const timer = setTimeout(() => delete panelSlot.current?.dataset.instant, 600)
     return () => clearTimeout(timer)
   }, [ready])
-  // R-413: the button shows the layout the folder being browsed uses; it opens the layout configuration window.
-  const layoutLabel = (() => {
+  // R-544: the layout the folder being browsed uses; the split button's main click edits it directly.
+  const activeCardLayout = (() => {
     const presets = cardPresets(project)
     const id = currentFolder
       ? cardChoice(project, currentFolder, isLayoutWork(works, currentFolder.rowId)).id
       : (project.activeLayoutId ?? presets[0].id)
     const preset = presets.find((p) => p.id === id) ?? presets[0]
-    return layoutName(preset)
+    return { id: preset.id, label: layoutName(preset) }
   })()
+  const editCurrentLayout = () => edit(undefined, activeCardLayout.id, currentFolder?.rowId)
+  const setDefaultLayout = (id: string) => {
+    const preset = cardPresets(project).find((p) => p.id === id)
+    if (!preset) return
+    void act({
+      action: 'saveProject',
+      project: { ...project, activeLayoutId: preset.id, cells: preset.cells },
+    })
+  }
   const switchMode = async (mode: BrowseMode) => {
     if (busy || !ready) return
     if (highlight && highlight !== state.current.detailId) {
@@ -839,7 +859,29 @@ function BrowseWorkspaceBody({
       fileScope: state.current.fileScope ?? 'descendants',
     })
   }
-  // The panel's code is fetched while the app is idle (and when the pointer reaches its button), so the first
+  // R-536: single view axis uniting folder/file switch with step-by-step / all-works.
+  const viewAxis: ViewAxis = !folderMode
+    ? 'files'
+    : browse.mode === 'CARD' && display.works
+      ? 'works'
+      : 'step'
+  const switchView = async (value: ViewAxis) => {
+    if (value === 'files') {
+      await switchContent('files')
+      return
+    }
+    if (!folderMode) await switchContent('folders')
+    if (value === 'works') {
+      if (state.current.mode !== 'CARD') await switchMode('CARD')
+      if (!display.works) {
+        setDisplay({ mode: 'multi', level: 'all', works: true })
+        changedCard()
+      }
+    } else if (display.works) {
+      setDisplay({ mode: 'single', level: 1, works: false })
+      changedCard()
+    }
+  }
   // opening does not wait for it.
   const preloadPanel = () => {
     void import('../panel/FolderContent')
@@ -901,59 +943,70 @@ function BrowseWorkspaceBody({
         busy={busy}
         save={async (next) => !!(await act({ action: 'saveProject', project: next }))}
       />
-      <section className="center-pane" aria-label={tr('資料夾瀏覽區')}>
-        <BrowseToolbar
-          browse={browse}
-          busy={busy}
-          cardSaveError={cardSaveError}
-          changedCard={changedCard}
-          columnQuery={columnQuery}
-          currentFolder={currentFolder}
-          deepest={deepest}
-          density={density}
-          display={display}
-          folderMode={folderMode}
-          switchContent={switchContent}
-          openConfig={openConfig}
-          orderedColumns={orderedColumns}
-          persist={persist}
-          layoutLabel={layoutLabel}
-          openLayouts={() => setLayoutsOpen(true)}
-          project={project}
-          ready={ready}
-          setColumnQuery={setColumnQuery}
-          setDensity={setDensity}
-          setDisplay={setDisplay}
-          setOverviewTools={setOverviewTools}
-          setPage={setPage}
-          setOverviewScope={setOverviewScope}
-          state={state}
-          switchMode={switchMode}
-        />
-        <BrowseNav
-          ready={ready}
-          busy={busy}
-          history={history}
-          navHistory={navHistory}
-          crumbs={crumbs}
-          title={location || root}
-          open={(id) => void open(id)}
-          openConfig={openConfig}
-          summary={
-            folderMode
-              ? filtered.length +
-                ' ' +
-                tr('筆') +
-                (browse.mode === 'CARD'
-                  ? ' · ' +
-                    (card.works
-                      ? tr('所有作品') +
-                        (card.level === 'all' ? '' : ' · ' + tr('最多 {0} 層', card.level))
-                      : tr('逐層瀏覽'))
-                  : '')
-              : undefined
-          }
-        />
+      <section ref={centerPane} className="center-pane" aria-label={tr('資料夾瀏覽區')}>
+        {(() => {
+          const inlineNav = crumbs.length <= 1 && !narrowBar
+          const navElement = (
+            <BrowseNav
+              ready={ready}
+              busy={busy}
+              history={history}
+              navHistory={navHistory}
+              crumbs={crumbs}
+              title={location || root}
+              open={(id) => void open(id)}
+              openConfig={openConfig}
+              inline={inlineNav}
+              summary={
+                folderMode
+                  ? filtered.length +
+                    ' ' +
+                    tr('筆') +
+                    (!inlineNav && browse.mode === 'CARD' && card.works && card.level !== 'all'
+                      ? ' · ' + tr('最多 {0} 層', card.level)
+                      : '')
+                  : undefined
+              }
+            />
+          )
+          return (
+            <>
+              <BrowseToolbar
+                nav={inlineNav ? navElement : undefined}
+                browse={browse}
+                busy={busy}
+                cardSaveError={cardSaveError}
+                changedCard={changedCard}
+                columnQuery={columnQuery}
+                currentFolder={currentFolder}
+                deepest={deepest}
+                density={density}
+                display={display}
+                folderMode={folderMode}
+                viewAxis={viewAxis}
+                switchView={(value) => void switchView(value)}
+                openConfig={openConfig}
+                orderedColumns={orderedColumns}
+                persist={persist}
+                layoutLabel={activeCardLayout.label}
+                editCurrentLayout={editCurrentLayout}
+                setDefaultLayout={setDefaultLayout}
+                openLayouts={() => setLayoutsOpen(true)}
+                project={project}
+                ready={ready}
+                setColumnQuery={setColumnQuery}
+                setDensity={setDensity}
+                setDisplay={setDisplay}
+                setOverviewTools={setOverviewTools}
+                setPage={setPage}
+                setOverviewScope={setOverviewScope}
+                state={state}
+                switchMode={switchMode}
+              />
+              {!inlineNav && navElement}
+            </>
+          )
+        })()}
         <div
           className="browse-main"
           ref={scroll}

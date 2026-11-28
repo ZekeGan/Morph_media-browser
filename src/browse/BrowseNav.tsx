@@ -16,6 +16,7 @@ export function BrowseNav({
   open,
   openConfig,
   summary,
+  inline = false,
 }: {
   ready: boolean
   busy: boolean
@@ -28,9 +29,11 @@ export function BrowseNav({
   openConfig: (id: string) => void
   // "N 筆 · …", shown only in the folders view.
   summary?: string
+  // R-547: at the project root on a wide center pane, navigation merges into the main toolbar row.
+  inline?: boolean
 }) {
   return (
-    <div className="workspace-breadcrumb">
+    <div className={inline ? 'toolbar-nav' : 'workspace-breadcrumb'}>
       <Tooltip label={tr('返回上一個瀏覽位置')}>
         <ActionIcon
           aria-label={tr('返回')}
@@ -57,7 +60,16 @@ export function BrowseNav({
         <Breadcrumbs separator={String.fromCharCode(92)}>
           {crumbs.map((r, i) =>
             i === crumbs.length - 1 ? (
-              <span key={r.rowId} aria-current="page" className="breadcrumb-current" title={r.path}>
+              <span
+                key={r.rowId}
+                aria-current="page"
+                className="breadcrumb-current"
+                title={r.path}
+                onContextMenu={(e) => {
+                  e.preventDefault()
+                  openConfig(r.rowId)
+                }}
+              >
                 {r.name}
               </span>
             ) : (
