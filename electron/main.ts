@@ -108,8 +108,10 @@ if (quietTest || watchTest) {
 if (/-beta\.\d+$/.test(app.getVersion())) app.commandLine.appendSwitch('no-sandbox')
 
 // The product is called M:orph now, but its data stays in the original folder so no settings or index are lost.
-if (process.env.MEDIA_VIEWER_TEST_DATA) {
-  app.setPath('userData', path.resolve(process.env.MEDIA_VIEWER_TEST_DATA))
+// MORPH_USER_DATA lets manual testing run a normal interactive window against an isolated data folder.
+const customUserData = process.env.MORPH_USER_DATA || process.env.MEDIA_VIEWER_TEST_DATA
+if (customUserData) {
+  app.setPath('userData', path.resolve(customUserData))
 } else {
   app.setPath('userData', path.join(app.getPath('appData'), 'media-viewer'))
 }
